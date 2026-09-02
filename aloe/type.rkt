@@ -254,7 +254,7 @@
       [(fn-expr parameters body)
        (infer-function parameters body environment expected)]
       [(send-expr receiver selector arguments)
-       (infer-send receiver selector arguments environment)]))
+       (infer-send receiver selector arguments environment expected)]))
   (when expected
     (unify-types! inferred expected))
   inferred)
@@ -410,7 +410,7 @@
     [else
      (raise-type-error "malformed type: ~a" datum)]))
 
-(define (infer-send receiver-expression selector arguments environment)
+(define (infer-send receiver-expression selector arguments environment expected)
   (cond
     [(and (eq? selector 'call) (fn-expr? receiver-expression))
      (define argument-types
@@ -435,9 +435,10 @@
              (class-type-class receiver-type) arguments environment)
             (unknown-message selector))]
        [(list-class-type? receiver-type)
-        (if (eq? selector 'of)
-            (infer-list-construction arguments environment)
-            (unknown-message selector))]
+        (case selector
+          [(of) (infer-list-construction arguments environment)]
+          [(empty) (infer-empty-list arguments expected)]
+          [else (unknown-message selector)])]
        [(instance-type? receiver-type)
         (infer-instance-send
          receiver-type selector arguments environment)]
@@ -479,8 +480,15 @@
      (length fields)
      (length arguments)))
   (define argument-types
-    (for/list ([argument (in-list arguments)])
-      (infer-expression argument environment #f)))
+    (for/list ([argument (in-list arguments)]
+               [field (in-list fields)])
+      (define expected-field-type
+        (and (null? (class-info-type-parameters class))
+             (type-from-sexpr
+              (field-declaration-type field)
+              environment
+              (make-hasheq))))
+      (infer-expression argument environment expected-field-type)))
   (define inferred (make-hasheq))
   (for ([parameter (in-list (class-info-type-parameters class))])
     (hash-set! inferred parameter #f))
@@ -633,9 +641,47 @@
         "List of elements must have one type"))
      (list-type element-type)]))
 
+(define (infer-empty-list arguments expected)
+  (unless (null? arguments)
+    (raise-type-error
+     "arity error for List empty: expected 0 arguments, got ~a"
+     (length arguments)))
+  (define resolved-expected (and expected (resolve-type expected)))
+  (if (list-type? resolved-expected)
+      resolved-expected
+      (list-type (fresh-type-variable 'List-element))))
+
 (define (infer-list-send list-value-type selector arguments environment)
   (define element-type (list-type-element list-value-type))
   (case selector
+    [(empty?)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for List empty?: expected 0 arguments, got ~a"
+        (length arguments)))
+     BOOL]
+    [(first)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for List first: expected 0 arguments, got ~a"
+        (length arguments)))
+     element-type]
+    [(rest)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for List rest: expected 0 arguments, got ~a"
+        (length arguments)))
+     list-value-type]
+    [(cons)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for List cons: expected 1 argument, got ~a"
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment element-type))
+     (unify-types!
+      argument-type element-type "List cons element type mismatch")
+     list-value-type]
     [(len)
      (unless (null? arguments)
        (raise-type-error

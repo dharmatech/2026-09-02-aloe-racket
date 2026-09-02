@@ -66,5 +66,5 @@ Accept the must-run goldens in `SPEC.md` §9. Reject the five must-fail programs
 
 ## 11. Boids
 
-Load `examples/boids.sexpr`. Typecheck. Evaluate `(demo step)` twice.
+Load `examples/boids.aloe`. Typecheck. Evaluate `(demo step)` twice.
 `len` is `Int`; divide points by `(n float)`, not `n`.

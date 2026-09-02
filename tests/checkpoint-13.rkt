@@ -1,13 +1,11 @@
 #lang racket/base
 
-(require racket/file
-         racket/runtime-path
+(require racket/runtime-path
          rackunit
          "../aloe/driver.rkt")
 
 (define-runtime-path fixture-path "fixtures/checkpoint-13.aloe")
 (define-runtime-path boids-path "../examples/boids.aloe")
-(define-runtime-path boids-sexpr-path "../boids.sexpr")
 
 (define fixture-driver (make-driver))
 (define fixture-output (open-output-string))
@@ -15,10 +13,6 @@
  (driver-load-file! fixture-driver fixture-path fixture-output)
  '(1))
 (check-equal? (get-output-string fixture-output) "1\n")
-
-;; Keep the .aloe example byte-for-byte aligned with the accepted Boids source.
-(check-equal? (file->string boids-path)
-              (file->string boids-sexpr-path))
 
 (define boids-driver (make-driver))
 (define boids-output (open-output-string))

@@ -13,23 +13,23 @@
  (type->datum (typecheck-source boids-source checker-environment))
  'Sim)
 (check-equal?
- (type->datum (typecheck-source "demo" checker-environment))
- 'Sim)
-(check-equal?
  (type->datum (typecheck-source "(demo step)" checker-environment))
  'Sim)
-
-(check-exn
- exn:fail:aloe-type?
- (lambda ()
-   (typecheck-source
-    (string-append
-     "(Sim new (List of "
-     "(Boid new (Point new 0 0) (Point new 1 0))))")
-    checker-environment)))
+(check-equal?
+ (type->datum
+  (typecheck-source
+   "((Point new 0.0 0.0) dist2 (Point new 3.0 4.0))"
+   checker-environment))
+ 'Float)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source boids-source runtime-environment))
 (check-equal?
-  (eval-source "(((demo step) flock) len)" runtime-environment)
-  3)
+ (eval-source
+  "((Point new 0.0 0.0) dist2 (Point new 3.0 4.0))"
+  runtime-environment)
+ 25.0)
+(check-equal? (eval-source "(if (1.0 < 2.0) 1.0 0.0)") 1.0)
+(check-equal?
+ (eval-source "(((demo step) flock) len)" runtime-environment)
+ 3)

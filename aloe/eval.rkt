@@ -64,9 +64,13 @@
      (unknown-message selector)]))
 
 (define (send-to-list-class selector arguments)
-  (if (eq? selector 'of)
-      (make-list-value arguments)
-      (unknown-message selector)))
+  (case selector
+    [(of) (make-list-value arguments)]
+    [(empty)
+     (unless (null? arguments)
+       (arity-error "List empty" 0 (length arguments)))
+     (make-list-value '())]
+    [else (unknown-message selector)]))
 
 (define (make-list-value elements)
   (define element-type
@@ -301,6 +305,27 @@
 (define (send-to-list list-object selector arguments)
   (define elements (list-value-elements list-object))
   (case selector
+    [(empty?)
+     (unless (null? arguments)
+       (arity-error "List empty?" 0 (length arguments)))
+     (zero? (vector-length elements))]
+    [(first)
+     (unless (null? arguments)
+       (arity-error "List first" 0 (length arguments)))
+     (when (zero? (vector-length elements))
+       (error 'eval-aloe "first on empty List"))
+     (vector-ref elements 0)]
+    [(rest)
+     (unless (null? arguments)
+       (arity-error "List rest" 0 (length arguments)))
+     (when (zero? (vector-length elements))
+       (error 'eval-aloe "rest on empty List"))
+     (make-list-value (cdr (vector->list elements)))]
+    [(cons)
+     (unless (= (length arguments) 1)
+       (arity-error "List cons" 1 (length arguments)))
+     (make-list-value
+      (cons (car arguments) (vector->list elements)))]
     [(len)
      (unless (null? arguments)
        (arity-error "List len" 0 (length arguments)))

@@ -2,7 +2,7 @@
 
 Aloe is an s-expression language. Evaluation is message send, not Scheme apply.
 Prototype host: Racket (`2026-09-02-aloe-racket`).
-Target program: `examples/boids.sexpr`.
+Target program: `examples/boids.aloe`.
 Deliverable for 0.1: Racket interpreter + type checker. No compiler, no macros, no mutation, no inheritance.
 
 ---
@@ -235,7 +235,7 @@ Bidirectional:
 - Written annotations on `fn` are checked.
 - `Int` and `Float` do not mix.
 
-The first checker must accept `examples/boids.sexpr` and reject the programs in §9.
+The first checker must accept `examples/boids.aloe` and reject the programs in §9.
 
 ---
 
@@ -247,15 +247,21 @@ Construction (class message, variadic):
 
 ```text
 (List of x y z)
+(List empty)
 ```
 
-All elements must share a type `T`. Empty `(List of)` needs an annotation; unused in Boids.
+All `of` elements must share a type `T`. `List empty` takes its element type
+from context when available; otherwise later use must determine it.
 
 Messages:
 
 | Send | Meaning | Type |
 |---|---|---|
 | `(xs len)` | element count | `Int` |
+| `(xs empty?)` | whether the list has no elements | `Bool` |
+| `(xs first)` | first element; error when empty | `T` |
+| `(xs rest)` | all but the first element; error when empty | `(List T)` |
+| `(xs cons x)` | immutable list with `x` prepended | `(List T)` when `x` is `T` |
 | `(xs map f)` | apply `f` to each element | `(List U)` if `f` : `T → U` |
 | `(xs fold acc f)` | left fold | type of `acc` |
 
@@ -281,6 +287,7 @@ Operands have the same class (`Int` with `Int`, `Float` with `Float`).
 Arithmetic returns that numeric class; comparisons return `Bool`. No implicit coercion.
 
 `Point` uses the same four selectors for vector arithmetic (`*` and `/` take a scalar of type `T`).
+It also defines `(point dist2 other)`, returning the squared distance as `T`.
 
 `Int` does not mix with `Float`. Convert explicitly:
 
@@ -320,7 +327,7 @@ Must run (after the Boids file’s definitions, or equivalent stubs):
 2. `((Point new 1 2) x)` → `1`
 3. `((Point new 1.0 2.0) + (Point new 3.0 4.0))` → `(Point new 4.0 6.0)`
 4. `((List of 1 2 3) len)` → `3`
-5. The last two lines of `examples/boids.sexpr`: `(demo step)` twice, each result a `Sim`
+5. The last two lines of `examples/boids.aloe`: `(demo step)` twice, each result a `Sim`
 
 Must be type errors:
 

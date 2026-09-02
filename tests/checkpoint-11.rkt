@@ -5,7 +5,7 @@
          rackunit
          "../aloe/main.rkt")
 
-(define-runtime-path boids-path "../boids.sexpr")
+(define-runtime-path boids-path "../examples/boids.aloe")
 (define boids-source (file->string boids-path))
 
 (check-equal? (eval-source "(1 float)") 1.0)

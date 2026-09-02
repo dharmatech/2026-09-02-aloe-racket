@@ -34,4 +34,4 @@ Typecheck `examples/boids.aloe` and evaluate `(demo step)`.
 
 Interpreter + type checker in Racket only. No compiler.
 
-Legal now: Aloe 0.1 typechecks and evaluates the complete `boids.sexpr` program, including both trailing `step` sends.
+Legal now: Aloe 0.1 typechecks and evaluates the complete `examples/boids.aloe` program, including both trailing `step` sends.
