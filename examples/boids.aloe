@@ -19,6 +19,9 @@
       (let ((d (self - other)))
         (((d x) * (d x)) + ((d y) * (d y)))))
 
+    (dot (other (Point T)) T
+      (((self x) * (other x)) + ((self y) * (other y))))
+
     (* (k T) (Point T)
       (Point new
         ((self x) * k)
@@ -54,7 +57,13 @@
                          (let ((d2 ((b position) dist2 (other position))))
                            (if (0.0 < d2)
                                (if (d2 < (cohere-r * cohere-r))
-                                   (neighbors cons other)
+                                   (if (let ((to ((other position) - (b position)))
+                                             (hd (b velocity)))
+                                         (if (0.0 < (hd dot hd))
+                                             (0.0 < (hd dot to))
+                                             #t))
+                                       (neighbors cons other)
+                                       neighbors)
                                    neighbors)
                                neighbors)))))
                     (align-neighbors
@@ -63,7 +72,13 @@
                          (let ((d2 ((b position) dist2 (other position))))
                            (if (0.0 < d2)
                                (if (d2 < (align-r * align-r))
-                                   (neighbors cons other)
+                                   (if (let ((to ((other position) - (b position)))
+                                             (hd (b velocity)))
+                                         (if (0.0 < (hd dot hd))
+                                             (0.0 < (hd dot to))
+                                             #t))
+                                       (neighbors cons other)
+                                       neighbors)
                                    neighbors)
                                neighbors)))))
                     (separ
