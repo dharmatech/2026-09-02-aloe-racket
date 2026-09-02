@@ -230,12 +230,53 @@
              'call
              (map cdr bindings)))
 
-(define (desugar-if test-datum then-datum else-datum)
+(define (make-if-expression test-expression then-expression else-expression)
   (send-expr
-   (parse-datum test-datum)
+   test-expression
    'if
-   (list (fn-expr '() (parse-datum then-datum))
-         (fn-expr '() (parse-datum else-datum)))))
+   (list (fn-expr '() then-expression)
+         (fn-expr '() else-expression))))
+
+(define (desugar-if test-datum then-datum else-datum)
+  (make-if-expression
+   (parse-datum test-datum)
+   (parse-datum then-datum)
+   (parse-datum else-datum)))
+
+(define (desugar-cond clause-datums datum)
+  (unless (and (list? clause-datums) (pair? clause-datums))
+    (raise-arguments-error
+     'parse-datum
+     "cond requires at least one clause and a final else clause"
+     "datum" datum))
+  (define clauses
+    (for/list ([clause (in-list clause-datums)])
+      (match clause
+        [(list test expression) (list test expression)]
+        [_
+         (raise-arguments-error
+          'parse-datum
+          "malformed cond clause; expected (test expression)"
+          "clause" clause
+          "datum" datum)])))
+  (define final-clause (last clauses))
+  (unless (eq? (first final-clause) 'else)
+    (raise-arguments-error
+     'parse-datum
+     "cond requires else as its final clause"
+     "datum" datum))
+  (for ([clause (in-list (drop-right clauses 1))])
+    (when (eq? (first clause) 'else)
+      (raise-arguments-error
+       'parse-datum
+       "else must be the final cond clause"
+       "datum" datum)))
+  (for/fold ([alternate (parse-datum (second final-clause))])
+            ([clause (in-list (reverse (drop-right clauses 1)))])
+    (make-if-expression
+     (parse-datum (first clause))
+     (parse-datum (second clause))
+     alternate)))
 
 (define (parse-datum datum)
   (match datum
@@ -316,6 +357,8 @@
       'parse-datum
       "malformed let; expected (let ((name expression) ...) body)"
       "datum" datum)]
+    [(cons 'cond clause-datums)
+     (desugar-cond clause-datums datum)]
     [(list 'if test-datum then-datum else-datum)
      (desugar-if test-datum then-datum else-datum)]
     [(cons 'if _)
