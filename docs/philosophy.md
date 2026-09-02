@@ -20,6 +20,8 @@ be expressed, decide whether the hole is a library, a lifted restriction, or
 Boids already drove send, `if`, `List`, and `fold`. The next hole should
 come from the next program.
 
+Send plus types exist so an editor can ask “what messages does this expression understand?” before the program runs.
+
 ## Kernel (keep small)
 
 - send
