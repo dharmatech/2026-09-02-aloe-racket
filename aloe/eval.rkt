@@ -16,6 +16,24 @@
 (struct runtime-class-type (class type-arguments) #:transparent)
 (struct runtime-list-type (element-type) #:transparent)
 
+(define current-eval-load-paths (make-parameter '()))
+
+(define (eval-load! expression environment)
+  (define path (load-expr-resolved-path expression))
+  (unless (file-exists? path)
+    (error 'eval-aloe "load file not found: ~a" path))
+  (when (member path (current-eval-load-paths) equal?)
+    (error 'eval-aloe "load cycle: ~a" path))
+  (define expressions
+    (call-with-input-file path
+      (lambda (input)
+        (read-program input #:source-path path))))
+  (parameterize
+      ([current-eval-load-paths
+        (cons path (current-eval-load-paths))])
+    (eval-exprs expressions environment))
+  (void))
+
 (define (eval-expr expression environment)
   (match expression
     [(int-expr value) value]
@@ -23,6 +41,8 @@
     [(bool-expr value) value]
     [(variable-expr name)
      (env-lookup environment name)]
+    [(? load-expr?)
+     (eval-load! expression environment)]
     [(define-expr name value-expression)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]

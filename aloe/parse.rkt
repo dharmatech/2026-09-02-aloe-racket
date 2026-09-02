@@ -2,12 +2,14 @@
 
 (require racket/match
          racket/list
+         racket/path
          racket/port)
 
 (provide (struct-out int-expr)
          (struct-out float-expr)
          (struct-out bool-expr)
          (struct-out variable-expr)
+         (struct-out load-expr)
          (struct-out define-expr)
          (struct-out field-declaration)
          (struct-out parameter-declaration)
@@ -18,12 +20,14 @@
          (struct-out send-expr)
          parse-datum
          parse-program
-         read-program)
+         read-program
+         load-expr-resolved-path)
 
 (struct int-expr (value) #:transparent)
 (struct float-expr (value) #:transparent)
 (struct bool-expr (value) #:transparent)
 (struct variable-expr (name) #:transparent)
+(struct load-expr (path directory) #:transparent)
 (struct define-expr (name value) #:transparent)
 (struct field-declaration (name type) #:transparent)
 (struct parameter-declaration (name type) #:transparent)
@@ -34,6 +38,19 @@
 (struct define-methods-expr (target methods) #:transparent)
 (struct fn-expr (parameters body) #:transparent)
 (struct send-expr (receiver selector arguments) #:transparent)
+
+(define current-aloe-source-directory (make-parameter #f))
+
+(define (source-directory source-path)
+  (or (path-only (path->complete-path source-path))
+      (current-directory)))
+
+(define (load-expr-resolved-path expression)
+  (simplify-path
+   (path->complete-path
+    (string->path (load-expr-path expression))
+    (load-expr-directory expression))
+   #f))
 
 (define (parse-atom datum)
   (cond
@@ -227,6 +244,15 @@
       'parse-datum
       "empty combination is illegal"
       "datum" datum)]
+    [(list 'load (? string? path))
+     (load-expr path
+                (or (current-aloe-source-directory)
+                    (current-directory)))]
+    [(cons 'load _)
+     (raise-arguments-error
+      'parse-datum
+      "malformed load; expected (load \"path.aloe\")"
+      "datum" datum)]
     [(list 'define (? symbol? name) value)
      (define-expr name (parse-datum value))]
     [(cons 'define _)
@@ -322,18 +348,23 @@
 (define (parse-program datums)
   (map parse-datum datums))
 
-(define (read-program input)
-  (cond
-    [(string? input)
-     (call-with-input-string input read-program)]
-    [(input-port? input)
-     (let loop ([expressions '()])
-       (define datum (read input))
-       (if (eof-object? datum)
-           (reverse expressions)
-           (loop (cons (parse-datum datum) expressions))))]
-    [else
-     (raise-argument-error
-      'read-program
-      "(or/c string? input-port?)"
-      input)]))
+(define (read-program input #:source-path [source-path #f])
+  (parameterize
+      ([current-aloe-source-directory
+        (if source-path
+            (source-directory source-path)
+            (current-aloe-source-directory))])
+    (cond
+      [(string? input)
+       (call-with-input-string input read-program)]
+      [(input-port? input)
+       (let loop ([expressions '()])
+         (define datum (read input))
+         (if (eof-object? datum)
+             (reverse expressions)
+             (loop (cons (parse-datum datum) expressions))))]
+      [else
+       (raise-argument-error
+        'read-program
+        "(or/c string? input-port?)"
+        input)])))

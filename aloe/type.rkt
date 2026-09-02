@@ -46,6 +46,8 @@
 (define BOOL (bool-type))
 (define VOID (void-type))
 
+(define current-typecheck-load-paths (make-parameter '()))
+
 (define (raise-type-error format-string . arguments)
   (raise
    (exn:fail:aloe-type
@@ -238,6 +240,22 @@
             ([expression (in-list expressions)])
     (type-of expression environment)))
 
+(define (typecheck-load! expression environment)
+  (define path (load-expr-resolved-path expression))
+  (unless (file-exists? path)
+    (raise-type-error "load file not found: ~a" path))
+  (when (member path (current-typecheck-load-paths) equal?)
+    (raise-type-error "load cycle: ~a" path))
+  (define expressions
+    (call-with-input-file path
+      (lambda (input)
+        (read-program input #:source-path path))))
+  (parameterize
+      ([current-typecheck-load-paths
+        (cons path (current-typecheck-load-paths))])
+    (typecheck-program expressions environment))
+  VOID)
+
 (define (infer-expression expression environment expected)
   (define inferred
     (match expression
@@ -246,6 +264,8 @@
       [(bool-expr _) BOOL]
       [(variable-expr name)
        (type-environment-ref environment name)]
+      [(? load-expr?)
+       (typecheck-load! expression environment)]
       [(define-expr name value-expression)
        (define value-type
          (infer-expression value-expression environment #f))

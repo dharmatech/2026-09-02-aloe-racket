@@ -10,7 +10,9 @@
 
 (define cached-list-library
   (delay
-    (call-with-input-file list-library-path read-program)))
+    (call-with-input-file list-library-path
+      (lambda (input)
+        (read-program input #:source-path list-library-path)))))
 
 (define (list-library-expressions)
   (force cached-list-library))

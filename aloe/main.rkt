@@ -49,8 +49,11 @@
      type-environment]))
 
 (define (typecheck-source input
-                          [environment (make-type-environment)])
-  (typecheck-program (read-program input) environment))
+                          [environment (make-type-environment)]
+                          #:source-path [source-path #f])
+  (typecheck-program
+   (read-program input #:source-path source-path)
+   environment))
 
 (define (eval-datum datum [environment (make-top-level-env)])
   (define expression (parse-datum datum))
@@ -62,7 +65,10 @@
   (typecheck-program expressions (type-environment-for environment))
   (eval-exprs expressions environment))
 
-(define (eval-source input [environment (make-top-level-env)])
-  (define expressions (read-program input))
+(define (eval-source input
+                     [environment (make-top-level-env)]
+                     #:source-path [source-path #f])
+  (define expressions
+    (read-program input #:source-path source-path))
   (typecheck-program expressions (type-environment-for environment))
   (eval-exprs expressions environment))

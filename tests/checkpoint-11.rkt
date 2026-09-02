@@ -14,7 +14,9 @@
 
 (define checker-environment (make-type-environment))
 (check-equal?
- (type->datum (typecheck-source boids-source checker-environment))
+ (type->datum
+  (typecheck-source boids-source checker-environment
+                    #:source-path boids-path))
  'Sim)
 (check-equal?
  (type->datum (typecheck-source "demo" checker-environment))
@@ -32,7 +34,9 @@
 
 (define runtime-environment (make-top-level-env))
 (check-not-exn
- (lambda () (eval-source boids-source runtime-environment)))
+ (lambda ()
+   (eval-source boids-source runtime-environment
+                #:source-path boids-path)))
 (check-equal?
  (eval-source "((demo flock) len)" runtime-environment)
  3)

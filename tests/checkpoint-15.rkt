@@ -10,7 +10,9 @@
 
 (define checker-environment (make-type-environment))
 (check-equal?
- (type->datum (typecheck-source boids-source checker-environment))
+ (type->datum
+  (typecheck-source boids-source checker-environment
+                    #:source-path boids-path))
  'Sim)
 (check-equal?
  (type->datum (typecheck-source "(demo step)" checker-environment))
@@ -23,7 +25,8 @@
  'Float)
 
 (define runtime-environment (make-top-level-env))
-(void (eval-source boids-source runtime-environment))
+(void (eval-source boids-source runtime-environment
+                   #:source-path boids-path))
 (check-equal?
  (eval-source
   "((Point new 0.0 0.0) dist2 (Point new 3.0 4.0))"

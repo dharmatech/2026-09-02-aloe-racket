@@ -1,36 +1,6 @@
+(load "point.aloe")
+
 ;; Aloe 0.1 — Boids target program
-
-(define-class (Point T)
-  (fields
-    (x T)
-    (y T))
-  (methods
-    (+ (other (Point T)) (Point T)
-      (Point new
-        ((self x) + (other x))
-        ((self y) + (other y))))
-
-    (- (other (Point T)) (Point T)
-      (Point new
-        ((self x) - (other x))
-        ((self y) - (other y))))
-
-    (dist2 (other (Point T)) T
-      (let ((d (self - other)))
-        (((d x) * (d x)) + ((d y) * (d y)))))
-
-    (dot (other (Point T)) T
-      (((self x) * (other x)) + ((self y) * (other y))))
-
-    (* (k T) (Point T)
-      (Point new
-        ((self x) * k)
-        ((self y) * k)))
-
-    (/ (k T) (Point T)
-      (Point new
-        ((self x) / k)
-        ((self y) / k)))))
 
 (define-class (Boid T)
   (fields

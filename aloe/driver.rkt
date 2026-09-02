@@ -35,8 +35,12 @@
   (unless (void? value)
     (displayln (aloe-value->string value) output)))
 
-(define (driver-load-port! state input [output (current-output-port)])
-  (define expressions (read-program input))
+(define (driver-load-port! state
+                           input
+                           [output (current-output-port)]
+                           #:source-path [source-path #f])
+  (define expressions
+    (read-program input #:source-path source-path))
   ;; Check the complete file before evaluating its first expression.
   (typecheck-program expressions (driver-type-environment state))
   (reverse
@@ -66,7 +70,7 @@
      "path" path))
   (call-with-input-file path
     (lambda (input)
-      (driver-load-port! state input output))))
+      (driver-load-port! state input output #:source-path path))))
 
 (define (run-repl [state (make-driver)]
                   [input (current-input-port)]
