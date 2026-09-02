@@ -1,0 +1,80 @@
+;; Aloe 0.1 — Boids target program
+;; Separation is a stub (no distance cutoff). Shape of the language is the point.
+
+(define-class (Point T)
+  (fields
+    (x T)
+    (y T))
+  (methods
+    (+ (other (Point T)) (Point T)
+      (Point new
+        ((self x) + (other x))
+        ((self y) + (other y))))
+
+    (- (other (Point T)) (Point T)
+      (Point new
+        ((self x) - (other x))
+        ((self y) - (other y))))
+
+    (* (k T) (Point T)
+      (Point new
+        ((self x) * k)
+        ((self y) * k)))
+
+    (/ (k T) (Point T)
+      (Point new
+        ((self x) / k)
+        ((self y) / k)))))
+
+(define-class (Boid T)
+  (fields
+    (position (Point T))
+    (velocity (Point T)))
+  (methods))
+
+(define-class (Sim T)
+  (fields
+    (flock (List (Boid T))))
+  (methods
+    (step () (Sim T)
+      (let ((n      ((self flock) len))
+            (origin (Point new 0.0 0.0))
+            (bs     (self flock)))
+
+        (let ((avg-pos
+               (((bs map (fn (b) (b position)))
+                 fold origin
+                 (fn (acc p) (acc + p)))
+                / (n float)))
+              (avg-vel
+               (((bs map (fn (b) (b velocity)))
+                 fold origin
+                 (fn (acc v) (acc + v)))
+                / (n float))))
+
+          (Sim new
+            (bs map
+              (fn (b)
+                (let ((cohere ((avg-pos - (b position)) * 0.01))
+                      (align  ((avg-vel - (b velocity)) * 0.05))
+                      (separ
+                       ((bs fold origin
+                          (fn (acc other)
+                            (let ((d ((b position) - (other position))))
+                              (acc + d))))
+                        * 0.001)))
+                  (let ((new-vel
+                         ((((b velocity) + cohere) + align) + separ)))
+                    (Boid new
+                      ((b position) + new-vel)
+                      new-vel)))))))))))
+
+(define demo
+  (Sim new
+    (List of
+      (Boid new (Point new 0.0 0.0) (Point new 1.0 0.0))
+      (Boid new (Point new 1.0 1.0) (Point new 0.0 1.0))
+      (Boid new (Point new 2.0 0.0) (Point new 1.0 1.0)))))
+
+(demo step)
+(demo step)
