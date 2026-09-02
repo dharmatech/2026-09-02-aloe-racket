@@ -54,7 +54,12 @@
                  (cond ((d2 <= 0.0)  origin)
                        ((d2 >= 25.0) origin)
                        (else ((self position) - (other position))))))))
-         * 0.001)))))
+         * 0.001)))
+
+    (advance (new-vel (Point T)) (Boid T)
+      (Boid new
+        ((self position) + new-vel)
+        new-vel))))
 
 (define-class Sim
   (fields
@@ -75,9 +80,7 @@
                          ((((b velocity) + (b cohere cn))
                            + (b align an))
                           + separ)))
-                    (Boid new
-                      ((b position) + new-vel)
-                      new-vel))))))))))
+                    (b advance new-vel))))))))))
 
 (define demo
   (Sim new
