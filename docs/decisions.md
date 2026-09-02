@@ -51,3 +51,9 @@ installed with `define-methods List` before user programs run.
 
 Method-local type parameters such as fold's accumulator `A` are rigid while
 the method body is checked and freshly inferred at each send.
+
+## Message chains (2026-09-02)
+
+Deferred: (-> recv (sel args ...) ...) desugars to nested sends.
+Not now — one force-sum in Boids is not enough pressure.
+
