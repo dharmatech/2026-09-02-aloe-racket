@@ -1,0 +1,7 @@
+(define-class Point
+  (fields
+    (x Int)
+    (y Int))
+  (methods))
+
+((Point new 1 2) x)

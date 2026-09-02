@@ -13,11 +13,24 @@ Not Scheme apply. See `SPEC.md`.
 - `SPEC.md` — language 0.1
 - `CHECKPOINTS.md` — implementation order
 - `AGENTS.md` — rules for a coding agent
-- `examples/boids.sexpr` — target program
+- `examples/boids.aloe` — target program
+
+## Driver
+
+From the project directory, after loading the Racket path from your profile:
+
+```sh
+./bin/aloe
+./bin/aloe examples/boids.aloe
+./bin/aloe --quit examples/boids.aloe
+```
+
+The first command starts the REPL. Loading a file without `--quit` evaluates it
+and then opens the REPL with its definitions and classes still available.
 
 ## 0.1 goal
 
-Typecheck `examples/boids.sexpr` and evaluate `(demo step)`.
+Typecheck `examples/boids.aloe` and evaluate `(demo step)`.
 
 Interpreter + type checker in Racket only. No compiler.
 

@@ -6,6 +6,7 @@
 
 (provide (struct-out int-expr)
          (struct-out float-expr)
+         (struct-out bool-expr)
          (struct-out variable-expr)
          (struct-out define-expr)
          (struct-out field-declaration)
@@ -20,6 +21,7 @@
 
 (struct int-expr (value) #:transparent)
 (struct float-expr (value) #:transparent)
+(struct bool-expr (value) #:transparent)
 (struct variable-expr (name) #:transparent)
 (struct define-expr (name value) #:transparent)
 (struct field-declaration (name type) #:transparent)
@@ -31,6 +33,7 @@
 
 (define (parse-atom datum)
   (cond
+    [(boolean? datum) (bool-expr datum)]
     [(exact-integer? datum) (int-expr datum)]
     [(flonum? datum) (float-expr datum)]
     [(symbol? datum) (variable-expr datum)]
@@ -169,6 +172,13 @@
              'call
              (map cdr bindings)))
 
+(define (desugar-if test-datum then-datum else-datum)
+  (send-expr
+   (parse-datum test-datum)
+   'if
+   (list (fn-expr '() (parse-datum then-datum))
+         (fn-expr '() (parse-datum else-datum)))))
+
 (define (parse-datum datum)
   (match datum
     ['()
@@ -225,6 +235,13 @@
      (raise-arguments-error
       'parse-datum
       "malformed let; expected (let ((name expression) ...) body)"
+      "datum" datum)]
+    [(list 'if test-datum then-datum else-datum)
+     (desugar-if test-datum then-datum else-datum)]
+    [(cons 'if _)
+     (raise-arguments-error
+      'parse-datum
+      "malformed if; expected (if test then else)"
       "datum" datum)]
     [(list _)
      (raise-arguments-error

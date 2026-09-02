@@ -16,7 +16,7 @@ Atoms:
 - integers: `0`, `10`, `-3` — type `Int`
 - floats: `0.0`, `1.0`, `0.01` — type `Float`
 - symbols: `demo`, `x`, `+`, `step`, `Point`
-- booleans: `#t`, `#f` (reserved; unused by Boids)
+- booleans: `#t`, `#f` — type `Bool`
 
 A combination is a list. Special forms are listed in §4. Every other list of length ≥ 2 is a **send**.
 
@@ -162,11 +162,25 @@ Desugaring (this is the definition of `let`):
 → ((fn (n bs) body) call e1 e2)
 ```
 
-### 4.4 `define-class`
+### 4.4 `if`
+
+```text
+(if test then else)
+```
+
+This is syntax sugar for a send to `Bool.if` with lazy branches:
+
+```text
+(test if (fn () then) (fn () else))
+```
+
+Only the selected zero-argument function receives `call`.
+
+### 4.5 `define-class`
 
 See §3.1. Top-level only in 0.1.
 
-### 4.5 Method / `fn` / `let` bodies
+### 4.6 Method / `fn` / `let` bodies
 
 A body is a single expression. Nested `let` is how locals are introduced. No `begin` in 0.1.
 
@@ -179,10 +193,9 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```text
-Type ::= Int | Float
+Type ::= Int | Float | Bool | Sim
        | (Point Type)
        | (Boid Type)
-       | (Sim Type)
        | (List Type)
        | (Name Type ...)     ; other defined classes
        | T                   ; type parameter in a class header
@@ -261,9 +274,11 @@ Messages:
 
 ```text
 (+ other)  (- other)  (* other)  (/ other)
+(< other)  (> other)  (<= other)  (>= other)  (= other)
 ```
 
-Operand and result are the same class (`Int` with `Int`, `Float` with `Float`). No implicit coercion.
+Operands have the same class (`Int` with `Int`, `Float` with `Float`).
+Arithmetic returns that numeric class; comparisons return `Bool`. No implicit coercion.
 
 `Point` uses the same four selectors for vector arithmetic (`*` and `/` take a scalar of type `T`).
 
@@ -275,6 +290,12 @@ Operand and result are the same class (`Int` with `Int`, `Float` with `Float`). 
 
 Boids must use `(avg-pos / (n float))`, not `(avg-pos / n)`. No implicit promotion in 0.1.
 
+### 7.1 `Bool`
+
+`Bool` understands `(condition if then-fn else-fn)`. Both arguments are
+zero-argument function objects with the same result type. Exactly one receives
+`call`, according to the receiver.
+
 ---
 
 ## 8. Out of scope for 0.1
@@ -283,7 +304,7 @@ Boids must use `(avg-pos / (n float))`, not `(avg-pos / n)`. No implicit promoti
 - mutation, setters
 - overloading (two methods, same selector)
 - labeled `make`
-- `begin`, `if`, comparison messages (except as needed later)
+- `begin`
 - macros
 - modules beyond a single program file
 - computed selectors
@@ -299,7 +320,7 @@ Must run (after the Boids file’s definitions, or equivalent stubs):
 2. `((Point new 1 2) x)` → `1`
 3. `((Point new 1.0 2.0) + (Point new 3.0 4.0))` → `(Point new 4.0 6.0)`
 4. `((List of 1 2 3) len)` → `3`
-5. The last two lines of `examples/boids.sexpr`: `(demo step)` twice, each result a `(Sim Float)`
+5. The last two lines of `examples/boids.sexpr`: `(demo step)` twice, each result a `Sim`
 
 Must be type errors:
 

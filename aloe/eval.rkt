@@ -1,11 +1,13 @@
 #lang racket/base
 
 (require racket/match
+         racket/string
          "env.rkt"
          "parse.rkt")
 
 (provide eval-expr
-         eval-exprs)
+         eval-exprs
+         aloe-value->string)
 
 (struct class-value (name type-parameters fields methods environment) #:transparent)
 (struct instance-value (class type-arguments field-values) #:transparent)
@@ -18,6 +20,7 @@
   (match expression
     [(int-expr value) value]
     [(float-expr value) value]
+    [(bool-expr value) value]
     [(variable-expr name)
      (env-lookup environment name)]
     [(define-expr name value-expression)
@@ -55,6 +58,8 @@
      (send-to-int receiver selector arguments)]
     [(flonum? receiver)
      (send-to-float receiver selector arguments)]
+    [(boolean? receiver)
+     (send-to-bool receiver selector arguments)]
     [else
      (unknown-message selector)]))
 
@@ -146,6 +151,7 @@
   (cond
     [(exact-integer? value) 'Int]
     [(flonum? value) 'Float]
+    [(boolean? value) 'Bool]
     [(instance-value? value)
      (runtime-class-type (instance-value-class value)
                          (instance-value-type-arguments value))]
@@ -330,6 +336,11 @@
          [(-) -]
          [(*) *]
          [(/) quotient]
+         [(<) <]
+         [(>) >]
+         [(<=) <=]
+         [(>=) >=]
+         [(=) =]
          [else (unknown-message selector)]))
      (operation receiver
                 (number-argument
@@ -342,9 +353,27 @@
       [(-) -]
       [(*) *]
       [(/) /]
+      [(<) <]
+      [(>) >]
+      [(<=) <=]
+      [(>=) >=]
+      [(=) =]
       [else (unknown-message selector)]))
   (operation receiver
              (number-argument "Float" selector arguments flonum?)))
+
+(define (send-to-bool receiver selector arguments)
+  (unless (eq? selector 'if)
+    (unknown-message selector))
+  (unless (= (length arguments) 2)
+    (arity-error "Bool if" 2 (length arguments)))
+  (for ([argument (in-list arguments)])
+    (unless (function-value? argument)
+      (error 'eval-aloe
+             "Bool if expects zero-argument function objects")))
+  (lookup-message (if receiver (car arguments) (cadr arguments))
+                  'call
+                  '()))
 
 (define (number-argument kind selector arguments expected-kind?)
   (unless (= (length arguments) 1)
@@ -373,3 +402,30 @@
   (for/fold ([result (void)])
             ([expression (in-list expressions)])
     (eval-expr expression environment)))
+
+(define (aloe-value->string value)
+  (cond
+    [(boolean? value) (if value "#t" "#f")]
+    [(number? value) (number->string value)]
+    [(class-value? value)
+     (format "#<class ~a>" (class-value-name value))]
+    [(instance-value? value)
+     (define fields
+       (for/list ([field-value
+                   (in-vector (instance-value-field-values value))])
+         (aloe-value->string field-value)))
+     (format "#<~a~a>"
+             (class-value-name (instance-value-class value))
+             (if (null? fields)
+                 ""
+                 (string-append " " (string-join fields " "))))]
+    [(function-value? value)
+     (format "#<fn/~a>" (length (function-value-parameters value)))]
+    [(list-value? value)
+     (define count (vector-length (list-value-elements value)))
+     (format "#<List ~a ~a>"
+             count
+             (if (= count 1) "element" "elements"))]
+    [(list-class-object? value) "#<class List>"]
+    [(void? value) "#<void>"]
+    [else "#<object>"]))

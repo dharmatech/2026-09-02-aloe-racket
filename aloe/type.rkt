@@ -7,6 +7,7 @@
 (provide (struct-out exn:fail:aloe-type)
          (struct-out int-type)
          (struct-out float-type)
+         (struct-out bool-type)
          (struct-out instance-type)
          (struct-out list-type)
          (struct-out class-type)
@@ -22,6 +23,7 @@
 
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
+(struct bool-type () #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
@@ -41,6 +43,7 @@
 
 (define INT (int-type))
 (define FLOAT (float-type))
+(define BOOL (bool-type))
 (define VOID (void-type))
 
 (define (raise-type-error format-string . arguments)
@@ -90,6 +93,7 @@
   (cond
     [(int-type? resolved) 'Int]
     [(float-type? resolved) 'Float]
+    [(bool-type? resolved) 'Bool]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
      (if (null? (instance-type-arguments resolved))
@@ -174,6 +178,7 @@
      (bind-type-variable! resolved-right resolved-left message)]
     [(and (int-type? resolved-left) (int-type? resolved-right)) INT]
     [(and (float-type? resolved-left) (float-type? resolved-right)) FLOAT]
+    [(and (bool-type? resolved-left) (bool-type? resolved-right)) BOOL]
     [(and (parameter-type? resolved-left)
           (parameter-type? resolved-right)
           (eq? (parameter-type-id resolved-left)
@@ -234,6 +239,7 @@
     (match expression
       [(int-expr _) INT]
       [(float-expr _) FLOAT]
+      [(bool-expr _) BOOL]
       [(variable-expr name)
        (type-environment-ref environment name)]
       [(define-expr name value-expression)
@@ -356,6 +362,7 @@
      (cond
        [(eq? datum 'Int) INT]
        [(eq? datum 'Float) FLOAT]
+       [(eq? datum 'Bool) BOOL]
        [(hash-has-key? substitution datum)
         (hash-ref substitution datum)]
        [else
@@ -444,6 +451,8 @@
             (parameter-type? receiver-type))
         (infer-numeric-send
          receiver-type selector arguments environment)]
+       [(bool-type? receiver-type)
+        (infer-bool-send selector arguments environment)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -455,7 +464,7 @@
             receiver-type
             (function-type argument-types result-type))
            result-type]
-          [(memq selector '(+ - * /))
+          [(memq selector '(+ - * / < > <= >= =))
            (infer-numeric-send
             receiver-type selector arguments environment)]
           [else (unknown-message selector)])]
@@ -690,7 +699,8 @@
         (length arguments)))
      FLOAT]
     [else
-     (unless (memq selector '(+ - * /)) (unknown-message selector))
+     (unless (memq selector '(+ - * / < > <= >= =))
+       (unknown-message selector))
      (unless (= (length arguments) 1)
        (raise-type-error
         "arity error for numeric ~a: expected 1 argument, got ~a"
@@ -708,7 +718,21 @@
        (infer-expression (car arguments) environment #f))
      (unify-types! argument-type receiver mismatch-message)
      (ensure-numeric-type! receiver)
-     receiver]))
+     (if (memq selector '(< > <= >= =)) BOOL receiver)]))
+
+(define (infer-bool-send selector arguments environment)
+  (unless (eq? selector 'if) (unknown-message selector))
+  (unless (= (length arguments) 2)
+    (raise-type-error
+     "arity error for Bool if: expected 2 arguments, got ~a"
+     (length arguments)))
+  (define result-type (fresh-type-variable 'if-result))
+  (define expected-thunk (function-type '() result-type))
+  (for ([argument (in-list arguments)])
+    (define actual-thunk
+      (infer-expression argument environment expected-thunk))
+    (unify-types! actual-thunk expected-thunk))
+  result-type)
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))

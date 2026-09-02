@@ -1,0 +1,6 @@
+#!/usr/bin/env racket
+#lang racket/base
+
+(require "../aloe/driver.rkt")
+
+(exit (run-cli))
