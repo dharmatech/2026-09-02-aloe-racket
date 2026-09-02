@@ -6,87 +6,82 @@
   (fields
     (position (Point T))
     (velocity (Point T)))
-  (methods))
+  (methods
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (if (0.0 < (hd dot hd))
+            (0.0 < (hd dot to))
+            #t)))
+
+    (neighbors (flock (List (Boid T))) (r T) (List (Boid T))
+      (flock fold (List empty)
+        (fn (neighbors other)
+          (let ((d2 ((self position) dist2 (other position))))
+            (if (0.0 < d2)
+                (if (d2 < (r * r))
+                    (if (self in-view? other)
+                        (neighbors cons other)
+                        neighbors)
+                    neighbors)
+                neighbors)))))
+
+    (cohere (others (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0)))
+        (if (others empty?)
+            origin
+            (((((others map (fn (other) (other position)))
+                fold origin
+                (fn (acc p) (acc + p)))
+               / ((others len) float))
+              - (self position))
+             * 0.01))))
+
+    (align (others (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0)))
+        (if (others empty?)
+            origin
+            (((((others map (fn (other) (other velocity)))
+                fold origin
+                (fn (acc v) (acc + v)))
+               / ((others len) float))
+              - (self velocity))
+             * 0.05))))
+
+    (separate (flock (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0)))
+        ((flock fold origin
+           (fn (acc other)
+             (acc +
+               (if (0.0 < ((self position) dist2 (other position)))
+                   (if (((self position) dist2 (other position)) < 25.0)
+                       ((self position) - (other position))
+                       origin)
+                   origin))))
+         * 0.001)))))
 
 (define-class Sim
   (fields
     (flock (List (Boid Float))))
   (methods
     (step () Sim
-      (let ((origin   (Point new 0.0 0.0))
-            (bs       (self flock))
+      (let ((bs       (self flock))
             (cohere-r 50.0)
             (align-r  50.0))
 
         (Sim new
           (bs map
             (fn (b)
-              (let ((cohere-neighbors
-                     (bs fold (List empty)
-                       (fn (neighbors other)
-                         (let ((d2 ((b position) dist2 (other position))))
-                           (if (0.0 < d2)
-                               (if (d2 < (cohere-r * cohere-r))
-                                   (if (let ((to ((other position) - (b position)))
-                                             (hd (b velocity)))
-                                         (if (0.0 < (hd dot hd))
-                                             (0.0 < (hd dot to))
-                                             #t))
-                                       (neighbors cons other)
-                                       neighbors)
-                                   neighbors)
-                               neighbors)))))
-                    (align-neighbors
-                     (bs fold (List empty)
-                       (fn (neighbors other)
-                         (let ((d2 ((b position) dist2 (other position))))
-                           (if (0.0 < d2)
-                               (if (d2 < (align-r * align-r))
-                                   (if (let ((to ((other position) - (b position)))
-                                             (hd (b velocity)))
-                                         (if (0.0 < (hd dot hd))
-                                             (0.0 < (hd dot to))
-                                             #t))
-                                       (neighbors cons other)
-                                       neighbors)
-                                   neighbors)
-                               neighbors)))))
-                    (separ
-                     ((bs fold origin
-                        (fn (acc other)
-                          (acc +
-                            (if (0.0 < ((b position) dist2 (other position)))
-                                (if (((b position) dist2 (other position)) < 25.0)
-                                    ((b position) - (other position))
-                                    origin)
-                                origin))))
-                      * 0.001)))
-
-                (let ((cohere
-                       (if (cohere-neighbors empty?)
-                           origin
-                           (((((cohere-neighbors map
-                                (fn (other) (other position)))
-                               fold origin
-                               (fn (acc p) (acc + p)))
-                              / ((cohere-neighbors len) float))
-                             - (b position))
-                            * 0.01)))
-                      (align
-                       (if (align-neighbors empty?)
-                           origin
-                           (((((align-neighbors map
-                                (fn (other) (other velocity)))
-                               fold origin
-                               (fn (acc v) (acc + v)))
-                              / ((align-neighbors len) float))
-                             - (b velocity))
-                            * 0.05))))
+              (let ((cn    (b neighbors bs cohere-r))
+                    (an    (b neighbors bs align-r))
+                    (separ (b separate bs)))
                   (let ((new-vel
-                         ((((b velocity) + cohere) + align) + separ)))
+                         ((((b velocity) + (b cohere cn))
+                           + (b align an))
+                          + separ)))
                     (Boid new
                       ((b position) + new-vel)
-                      new-vel)))))))))))
+                      new-vel))))))))))
 
 (define demo
   (Sim new

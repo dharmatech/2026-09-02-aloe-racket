@@ -1,12 +1,20 @@
-# Aloe (Racket prototype)
 
-S-expression language. Evaluation is message send:
+# Aloe
 
-```text
-(receiver selector arg ...)
-```
+Scheme is a small gem. Aloe is a similar gem with two new facets.
 
-Not Scheme apply. See `SPEC.md`.
+1. **Send, not apply.** A list is `(receiver selector arg …)`. The selector is a
+   symbol; it is not evaluated. Functions are objects that understand `call`.
+2. **Types, inferred where you do not write them.** Classes declare fields and
+   methods. The rest of the program should not repeat those types.
+
+In the 1970s Steele and Sussman studied Hewitt’s actor model and found that
+message send and function application could express each other. Scheme took
+application as the primitive. Aloe takes the other branch: a Lisp whose kernel
+is sending a message.
+
+The core stays small on purpose. Libraries and programs grow the rest
+(`lib/list.aloe`, `examples/`). See `docs/philosophy.md` and `SPEC.md`.
 
 ## Layout
 
