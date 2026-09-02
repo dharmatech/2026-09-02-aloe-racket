@@ -45,8 +45,9 @@ Racket apply.
 
 ## Collections (2026-09-02)
 
-Decided for now: `List of` / `len` / `map` / `fold` live in the host so
-Boids can run.
+Decided: the host provides `of`, `empty`, `empty?`, `first`, `rest`, `cons`,
+and `len`. `fold`, `reverse`, and `map` are Aloe methods in `lib/list.aloe`,
+installed with `define-methods List` before user programs run.
 
-Intent: `fold` and `map` become Aloe methods once `empty?`, `first`, `rest`
-(and `cons`) exist. They are scaffolding, not kernel.
+Method-local type parameters such as fold's accumulator `A` are rigid while
+the method body is checked and freshly inferred at each send.

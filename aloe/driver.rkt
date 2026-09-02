@@ -3,6 +3,7 @@
 (require (only-in "env.rkt"
                   [make-top-level-env make-runtime-environment])
          "eval.rkt"
+         "library.rkt"
          "parse.rkt"
          "type.rkt")
 
@@ -19,7 +20,11 @@
 (struct driver (runtime-environment type-environment) #:transparent)
 
 (define (make-driver)
-  (driver (make-runtime-environment) (make-type-environment)))
+  (define runtime-environment (make-runtime-environment))
+  (define type-environment (make-type-environment))
+  (typecheck-program (list-library-expressions) type-environment)
+  (eval-exprs (list-library-expressions) runtime-environment)
+  (driver runtime-environment type-environment))
 
 (define (driver-eval! state datum)
   (define expression (parse-datum datum))

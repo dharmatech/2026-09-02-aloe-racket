@@ -3,6 +3,7 @@
 (require (only-in "env.rkt"
                   [make-top-level-env make-runtime-environment])
          "eval.rkt"
+         "library.rkt"
          "parse.rkt"
          (prefix-in checker: "type.rkt"))
 
@@ -19,14 +20,20 @@
 
 (define runtime-type-environments (make-weak-hasheq))
 
-(define make-type-environment checker:make-type-environment)
+(define make-raw-type-environment checker:make-type-environment)
 (define type-of checker:type-of)
 (define typecheck-program checker:typecheck-program)
 (define type->datum checker:type->datum)
 (define exn:fail:aloe-type? checker:exn:fail:aloe-type?)
 
+(define (make-type-environment)
+  (define environment (make-raw-type-environment))
+  (typecheck-program (list-library-expressions) environment)
+  environment)
+
 (define (make-top-level-env)
   (define environment (make-runtime-environment))
+  (eval-exprs (list-library-expressions) environment)
   (hash-set! runtime-type-environments
              environment
              (make-type-environment))
@@ -37,6 +44,7 @@
     [(hash-ref runtime-type-environments environment #f) => values]
     [else
      (define type-environment (make-type-environment))
+     (eval-exprs (list-library-expressions) environment)
      (hash-set! runtime-type-environments environment type-environment)
      type-environment]))
 

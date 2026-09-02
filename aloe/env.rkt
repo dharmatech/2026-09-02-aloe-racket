@@ -1,7 +1,7 @@
 #lang racket/base
 
 (provide top-level-env?
-         list-class-object?
+         (struct-out list-class-object)
          make-top-level-env
          make-local-env
          env-lookup
@@ -9,12 +9,12 @@
 
 (struct top-level-env (bindings parent))
 (struct dummy-object ())
-(struct list-class-object ())
+(struct list-class-object ([methods #:mutable] [environment #:mutable]))
 
 (define (make-top-level-env)
   (top-level-env
    (make-hasheq (list (cons 'dummy (dummy-object))
-                      (cons 'List (list-class-object))))
+                      (cons 'List (list-class-object '() #f))))
    #f))
 
 (define (make-local-env parent bindings)

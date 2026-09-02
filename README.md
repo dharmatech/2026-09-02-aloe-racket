@@ -13,6 +13,7 @@ Not Scheme apply. See `SPEC.md`.
 - `SPEC.md` — language 0.1
 - `CHECKPOINTS.md` — implementation order
 - `AGENTS.md` — rules for a coding agent
+- `lib/list.aloe` — Aloe implementations of `fold`, `reverse`, and `map`
 - `examples/boids.aloe` — target program
 
 ## Driver

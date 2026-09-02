@@ -12,7 +12,7 @@
 (struct class-value (name type-parameters fields methods environment) #:transparent)
 (struct instance-value (class type-arguments field-values) #:transparent)
 (struct function-value (parameters body environment) #:transparent)
-(struct list-value (element-type elements) #:transparent)
+(struct list-value (class element-type elements) #:transparent)
 (struct runtime-class-type (class type-arguments) #:transparent)
 (struct runtime-list-type (element-type) #:transparent)
 
@@ -31,6 +31,16 @@
                   name
                   (class-value
                    name type-parameters fields methods environment))]
+    [(define-methods-expr target methods)
+     (define list-class (env-lookup environment target))
+     (unless (list-class-object? list-class)
+       (error 'eval-aloe
+              "define-methods target is not the List class: ~a"
+              target))
+     (set-list-class-object-methods!
+      list-class
+      (append (list-class-object-methods list-class) methods))
+     (set-list-class-object-environment! list-class environment)]
     [(fn-expr parameters body)
      (function-value parameters body environment)]
     [(send-expr receiver-expression selector argument-expressions)
@@ -43,7 +53,7 @@
 (define (lookup-message receiver selector arguments)
   (cond
     [(list-class-object? receiver)
-     (send-to-list-class selector arguments)]
+     (send-to-list-class receiver selector arguments)]
     [(class-value? receiver)
      (if (eq? selector 'new)
          (construct-instance receiver arguments)
@@ -63,23 +73,23 @@
     [else
      (unknown-message selector)]))
 
-(define (send-to-list-class selector arguments)
+(define (send-to-list-class receiver selector arguments)
   (case selector
-    [(of) (make-list-value arguments)]
+    [(of) (make-list-value receiver arguments)]
     [(empty)
      (unless (null? arguments)
        (arity-error "List empty" 0 (length arguments)))
-     (make-list-value '())]
+     (make-list-value receiver '())]
     [else (unknown-message selector)]))
 
-(define (make-list-value elements)
+(define (make-list-value class elements)
   (define element-type
     (and (pair? elements) (runtime-type-of (car elements))))
   (when element-type
     (for ([element (in-list (cdr elements))])
       (unless (same-runtime-type? element-type (runtime-type-of element))
         (error 'eval-aloe "List of elements must have one type"))))
-  (list-value element-type (apply vector-immutable elements)))
+  (list-value class element-type (apply vector-immutable elements)))
 
 (define (construct-instance class arguments)
   (define expected-arity (length (class-value-fields class)))
@@ -320,33 +330,44 @@
        (arity-error "List rest" 0 (length arguments)))
      (when (zero? (vector-length elements))
        (error 'eval-aloe "rest on empty List"))
-     (make-list-value (cdr (vector->list elements)))]
+     (make-list-value
+      (list-value-class list-object)
+      (cdr (vector->list elements)))]
     [(cons)
      (unless (= (length arguments) 1)
        (arity-error "List cons" 1 (length arguments)))
      (make-list-value
+      (list-value-class list-object)
       (cons (car arguments) (vector->list elements)))]
     [(len)
      (unless (null? arguments)
        (arity-error "List len" 0 (length arguments)))
      (vector-length elements)]
-    [(map)
-     (unless (= (length arguments) 1)
-       (arity-error "List map" 1 (length arguments)))
-     (define function (car arguments))
-     (make-list-value
-      (for/list ([element (in-vector elements)])
-        (lookup-message function 'call (list element))))]
-    [(fold)
-     (unless (= (length arguments) 2)
-       (arity-error "List fold" 2 (length arguments)))
-     (define initial (car arguments))
-     (define function (cadr arguments))
-     (for/fold ([accumulator initial])
-               ([element (in-vector elements)])
-       (lookup-message function 'call (list accumulator element)))]
     [else
-     (unknown-message selector)]))
+     (send-to-list-method list-object selector arguments)]))
+
+(define (send-to-list-method receiver selector arguments)
+  (define class (list-value-class receiver))
+  (define method
+    (for/first ([candidate (in-list (list-class-object-methods class))]
+                #:when (eq? selector
+                            (method-declaration-selector candidate)))
+      candidate))
+  (unless method (unknown-message selector))
+  (define parameters (method-declaration-parameters method))
+  (unless (= (length parameters) (length arguments))
+    (arity-error
+     (format "List method ~a" selector)
+     (length parameters)
+     (length arguments)))
+  (define bindings
+    (cons (cons 'self receiver)
+          (for/list ([parameter (in-list parameters)]
+                     [argument (in-list arguments)])
+            (cons (parameter-declaration-name parameter) argument))))
+  (eval-expr
+   (method-declaration-body method)
+   (make-local-env (list-class-object-environment class) bindings)))
 
 (define (send-to-int receiver selector arguments)
   (cond

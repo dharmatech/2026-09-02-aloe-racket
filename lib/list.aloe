@@ -1,0 +1,22 @@
+(define-methods List
+  (methods
+    (fold (type A)
+      (acc A)
+      (f (-> A T A))
+      A
+      (if (self empty?)
+          acc
+          ((self rest) fold (f call acc (self first)) f)))
+
+    (reverse () (List T)
+      (self fold
+        (List empty)
+        (fn (acc x) (acc cons x))))
+
+    (map (type U)
+      (f (-> T U))
+      (List U)
+      ((self fold
+         (List empty)
+         (fn (acc x) (acc cons (f call x))))
+       reverse))))

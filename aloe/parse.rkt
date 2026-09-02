@@ -13,6 +13,7 @@
          (struct-out parameter-declaration)
          (struct-out method-declaration)
          (struct-out define-class-expr)
+         (struct-out define-methods-expr)
          (struct-out fn-expr)
          (struct-out send-expr)
          parse-datum
@@ -26,8 +27,11 @@
 (struct define-expr (name value) #:transparent)
 (struct field-declaration (name type) #:transparent)
 (struct parameter-declaration (name type) #:transparent)
-(struct method-declaration (selector parameters return-type body) #:transparent)
+(struct method-declaration
+  (selector type-parameters parameters return-type body)
+  #:transparent)
 (struct define-class-expr (name type-parameters fields methods) #:transparent)
+(struct define-methods-expr (target methods) #:transparent)
 (struct fn-expr (parameters body) #:transparent)
 (struct send-expr (receiver selector arguments) #:transparent)
 
@@ -96,26 +100,62 @@
   (or (capital-name? datum)
       (and (list? datum)
            (pair? datum)
-           (capital-name? (car datum)))))
+           (or (eq? (car datum) '->)
+               (capital-name? (car datum))))))
+
+(define (split-method-type-parameters parts datum)
+  (cond
+    [(and (pair? parts)
+          (list? (car parts))
+          (pair? (car parts))
+          (eq? (caar parts) 'type))
+     (define names (cdar parts))
+     (unless (and (pair? names) (andmap symbol? names))
+       (raise-arguments-error
+        'parse-datum
+        "method type header must be (type Name ...)"
+        "header" (car parts)
+        "method" datum))
+     (define duplicate (check-duplicates names))
+     (when duplicate
+       (raise-arguments-error
+        'parse-datum
+        "method type parameters must be unique"
+        "type parameter" duplicate
+        "method" datum))
+     (values names (cdr parts))]
+    [else (values '() parts)]))
 
 (define (parse-method-declaration datum)
   (match datum
-    [(list (? symbol? selector) '() return-type body)
-     (unless (clearly-type-sexpr? return-type)
-       (raise-arguments-error
-        'parse-datum
-        "method return type must be a type expression"
-        "return type" return-type
-        "method" datum))
-     (method-declaration selector '() return-type (parse-datum body))]
-    [(list (? symbol? selector) parts ...)
+    [(list (? symbol? selector) raw-parts ...)
+     (define-values (type-parameters parts)
+       (split-method-type-parameters raw-parts datum))
      (when (< (length parts) 2)
        (raise-arguments-error
         'parse-datum
         "malformed method; expected parameters, return type, and body"
         "method" datum))
-     (define parameter-count (- (length parts) 2))
-     (define return-type (list-ref parts parameter-count))
+     (define explicit-empty-parameters?
+       (and (pair? parts) (null? (car parts))))
+     (when (and explicit-empty-parameters?
+                (not (= (length parts) 3)))
+       (raise-arguments-error
+        'parse-datum
+        "malformed zero-parameter method"
+        "method" datum))
+     (define parameter-datums
+       (if explicit-empty-parameters?
+           '()
+           (take parts (- (length parts) 2))))
+     (define return-type
+       (if explicit-empty-parameters?
+           (cadr parts)
+           (list-ref parts (length parameter-datums))))
+     (define body
+       (if explicit-empty-parameters?
+           (caddr parts)
+           (last parts)))
      (unless (clearly-type-sexpr? return-type)
        (raise-arguments-error
         'parse-datum
@@ -124,9 +164,10 @@
         "method" datum))
      (method-declaration
       selector
-      (map parse-parameter-declaration (take parts parameter-count))
+      type-parameters
+      (map parse-parameter-declaration parameter-datums)
       return-type
-      (parse-datum (list-ref parts (add1 parameter-count))))]
+      (parse-datum body))]
     [_
      (raise-arguments-error
       'parse-datum
@@ -209,6 +250,19 @@
      (raise-arguments-error
       'parse-datum
       "malformed define-class; expected a name, fields, and methods"
+      "datum" datum)]
+    [(list 'define-methods
+           (? symbol? target)
+           (cons 'methods method-datums))
+     (define-methods-expr
+      target
+      (ensure-distinct-methods
+       (map parse-method-declaration method-datums)
+       datum))]
+    [(cons 'define-methods _)
+     (raise-arguments-error
+      'parse-datum
+      "malformed define-methods; expected a target and methods"
       "datum" datum)]
     [(list 'fn parameter-names body)
      (unless (and (list? parameter-names)

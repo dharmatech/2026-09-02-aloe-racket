@@ -80,6 +80,9 @@ Classes are first-class values. Evaluating the name `Point` yields the class obj
     (field-name Type)
     ...)
   (methods
+    (selector (type A ...)
+      (param Type) ... ReturnType
+      body)
     (selector (param Type) ... ReturnType
       body)
     ...))
@@ -95,6 +98,8 @@ Classes are first-class values. Evaluating the name `Point` yields the class obj
 - `self` is implicit in every method body.
 - No inheritance. No setters. Fields do not change after `new`.
 - No overloading: one method per selector per class.
+- A method-local `(type A ...)` header introduces type parameters inferred
+  independently at every send.
 
 ### 3.2 Construction
 
@@ -180,7 +185,19 @@ Only the selected zero-argument function receives `call`.
 
 See §3.1. Top-level only in 0.1.
 
-### 4.6 Method / `fn` / `let` bodies
+### 4.6 `define-methods`
+
+```text
+(define-methods List
+  (methods
+    (selector (param Type) ... ReturnType body)
+    ...))
+```
+
+Adds Aloe method bodies to the existing built-in `List` class. `T` denotes
+the list element type in these declarations.
+
+### 4.7 Method / `fn` / `let` bodies
 
 A body is a single expression. Nested `let` is how locals are introduced. No `begin` in 0.1.
 
@@ -197,6 +214,7 @@ Type ::= Int | Float | Bool | Sim
        | (Point Type)
        | (Boid Type)
        | (List Type)
+       | (-> Type ...)       ; last type is the result
        | (Name Type ...)     ; other defined classes
        | T                   ; type parameter in a class header
 ```
@@ -212,6 +230,9 @@ Float
 (List (Point Int))
 (List (Boid Float))
 (Boid (Point Int))       ; not used; Boid is (Boid T)
+(-> U)                   ; thunk returning U
+(-> T U)                 ; T -> U
+(-> A T A)               ; A, T -> A
 ```
 
 `(Point Int)` in an expression position would mean “send `Int` to `Point`”. Do not write that. Construction is `(Point new 10 20)` and `T` is inferred.
@@ -231,7 +252,7 @@ Bidirectional:
 - Check a send: eval/check the receiver, look up `selector` on its class, check each argument against the method’s parameter types, result is the return type (or the field type).
 - `new`: check args against field types; infer class type parameters from those args.
 - `define` / `let`: infer from the right-hand side.
-- `map` / `fold`: push an expected parameter type into the `fn`.
+- Arrow-typed parameters push expected types into `fn` arguments.
 - Written annotations on `fn` are checked.
 - `Int` and `Float` do not mix.
 
@@ -271,6 +292,10 @@ Messages:
 (f call element)
 (f call acc element)
 ```
+
+`fold`, `reverse`, and `map` are Aloe methods defined in `lib/list.aloe`.
+The host implements only `of`, `empty`, `empty?`, `first`, `rest`, `cons`,
+and `len`.
 
 ---
 

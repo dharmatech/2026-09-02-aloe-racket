@@ -27,7 +27,7 @@
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
-(struct list-class-type () #:transparent)
+(struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
 (struct function-type (parameters result) #:transparent)
 (struct parameter-type (id name) #:transparent)
 (struct type-variable
@@ -58,10 +58,13 @@
   (type-variable (gensym 'type) label #f #f))
 
 (define (make-type-environment)
+  (define list-element-parameter
+    (parameter-type (gensym 'T) 'T))
   (type-environment
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
-          (cons 'List (list-class-type))))
+          (cons 'List
+                (list-class-type list-element-parameter '()))))
    #f))
 
 (define (make-local-type-environment parent bindings)
@@ -105,9 +108,10 @@
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
     [(function-type? resolved)
-     (list 'Fn
-           (map type->datum (function-type-parameters resolved))
-           (type->datum (function-type-result resolved)))]
+     (cons '->
+           (append
+            (map type->datum (function-type-parameters resolved))
+            (list (type->datum (function-type-result resolved)))))]
     [(parameter-type? resolved) (parameter-type-name resolved)]
     [(type-variable? resolved)
      (or (type-variable-label resolved) '?)]
@@ -251,6 +255,9 @@
        (check-class-definition!
         name type-parameters fields methods environment)
        VOID]
+      [(define-methods-expr target methods)
+       (check-list-method-definitions! target methods environment)
+       VOID]
       [(fn-expr parameters body)
        (infer-function parameters body environment expected)]
       [(send-expr receiver selector arguments)
@@ -309,6 +316,17 @@
 
 (define (check-method-definition!
          class method environment substitution check-body?)
+  (define method-substitution
+    (extend-method-substitution substitution method #t))
+  (check-method-types! method environment method-substitution)
+  (when check-body?
+    (check-method-body!
+     (instance-type class (class-info-parameter-types class))
+     method
+     environment
+     method-substitution)))
+
+(define (check-method-types! method environment substitution)
   (for ([parameter (in-list (method-declaration-parameters method))])
     (type-from-sexpr
      (parameter-declaration-type parameter)
@@ -317,13 +335,51 @@
   (type-from-sexpr
    (method-declaration-return-type method)
    environment
-   substitution)
-  (when check-body?
+   substitution))
+
+(define (extend-method-substitution substitution method rigid?)
+  (define extended (hash-copy substitution))
+  (for ([name (in-list (method-declaration-type-parameters method))])
+    (when (hash-has-key? extended name)
+      (raise-type-error "method type parameter already in scope: ~a" name))
+    (hash-set!
+     extended
+     name
+     (if rigid?
+         (parameter-type (gensym name) name)
+         (fresh-type-variable name))))
+  extended)
+
+(define (check-list-method-definitions! target methods environment)
+  (define list-class (type-environment-ref environment target))
+  (unless (and (eq? target 'List) (list-class-type? list-class))
+    (raise-type-error
+     "define-methods target is not the List class: ~a"
+     target))
+  (define all-selectors
+    (append (map method-declaration-selector
+                 (list-class-type-methods list-class))
+            (map method-declaration-selector methods)))
+  (define duplicate (check-duplicates all-selectors))
+  (when duplicate
+    (raise-type-error "duplicate List method: ~a" duplicate))
+  ;; Install the complete set before checking bodies so methods may recurse
+  ;; and may call other methods from the same define-methods form.
+  (set-list-class-type-methods!
+   list-class
+   (append (list-class-type-methods list-class) methods))
+  (define list-substitution
+    (make-hasheq
+     (list (cons 'T (list-class-type-element-parameter list-class)))))
+  (for ([method (in-list methods)])
+    (define method-substitution
+      (extend-method-substitution list-substitution method #t))
+    (check-method-types! method environment method-substitution)
     (check-method-body!
-     (instance-type class (class-info-parameter-types class))
+     (list-type (list-class-type-element-parameter list-class))
      method
      environment
-     substitution)))
+     method-substitution)))
 
 (define (check-method-body! self-type method environment substitution)
   (define parameter-types
@@ -381,6 +437,14 @@
      (define name (car datum))
      (define arguments (cdr datum))
      (cond
+       [(eq? name '->)
+        (unless (pair? arguments)
+          (raise-type-error
+           "function type needs at least a result type"))
+        (define parts
+          (for/list ([argument (in-list arguments)])
+            (type-from-sexpr argument environment substitution)))
+        (function-type (drop-right parts 1) (last parts))]
        [(eq? name 'List)
         (unless (= (length arguments) 1)
           (raise-type-error "List type needs one argument"))
@@ -594,7 +658,9 @@
         selector
         (length parameters)
         (length arguments)))
-     (define substitution (instance-substitution instance))
+     (define substitution
+       (extend-method-substitution
+        (instance-substitution instance) method #f))
      (for ([parameter (in-list parameters)]
            [argument (in-list arguments)])
        (define expected
@@ -609,6 +675,7 @@
         expected
         (format "generic instantiation mismatch for method ~a"
                 selector)))
+     (ensure-method-type-parameters-inferred! method substitution)
      (define return-type
        (type-from-sexpr
         (method-declaration-return-type method)
@@ -624,6 +691,15 @@
    (map cons
         (class-info-type-parameters (instance-type-class instance))
         (instance-type-arguments instance))))
+
+(define (ensure-method-type-parameters-inferred! method substitution)
+  (for ([name (in-list (method-declaration-type-parameters method))])
+    (define inferred (resolve-type (hash-ref substitution name)))
+    (when (type-variable? inferred)
+      (raise-type-error
+       "cannot infer method type parameter ~a for ~a"
+       name
+       (method-declaration-selector method)))))
 
 (define (infer-list-construction arguments environment)
   (cond
@@ -688,35 +764,51 @@
         "arity error for List len: expected 0 arguments, got ~a"
         (length arguments)))
      INT]
-    [(map)
-     (unless (= (length arguments) 1)
-       (raise-type-error
-        "arity error for List map: expected 1 argument, got ~a"
-        (length arguments)))
-     (define result-type (fresh-type-variable 'map-result))
-     (define expected-function
-       (function-type (list element-type) result-type))
-     (define actual-function
-       (infer-expression (car arguments) environment expected-function))
-     (unify-types! actual-function expected-function)
-     (list-type result-type)]
-    [(fold)
-     (unless (= (length arguments) 2)
-       (raise-type-error
-        "arity error for List fold: expected 2 arguments, got ~a"
-        (length arguments)))
-     (define accumulator-type
-       (infer-expression (car arguments) environment #f))
-     (define expected-function
-       (function-type
-        (list accumulator-type element-type)
-        accumulator-type))
-     (define actual-function
-       (infer-expression (cadr arguments) environment expected-function))
-     (unify-types! actual-function expected-function)
-     accumulator-type]
     [else
-     (unknown-message selector)]))
+     (infer-defined-list-method
+      list-value-type selector arguments environment)]))
+
+(define (infer-defined-list-method
+         receiver-type selector arguments environment)
+  (define list-class (type-environment-ref environment 'List))
+  (define method
+    (and (list-class-type? list-class)
+         (for/first ([candidate
+                      (in-list (list-class-type-methods list-class))]
+                     #:when (eq? selector
+                                 (method-declaration-selector candidate)))
+           candidate)))
+  (unless method (unknown-message selector))
+  (define parameters (method-declaration-parameters method))
+  (unless (= (length parameters) (length arguments))
+    (raise-type-error
+     "arity error for List method ~a: expected ~a argument(s), got ~a"
+     selector
+     (length parameters)
+     (length arguments)))
+  (define base-substitution
+    (make-hasheq
+     (list (cons 'T (list-type-element receiver-type)))))
+  (define substitution
+    (extend-method-substitution base-substitution method #f))
+  (for ([parameter (in-list parameters)]
+        [argument (in-list arguments)])
+    (define expected
+      (type-from-sexpr
+       (parameter-declaration-type parameter)
+       environment
+       substitution))
+    (define actual
+      (infer-expression argument environment expected))
+    (unify-types!
+     actual
+     expected
+     (format "List method ~a argument type mismatch" selector)))
+  (ensure-method-type-parameters-inferred! method substitution)
+  (type-from-sexpr
+   (method-declaration-return-type method)
+   environment
+   substitution))
 
 (define (infer-function-call function selector arguments environment)
   (unless (eq? selector 'call) (unknown-message selector))
