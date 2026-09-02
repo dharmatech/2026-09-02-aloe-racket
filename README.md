@@ -1,5 +1,5 @@
 
-# Aloe
+# ALOE
 
 Scheme is a small gem. Aloe is a similar gem with two new facets.
 
@@ -15,6 +15,8 @@ is sending a message.
 
 The core stays small on purpose. Libraries and programs grow the rest
 (`lib/list.aloe`, `examples/`). See `docs/philosophy.md` and `SPEC.md`.
+
+`ALOE = Scheme + Smalltalk + Types`
 
 ## Layout
 
