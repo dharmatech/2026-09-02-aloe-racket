@@ -14,6 +14,12 @@ The kernel should stay small enough that new programs grow as *libraries and
 classes*, not as new host builtins. If a feature feels necessary, look for a
 restriction first and lift that.
 
+Grow the language from applications. Write a program in Aloe. Where it cannot
+be expressed, decide whether the hole is a library, a lifted restriction, or
+(rarely) a new kernel piece. Do not add syntax because it is fashionable.
+Boids already drove send, `if`, `List`, and `fold`. The next hole should
+come from the next program.
+
 ## Kernel (keep small)
 
 - send
@@ -26,8 +32,8 @@ restriction first and lift that.
 
 ## Not kernel (grow later)
 
-- `map`, `fold`, and most of collections — methods written in Aloe once
-  lists have `empty?` / `first` / `rest` (and `cons` / empty)
+- collections beyond list primitives — `fold` / `map` / `reverse` already live
+  in `lib/list.aloe`
 - application libraries: `Point`, `Boid`, `Sim`, Boids
 - `#lang aloe`, `require`, macros
 

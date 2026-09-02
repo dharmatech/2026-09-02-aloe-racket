@@ -1,0 +1,11 @@
+
+((((b velocity) + cohere) + align) + separ)
+
+; Would be nice to write as:
+
+(b velocity) + cohere + align + separ
+
+; Or:
+
+b velocity + cohere + align + separ
+

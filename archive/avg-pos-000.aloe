@@ -1,0 +1,13 @@
+(avg-pos
+  (((bs map (fn (b) (b position)))
+    fold origin
+    (fn (acc p) (acc + p)))
+  / (n float)))
+
+
+
+(define add-2 (fn (acc p) (acc + p)))
+
+(avg-pos
+  (((bs map :position) fold origin add-2)
+  / n))
