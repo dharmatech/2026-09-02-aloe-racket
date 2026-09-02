@@ -1,0 +1,10 @@
+
+; Should this be a method on boid?
+; Perhaps `step`?
+
+    (Boid new
+        ((b position) + new-vel)
+        new-vel)))))))))))
+
+
+

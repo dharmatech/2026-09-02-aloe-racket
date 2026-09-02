@@ -1,5 +1,4 @@
 ;; Aloe 0.1 — Boids target program
-;; Separation is a stub (no distance cutoff). Shape of the language is the point.
 
 (define-class (Point T)
   (fields
@@ -41,36 +40,63 @@
     (flock (List (Boid Float))))
   (methods
     (step () Sim
-      (let ((n      ((self flock) len))
-            (origin (Point new 0.0 0.0))
-            (bs     (self flock)))
+      (let ((origin   (Point new 0.0 0.0))
+            (bs       (self flock))
+            (cohere-r 50.0)
+            (align-r  50.0))
 
-        (let ((avg-pos
-               (((bs map (fn (b) (b position)))
-                 fold origin
-                 (fn (acc p) (acc + p)))
-                / (n float)))
-              (avg-vel
-               (((bs map (fn (b) (b velocity)))
-                 fold origin
-                 (fn (acc v) (acc + v)))
-                / (n float))))
+        (Sim new
+          (bs map
+            (fn (b)
+              (let ((cohere-neighbors
+                     (bs fold (List empty)
+                       (fn (neighbors other)
+                         (let ((d2 ((b position) dist2 (other position))))
+                           (if (0.0 < d2)
+                               (if (d2 < (cohere-r * cohere-r))
+                                   (neighbors cons other)
+                                   neighbors)
+                               neighbors)))))
+                    (align-neighbors
+                     (bs fold (List empty)
+                       (fn (neighbors other)
+                         (let ((d2 ((b position) dist2 (other position))))
+                           (if (0.0 < d2)
+                               (if (d2 < (align-r * align-r))
+                                   (neighbors cons other)
+                                   neighbors)
+                               neighbors)))))
+                    (separ
+                     ((bs fold origin
+                        (fn (acc other)
+                          (acc +
+                            (if (0.0 < ((b position) dist2 (other position)))
+                                (if (((b position) dist2 (other position)) < 25.0)
+                                    ((b position) - (other position))
+                                    origin)
+                                origin))))
+                      * 0.001)))
 
-          (Sim new
-            (bs map
-              (fn (b)
-                (let ((cohere ((avg-pos - (b position)) * 0.01))
-                      (align  ((avg-vel - (b velocity)) * 0.05))
-                      (separ
-                       ((bs fold origin
-                          (fn (acc other)
-                            (acc +
-                              (if (0.0 < ((b position) dist2 (other position)))
-                                  (if (((b position) dist2 (other position)) < 25.0)
-                                      ((b position) - (other position))
-                                      origin)
-                                  origin))))
-                        * 0.001)))
+                (let ((cohere
+                       (if (cohere-neighbors empty?)
+                           origin
+                           (((((cohere-neighbors map
+                                (fn (other) (other position)))
+                               fold origin
+                               (fn (acc p) (acc + p)))
+                              / ((cohere-neighbors len) float))
+                             - (b position))
+                            * 0.01)))
+                      (align
+                       (if (align-neighbors empty?)
+                           origin
+                           (((((align-neighbors map
+                                (fn (other) (other velocity)))
+                               fold origin
+                               (fn (acc v) (acc + v)))
+                              / ((align-neighbors len) float))
+                             - (b velocity))
+                            * 0.05))))
                   (let ((new-vel
                          ((((b velocity) + cohere) + align) + separ)))
                     (Boid new
