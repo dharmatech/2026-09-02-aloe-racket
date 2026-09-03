@@ -12,7 +12,16 @@
     (+ (type U)
        (other U)
        (Sum Sym U)
-       (Sum new self other))))
+       (Sum new self other))
+    (* (type U)
+       (other U)
+       (Prod Sym U)
+       (Prod new self other))
+    (coeff-plus (s Sym)
+       (Prod Sym Int)
+       (if (self same? s)
+           (Prod new self 2)
+           (Prod new self (0 / 0))))))
 
 (define-methods Sum
   (methods
@@ -24,5 +33,17 @@
     (+ (s Sym)
        (Sum (Prod Sym Int) Int)
        (Sum new
-         (Prod new (self left) 2)
+         ((self left) coeff-plus s)
          (self right)))))
+
+(define-methods Prod
+  (methods
+    (coeff-plus (s Sym)
+       (Prod Sym Int)
+       (if ((self left) same? s)
+           (Prod new
+             (self left)
+             ((self right) + 1))
+           (Prod new
+             (self left)
+             (0 / 0))))))
