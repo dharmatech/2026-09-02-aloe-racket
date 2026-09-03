@@ -198,16 +198,16 @@
       "malformed method declaration"
       "method" datum)]))
 
-(define (ensure-distinct-methods methods datum)
+(define (ensure-distinct-fields fields datum)
   (define duplicate
-    (check-duplicates (map method-declaration-selector methods)))
+    (check-duplicates (map field-declaration-name fields)))
   (when duplicate
     (raise-arguments-error
      'parse-datum
-     "method selectors must be unique"
-     "selector" duplicate
+     "field names must be unique"
+     "field" duplicate
      "datum" datum))
-  methods)
+  fields)
 
 (define (desugar-let binding-datums body datum)
   (unless (list? binding-datums)
@@ -324,10 +324,10 @@
       (car class-header)
       (cdr class-header)
       #f
-      (map parse-field-declaration field-datums)
-      (ensure-distinct-methods
-       (map parse-method-declaration method-datums)
-       datum))]
+      (ensure-distinct-fields
+       (map parse-field-declaration field-datums)
+       datum)
+      (map parse-method-declaration method-datums))]
     [(list 'define-class
            header
            (? symbol? protocol)
@@ -338,10 +338,10 @@
       (car class-header)
       (cdr class-header)
       protocol
-      (map parse-field-declaration field-datums)
-      (ensure-distinct-methods
-       (map parse-method-declaration method-datums)
-       datum))]
+      (ensure-distinct-fields
+       (map parse-field-declaration field-datums)
+       datum)
+      (map parse-method-declaration method-datums))]
     [(cons 'define-class _)
      (raise-arguments-error
       'parse-datum
@@ -352,9 +352,7 @@
            (cons 'methods method-datums))
      (define-methods-expr
       target
-      (ensure-distinct-methods
-       (map parse-method-declaration method-datums)
-       datum))]
+      (map parse-method-declaration method-datums))]
     [(cons 'define-methods _)
      (raise-arguments-error
       'parse-datum

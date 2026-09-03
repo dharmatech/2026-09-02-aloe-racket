@@ -17,7 +17,7 @@
 
 (check-equal?
  (type->datum
-  (typecheck-source "((x + 2) plus x)" checker-environment))
+  (typecheck-source "((x + 2) + x)" checker-environment))
  '(Sum (Prod Sym Int) Int))
 (check-equal?
  (type->datum
@@ -44,13 +44,13 @@
  5)
 
 (check-eq?
- (eval-source "((((x + 2) plus x) left) left)" runtime-environment)
+ (eval-source "((((x + 2) + x) left) left)" runtime-environment)
  x-value)
 (check-equal?
- (eval-source "((((x + 2) plus x) left) right)" runtime-environment)
+ (eval-source "((((x + 2) + x) left) right)" runtime-environment)
  2)
 (check-equal?
- (eval-source "(((x + 2) plus x) right)" runtime-environment)
+ (eval-source "(((x + 2) + x) right)" runtime-environment)
  2)
 
 (check-eq? (eval-source "((x + y) left)" runtime-environment)

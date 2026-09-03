@@ -39,6 +39,7 @@
   #:transparent)
 (struct opaque-type (name) #:transparent)
 (struct void-type () #:transparent)
+(struct method-match (method substitution specificity) #:transparent)
 
 (struct class-info
   (name type-parameters parameter-types protocol fields
@@ -407,7 +408,6 @@
   (cond
     [(and (eq? target 'List) (list-class-type? target-type))
      (define existing-methods (list-class-type-methods target-type))
-     (ensure-distinct-added-methods! target existing-methods methods)
      ;; Install the complete set before checking bodies so methods may recurse
      ;; and may call other methods from the same define-methods form.
      (set-list-class-type-methods!
@@ -429,7 +429,6 @@
     [(class-type? target-type)
      (define class (class-type-class target-type))
      (define existing-methods (class-info-methods class))
-     (ensure-distinct-added-methods! target existing-methods methods)
      (set-class-info-methods! class (append existing-methods methods))
      (define substitution
        (make-hasheq
@@ -447,14 +446,6 @@
      (raise-type-error
       "define-methods target is not a class: ~a"
       target)]))
-
-(define (ensure-distinct-added-methods! target existing-methods methods)
-  (define all-selectors
-    (append (map method-declaration-selector existing-methods)
-            (map method-declaration-selector methods)))
-  (define duplicate (check-duplicates all-selectors))
-  (when duplicate
-    (raise-type-error "duplicate ~a method: ~a" target duplicate)))
 
 (define (check-method-body! self-type method environment substitution)
   (define parameter-types
@@ -724,37 +715,16 @@
       environment
       (instance-substitution instance))]
     [else
-     (define method
-       (for/first ([candidate (in-list (class-info-methods class))]
-                   #:when (eq? selector
-                              (method-declaration-selector candidate)))
-         candidate))
-     (unless method (unknown-message selector))
-     (define parameters (method-declaration-parameters method))
-     (unless (= (length parameters) (length arguments))
-       (raise-type-error
-        "arity error for method ~a: expected ~a argument(s), got ~a"
+     (define selected
+       (select-method-overload
+        (class-info-methods class)
         selector
-        (length parameters)
-        (length arguments)))
-     (define substitution
-       (extend-method-substitution
-        (instance-substitution instance) method #f))
-     (for ([parameter (in-list parameters)]
-           [argument (in-list arguments)])
-       (define expected
-         (type-from-sexpr
-          (parameter-declaration-type parameter)
-          environment
-          substitution))
-       (define actual
-         (infer-expression argument environment #f))
-       (unify-types!
-        actual
-        expected
-        (format "generic instantiation mismatch for method ~a"
-                selector)))
-     (ensure-method-type-parameters-inferred! method substitution)
+        arguments
+        environment
+        (instance-substitution instance)
+        (class-info-name class)))
+     (define method (method-match-method selected))
+     (define substitution (method-match-substitution selected))
      (define return-type
        (type-from-sexpr
         (method-declaration-return-type method)
@@ -764,6 +734,112 @@
        (check-method-body!
         instance method environment substitution))
      return-type]))
+
+(define (select-method-overload
+         methods selector arguments environment base-substitution target)
+  (define selector-methods
+    (filter
+     (lambda (method)
+       (eq? selector (method-declaration-selector method)))
+     methods))
+  (unless (pair? selector-methods) (unknown-message selector))
+  (define arity-methods
+    (filter
+     (lambda (method)
+       (= (length (method-declaration-parameters method))
+          (length arguments)))
+     selector-methods))
+  (unless (pair? arity-methods)
+    (raise-type-error
+     "arity error for ~a method ~a: no overload accepts ~a argument(s)"
+     target selector (length arguments)))
+  (cond
+    [(null? (cdr arity-methods))
+     (match-sole-method
+      (car arity-methods)
+      arguments
+      environment
+      base-substitution
+      target)]
+    [else
+     (define argument-types
+       (for/list ([argument (in-list arguments)])
+         (infer-expression argument environment #f)))
+     (define matches
+       (filter
+        values
+        (for/list ([method (in-list arity-methods)])
+          (try-method-match
+           method argument-types environment base-substitution))))
+     (unless (pair? matches) (unknown-message selector))
+     (define best-specificity
+       (apply max (map method-match-specificity matches)))
+     (define best-matches
+       (filter
+        (lambda (candidate)
+          (= (method-match-specificity candidate) best-specificity))
+        matches))
+     (unless (= (length best-matches) 1)
+       (raise-type-error "ambiguous message: ~a" selector))
+     (car best-matches)]))
+
+(define (match-sole-method
+         method arguments environment base-substitution target)
+  (define substitution
+    (extend-method-substitution base-substitution method #f))
+  (define specificity
+    (for/sum ([parameter
+               (in-list (method-declaration-parameters method))]
+              [argument (in-list arguments)])
+      (define expected
+        (type-from-sexpr
+         (parameter-declaration-type parameter)
+         environment
+         substitution))
+      (define actual
+        (infer-expression
+         argument
+         environment
+         (and (eq? target 'List) expected)))
+      (define score (parameter-specificity actual expected))
+      (unify-types!
+       actual
+       expected
+       (format "generic instantiation mismatch for method ~a"
+               (method-declaration-selector method)))
+      score))
+  (ensure-method-type-parameters-inferred! method substitution)
+  (method-match method substitution specificity))
+
+(define (try-method-match
+         method argument-types environment base-substitution)
+  (with-handlers ([exn:fail:aloe-type? (lambda (_) #f)])
+    (define substitution
+      (extend-method-substitution base-substitution method #f))
+    (define specificity
+      (for/sum ([parameter
+                 (in-list (method-declaration-parameters method))]
+                [actual (in-list argument-types)])
+        (define expected
+          (type-from-sexpr
+           (parameter-declaration-type parameter)
+           environment
+           substitution))
+        (define score (parameter-specificity actual expected))
+        (unify-types! actual expected)
+        score))
+    (ensure-method-type-parameters-inferred! method substitution)
+    (method-match method substitution specificity)))
+
+(define (parameter-specificity actual expected)
+  (define resolved-actual (resolve-type actual))
+  (define resolved-expected (resolve-type expected))
+  (cond
+    [(type-variable? resolved-expected) 0]
+    [(and (protocol-type? resolved-expected)
+          (instance-type? resolved-actual))
+     1]
+    [else 2]))
 
 (define (instance-substitution instance)
   (make-hasheq
@@ -850,40 +926,20 @@
 (define (infer-defined-list-method
          receiver-type selector arguments environment)
   (define list-class (type-environment-ref environment 'List))
-  (define method
-    (and (list-class-type? list-class)
-         (for/first ([candidate
-                      (in-list (list-class-type-methods list-class))]
-                     #:when (eq? selector
-                                 (method-declaration-selector candidate)))
-           candidate)))
-  (unless method (unknown-message selector))
-  (define parameters (method-declaration-parameters method))
-  (unless (= (length parameters) (length arguments))
-    (raise-type-error
-     "arity error for List method ~a: expected ~a argument(s), got ~a"
-     selector
-     (length parameters)
-     (length arguments)))
   (define base-substitution
     (make-hasheq
      (list (cons 'T (list-type-element receiver-type)))))
-  (define substitution
-    (extend-method-substitution base-substitution method #f))
-  (for ([parameter (in-list parameters)]
-        [argument (in-list arguments)])
-    (define expected
-      (type-from-sexpr
-       (parameter-declaration-type parameter)
-       environment
-       substitution))
-    (define actual
-      (infer-expression argument environment expected))
-    (unify-types!
-     actual
-     expected
-     (format "List method ~a argument type mismatch" selector)))
-  (ensure-method-type-parameters-inferred! method substitution)
+  (unless (list-class-type? list-class) (unknown-message selector))
+  (define selected
+    (select-method-overload
+     (list-class-type-methods list-class)
+     selector
+     arguments
+     environment
+     base-substitution
+     'List))
+  (define method (method-match-method selected))
+  (define substitution (method-match-substitution selected))
   (type-from-sexpr
    (method-declaration-return-type method)
    environment

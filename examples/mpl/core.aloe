@@ -21,7 +21,7 @@
        (Sum new
          (self left)
          ((self right) + n)))
-    (plus (s Sym)
+    (+ (s Sym)
        (Sum (Prod Sym Int) Int)
        (Sum new
          (Prod new (self left) 2)

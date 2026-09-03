@@ -10,13 +10,14 @@
          aloe-value->string)
 
 (struct class-value
-  (name type-parameters fields [methods #:mutable] environment)
+  (name type-parameters protocol fields [methods #:mutable] environment)
   #:transparent)
 (struct instance-value (class type-arguments field-values) #:transparent)
 (struct function-value (parameters body environment) #:transparent)
 (struct list-value (class element-type elements) #:transparent)
 (struct runtime-class-type (class type-arguments) #:transparent)
 (struct runtime-list-type (element-type) #:transparent)
+(struct runtime-method-match (method specificity) #:transparent)
 
 (define current-eval-load-paths (make-parameter '()))
 
@@ -50,11 +51,16 @@
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
     [(define-protocol-expr _) (void)]
-    [(define-class-expr name type-parameters _ fields methods)
+    [(define-class-expr name type-parameters protocol fields methods)
      (env-define! environment
                   name
                   (class-value
-                   name type-parameters fields methods environment))]
+                   name
+                   type-parameters
+                   protocol
+                   fields
+                   methods
+                   environment))]
     [(define-methods-expr target methods)
      (define target-class (env-lookup environment target))
      (cond
@@ -247,14 +253,148 @@
        (arity-error (format "field ~a" selector) 0 (length arguments)))
      (vector-ref (instance-value-field-values instance) field-index)]
     [else
-     (define method
-       (for/first ([candidate (in-list (class-value-methods class))]
-                   #:when (eq? selector
-                              (method-declaration-selector candidate)))
-         candidate))
-     (if method
-         (apply-method instance class method arguments)
-         (unknown-message selector))]))
+     (define selected
+       (select-runtime-method
+        (class-value-methods class)
+        selector
+        arguments
+        (class-value-name class)
+        (lambda (method)
+          (instance-method-specificity
+           instance class method arguments))))
+     (apply-method
+      instance class (runtime-method-match-method selected) arguments)]))
+
+(define (select-runtime-method
+         methods selector arguments target method-specificity)
+  (define selector-methods
+    (filter
+     (lambda (method)
+       (eq? selector (method-declaration-selector method)))
+     methods))
+  (unless (pair? selector-methods) (unknown-message selector))
+  (define arity-methods
+    (filter
+     (lambda (method)
+       (= (length (method-declaration-parameters method))
+          (length arguments)))
+     selector-methods))
+  (unless (pair? arity-methods)
+    (error 'eval-aloe
+           "arity error for ~a method ~a: no overload accepts ~a argument(s)"
+           target selector (length arguments)))
+  (define matches
+    (filter
+     values
+     (for/list ([method (in-list arity-methods)])
+       (define specificity (method-specificity method))
+       (and specificity
+            (runtime-method-match method specificity)))))
+  (unless (pair? matches) (unknown-message selector))
+  (define best-specificity
+    (apply max (map runtime-method-match-specificity matches)))
+  (define best-matches
+    (filter
+     (lambda (candidate)
+       (= (runtime-method-match-specificity candidate)
+          best-specificity))
+     matches))
+  (unless (= (length best-matches) 1)
+    (error 'eval-aloe "ambiguous message: ~a" selector))
+  (car best-matches))
+
+(define (instance-method-specificity receiver class method arguments)
+  (define type-bindings
+    (make-hasheq
+     (map cons
+          (class-value-type-parameters class)
+          (vector->list (instance-value-type-arguments receiver)))))
+  (method-arguments-specificity method arguments type-bindings))
+
+(define (method-arguments-specificity method arguments bindings)
+  (let loop ([parameters (method-declaration-parameters method)]
+             [remaining-arguments arguments]
+             [specificity 0])
+    (cond
+      [(null? parameters) specificity]
+      [else
+       (define next-specificity
+         (runtime-type-specificity
+          (parameter-declaration-type (car parameters))
+          (runtime-type-of (car remaining-arguments))
+          bindings
+          (method-declaration-type-parameters method)))
+       (and next-specificity
+            (loop (cdr parameters)
+                  (cdr remaining-arguments)
+                  (+ specificity next-specificity)))])))
+
+(define (runtime-type-specificity
+         declared actual bindings method-type-parameters)
+  (cond
+    [(symbol? declared)
+     (cond
+       [(memq declared method-type-parameters)
+        (cond
+          [(hash-has-key? bindings declared)
+           (and (same-runtime-type? (hash-ref bindings declared) actual)
+                0)]
+          [else
+           (hash-set! bindings declared actual)
+           0])]
+       [(hash-has-key? bindings declared)
+        (define expected (hash-ref bindings declared))
+        (cond
+          [(not expected)
+           (hash-set! bindings declared actual)
+           0]
+          [(same-runtime-type? expected actual) 2]
+          [else #f])]
+       [(runtime-class-type? actual)
+        (define actual-class (runtime-class-type-class actual))
+        (cond
+          [(eq? declared (class-value-name actual-class)) 2]
+          [(eq? declared (class-value-protocol actual-class)) 1]
+          [else #f])]
+       [(eq? declared actual) 2]
+       [else #f])]
+    [(and (list? declared) (pair? declared))
+     (define name (car declared))
+     (cond
+       [(eq? name '->)
+        (and (eq? actual 'Fn) 2)]
+       [(eq? name 'List)
+        (and (= (length declared) 2)
+             (runtime-list-type? actual)
+             (or (not (runtime-list-type-element-type actual))
+                 (runtime-type-specificity
+                  (cadr declared)
+                  (runtime-list-type-element-type actual)
+                  bindings
+                  method-type-parameters))
+             2)]
+       [(runtime-class-type? actual)
+        (define actual-class (runtime-class-type-class actual))
+        (define actual-arguments
+          (runtime-class-type-type-arguments actual))
+        (and (eq? name (class-value-name actual-class))
+             (or
+              ;; Preserve the accepted checkpoint 3–4 spelling (Point Int)
+              ;; for the original non-generic Point class.
+              (zero? (vector-length actual-arguments))
+              (and
+               (= (length (cdr declared))
+                  (vector-length actual-arguments))
+               (for/and ([nested-declared (in-list (cdr declared))]
+                         [nested-actual (in-vector actual-arguments)])
+                 (runtime-type-specificity
+                  nested-declared
+                  nested-actual
+                  bindings
+                  method-type-parameters))))
+             2)]
+       [else #f])]
+    [else #f]))
 
 (define (apply-method receiver class method arguments)
   (define parameters (method-declaration-parameters method))
@@ -381,18 +521,20 @@
 
 (define (send-to-list-method receiver selector arguments)
   (define class (list-value-class receiver))
-  (define method
-    (for/first ([candidate (in-list (list-class-object-methods class))]
-                #:when (eq? selector
-                            (method-declaration-selector candidate)))
-      candidate))
-  (unless method (unknown-message selector))
+  (define type-bindings
+    (make-hasheq
+     (list (cons 'T (list-value-element-type receiver)))))
+  (define selected
+    (select-runtime-method
+     (list-class-object-methods class)
+     selector
+     arguments
+     'List
+     (lambda (method)
+       (method-arguments-specificity
+        method arguments (hash-copy type-bindings)))))
+  (define method (runtime-method-match-method selected))
   (define parameters (method-declaration-parameters method))
-  (unless (= (length parameters) (length arguments))
-    (arity-error
-     (format "List method ~a" selector)
-     (length parameters)
-     (length arguments)))
   (define bindings
     (cons (cons 'self receiver)
           (for/list ([parameter (in-list parameters)]
