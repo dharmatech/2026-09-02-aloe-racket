@@ -8,6 +8,7 @@
          (struct-out int-type)
          (struct-out float-type)
          (struct-out bool-type)
+         (struct-out string-type)
          (struct-out instance-type)
          (struct-out list-type)
          (struct-out class-type)
@@ -24,6 +25,7 @@
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
 (struct bool-type () #:transparent)
+(struct string-type () #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
@@ -44,6 +46,7 @@
 (define INT (int-type))
 (define FLOAT (float-type))
 (define BOOL (bool-type))
+(define STRING (string-type))
 (define VOID (void-type))
 
 (define current-typecheck-load-paths (make-parameter '()))
@@ -99,6 +102,7 @@
     [(int-type? resolved) 'Int]
     [(float-type? resolved) 'Float]
     [(bool-type? resolved) 'Bool]
+    [(string-type? resolved) 'String]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
      (if (null? (instance-type-arguments resolved))
@@ -185,6 +189,7 @@
     [(and (int-type? resolved-left) (int-type? resolved-right)) INT]
     [(and (float-type? resolved-left) (float-type? resolved-right)) FLOAT]
     [(and (bool-type? resolved-left) (bool-type? resolved-right)) BOOL]
+    [(and (string-type? resolved-left) (string-type? resolved-right)) STRING]
     [(and (parameter-type? resolved-left)
           (parameter-type? resolved-right)
           (eq? (parameter-type-id resolved-left)
@@ -262,6 +267,7 @@
       [(int-expr _) INT]
       [(float-expr _) FLOAT]
       [(bool-expr _) BOOL]
+      [(string-expr _) STRING]
       [(variable-expr name)
        (type-environment-ref environment name)]
       [(? load-expr?)
@@ -439,6 +445,7 @@
        [(eq? datum 'Int) INT]
        [(eq? datum 'Float) FLOAT]
        [(eq? datum 'Bool) BOOL]
+       [(eq? datum 'String) STRING]
        [(hash-has-key? substitution datum)
         (hash-ref substitution datum)]
        [else

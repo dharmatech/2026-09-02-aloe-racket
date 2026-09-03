@@ -8,6 +8,7 @@
 (provide (struct-out int-expr)
          (struct-out float-expr)
          (struct-out bool-expr)
+         (struct-out string-expr)
          (struct-out variable-expr)
          (struct-out load-expr)
          (struct-out define-expr)
@@ -26,6 +27,7 @@
 (struct int-expr (value) #:transparent)
 (struct float-expr (value) #:transparent)
 (struct bool-expr (value) #:transparent)
+(struct string-expr (value) #:transparent)
 (struct variable-expr (name) #:transparent)
 (struct load-expr (path directory) #:transparent)
 (struct define-expr (name value) #:transparent)
@@ -57,6 +59,7 @@
     [(boolean? datum) (bool-expr datum)]
     [(exact-integer? datum) (int-expr datum)]
     [(flonum? datum) (float-expr datum)]
+    [(string? datum) (string-expr datum)]
     [(symbol? datum) (variable-expr datum)]
     [else
      (raise-arguments-error

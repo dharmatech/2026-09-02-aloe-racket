@@ -39,6 +39,7 @@
     [(int-expr value) value]
     [(float-expr value) value]
     [(bool-expr value) value]
+    [(string-expr value) value]
     [(variable-expr name)
      (env-lookup environment name)]
     [(? load-expr?)
@@ -186,6 +187,7 @@
     [(exact-integer? value) 'Int]
     [(flonum? value) 'Float]
     [(boolean? value) 'Bool]
+    [(string? value) 'String]
     [(instance-value? value)
      (runtime-class-type (instance-value-class value)
                          (instance-value-type-arguments value))]
@@ -473,6 +475,7 @@
   (cond
     [(boolean? value) (if value "#t" "#f")]
     [(number? value) (number->string value)]
+    [(string? value) (format "~s" value)]
     [(class-value? value)
      (format "#<class ~a>" (class-value-name value))]
     [(instance-value? value)
