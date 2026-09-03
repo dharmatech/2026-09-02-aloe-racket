@@ -1,0 +1,4 @@
+(define-protocol Math)
+
+(load "sum.aloe")
+(load "sym.aloe")

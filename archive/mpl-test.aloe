@@ -1,0 +1,18 @@
+
+(load "examples/mpl/core.aloe")
+(define x (Sym new "x"))
+(define y (Sym new "y"))
+x
+
+y
+
+(x + 2)
+
+(x + y)
+
+(x + y)
+
+((x + 2) + 3)
+
+((x + 2) + y)
+

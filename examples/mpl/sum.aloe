@@ -1,0 +1,10 @@
+(define-class (Sum L R) Math
+  (fields
+    (left L)
+    (right R))
+  (methods
+    (+ (n Int)
+       (Sum L Int)
+       (Sum new
+         (self left)
+         ((self right) + n)))))
