@@ -47,7 +47,8 @@
     [(define-expr name value-expression)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
-    [(define-class-expr name type-parameters fields methods)
+    [(define-protocol-expr _) (void)]
+    [(define-class-expr name type-parameters _ fields methods)
      (env-define! environment
                   name
                   (class-value

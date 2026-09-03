@@ -15,6 +15,7 @@
          (struct-out field-declaration)
          (struct-out parameter-declaration)
          (struct-out method-declaration)
+         (struct-out define-protocol-expr)
          (struct-out define-class-expr)
          (struct-out define-methods-expr)
          (struct-out fn-expr)
@@ -36,7 +37,10 @@
 (struct method-declaration
   (selector type-parameters parameters return-type body)
   #:transparent)
-(struct define-class-expr (name type-parameters fields methods) #:transparent)
+(struct define-protocol-expr (name) #:transparent)
+(struct define-class-expr
+  (name type-parameters protocol fields methods)
+  #:transparent)
 (struct define-methods-expr (target methods) #:transparent)
 (struct fn-expr (parameters body) #:transparent)
 (struct send-expr (receiver selector arguments) #:transparent)
@@ -304,6 +308,13 @@
       'parse-datum
       "malformed define; expected (define name expression)"
       "datum" datum)]
+    [(list 'define-protocol (? symbol? name))
+     (define-protocol-expr name)]
+    [(cons 'define-protocol _)
+     (raise-arguments-error
+      'parse-datum
+      "malformed define-protocol; expected (define-protocol Name)"
+      "datum" datum)]
     [(list 'define-class
            header
            (cons 'fields field-datums)
@@ -312,6 +323,21 @@
      (define-class-expr
       (car class-header)
       (cdr class-header)
+      #f
+      (map parse-field-declaration field-datums)
+      (ensure-distinct-methods
+       (map parse-method-declaration method-datums)
+       datum))]
+    [(list 'define-class
+           header
+           (? symbol? protocol)
+           (cons 'fields field-datums)
+           (cons 'methods method-datums))
+     (define class-header (parse-class-header header datum))
+     (define-class-expr
+      (car class-header)
+      (cdr class-header)
+      protocol
       (map parse-field-declaration field-datums)
       (ensure-distinct-methods
        (map parse-method-declaration method-datums)
@@ -319,7 +345,7 @@
     [(cons 'define-class _)
      (raise-arguments-error
       'parse-datum
-      "malformed define-class; expected a name, fields, and methods"
+      "malformed define-class; expected a name, optional protocol, fields, and methods"
       "datum" datum)]
     [(list 'define-methods
            (? symbol? target)

@@ -57,3 +57,14 @@ the method body is checked and freshly inferred at each send.
 Deferred: (-> recv (sel args ...) ...) desugars to nested sends.
 Not now — one force-sum in Boids is not enough pressure.
 
+## Math protocol (2026-09-03)
+
+Decided: empty protocol `Math`; `(define-protocol Math)`;
+`(define-class Sym Math ...)`; a method may return `Math` so `(x + 2)`
+and `(x + y)` share a type. Lookup stays on the class.
+
+Rejected for this experiment: C# implementation inheritance, closed ADT
+`Expr`, `Any`, required protocol methods, `super`.
+
+Deferred: `simplify` as a required protocol method; multiple protocols
+per class; ADT control experiment on a separate branch.

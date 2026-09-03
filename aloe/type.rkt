@@ -9,6 +9,7 @@
          (struct-out float-type)
          (struct-out bool-type)
          (struct-out string-type)
+         (struct-out protocol-type)
          (struct-out instance-type)
          (struct-out list-type)
          (struct-out class-type)
@@ -26,6 +27,7 @@
 (struct float-type () #:transparent)
 (struct bool-type () #:transparent)
 (struct string-type () #:transparent)
+(struct protocol-type (name) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
@@ -39,7 +41,7 @@
 (struct void-type () #:transparent)
 
 (struct class-info
-  (name type-parameters parameter-types fields methods)
+  (name type-parameters parameter-types protocol fields methods)
   #:transparent)
 (struct type-environment (bindings parent) #:transparent)
 
@@ -103,6 +105,7 @@
     [(float-type? resolved) 'Float]
     [(bool-type? resolved) 'Bool]
     [(string-type? resolved) 'String]
+    [(protocol-type? resolved) (protocol-type-name resolved)]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
      (if (null? (instance-type-arguments resolved))
@@ -190,6 +193,17 @@
     [(and (float-type? resolved-left) (float-type? resolved-right)) FLOAT]
     [(and (bool-type? resolved-left) (bool-type? resolved-right)) BOOL]
     [(and (string-type? resolved-left) (string-type? resolved-right)) STRING]
+    [(and (protocol-type? resolved-left)
+          (protocol-type? resolved-right)
+          (eq? (protocol-type-name resolved-left)
+               (protocol-type-name resolved-right)))
+     resolved-left]
+    [(and (instance-type? resolved-left)
+          (protocol-type? resolved-right)
+          (eq? (class-info-protocol
+                (instance-type-class resolved-left))
+               resolved-right))
+     resolved-right]
     [(and (parameter-type? resolved-left)
           (parameter-type? resolved-right)
           (eq? (parameter-type-id resolved-left)
@@ -277,9 +291,12 @@
          (infer-expression value-expression environment #f))
        (type-environment-set! environment name value-type)
        VOID]
-      [(define-class-expr name type-parameters fields methods)
+      [(define-protocol-expr name)
+       (type-environment-set! environment name (protocol-type name))
+       VOID]
+      [(define-class-expr name type-parameters protocol fields methods)
        (check-class-definition!
-        name type-parameters fields methods environment)
+        name type-parameters protocol fields methods environment)
        VOID]
       [(define-methods-expr target methods)
        (check-list-method-definitions! target methods environment)
@@ -320,12 +337,20 @@
   (function-type parameter-types result-type))
 
 (define (check-class-definition!
-         name type-parameters fields methods environment)
+         name type-parameters protocol-name fields methods environment)
+  (define protocol
+    (and protocol-name
+         (let ([candidate
+                (type-environment-ref environment protocol-name)])
+           (unless (protocol-type? candidate)
+             (raise-type-error "~a is not a protocol" protocol-name))
+           candidate)))
   (define parameter-types
     (for/list ([parameter (in-list type-parameters)])
       (parameter-type (gensym parameter) parameter)))
   (define class
-    (class-info name type-parameters parameter-types fields methods))
+    (class-info
+     name type-parameters parameter-types protocol fields methods))
   (type-environment-set! environment name (class-type class))
   (define substitution
     (make-hasheq (map cons type-parameters parameter-types)))
@@ -458,6 +483,7 @@
            (instance-type class '())]
           [(list-class-type? named-type)
            (raise-type-error "List type needs an element type")]
+          [(protocol-type? named-type) named-type]
           [else
            (raise-type-error "~a is not a type" datum)])])]
     [(and (list? datum) (pair? datum) (symbol? (car datum)))
@@ -544,7 +570,7 @@
         (infer-numeric-send
          receiver-type selector arguments environment)]
        [(bool-type? receiver-type)
-        (infer-bool-send selector arguments environment)]
+        (infer-bool-send selector arguments environment expected)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -885,13 +911,14 @@
      (ensure-numeric-type! receiver)
      (if (memq selector '(< > <= >= =)) BOOL receiver)]))
 
-(define (infer-bool-send selector arguments environment)
+(define (infer-bool-send selector arguments environment expected)
   (unless (eq? selector 'if) (unknown-message selector))
   (unless (= (length arguments) 2)
     (raise-type-error
      "arity error for Bool if: expected 2 arguments, got ~a"
      (length arguments)))
-  (define result-type (fresh-type-variable 'if-result))
+  (define result-type
+    (or expected (fresh-type-variable 'if-result)))
   (define expected-thunk (function-type '() result-type))
   (for ([argument (in-list arguments)])
     (define actual-thunk
