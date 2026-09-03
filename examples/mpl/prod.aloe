@@ -1,4 +1,4 @@
-(define-class (Sum L R) Math
+(define-class (Prod L R) Math
   (fields
     (left L)
     (right R))

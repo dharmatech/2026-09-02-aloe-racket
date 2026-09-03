@@ -1,8 +1,4 @@
 (define-class Sym Math
   (fields
     (name String))
-  (methods
-    (+ (type U)
-       (other U)
-       (Sum Sym U)
-       (Sum new self other))))
+  (methods))

@@ -1,4 +1,28 @@
 (define-protocol Math)
 
-(load "sum.aloe")
 (load "sym.aloe")
+(load "sum.aloe")
+(load "prod.aloe")
+
+(define-methods Sym
+  (methods
+    (same? (other Sym)
+       Bool
+       ((self name) = (other name)))
+    (+ (type U)
+       (other U)
+       (Sum Sym U)
+       (Sum new self other))))
+
+(define-methods Sum
+  (methods
+    (+ (n Int)
+       (Sum L Int)
+       (Sum new
+         (self left)
+         ((self right) + n)))
+    (plus (s Sym)
+       (Sum (Prod Sym Int) Int)
+       (Sum new
+         (Prod new (self left) 2)
+         (self right)))))

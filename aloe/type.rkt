@@ -41,7 +41,8 @@
 (struct void-type () #:transparent)
 
 (struct class-info
-  (name type-parameters parameter-types protocol fields methods)
+  (name type-parameters parameter-types protocol fields
+        [methods #:mutable])
   #:transparent)
 (struct type-environment (bindings parent) #:transparent)
 
@@ -299,7 +300,7 @@
         name type-parameters protocol fields methods environment)
        VOID]
       [(define-methods-expr target methods)
-       (check-list-method-definitions! target methods environment)
+       (check-method-definitions! target methods environment)
        VOID]
       [(fn-expr parameters body)
        (infer-function parameters body environment expected)]
@@ -401,36 +402,59 @@
          (fresh-type-variable name))))
   extended)
 
-(define (check-list-method-definitions! target methods environment)
-  (define list-class (type-environment-ref environment target))
-  (unless (and (eq? target 'List) (list-class-type? list-class))
-    (raise-type-error
-     "define-methods target is not the List class: ~a"
-     target))
+(define (check-method-definitions! target methods environment)
+  (define target-type (type-environment-ref environment target))
+  (cond
+    [(and (eq? target 'List) (list-class-type? target-type))
+     (define existing-methods (list-class-type-methods target-type))
+     (ensure-distinct-added-methods! target existing-methods methods)
+     ;; Install the complete set before checking bodies so methods may recurse
+     ;; and may call other methods from the same define-methods form.
+     (set-list-class-type-methods!
+      target-type
+      (append existing-methods methods))
+     (define list-substitution
+       (make-hasheq
+        (list
+         (cons 'T (list-class-type-element-parameter target-type)))))
+     (for ([method (in-list methods)])
+       (define method-substitution
+         (extend-method-substitution list-substitution method #t))
+       (check-method-types! method environment method-substitution)
+       (check-method-body!
+        (list-type (list-class-type-element-parameter target-type))
+        method
+        environment
+        method-substitution))]
+    [(class-type? target-type)
+     (define class (class-type-class target-type))
+     (define existing-methods (class-info-methods class))
+     (ensure-distinct-added-methods! target existing-methods methods)
+     (set-class-info-methods! class (append existing-methods methods))
+     (define substitution
+       (make-hasheq
+        (map cons
+             (class-info-type-parameters class)
+             (class-info-parameter-types class))))
+     (for ([method (in-list methods)])
+       (check-method-definition!
+        class
+        method
+        environment
+        substitution
+        (null? (class-info-type-parameters class))))]
+    [else
+     (raise-type-error
+      "define-methods target is not a class: ~a"
+      target)]))
+
+(define (ensure-distinct-added-methods! target existing-methods methods)
   (define all-selectors
-    (append (map method-declaration-selector
-                 (list-class-type-methods list-class))
+    (append (map method-declaration-selector existing-methods)
             (map method-declaration-selector methods)))
   (define duplicate (check-duplicates all-selectors))
   (when duplicate
-    (raise-type-error "duplicate List method: ~a" duplicate))
-  ;; Install the complete set before checking bodies so methods may recurse
-  ;; and may call other methods from the same define-methods form.
-  (set-list-class-type-methods!
-   list-class
-   (append (list-class-type-methods list-class) methods))
-  (define list-substitution
-    (make-hasheq
-     (list (cons 'T (list-class-type-element-parameter list-class)))))
-  (for ([method (in-list methods)])
-    (define method-substitution
-      (extend-method-substitution list-substitution method #t))
-    (check-method-types! method environment method-substitution)
-    (check-method-body!
-     (list-type (list-class-type-element-parameter list-class))
-     method
-     environment
-     method-substitution)))
+    (raise-type-error "duplicate ~a method: ~a" target duplicate)))
 
 (define (check-method-body! self-type method environment substitution)
   (define parameter-types
@@ -571,6 +595,8 @@
          receiver-type selector arguments environment)]
        [(bool-type? receiver-type)
         (infer-bool-send selector arguments environment expected)]
+       [(string-type? receiver-type)
+        (infer-string-send selector arguments environment)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -925,6 +951,20 @@
       (infer-expression argument environment expected-thunk))
     (unify-types! actual-thunk expected-thunk))
   result-type)
+
+(define (infer-string-send selector arguments environment)
+  (unless (eq? selector '=) (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (raise-type-error
+     "arity error for String =: expected 1 argument, got ~a"
+     (length arguments)))
+  (define argument-type
+    (infer-expression (car arguments) environment STRING))
+  (unify-types!
+   argument-type
+   STRING
+   "String = expects a String argument")
+  BOOL)
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))

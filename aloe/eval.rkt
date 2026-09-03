@@ -9,7 +9,9 @@
          eval-exprs
          aloe-value->string)
 
-(struct class-value (name type-parameters fields methods environment) #:transparent)
+(struct class-value
+  (name type-parameters fields [methods #:mutable] environment)
+  #:transparent)
 (struct instance-value (class type-arguments field-values) #:transparent)
 (struct function-value (parameters body environment) #:transparent)
 (struct list-value (class element-type elements) #:transparent)
@@ -54,15 +56,21 @@
                   (class-value
                    name type-parameters fields methods environment))]
     [(define-methods-expr target methods)
-     (define list-class (env-lookup environment target))
-     (unless (list-class-object? list-class)
-       (error 'eval-aloe
-              "define-methods target is not the List class: ~a"
-              target))
-     (set-list-class-object-methods!
-      list-class
-      (append (list-class-object-methods list-class) methods))
-     (set-list-class-object-environment! list-class environment)]
+     (define target-class (env-lookup environment target))
+     (cond
+       [(list-class-object? target-class)
+        (set-list-class-object-methods!
+         target-class
+         (append (list-class-object-methods target-class) methods))
+        (set-list-class-object-environment! target-class environment)]
+       [(class-value? target-class)
+        (set-class-value-methods!
+         target-class
+         (append (class-value-methods target-class) methods))]
+       [else
+        (error 'eval-aloe
+               "define-methods target is not a class: ~a"
+               target)])]
     [(fn-expr parameters body)
      (function-value parameters body environment)]
     [(send-expr receiver-expression selector argument-expressions)
@@ -92,6 +100,8 @@
      (send-to-float receiver selector arguments)]
     [(boolean? receiver)
      (send-to-bool receiver selector arguments)]
+    [(string? receiver)
+     (send-to-string receiver selector arguments)]
     [else
      (unknown-message selector)]))
 
@@ -443,6 +453,16 @@
   (lookup-message (if receiver (car arguments) (cadr arguments))
                   'call
                   '()))
+
+(define (send-to-string receiver selector arguments)
+  (unless (eq? selector '=)
+    (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (arity-error "String =" 1 (length arguments)))
+  (define argument (car arguments))
+  (unless (string? argument)
+    (error 'eval-aloe "String = expects a String argument"))
+  (string=? receiver argument))
 
 (define (number-argument kind selector arguments expected-kind?)
   (unless (= (length arguments) 1)
