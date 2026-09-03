@@ -10,7 +10,7 @@
 (void
  (eval-source
   (string-append
-   "(load \"examples/mpl/sym.aloe\")\n"
+   "(load \"examples/mpl/core.aloe\")\n"
    "(define x (Sym new \"x\"))\n"
    "(define y (Sym new \"y\"))")
   environment))

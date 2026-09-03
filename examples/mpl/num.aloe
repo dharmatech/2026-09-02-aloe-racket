@@ -1,0 +1,4 @@
+(define-class Num
+  (fields
+    (value Int))
+  (methods))
