@@ -47,12 +47,44 @@
   (or (path-only (path->complete-path source-path))
       (current-directory)))
 
+(define (normalized-directory directory)
+  (simplify-path (path->complete-path directory) #f))
+
+(define (find-project-root directory)
+  (let loop ([candidate (normalized-directory directory)])
+    (cond
+      [(file-exists? (build-path candidate "info.rkt")) candidate]
+      [else
+       (define parent
+         (simplify-path (build-path candidate 'up) #f))
+       (and (not (equal? parent candidate))
+            (loop parent))])))
+
 (define (load-expr-resolved-path expression)
-  (simplify-path
-   (path->complete-path
-    (string->path (load-expr-path expression))
-    (load-expr-directory expression))
-   #f))
+  (define requested (string->path (load-expr-path expression)))
+  (cond
+    [(complete-path? requested) (simplify-path requested #f)]
+    [else
+     (define source-directory (load-expr-directory expression))
+     (define working-directory (normalized-directory (current-directory)))
+     (define project-roots
+       (filter values
+               (list (and source-directory
+                          (find-project-root source-directory))
+                     (find-project-root working-directory))))
+     (define search-directories
+       (remove-duplicates
+        (append (if source-directory (list source-directory) '())
+                (list working-directory)
+                project-roots)
+        equal?))
+     (define candidates
+       (for/list ([directory (in-list search-directories)])
+         (simplify-path (build-path directory requested) #f)))
+     (or (for/first ([candidate (in-list candidates)]
+                     #:when (file-exists? candidate))
+           candidate)
+         (car candidates))]))
 
 (define (parse-atom datum)
   (cond
@@ -289,9 +321,7 @@
       "empty combination is illegal"
       "datum" datum)]
     [(list 'load (? string? path))
-     (load-expr path
-                (or (current-aloe-source-directory)
-                    (current-directory)))]
+     (load-expr path (current-aloe-source-directory))]
     [(cons 'load _)
      (raise-arguments-error
       'parse-datum
