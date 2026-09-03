@@ -25,7 +25,7 @@
  '(Prod Sym Int))
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
- '(Prod Sym Sym))
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "((x * 2) * y)" checker-environment))
  '(Prod (Prod Sym Int) Sym))
@@ -50,6 +50,9 @@
 (define x-value (eval-source "x" runtime-environment))
 (define y-value (eval-source "y" runtime-environment))
 
+(define (inspect source)
+  (eval-expr (car (read-program source)) runtime-environment))
+
 (check-eq? (eval-source "((x * 2) left)" runtime-environment)
            x-value)
 (check-equal? (eval-source "((x * 2) right)" runtime-environment)
@@ -60,9 +63,9 @@
 (check-equal? (eval-source "(((x * 2) * 3) right)" runtime-environment)
               6)
 
-(check-eq? (eval-source "((x * y) left)" runtime-environment)
+(check-eq? (inspect "((x * y) left)")
            x-value)
-(check-eq? (eval-source "((x * y) right)" runtime-environment)
+(check-eq? (inspect "((x * y) right)")
            y-value)
 
 ;; Non-Int multiplication uses the generic nested-product overload.
@@ -70,9 +73,6 @@
  (aloe-value->string
   (eval-source "((x * 2) * y)" runtime-environment))
  "#<Prod left=#<Prod left=#<Sym \"x\"> right=2> right=#<Sym \"y\">>")
-
-(define (inspect source)
-  (eval-expr (car (read-program source)) runtime-environment))
 
 (check-equal? (eval-source "(((x + 2) + 3) const)"
                            runtime-environment)

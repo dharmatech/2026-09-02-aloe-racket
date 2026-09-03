@@ -1,0 +1,5 @@
+(define-class Pow Math
+  (fields
+    (base Math)
+    (exp Int))
+  (methods))

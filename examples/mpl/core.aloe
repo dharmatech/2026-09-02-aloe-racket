@@ -6,6 +6,7 @@
 (load "sym.aloe")
 (load "sum.aloe")
 (load "prod.aloe")
+(load "pow.aloe")
 
 (define-methods Sym
   (methods
@@ -24,10 +25,18 @@
     (+ (s Sym)
        Sum
        (Sum new (List of self s) 0))
+    (* (other Sym)
+       Math
+       (if (self same-term? other)
+           (Pow new self 2)
+           (Prod new self other)))
     (* (type U)
        (other U)
        (Prod Sym U)
        (Prod new self other))
+    (^ (n Int)
+       Pow
+       (Pow new self n))
     (coeff-plus (other Math)
        (Prod Sym Int)
        (Prod new self 2))))
@@ -88,3 +97,22 @@
        (other U)
        (Prod (Prod L R) U)
        (Prod new self other))))
+
+(define-methods Pow
+  (methods
+    (math-name ()
+       String
+       ((self base) math-name))
+    (same-term? (other Math)
+       Bool
+       ((self math-name) = (other math-name)))
+    (coeff-plus (other Math)
+       (Prod Pow Int)
+       (Prod new self 2))
+    (* (other Pow)
+       Math
+       (if ((self base) same-term? (other base))
+           (Pow new
+             (self base)
+             ((self exp) + (other exp)))
+           (Prod new self other)))))
