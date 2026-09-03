@@ -1,0 +1,40 @@
+
+
+
+    (cohere (others (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0)))
+        (if (others empty?)
+            origin
+            (((((others map (fn (other) (other position)))
+                fold origin
+                (fn (acc p) (acc + p)))
+               / ((others len) float))
+              - (self position))
+             * 0.01))))
+
+
+
+
+    (cohere (others (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0))
+            (pos (fn (other) (other position)))
+            (add (fn (acc p) (acc + p))))
+        (if (others empty?)
+            origin
+            (((((others map pos) fold origin add)
+               / ((others len) float))
+              - (self position))
+             * 0.01))))             
+
+
+
+    (cohere (others (List (Boid T))) (Point T)
+      (let ((origin (Point new 0.0 0.0))
+            (pos (fn (other) (other position)))
+            (add (fn (acc p) (acc + p))))
+        (if (others empty?)
+            origin
+            (let ((sum ((others map pos) fold origin add))
+                  (len ((others len) float)))
+                (((sum / len) - (self position)) * 0.01)))))
+

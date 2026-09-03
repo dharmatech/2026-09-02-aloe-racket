@@ -1,0 +1,10 @@
+
+(d2 >= (r * r))
+
+; Ambiguous:
+
+(d2 >= r * r)
+
+; Brackets imply precedence:
+
+[d2 >= r * r]

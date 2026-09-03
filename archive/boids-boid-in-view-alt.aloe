@@ -1,0 +1,64 @@
+
+
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (if (0.0 < (hd dot hd))
+            (0.0 < (hd dot to))
+            #t)))
+
+; or:
+
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (((0.0 < (hd dot hd)) not)
+         or
+         (0.0 < (hd dot to)))))
+        
+; or:
+
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        ((0.0 >= (hd dot hd))
+         or
+         (0.0 < (hd dot to)))))
+
+; or:
+
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (((hd dot hd) <= 0.0)
+         or
+         (0.0 < (hd dot to)))))
+
+; or
+; Braces-style placement.
+
+    (in-view? (other (Boid T)) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (
+          ((hd dot hd) <= 0.0)
+          or
+          (0.0 < (hd dot to))
+        )
+      )
+    )
+
+
+    (in-view? (other (Boid T)) Bool
+      (let (
+             (to ((other position) - (self position)))
+             (hd (self velocity))
+           )
+        (
+          ((hd dot hd) <= 0.0)
+          or
+          (0.0 < (hd dot to))
+        )
+      )
+    )
+
