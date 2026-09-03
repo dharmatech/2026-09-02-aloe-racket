@@ -48,10 +48,10 @@
 
 (define (check-linear-sum expression coefficient)
   (check-eq?
-   (inspect (format "(((~a terms) first) left)" expression))
+   (inspect (format "((((~a terms) first) factors) first)" expression))
    x-value)
   (check-equal?
-   (inspect (format "(((~a terms) first) right)" expression))
+   (inspect (format "(((~a terms) first) coeff)" expression))
    coefficient)
   (check-equal?
    (eval-source

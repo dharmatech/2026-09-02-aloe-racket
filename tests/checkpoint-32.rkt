@@ -105,10 +105,10 @@ ALOE
  (eval-source "(((x + 2) + 3) const)" runtime-environment)
  5)
 (check-eq?
- (inspect "(((((x + 2) + x) terms) first) left)")
+ (inspect "((((((x + 2) + x) terms) first) factors) first)")
  x-value)
 (check-equal?
- (inspect "(((((x + 2) + x) terms) first) right)")
+ (inspect "(((((x + 2) + x) terms) first) coeff)")
  2)
 (check-equal?
  (eval-source "(((x + 2) + x) const)" runtime-environment)

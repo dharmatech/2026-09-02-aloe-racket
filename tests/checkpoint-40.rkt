@@ -34,7 +34,7 @@
  'Pow)
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- '(Prod Sym Int))
+ 'Prod)
 (check-equal?
  (type->datum (typecheck-source "((x + 2) + x)" checker-environment))
  'Sum)
@@ -61,12 +61,14 @@
 
 ;; Different bases remain a nested product rather than being flattened.
 (check-regexp-match
- #px"^#<Prod left=#<Pow "
+ #px"^#<Prod coeff=1 factors=#<List #<Pow "
  (aloe-value->string
   (eval-source "((x ^ 2) * (y ^ 3))" runtime-environment)))
 
-(check-eq? (eval-source "((x * 2) left)" runtime-environment) x-value)
-(check-equal? (eval-source "((x * 2) right)" runtime-environment) 2)
+(check-equal? (eval-source "((x * 2) coeff)" runtime-environment) 2)
+(check-eq? (eval-source "(((x * 2) factors) first)"
+                        runtime-environment)
+           x-value)
 (check-equal? (eval-source "(((x + 2) + x) const)"
                            runtime-environment)
               2)

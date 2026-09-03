@@ -19,16 +19,16 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- '(Prod Sym Int))
+ 'Prod)
 (check-equal?
  (type->datum (typecheck-source "((x * 2) * 3)" checker-environment))
- '(Prod Sym Int))
+ 'Prod)
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
  'Math)
 (check-equal?
  (type->datum (typecheck-source "((x * 2) * y)" checker-environment))
- '(Prod (Prod Sym Int) Sym))
+ 'Prod)
 (check-exn
  exn:fail:aloe-type?
  (lambda () (typecheck-source "(2 * x)" checker-environment)))
@@ -53,32 +53,34 @@
 (define (inspect source)
   (eval-expr (car (read-program source)) runtime-environment))
 
-(check-eq? (eval-source "((x * 2) left)" runtime-environment)
-           x-value)
-(check-equal? (eval-source "((x * 2) right)" runtime-environment)
+(check-equal? (eval-source "((x * 2) coeff)" runtime-environment)
               2)
-
-(check-eq? (eval-source "(((x * 2) * 3) left)" runtime-environment)
+(check-eq? (eval-source "(((x * 2) factors) first)" runtime-environment)
            x-value)
-(check-equal? (eval-source "(((x * 2) * 3) right)" runtime-environment)
+
+(check-equal? (eval-source "(((x * 2) * 3) coeff)" runtime-environment)
               6)
-
-(check-eq? (inspect "((x * y) left)")
+(check-eq? (eval-source "((((x * 2) * 3) factors) first)"
+                        runtime-environment)
            x-value)
-(check-eq? (inspect "((x * y) right)")
+
+(check-equal? (inspect "((x * y) coeff)") 1)
+(check-eq? (inspect "(((x * y) factors) first)")
+           x-value)
+(check-eq? (inspect "((((x * y) factors) rest) first)")
            y-value)
 
-;; Non-Int multiplication uses the generic nested-product overload.
+;; Nonmatching factors stay in the same flat product.
 (check-equal?
  (aloe-value->string
   (eval-source "((x * 2) * y)" runtime-environment))
- "#<Prod left=#<Prod left=#<Sym \"x\"> right=2> right=#<Sym \"y\">>")
+ "#<Prod coeff=2 factors=#<List #<Sym \"y\"> #<Sym \"x\">>>")
 
 (check-equal? (eval-source "(((x + 2) + 3) const)"
                            runtime-environment)
               5)
 (check-equal?
- (inspect "((((((x + 2) + x) + x) terms) first) right)")
+ (inspect "((((((x + 2) + x) + x) terms) first) coeff)")
  3)
 (check-equal? (eval-source "((((x + 2) + y) terms) len)"
                            runtime-environment)

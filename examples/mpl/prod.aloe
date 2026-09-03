@@ -1,5 +1,5 @@
-(define-class (Prod L R) Math
+(define-class Prod Math
   (fields
-    (left L)
-    (right R))
+    (coeff Int)
+    (factors (List Math)))
   (methods))

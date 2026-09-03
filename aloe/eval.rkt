@@ -650,7 +650,7 @@
     [(and (instance-value? value)
           (eq? (class-value-name (instance-value-class value)) 'Prod))
      (define fields (instance-value-field-values value))
-     (format "#<Prod left=~a right=~a>"
+     (format "#<Prod coeff=~a factors=~a>"
              (aloe-value->string (vector-ref fields 0))
              (aloe-value->string (vector-ref fields 1)))]
     [(instance-value? value)

@@ -70,9 +70,9 @@
 (check-equal? (eval-source "((((x + 2) + x) terms) len)"
                            runtime-environment)
               1)
-(check-eq? (inspect "(((((x + 2) + x) terms) first) left)")
+(check-eq? (inspect "((((((x + 2) + x) terms) first) factors) first)")
            x-value)
-(check-equal? (inspect "(((((x + 2) + x) terms) first) right)")
+(check-equal? (inspect "(((((x + 2) + x) terms) first) coeff)")
               2)
 (check-equal? (eval-source "(((x + 2) + x) const)"
                            runtime-environment)
@@ -94,7 +94,7 @@
 
 ;; Repeated matching increments the existing coefficient.
 (check-equal?
- (inspect "((((((x + 2) + x) + x) terms) first) right)")
+ (inspect "((((((x + 2) + x) + x) terms) first) coeff)")
  3)
 (check-equal?
  (eval-source "((((x + 2) + x) + x) const)" runtime-environment)

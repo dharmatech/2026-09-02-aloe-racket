@@ -141,8 +141,8 @@ ALOE
  (eval-source "(((x + 2) + 3) const)" mpl-runtime-environment)
  5)
 (check-equal?
- (inspect-mpl "((((((x + 2) + x) + x) terms) first) right)")
+ (inspect-mpl "((((((x + 2) + x) + x) terms) first) coeff)")
  3)
 (check-equal?
- (inspect-mpl "(((((((x + 2) + x) + x) + x) terms) first) right)")
+ (inspect-mpl "(((((((x + 2) + x) + x) + x) terms) first) coeff)")
  4)

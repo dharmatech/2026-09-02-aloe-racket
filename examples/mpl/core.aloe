@@ -29,17 +29,19 @@
        Math
        (if (self same-term? other)
            (Pow new self 2)
-           (Prod new self other)))
-    (* (type U)
-       (other U)
-       (Prod Sym U)
-       (Prod new self other))
+           (Prod new 1 (List of self other))))
+    (* (n Int)
+       Prod
+       (Prod new n (List of self)))
     (^ (n Int)
        Pow
        (Pow new self n))
+    (factor-square ()
+       Math
+       (Pow new self 2))
     (coeff-plus (other Math)
-       (Prod Sym Int)
-       (Prod new self 2))))
+       Prod
+       (Prod new 2 (List of self)))))
 
 (define-methods Sum
   (methods
@@ -79,24 +81,37 @@
   (methods
     (math-name ()
        String
-       ((self left) math-name))
+       (((self factors) first) math-name))
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
     (coeff-plus (other Math)
-       (Prod Sym Int)
+       Prod
        (Prod new
-         (self left)
-         ((self right) + 1)))
+         ((self coeff) + 1)
+         (self factors)))
     (* (n Int)
-       (Prod L Int)
+       Prod
        (Prod new
-         (self left)
-         ((self right) * n)))
-    (* (type U)
-       (other U)
-       (Prod (Prod L R) U)
-       (Prod new self other))))
+         ((self coeff) * n)
+         (self factors)))
+    (* (s Sym)
+       Prod
+       (let ((matching?
+              ((self factors) fold #f
+                (fn (found factor)
+                  (if found
+                      #t
+                      (factor same-term? s))))))
+         (Prod new
+           (self coeff)
+           (if matching?
+               ((self factors) map
+                 (fn (factor)
+                   (if (factor same-term? s)
+                       (s factor-square)
+                       factor)))
+               ((self factors) cons s)))))))
 
 (define-methods Pow
   (methods
@@ -107,12 +122,12 @@
        Bool
        ((self math-name) = (other math-name)))
     (coeff-plus (other Math)
-       (Prod Pow Int)
-       (Prod new self 2))
+       Prod
+       (Prod new 2 (List of self)))
     (* (other Pow)
        Math
        (if ((self base) same-term? (other base))
            (Pow new
              (self base)
              ((self exp) + (other exp)))
-           (Prod new self other)))))
+           (Prod new 1 (List of self other))))))

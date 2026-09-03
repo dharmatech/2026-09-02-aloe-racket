@@ -37,6 +37,6 @@
 (define product-text
   (aloe-value->string
    (eval-source "(x * 2)" runtime-environment)))
-(check-regexp-match #px"^#<Prod left=" product-text)
+(check-regexp-match #px"^#<Prod coeff=2 factors=" product-text)
 (check-regexp-match #px"x" product-text)
-(check-regexp-match #px"right=2>$" product-text)
+(check-regexp-match #px"#<List #<Sym \\\"x\\\">>>$" product-text)
