@@ -27,7 +27,7 @@
 (struct float-type () #:transparent)
 (struct bool-type () #:transparent)
 (struct string-type () #:transparent)
-(struct protocol-type (name) #:transparent)
+(struct protocol-type (name signatures) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
@@ -54,6 +54,7 @@
 (define VOID (void-type))
 
 (define current-typecheck-load-paths (make-parameter '()))
+(define current-typecheck-program-depth (make-parameter 0))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -257,9 +258,17 @@
 
 (define (typecheck-program expressions
                            [environment (make-type-environment)])
-  (for/fold ([result VOID])
-            ([expression (in-list expressions)])
-    (type-of expression environment)))
+  (define outermost? (zero? (current-typecheck-program-depth)))
+  (define result
+    (parameterize
+        ([current-typecheck-program-depth
+          (add1 (current-typecheck-program-depth))])
+      (for/fold ([result VOID])
+                ([expression (in-list expressions)])
+        (type-of expression environment))))
+  (when outermost?
+    (check-protocol-conformance! environment))
+  result)
 
 (define (typecheck-load! expression environment)
   (define path (load-expr-resolved-path expression))
@@ -293,8 +302,11 @@
          (infer-expression value-expression environment #f))
        (type-environment-set! environment name value-type)
        VOID]
-      [(define-protocol-expr name)
-       (type-environment-set! environment name (protocol-type name))
+      [(define-protocol-expr name signatures)
+       (define protocol (protocol-type name signatures))
+       (type-environment-set! environment name protocol)
+       (for ([signature (in-list signatures)])
+         (check-method-types! signature environment (make-hasheq)))
        VOID]
       [(define-class-expr name type-parameters protocol fields methods)
        (check-class-definition!
@@ -447,6 +459,72 @@
       "define-methods target is not a class: ~a"
       target)]))
 
+(define (check-protocol-conformance! environment)
+  (define seen-classes (make-hasheq))
+  (let loop ([current environment])
+    (when current
+      (for ([binding (in-hash-values
+                      (type-environment-bindings current))])
+        (when (class-type? binding)
+          (define class (class-type-class binding))
+          (unless (hash-ref seen-classes class #f)
+            (hash-set! seen-classes class #t)
+            (define protocol (class-info-protocol class))
+            (when protocol
+              (for ([signature
+                     (in-list (protocol-type-signatures protocol))])
+                (unless
+                    (for/or ([method (in-list (class-info-methods class))])
+                      (method-signature-conforms?
+                       class method signature environment))
+                  (raise-type-error
+                   "class ~a does not implement protocol ~a method ~a"
+                   (class-info-name class)
+                   (protocol-type-name protocol)
+                   (method-declaration-selector signature))))))))
+      (loop (type-environment-parent current)))))
+
+(define (method-signature-conforms?
+         class method signature environment)
+  (and
+   (eq? (method-declaration-selector method)
+        (method-declaration-selector signature))
+   (= (length (method-declaration-parameters method))
+      (length (method-declaration-parameters signature)))
+   (with-handlers ([exn:fail:aloe-type? (lambda (_) #f)])
+     (define class-substitution
+       (make-hasheq
+        (map cons
+             (class-info-type-parameters class)
+             (class-info-parameter-types class))))
+     (define method-substitution
+       (extend-method-substitution class-substitution method #t))
+     ;; An implementation must accept the full protocol parameter type.
+     (for ([implementation-parameter
+            (in-list (method-declaration-parameters method))]
+           [required-parameter
+            (in-list (method-declaration-parameters signature))])
+       (unify-types!
+        (type-from-sexpr
+         (parameter-declaration-type required-parameter)
+         environment
+         (make-hasheq))
+        (type-from-sexpr
+         (parameter-declaration-type implementation-parameter)
+         environment
+         method-substitution)))
+     ;; Concrete class results may satisfy a protocol result covariantly.
+     (unify-types!
+      (type-from-sexpr
+       (method-declaration-return-type method)
+       environment
+       method-substitution)
+      (type-from-sexpr
+       (method-declaration-return-type signature)
+       environment
+       (make-hasheq)))
+     #t)))
+
 (define (check-method-body! self-type method environment substitution)
   (define parameter-types
     (for/list ([parameter
@@ -574,6 +652,9 @@
        [(instance-type? receiver-type)
         (infer-instance-send
          receiver-type selector arguments environment)]
+       [(protocol-type? receiver-type)
+        (infer-protocol-send
+         receiver-type selector arguments environment)]
        [(list-type? receiver-type)
         (infer-list-send receiver-type selector arguments environment)]
        [(function-type? receiver-type)
@@ -605,6 +686,20 @@
           [else (unknown-message selector)])]
        [else
         (unknown-message selector)])]))
+
+(define (infer-protocol-send protocol selector arguments environment)
+  (define selected
+    (select-method-overload
+     (protocol-type-signatures protocol)
+     selector
+     arguments
+     environment
+     (make-hasheq)
+     (protocol-type-name protocol)))
+  (type-from-sexpr
+   (method-declaration-return-type (method-match-method selected))
+   environment
+   (method-match-substitution selected)))
 
 (define (infer-construction class arguments environment)
   (define fields (class-info-fields class))

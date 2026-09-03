@@ -134,28 +134,38 @@ Labeled construction (`make`) is out of scope.
 A protocol is a named type. A class may opt in. The checker treats instances of that class as that type as well as their class type.
 
 ```
-(define-protocol Math)
+(define-protocol Math
+  (math-name () String)
+  (same-term? (other Math) Bool)
+  (coeff-plus (other Math) Math))
 
 (define-class Sym Math
   (fields
     (name String))
   (methods
+    (math-name () String
+      (self name))
     (+ (type U) (other U) Math
       body)))
 ```
 
 Rules for this slice:
 
-- `define-protocol` declares a name. No required methods yet (empty marker).
+- `define-protocol` declares a name and may list required method signatures.
+  `(define-protocol Math)` remains legal as an empty marker.
+- Every class that opts into a protocol with signatures must implement each
+  required method with compatible parameter and return types.
 - `define-class Name Protocol ...` opts the class into one protocol.
 - A value of class `Sym` has type `Sym` and also type `Math`.
 - A method may return `Math` when every returned value's class has opted in.
+- A send whose receiver is statically typed `Math` is checked against Math's
+  declared signatures; runtime lookup remains on the receiver's class.
 - `(x + 2)` and `(x + y)` may both be typed `Math`.
 - Sending still looks up the selector on the *class*, not on the protocol. The protocol is a type, not a second method table.
 - No `super`. No inherited fields. No default implementations.
 - A class without a protocol is unchanged.
 
-Out of scope here: multiple protocols per class, required signatures on the protocol, implementation inheritance.
+Out of scope here: multiple protocols per class and implementation inheritance.
 
 ### 3.4 Overloading (0.2 experiment)
 

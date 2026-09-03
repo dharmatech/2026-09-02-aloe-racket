@@ -1,4 +1,7 @@
-(define-protocol Math)
+(define-protocol Math
+  (math-name () String)
+  (same-term? (other Math) Bool)
+  (coeff-plus (other Math) Math))
 
 (load "sym.aloe")
 (load "sum.aloe")
@@ -9,41 +12,79 @@
     (same? (other Sym)
        Bool
        ((self name) = (other name)))
-    (+ (type U)
-       (other U)
-       (Sum Sym U)
-       (Sum new self other))
+    (math-name ()
+       String
+       (self name))
+    (same-term? (other Math)
+       Bool
+       ((self math-name) = (other math-name)))
+    (+ (n Int)
+       Sum
+       (Sum new (List of self) n))
+    (+ (s Sym)
+       Sum
+       (Sum new (List of self s) 0))
     (* (type U)
        (other U)
        (Prod Sym U)
        (Prod new self other))
-    (coeff-plus (s Sym)
+    (coeff-plus (other Math)
        (Prod Sym Int)
-       (if (self same? s)
-           (Prod new self 2)
-           (Prod new self (0 / 0))))))
+       (Prod new self 2))))
 
 (define-methods Sum
   (methods
+    (math-name ()
+       String
+       "<sum>")
+    (same-term? (other Math)
+       Bool
+       ((self math-name) = (other math-name)))
+    (coeff-plus (other Math)
+       Sum
+       self)
     (+ (n Int)
-       (Sum L Int)
+       Sum
        (Sum new
-         (self left)
-         ((self right) + n)))
+         (self terms)
+         ((self const) + n)))
     (+ (s Sym)
-       (Sum (Prod Sym Int) Int)
-       (Sum new
-         ((self left) coeff-plus s)
-         (self right)))))
+       Sum
+       (let ((matching?
+              ((self terms) fold #f
+                (fn (found term)
+                  (if found
+                      #t
+                      (term same-term? s))))))
+         (Sum new
+           (if matching?
+               ((self terms) map
+                 (fn (term)
+                   (if (term same-term? s)
+                       (term coeff-plus s)
+                       term)))
+               ((self terms) cons s))
+           (self const))))))
 
 (define-methods Prod
   (methods
-    (coeff-plus (s Sym)
+    (math-name ()
+       String
+       ((self left) math-name))
+    (same-term? (other Math)
+       Bool
+       ((self math-name) = (other math-name)))
+    (coeff-plus (other Math)
        (Prod Sym Int)
-       (if ((self left) same? s)
-           (Prod new
-             (self left)
-             ((self right) + 1))
-           (Prod new
-             (self left)
-             (0 / 0))))))
+       (Prod new
+         (self left)
+         ((self right) + 1)))
+    (* (n Int)
+       (Prod L Int)
+       (Prod new
+         (self left)
+         ((self right) * n)))
+    (* (type U)
+       (other U)
+       (Prod (Prod L R) U)
+       (Prod new self other))))

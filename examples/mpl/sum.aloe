@@ -1,5 +1,5 @@
-(define-class (Sum L R) Math
+(define-class Sum Math
   (fields
-    (left L)
-    (right R))
+    (terms (List Math))
+    (const Int))
   (methods))

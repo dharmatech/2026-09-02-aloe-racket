@@ -28,11 +28,11 @@
 ;; Existing sum construction and overloaded collection remain unchanged.
 (check-equal?
  (type->datum (typecheck-source "(x + 2)" checker-environment))
- '(Sum Sym Int))
+ 'Sum)
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + x)" checker-environment))
- '(Sum (Prod Sym Int) Int))
+ 'Sum)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -50,5 +50,5 @@
            y-value)
 
 (check-equal?
- (eval-source "(((x + 2) + x) right)" runtime-environment)
+ (eval-source "(((x + 2) + x) const)" runtime-environment)
  2)

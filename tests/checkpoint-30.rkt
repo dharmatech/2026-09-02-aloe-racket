@@ -20,17 +20,17 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x + 2)" checker-environment))
- '(Sum Sym Int))
+ 'Sum)
 (check-equal?
  (type->datum (typecheck-source "(x + y)" checker-environment))
- '(Sum Sym Sym))
+ 'Sum)
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + 3)" checker-environment))
- '(Sum Sym Int))
+ 'Sum)
 
-;; Both concrete Sum instantiations conform to Math in an expected-type
-;; position without erasing their inferred result types at the + sends.
+;; Sum conforms to Math in an expected-type position without erasing its
+;; concrete result type at the + sends.
 (check-equal?
  (type->datum
   (typecheck-source "(MathBox new (x + 2))" checker-environment))
@@ -49,8 +49,8 @@
 
 (define x-value (eval-source "x" runtime-environment))
 (check-eq?
- (eval-source "(((x + 2) + 3) left)" runtime-environment)
+ (eval-source "((((x + 2) + 3) terms) first)" runtime-environment)
  x-value)
 (check-equal?
- (eval-source "(((x + 2) + 3) right)" runtime-environment)
+ (eval-source "(((x + 2) + 3) const)" runtime-environment)
  5)

@@ -19,10 +19,10 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x + 2)" checker-environment))
- '(Sum Sym Int))
+ 'Sum)
 (check-equal?
  (type->datum (typecheck-source "(x + y)" checker-environment))
- '(Sum Sym Sym))
+ 'Sum)
 (check-exn
  exn:fail:aloe-type?
  (lambda () (typecheck-source "(2 + x)" checker-environment)))
@@ -35,23 +35,20 @@
 (define x-plus-two (eval-source "(x + 2)" runtime-environment))
 (define x-plus-y (eval-source "(x + y)" runtime-environment))
 
-;; Math is intentionally only a marker type and has no selectors. Inspect the
-;; concrete runtime result directly rather than statically sending fields to a
-;; value whose declared type is Math.
-(define (runtime-eval datum)
-  (eval-expr (parse-datum datum) runtime-environment))
-
 (check-regexp-match #px"^#<Sum " (aloe-value->string x-plus-two))
-(check-eq? (runtime-eval '((x + 2) left))
+(check-eq? (eval-source "(((x + 2) terms) first)" runtime-environment)
            x-value)
-(check-equal? (runtime-eval '((x + 2) right))
+(check-equal? (eval-source "((x + 2) const)" runtime-environment)
               2)
 
 (check-regexp-match #px"^#<Sum " (aloe-value->string x-plus-y))
-(check-eq? (runtime-eval '((x + y) left))
+(check-eq? (eval-source "(((x + y) terms) first)" runtime-environment)
            x-value)
-(check-eq? (runtime-eval '((x + y) right))
+(check-eq? (eval-source "((((x + y) terms) rest) first)"
+                        runtime-environment)
            y-value)
+(check-equal? (eval-source "((x + y) const)" runtime-environment)
+              0)
 
 (check-equal? (eval-source "(x name)" runtime-environment)
               "x")

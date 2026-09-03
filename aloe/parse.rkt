@@ -37,7 +37,7 @@
 (struct method-declaration
   (selector type-parameters parameters return-type body)
   #:transparent)
-(struct define-protocol-expr (name) #:transparent)
+(struct define-protocol-expr (name signatures) #:transparent)
 (struct define-class-expr
   (name type-parameters protocol fields methods)
   #:transparent)
@@ -198,6 +198,45 @@
       "malformed method declaration"
       "method" datum)]))
 
+(define (parse-protocol-signature datum)
+  (match datum
+    [(list (? symbol? selector) raw-parts ...)
+     (when (null? raw-parts)
+       (raise-arguments-error
+        'parse-datum
+        "malformed protocol signature; expected parameters and a return type"
+        "signature" datum))
+     (define explicit-empty-parameters?
+       (and (pair? raw-parts) (null? (car raw-parts))))
+     (when (and explicit-empty-parameters?
+                (not (= (length raw-parts) 2)))
+       (raise-arguments-error
+        'parse-datum
+        "malformed zero-parameter protocol signature"
+        "signature" datum))
+     (define parameter-datums
+       (if explicit-empty-parameters?
+           '()
+           (drop-right raw-parts 1)))
+     (define return-type (last raw-parts))
+     (unless (clearly-type-sexpr? return-type)
+       (raise-arguments-error
+        'parse-datum
+        "protocol return type must be a type expression"
+        "return type" return-type
+        "signature" datum))
+     (method-declaration
+      selector
+      '()
+      (map parse-parameter-declaration parameter-datums)
+      return-type
+      #f)]
+    [_
+     (raise-arguments-error
+      'parse-datum
+      "malformed protocol signature"
+      "signature" datum)]))
+
 (define (ensure-distinct-fields fields datum)
   (define duplicate
     (check-duplicates (map field-declaration-name fields)))
@@ -308,12 +347,14 @@
       'parse-datum
       "malformed define; expected (define name expression)"
       "datum" datum)]
-    [(list 'define-protocol (? symbol? name))
-     (define-protocol-expr name)]
+    [(list 'define-protocol (? symbol? name) signature-datums ...)
+     (define-protocol-expr
+      name
+      (map parse-protocol-signature signature-datums))]
     [(cons 'define-protocol _)
      (raise-arguments-error
       'parse-datum
-      "malformed define-protocol; expected (define-protocol Name)"
+      "malformed define-protocol; expected a name and method signatures"
       "datum" datum)]
     [(list 'define-class
            header

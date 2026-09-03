@@ -1,12 +1,14 @@
 #lang racket/base
 
-(require racket/runtime-path
+(require racket/file
+         racket/runtime-path
          rackunit
          "../aloe/eval.rkt"
          "../aloe/parse.rkt"
          "../aloe/main.rkt")
 
-(define-runtime-path core-path "../examples/mpl/core.aloe")
+(define-runtime-path mpl-directory "../examples/mpl")
+(define core-path (build-path mpl-directory "core.aloe"))
 
 (define mpl-setup
   (string-append
@@ -60,3 +62,9 @@
 (check-linear-sum "((x + 2) + x)" 2)
 (check-linear-sum "(((x + 2) + x) + x)" 3)
 (check-linear-sum "((((x + 2) + x) + x) + x)" 4)
+
+(for ([name (in-list '("core.aloe" "sym.aloe" "sum.aloe" "prod.aloe"))])
+  (check-false
+   (regexp-match?
+    #px"\\(0[[:space:]]+/[[:space:]]+0\\)"
+    (file->string (build-path mpl-directory name)))))

@@ -50,7 +50,7 @@
     [(define-expr name value-expression)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
-    [(define-protocol-expr _) (void)]
+    [(define-protocol-expr _ _) (void)]
     [(define-class-expr name type-parameters protocol fields methods)
      (env-define! environment
                   name
@@ -641,6 +641,18 @@
     [(string? value) (format "~s" value)]
     [(class-value? value)
      (format "#<class ~a>" (class-value-name value))]
+    [(and (instance-value? value)
+          (eq? (class-value-name (instance-value-class value)) 'Sum))
+     (define fields (instance-value-field-values value))
+     (format "#<Sum terms=~a const=~a>"
+             (aloe-value->string (vector-ref fields 0))
+             (aloe-value->string (vector-ref fields 1)))]
+    [(and (instance-value? value)
+          (eq? (class-value-name (instance-value-class value)) 'Prod))
+     (define fields (instance-value-field-values value))
+     (format "#<Prod left=~a right=~a>"
+             (aloe-value->string (vector-ref fields 0))
+             (aloe-value->string (vector-ref fields 1)))]
     [(instance-value? value)
      (define fields
        (for/list ([field-value
@@ -654,10 +666,18 @@
     [(function-value? value)
      (format "#<fn/~a>" (length (function-value-parameters value)))]
     [(list-value? value)
-     (define count (vector-length (list-value-elements value)))
-     (format "#<List ~a ~a>"
-             count
-             (if (= count 1) "element" "elements"))]
+     (define elements (list-value-elements value))
+     (define count (vector-length elements))
+     (define shown
+       (for/list ([element (in-vector elements)]
+                  [index (in-range 8)])
+         (aloe-value->string element)))
+     (define parts
+       (if (> count 8) (append shown '("...")) shown))
+     (format "#<List~a>"
+             (if (null? parts)
+                 ""
+                 (string-append " " (string-join parts " "))))]
     [(list-class-object? value) "#<class List>"]
     [(void? value) "#<void>"]
     [else "#<object>"]))

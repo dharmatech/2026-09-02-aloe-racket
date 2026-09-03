@@ -2,6 +2,8 @@
 
 (require racket/runtime-path
          rackunit
+         "../aloe/eval.rkt"
+         "../aloe/parse.rkt"
          "../aloe/main.rkt")
 
 (define-runtime-path core-path "../examples/mpl/core.aloe")
@@ -18,20 +20,23 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + x)" checker-environment))
- '(Sum (Prod Sym Int) Int))
+ 'Sum)
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + 3)" checker-environment))
- '(Sum Sym Int))
+ 'Sum)
 (check-equal?
  (type->datum (typecheck-source "(x + y)" checker-environment))
- '(Sum Sym Sym))
+ 'Sum)
 (check-exn
  exn:fail:aloe-type?
  (lambda () (typecheck-source "(2 + x)" checker-environment)))
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
+
+(define (inspect source)
+  (eval-expr (car (read-program source)) runtime-environment))
 
 (define x-value (eval-source "x" runtime-environment))
 (define y-value (eval-source "y" runtime-environment))
@@ -40,20 +45,21 @@
 (check-false (eval-source "(x same? y)" runtime-environment))
 
 (check-equal?
- (eval-source "(((x + 2) + 3) right)" runtime-environment)
+ (eval-source "(((x + 2) + 3) const)" runtime-environment)
  5)
 
 (check-eq?
- (eval-source "((((x + 2) + x) left) left)" runtime-environment)
+ (inspect "(((((x + 2) + x) terms) first) left)")
  x-value)
 (check-equal?
- (eval-source "((((x + 2) + x) left) right)" runtime-environment)
+ (inspect "(((((x + 2) + x) terms) first) right)")
  2)
 (check-equal?
- (eval-source "(((x + 2) + x) right)" runtime-environment)
+ (eval-source "(((x + 2) + x) const)" runtime-environment)
  2)
 
-(check-eq? (eval-source "((x + y) left)" runtime-environment)
+(check-eq? (eval-source "(((x + y) terms) first)" runtime-environment)
            x-value)
-(check-eq? (eval-source "((x + y) right)" runtime-environment)
+(check-eq? (eval-source "((((x + y) terms) rest) first)"
+                        runtime-environment)
            y-value)

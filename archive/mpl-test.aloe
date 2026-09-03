@@ -2,9 +2,10 @@
 (load "examples/mpl/core.aloe")
 (define x (Sym new "x"))
 (define y (Sym new "y"))
-x
 
+x
 y
+
 
 (x + 2)
 
@@ -20,5 +21,20 @@ y
 
 ; (((x + 2) plus x) plus x)
 
-((x + 2) + y)
 
+((x + 2) + y)
+(((x + 2) + y) terms)
+((((x + 2) + y) terms) first)
+(((((x + 2) + y) terms) rest) first)
+
+(List of 10 20 30)
+
+
+
+(x * 2)
+
+((x * 2) * 3)
+
+(x * y)
+
+((x * 2) * y)
