@@ -1,0 +1,20 @@
+(load "core.aloe")
+
+(define x (Sym new "x"))
+(define y (Sym new "y"))
+
+;; Existing product, sum, and power identities, compared through Math.show.
+(check ((x * x) show) ((x ^ 2) show))
+(check (((x * 2) * 3) show) ((x * 6) show))
+(check (((x + 2) + 3) show) ((x + 5) show))
+(check (((x ^ 2) * (x ^ 3)) show) ((x ^ 5) show))
+
+;; Existing unwrap identities.
+(check ((x * 1) show) (x show))
+(check ((x + 0) show) (x show))
+(check ((x ^ 1) show) (x show))
+(check ((x * 0) show) "0")
+(check (((x * -3) + (x * 3)) show) "0")
+
+;; A second symbol confirms that ordinary symbolic sums remain printable.
+(check ((x + y) show) "(x + y)")

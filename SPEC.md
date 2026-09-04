@@ -287,6 +287,17 @@ A body is a single expression. Nested `let` is how locals are introduced. No `be
 
 See section 3.3. Top-level only. Not a send.
 
+### 4.9 `check`
+
+```
+(check left right)
+```
+
+`check` evaluates its two expressions from left to right and requires them to
+have the same type and equal values. On success it returns the right-hand
+value. On failure it raises an error that shows both original source datums and
+both resulting values.
+
 ---
 
 ## 5. Types

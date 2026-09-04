@@ -48,6 +48,17 @@
      (env-lookup environment name)]
     [(? load-expr?)
      (eval-load! expression environment)]
+    [(check-expr left right left-datum right-datum)
+     (define left-value (eval-expr left environment))
+     (define right-value (eval-expr right environment))
+     (unless (aloe-values-equal? left-value right-value)
+       (error 'eval-aloe
+              "check failed: ~s => ~a vs ~s => ~a"
+              left-datum
+              (aloe-value->display-string left-value)
+              right-datum
+              (aloe-value->display-string right-value)))
+     right-value]
     [(define-expr name value-expression)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
@@ -727,3 +738,26 @@
        (error 'eval-aloe "show must return a String"))
      shown]
     [else (aloe-value->string value)]))
+
+(define (value-vectors-equal? left right)
+  (and (= (vector-length left) (vector-length right))
+       (for/and ([left-value (in-vector left)]
+                 [right-value (in-vector right)])
+         (aloe-values-equal? left-value right-value))))
+
+(define (aloe-values-equal? left right)
+  (cond
+    [(and (exact-integer? left) (exact-integer? right)) (= left right)]
+    [(and (flonum? left) (flonum? right)) (= left right)]
+    [(and (boolean? left) (boolean? right)) (eq? left right)]
+    [(and (string? left) (string? right)) (string=? left right)]
+    [(and (instance-value? left) (instance-value? right))
+     (and (eq? (instance-value-class left) (instance-value-class right))
+          (value-vectors-equal? (instance-value-field-values left)
+                                (instance-value-field-values right)))]
+    [(and (list-value? left) (list-value? right))
+     (and (eq? (list-value-class left) (list-value-class right))
+          (value-vectors-equal? (list-value-elements left)
+                                (list-value-elements right)))]
+    [(and (void? left) (void? right)) #t]
+    [else (eq? left right)]))

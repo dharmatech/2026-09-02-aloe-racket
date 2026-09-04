@@ -1,6 +1,6 @@
 # Aloe 0.1 checkpoints
 
-> Checkpoints 12–51 live as `tests/checkpoint-N.rkt`; the original 1–11
+> Checkpoints 12–52 live as `tests/checkpoint-N.rkt`; the original 1–11
 > implementation sequence remains below unchanged.
 
 Work one checkpoint at a time. Each ends when `raco test` is green and you have run one expression by hand. Do not start Boids until checkpoint 11.
@@ -71,3 +71,9 @@ Accept the must-run goldens in `SPEC.md` §9. Reject the five must-fail programs
 
 Load `examples/boids.aloe`. Typecheck. Evaluate `(demo step)` twice.
 `len` is `Int`; divide points by `(n float)`, not `n`.
+
+## 52. `check` + MPL identities workbook
+
+`(check left right)` compares same-typed values, returns the right value on
+success, and reports both source datums and displayed values on failure.
+`examples/mpl/identities.aloe` records the established MPL show-identities.

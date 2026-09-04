@@ -11,6 +11,7 @@
          (struct-out string-expr)
          (struct-out variable-expr)
          (struct-out load-expr)
+         (struct-out check-expr)
          (struct-out define-expr)
          (struct-out field-declaration)
          (struct-out parameter-declaration)
@@ -31,6 +32,7 @@
 (struct string-expr (value) #:transparent)
 (struct variable-expr (name) #:transparent)
 (struct load-expr (path directory) #:transparent)
+(struct check-expr (left right left-datum right-datum) #:transparent)
 (struct define-expr (name value) #:transparent)
 (struct field-declaration (name type) #:transparent)
 (struct parameter-declaration (name type) #:transparent)
@@ -339,6 +341,16 @@
      (raise-arguments-error
       'parse-datum
       "malformed load; expected (load \"path.aloe\")"
+      "datum" datum)]
+    [(list 'check left right)
+     (check-expr (parse-datum left)
+                 (parse-datum right)
+                 left
+                 right)]
+    [(cons 'check _)
+     (raise-arguments-error
+      'parse-datum
+      "malformed check; expected (check left right)"
       "datum" datum)]
     [(list 'define (? symbol? name) value)
      (define-expr name (parse-datum value))]

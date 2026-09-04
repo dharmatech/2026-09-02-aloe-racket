@@ -297,6 +297,16 @@
        (type-environment-ref environment name)]
       [(? load-expr?)
        (typecheck-load! expression environment)]
+      [(check-expr left right _ _)
+       (define left-type
+         (infer-expression left environment expected))
+       (define right-type
+         (infer-expression right environment left-type))
+       (unify-types!
+        left-type
+        right-type
+        "check operands must have the same type")
+       right-type]
       [(define-expr name value-expression)
        (define value-type
          (infer-expression value-expression environment #f))
