@@ -77,3 +77,5 @@ Load `examples/boids.aloe`. Typecheck. Evaluate `(demo step)` twice.
 `(check left right)` compares same-typed values, returns the right value on
 success, and reports both source datums and displayed values on failure.
 `examples/mpl/identities.aloe` records the established MPL show-identities.
+
+## 53. MPL identities use normalized value equality

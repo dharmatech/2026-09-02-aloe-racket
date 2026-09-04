@@ -3,11 +3,11 @@
 (define x (Sym new "x"))
 (define y (Sym new "y"))
 
-;; Existing product, sum, and power identities, compared through Math.show.
-(check ((x * x) show) ((x ^ 2) show))
-(check (((x * 2) * 3) show) ((x * 6) show))
-(check (((x + 2) + 3) show) ((x + 5) show))
-(check (((x ^ 2) * (x ^ 3)) show) ((x ^ 5) show))
+;; Existing product, sum, and power identities compare normalized Math values.
+(check (x * x) (x ^ 2))
+(check ((x * 2) * 3) (x * 6))
+(check ((x + 2) + 3) (x + 5))
+(check ((x ^ 2) * (x ^ 3)) (x ^ 5))
 
 ;; Existing unwrap identities.
 (check ((x * 1) show) (x show))
