@@ -14,17 +14,20 @@ application as the primitive. Aloe takes the other branch: a Lisp whose kernel
 is sending a message.
 
 The core stays small on purpose. Libraries and programs grow the rest
-(`lib/list.aloe`, `examples/`). See `docs/philosophy.md` and `SPEC.md`.
+([lib/list.aloe](lib/list.aloe), [examples/](examples/)). See
+[docs/philosophy.md](docs/philosophy.md) and [SPEC.md](SPEC.md).
 
 `ALOE = Scheme + Smalltalk + Types`
 
 ## Layout
 
-- `SPEC.md` — language 0.1
-- `CHECKPOINTS.md` — implementation order
-- `AGENTS.md` — rules for a coding agent
-- `lib/list.aloe` — Aloe implementations of `fold`, `reverse`, and `map`
-- `examples/boids.aloe` — target program
+- [SPEC.md](SPEC.md) — language 0.1 plus 0.2 additions
+- [CHECKPOINTS.md](CHECKPOINTS.md) — implementation order
+- [AGENTS.md](AGENTS.md) — rules for a coding agent
+- [lib/list.aloe](lib/list.aloe) — Aloe implementations of `fold`, `reverse`, and `map`
+- [examples/boids.aloe](examples/boids.aloe) — target program
+- [examples/mpl/](examples/mpl/) — 0.2 computer algebra fragment
+- [docs/journal/](docs/journal/) — release notes
 
 ## Driver
 
@@ -41,15 +44,15 @@ and then opens the REPL with its definitions and classes still available.
 
 ## 0.1 goal
 
-Typecheck `examples/boids.aloe` and evaluate `(demo step)`.
+Typecheck [examples/boids.aloe](examples/boids.aloe) and evaluate `(demo step)`.
 
 Interpreter + type checker in Racket only. No compiler.
 
-Legal now: Aloe 0.1 typechecks and evaluates the complete `examples/boids.aloe` program, including both trailing `step` sends.
+Legal now: Aloe 0.1 typechecks and evaluates the complete [examples/boids.aloe](examples/boids.aloe) program, including both trailing `step` sends.
 
 ## 0.2 additions
 
-Aloe 0.2 adds protocols and method overloads. `examples/mpl/` is a
+Aloe 0.2 adds protocols and method overloads. [examples/mpl/](examples/mpl/) is a
 Cohen-style CAS fragment built around the `Math` protocol: primitive `Int` is
 not `Math`, so algebraic constants use `Num`. The default printer sends `show`
 when an object provides it, while the REPL command `:raw` prints the structural
