@@ -1,7 +1,10 @@
 (define-protocol Math
   (math-name () String)
   (same-term? (other Math) Bool)
-  (coeff-plus (other Math) Math))
+  (coeff-plus (other Math) Math)
+  (factor-base () Math)
+  (factor-exp () Int)
+  (^ (n Int) Math))
 
 (load "sym.aloe")
 (load "sum.aloe")
@@ -19,6 +22,12 @@
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
+    (factor-base ()
+       Math
+       self)
+    (factor-exp ()
+       Int
+       1)
     (+ (n Int)
        Sum
        (Sum new (List of self) n))
@@ -36,9 +45,6 @@
     (^ (n Int)
        Pow
        (Pow new self n))
-    (factor-square ()
-       Math
-       (Pow new self 2))
     (coeff-plus (other Math)
        Prod
        (Prod new 2 (List of self)))))
@@ -51,9 +57,40 @@
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
+    (factor-base ()
+       Math
+       self)
+    (factor-exp ()
+       Int
+       1)
     (coeff-plus (other Math)
        Sum
        self)
+    (^ (n Int)
+       Pow
+       (Pow new self n))
+    (insert-term (terms (List Math))
+                 (term Math)
+       (List Math)
+       (let ((matching?
+              (terms fold #f
+                (fn (found candidate)
+                  (if found
+                      #t
+                      (candidate same-term? term))))))
+         (if matching?
+             (terms map
+               (fn (candidate)
+                 (if (candidate same-term? term)
+                     (candidate coeff-plus term)
+                     candidate)))
+             (terms cons term))))
+    (normalized-terms ()
+       (List Math)
+       ((self terms) fold
+         (List empty)
+         (fn (terms term)
+           (self insert-term terms term))))
     (+ (n Int)
        Sum
        (Sum new
@@ -75,7 +112,15 @@
                        (term coeff-plus s)
                        term)))
                ((self terms) cons s))
-           (self const))))))
+           (self const))))
+    (+ (other Sum)
+       Sum
+       (Sum new
+         ((other terms) fold
+           (self normalized-terms)
+           (fn (terms term)
+             (self insert-term terms term)))
+         ((self const) + (other const))))))
 
 (define-methods Prod
   (methods
@@ -85,6 +130,12 @@
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
+    (factor-base ()
+       Math
+       self)
+    (factor-exp ()
+       Int
+       1)
     (coeff-plus (other Math)
        Prod
        (Prod new
@@ -95,23 +146,53 @@
        (Prod new
          ((self coeff) * n)
          (self factors)))
-    (* (s Sym)
-       Prod
+    (merge-factor (left Math)
+                  (right Math)
+       Math
+       (Pow new
+         (left factor-base)
+         ((left factor-exp) + (right factor-exp))))
+    (insert-factor (factors (List Math))
+                   (factor Math)
+       (List Math)
        (let ((matching?
-              ((self factors) fold #f
-                (fn (found factor)
+              (factors fold #f
+                (fn (found candidate)
                   (if found
                       #t
-                      (factor same-term? s))))))
-         (Prod new
-           (self coeff)
-           (if matching?
-               ((self factors) map
-                 (fn (factor)
-                   (if (factor same-term? s)
-                       (s factor-square)
-                       factor)))
-               ((self factors) cons s)))))))
+                      (candidate same-term? factor))))))
+         (if matching?
+             (factors map
+               (fn (candidate)
+                 (if (candidate same-term? factor)
+                     (self merge-factor candidate factor)
+                     candidate)))
+             (factors cons factor))))
+    (coeff-power (n Int)
+       Int
+       (if (n <= 0)
+           1
+           ((self coeff) * (self coeff-power (n - 1)))))
+    (* (s Sym)
+       Prod
+       (Prod new
+         (self coeff)
+         (self insert-factor (self factors) s)))
+    (* (other Prod)
+       Prod
+       (Prod new
+         ((self coeff) * (other coeff))
+         ((other factors) fold
+           (self factors)
+           (fn (factors factor)
+             (self insert-factor factors factor)))))
+    (^ (n Int)
+       Prod
+       (Prod new
+         (self coeff-power n)
+         ((self factors) map
+           (fn (factor)
+             (factor ^ n)))))))
 
 (define-methods Pow
   (methods
@@ -121,9 +202,20 @@
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
+    (factor-base ()
+       Math
+       (self base))
+    (factor-exp ()
+       Int
+       (self exp))
     (coeff-plus (other Math)
        Prod
        (Prod new 2 (List of self)))
+    (^ (n Int)
+       Pow
+       (Pow new
+         (self base)
+         ((self exp) * n)))
     (* (other Pow)
        Math
        (if ((self base) same-term? (other base))

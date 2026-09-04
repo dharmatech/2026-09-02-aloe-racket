@@ -48,3 +48,17 @@ y
 (x * 2)
 ((x * 2) * 3)
 ((x * 2) * y)
+
+
+
+(x + 0)
+(x * 0)
+(x * 1)
+(x ^ 0)
+(x ^ 1)
+
+((x * 2) + (x * 3))     ; 5x   — like terms that are already Prods
+((x ^ 2) * x)           ; x^3
+((x * y) * x)           ; x^2 y
+(x + x + y + y)         ; 2x+2y
+((x + 2) + (x + 3))     ; 2x+5  — already a Sum+Sum case
