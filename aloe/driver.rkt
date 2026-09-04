@@ -31,9 +31,13 @@
   (type-of expression (driver-type-environment state))
   (eval-expr expression (driver-runtime-environment state)))
 
-(define (write-aloe-result value [output (current-output-port)])
+(define (write-aloe-result value
+                           [output (current-output-port)]
+                           #:raw? [raw? #f])
   (unless (void? value)
-    (displayln (aloe-value->string value) output)))
+    (displayln
+     ((if raw? aloe-value->string aloe-value->display-string) value)
+     output)))
 
 (define (driver-load-port! state
                            input
@@ -88,6 +92,15 @@
         (cond
           [(eof-object? datum) #f]
           [(equal? datum '(exit)) #f]
+          [(eq? datum ':raw)
+           (define raw-datum (read input))
+           (when (eof-object? raw-datum)
+             (error 'aloe ":raw requires an expression"))
+           (write-aloe-result
+            (driver-eval! state raw-datum)
+            output
+            #:raw? #t)
+           #t]
           [else
            (write-aloe-result (driver-eval! state datum) output)
            #t])))

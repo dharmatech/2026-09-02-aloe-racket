@@ -7,7 +7,8 @@
 
 (provide eval-expr
          eval-exprs
-         aloe-value->string)
+         aloe-value->string
+         aloe-value->display-string)
 
 (struct class-value
   (name type-parameters protocol fields [methods #:mutable] environment)
@@ -565,6 +566,10 @@
      (unless (null? arguments)
        (arity-error "Int float" 0 (length arguments)))
      (exact->inexact receiver)]
+    [(eq? selector 'text)
+     (unless (null? arguments)
+       (arity-error "Int text" 0 (length arguments)))
+     (number->string receiver)]
     [else
      (define operation
        (case selector
@@ -612,14 +617,22 @@
                   '()))
 
 (define (send-to-string receiver selector arguments)
-  (unless (eq? selector '=)
-    (unknown-message selector))
-  (unless (= (length arguments) 1)
-    (arity-error "String =" 1 (length arguments)))
-  (define argument (car arguments))
-  (unless (string? argument)
-    (error 'eval-aloe "String = expects a String argument"))
-  (string=? receiver argument))
+  (case selector
+    [(=)
+     (unless (= (length arguments) 1)
+       (arity-error "String =" 1 (length arguments)))
+     (define argument (car arguments))
+     (unless (string? argument)
+       (error 'eval-aloe "String = expects a String argument"))
+     (string=? receiver argument)]
+    [(append)
+     (unless (= (length arguments) 1)
+       (arity-error "String append" 1 (length arguments)))
+     (define argument (car arguments))
+     (unless (string? argument)
+       (error 'eval-aloe "String append expects a String argument"))
+     (string-append receiver argument)]
+    [else (unknown-message selector)]))
 
 (define (number-argument kind selector arguments expected-kind?)
   (unless (= (length arguments) 1)
@@ -696,3 +709,21 @@
     [(list-class-object? value) "#<class List>"]
     [(void? value) "#<void>"]
     [else "#<object>"]))
+
+(define (instance-has-zero-argument-method? value selector)
+  (and
+   (instance-value? value)
+   (for/or ([method
+             (in-list
+              (class-value-methods (instance-value-class value)))])
+     (and (eq? selector (method-declaration-selector method))
+          (null? (method-declaration-parameters method))))))
+
+(define (aloe-value->display-string value)
+  (cond
+    [(instance-has-zero-argument-method? value 'show)
+     (define shown (lookup-message value 'show '()))
+     (unless (string? shown)
+       (error 'eval-aloe "show must return a String"))
+     shown]
+    [else (aloe-value->string value)]))

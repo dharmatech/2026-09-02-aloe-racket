@@ -1063,9 +1063,17 @@
        (unknown-message selector))
      (unless (null? arguments)
        (raise-type-error
-        "arity error for Int float: expected 0 arguments, got ~a"
-        (length arguments)))
+       "arity error for Int float: expected 0 arguments, got ~a"
+       (length arguments)))
      FLOAT]
+    [(eq? selector 'text)
+     (unless (int-type? resolved-receiver)
+       (unknown-message selector))
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Int text: expected 0 arguments, got ~a"
+        (length arguments)))
+     STRING]
     [else
      (unless (memq selector '(+ - * / < > <= >= =))
        (unknown-message selector))
@@ -1104,18 +1112,19 @@
   result-type)
 
 (define (infer-string-send selector arguments environment)
-  (unless (eq? selector '=) (unknown-message selector))
+  (unless (memq selector '(= append)) (unknown-message selector))
   (unless (= (length arguments) 1)
     (raise-type-error
-     "arity error for String =: expected 1 argument, got ~a"
+     "arity error for String ~a: expected 1 argument, got ~a"
+     selector
      (length arguments)))
   (define argument-type
     (infer-expression (car arguments) environment STRING))
   (unify-types!
    argument-type
    STRING
-   "String = expects a String argument")
-  BOOL)
+   (format "String ~a expects a String argument" selector))
+  (if (eq? selector '=) BOOL STRING))
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))
