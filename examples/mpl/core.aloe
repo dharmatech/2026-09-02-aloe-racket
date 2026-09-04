@@ -190,9 +190,10 @@
     (+ (other Prod)
        Math
        (if (self same-term? other)
-           (Prod new
-             ((self coeff) + (other coeff))
-             (self factors))
+           ((Prod new
+              ((self coeff) + (other coeff))
+              (self factors))
+            unwrap)
            (Sum new (List of self other) 0)))
     (+ (n Int)
        Math
