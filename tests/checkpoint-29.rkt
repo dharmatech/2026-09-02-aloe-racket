@@ -19,7 +19,7 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x + 2)" checker-environment))
- 'Sum)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x + y)" checker-environment))
  'Sum)
@@ -30,15 +30,18 @@
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
 
+(define (inspect source)
+  (eval-expr (car (read-program source)) runtime-environment))
+
 (define x-value (eval-source "x" runtime-environment))
 (define y-value (eval-source "y" runtime-environment))
 (define x-plus-two (eval-source "(x + 2)" runtime-environment))
 (define x-plus-y (eval-source "(x + y)" runtime-environment))
 
 (check-regexp-match #px"^#<Sum " (aloe-value->string x-plus-two))
-(check-eq? (eval-source "(((x + 2) terms) first)" runtime-environment)
+(check-eq? (inspect "(((x + 2) terms) first)")
            x-value)
-(check-equal? (eval-source "((x + 2) const)" runtime-environment)
+(check-equal? (inspect "((x + 2) const)")
               2)
 
 (check-regexp-match #px"^#<Sum " (aloe-value->string x-plus-y))

@@ -2,4 +2,12 @@
   (fields
     (coeff Int)
     (factors (List Math)))
-  (methods))
+  (methods
+    (unwrap () Math
+      (if ((self coeff) = 0)
+          (Num new 0)
+          (if ((self coeff) = 1)
+              (if (((self factors) len) = 1)
+                  ((self factors) first)
+                  self)
+              self)))))

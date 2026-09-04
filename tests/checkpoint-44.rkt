@@ -31,7 +31,7 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x * 2) + 4)" checker-environment))
- 'Sum)
+ 'Math)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -78,7 +78,7 @@
 
 ;; Adding an Int turns the product into the sole term of a Sum.
 (check-equal?
- (eval-source "((((x * 2) + 4) terms) len)" runtime-environment)
+ (inspect "((((x * 2) + 4) terms) len)")
  1)
 (check-equal?
  (inspect "(((((x * 2) + 4) terms) first) coeff)")
@@ -87,7 +87,7 @@
  (inspect "((((((x * 2) + 4) terms) first) factors) first)")
  x-value)
 (check-equal?
- (eval-source "(((x * 2) + 4) const)" runtime-environment)
+ (inspect "(((x * 2) + 4) const)")
  4)
 
 (check-equal?
@@ -99,10 +99,10 @@
 
 ;; Prior compound and power goldens remain unchanged.
 (check-equal?
- (eval-source "(((x + 2) + (y + 3)) const)" runtime-environment)
+ (inspect "(((x + 2) + (y + 3)) const)")
  5)
 (check-equal?
- (eval-source "(((x * 2) * (y * 3)) coeff)" runtime-environment)
+ (inspect "(((x * 2) * (y * 3)) coeff)")
  6)
 (check-equal?
  (eval-source "(((x ^ 2) ^ 3) exp)" runtime-environment)

@@ -20,11 +20,11 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + x)" checker-environment))
- 'Sum)
+ 'Math)
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + 3)" checker-environment))
- 'Sum)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x + y)" checker-environment))
  'Sum)
@@ -45,7 +45,7 @@
 (check-false (eval-source "(x same? y)" runtime-environment))
 
 (check-equal?
- (eval-source "(((x + 2) + 3) const)" runtime-environment)
+ (inspect "(((x + 2) + 3) const)")
  5)
 
 (check-eq?
@@ -55,7 +55,7 @@
  (inspect "(((((x + 2) + x) terms) first) coeff)")
  2)
 (check-equal?
- (eval-source "(((x + 2) + x) const)" runtime-environment)
+ (inspect "(((x + 2) + x) const)")
  2)
 
 (check-eq? (eval-source "(((x + y) terms) first)" runtime-environment)

@@ -121,7 +121,7 @@ ALOE
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + 3)" mpl-checker-environment))
- 'Sum)
+ 'Math)
 (for ([expression
        (in-list
         '("((x + 2) + x)"
@@ -129,8 +129,8 @@ ALOE
           "((((x + 2) + x) + x) + x)"))])
   (check-equal?
    (type->datum
-    (typecheck-source expression mpl-checker-environment))
-   'Sum))
+   (typecheck-source expression mpl-checker-environment))
+   'Math))
 
 (define mpl-runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup mpl-runtime-environment))
@@ -138,7 +138,7 @@ ALOE
 (define (inspect-mpl source)
   (eval-expr (car (read-program source)) mpl-runtime-environment))
 (check-equal?
- (eval-source "(((x + 2) + 3) const)" mpl-runtime-environment)
+ (inspect-mpl "(((x + 2) + 3) const)")
  5)
 (check-equal?
  (inspect-mpl "((((((x + 2) + x) + x) terms) first) coeff)")

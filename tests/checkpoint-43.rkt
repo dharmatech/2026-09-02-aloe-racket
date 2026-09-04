@@ -31,7 +31,7 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x * 2) ^ 3)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x ^ 0)" checker-environment))
  'Pow)
@@ -74,11 +74,9 @@
  2)
 
 ;; The integer coefficient is exponentiated using existing Int arithmetic.
-(check-equal? (eval-source "(((x * 2) ^ 3) coeff)"
-                           runtime-environment)
+(check-equal? (inspect "(((x * 2) ^ 3) coeff)")
               8)
-(check-equal? (eval-source "((((x * 2) ^ 3) factors) len)"
-                           runtime-environment)
+(check-equal? (inspect "((((x * 2) ^ 3) factors) len)")
               1)
 (check-eq? (inspect "(((((x * 2) ^ 3) factors) first) base)")
            x-value)
@@ -86,14 +84,13 @@
 
 ;; Checkpoint 42 compound behavior remains intact.
 (check-equal?
- (eval-source "(((x + 2) + (y + 3)) const)" runtime-environment)
+ (inspect "(((x + 2) + (y + 3)) const)")
  5)
 (check-equal?
- (eval-source "(((x * 2) * (y * 3)) coeff)" runtime-environment)
+ (inspect "(((x * 2) * (y * 3)) coeff)")
  6)
 (check-equal?
- (eval-source "((((x * 2) * (y * 3)) factors) len)"
-              runtime-environment)
+ (inspect "((((x * 2) * (y * 3)) factors) len)")
  2)
 
 ;; Boids remains independent of the MPL power protocol.

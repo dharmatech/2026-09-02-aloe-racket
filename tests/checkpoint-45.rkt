@@ -30,11 +30,11 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x ^ 2) * (x * 2))" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum
   (typecheck-source "((x * 2) * (x ^ 2))" checker-environment))
- 'Prod)
+ 'Math)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -53,11 +53,10 @@
 
 ;; Pow * Prod preserves the flat coefficient and merges into its factors.
 (check-equal?
- (eval-source "(((x ^ 2) * (x * 2)) coeff)" runtime-environment)
+ (inspect "(((x ^ 2) * (x * 2)) coeff)")
  2)
 (check-equal?
- (eval-source "((((x ^ 2) * (x * 2)) factors) len)"
-              runtime-environment)
+ (inspect "((((x ^ 2) * (x * 2)) factors) len)")
  1)
 (check-eq?
  (inspect "(((((x ^ 2) * (x * 2)) factors) first) base)")
@@ -68,7 +67,7 @@
 
 ;; Prod * Pow follows the same insertion rule.
 (check-equal?
- (eval-source "(((x * 2) * (x ^ 2)) coeff)" runtime-environment)
+ (inspect "(((x * 2) * (x ^ 2)) coeff)")
  2)
 (check-eq?
  (inspect "(((((x * 2) * (x ^ 2)) factors) first) base)")

@@ -26,7 +26,7 @@
           "((x * 2) * y)"))])
   (check-equal?
    (type->datum (typecheck-source expression checker-environment))
-   'Prod))
+   'Math))
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
  'Math)
@@ -47,34 +47,26 @@
   (eval-expr (car (read-program source)) runtime-environment))
 
 ;; x * 2: coefficient 2 and one symbolic factor.
-(check-equal? (eval-source "((x * 2) coeff)" runtime-environment) 2)
-(check-equal? (eval-source "(((x * 2) factors) len)"
-                           runtime-environment)
+(check-equal? (inspect "((x * 2) coeff)") 2)
+(check-equal? (inspect "(((x * 2) factors) len)")
               1)
-(check-eq? (eval-source "(((x * 2) factors) first)"
-                        runtime-environment)
+(check-eq? (inspect "(((x * 2) factors) first)")
            x-value)
 
 ;; Multiplying by another integer changes only the coefficient.
-(check-equal? (eval-source "(((x * 2) * 3) coeff)"
-                           runtime-environment)
+(check-equal? (inspect "(((x * 2) * 3) coeff)")
               6)
-(check-eq? (eval-source "((((x * 2) * 3) factors) first)"
-                        runtime-environment)
+(check-eq? (inspect "((((x * 2) * 3) factors) first)")
            x-value)
 
 ;; A different symbolic factor is retained in the flat factor list.
-(check-equal? (eval-source "(((x * 2) * y) coeff)"
-                           runtime-environment)
+(check-equal? (inspect "(((x * 2) * y) coeff)")
               2)
-(check-equal? (eval-source "((((x * 2) * y) factors) len)"
-                           runtime-environment)
+(check-equal? (inspect "((((x * 2) * y) factors) len)")
               2)
-(check-eq? (eval-source "((((x * 2) * y) factors) first)"
-                        runtime-environment)
+(check-eq? (inspect "((((x * 2) * y) factors) first)")
            y-value)
-(check-eq? (eval-source "(((((x * 2) * y) factors) rest) first)"
-                        runtime-environment)
+(check-eq? (inspect "(((((x * 2) * y) factors) rest) first)")
            x-value)
 
 ;; x * y has unit coefficient and two factors.
@@ -84,8 +76,7 @@
 (check-eq? (inspect "((((x * y) factors) rest) first)") y-value)
 
 ;; A repeated factor is replaced by its square in the flat list.
-(check-equal? (eval-source "((((x * 2) * x) factors) len)"
-                           runtime-environment)
+(check-equal? (inspect "((((x * 2) * x) factors) len)")
               1)
 (check-eq? (inspect "(((((x * 2) * x) factors) first) base)") x-value)
 (check-equal? (inspect "(((((x * 2) * x) factors) first) exp)") 2)

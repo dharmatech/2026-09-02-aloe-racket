@@ -5,10 +5,14 @@
   (factor-base () Math)
   (factor-exp () Int)
   (^ (n Int) Math)
-  (* (other Math) Math))
+  (* (other Math) Math)
+  (* (n Int) Math)
+  (+ (n Int) Math)
+  (+ (other Math) Math))
 
 (load "sym.aloe")
 (load "sum.aloe")
+(load "num.aloe")
 (load "prod.aloe")
 (load "pow.aloe")
 
@@ -30,11 +34,14 @@
        Int
        1)
     (+ (n Int)
-       Sum
-       (Sum new (List of self) n))
+       Math
+       ((Sum new (List of self) n) unwrap))
     (+ (s Sym)
        Sum
        (Sum new (List of self s) 0))
+    (+ (other Math)
+       Sum
+       (Sum new (self math-factors self other) 0))
     (math-factors (left Math)
                   (right Math)
        (List Math)
@@ -50,8 +57,8 @@
            (Pow new self ((other exp) + 1))
            (Prod new 1 (self math-factors self other))))
     (* (n Int)
-       Prod
-       (Prod new n (List of self)))
+       Math
+       ((Prod new n (List of self)) unwrap))
     (* (other Math)
        Prod
        (Prod new 1 (self math-factors self other)))
@@ -85,6 +92,9 @@
     (* (other Math)
        Prod
        (Prod new 1 (List of other self)))
+    (* (n Int)
+       Math
+       ((Prod new n (List of self)) unwrap))
     (insert-term (terms (List Math))
                  (term Math)
        (List Math)
@@ -108,10 +118,11 @@
          (fn (terms term)
            (self insert-term terms term))))
     (+ (n Int)
-       Sum
-       (Sum new
-         (self terms)
-         ((self const) + n)))
+       Math
+       ((Sum new
+          (self terms)
+          ((self const) + n))
+        unwrap))
     (+ (s Sym)
        Sum
        (let ((matching?
@@ -136,7 +147,13 @@
            (self normalized-terms)
            (fn (terms term)
              (self insert-term terms term)))
-         ((self const) + (other const))))))
+         ((self const) + (other const))))
+    (+ (other Math)
+       Math
+       ((Sum new
+          (self insert-term (self terms) other)
+          (self const))
+        unwrap))))
 
 (define-methods Prod
   (methods
@@ -178,13 +195,17 @@
              (self factors))
            (Sum new (List of self other) 0)))
     (+ (n Int)
+       Math
+       ((Sum new (List of self) n) unwrap))
+    (+ (other Math)
        Sum
-       (Sum new (List of self) n))
+       (Sum new (List of other self) 0))
     (* (n Int)
-       Prod
-       (Prod new
-         ((self coeff) * n)
-         (self factors)))
+       Math
+       ((Prod new
+          ((self coeff) * n)
+          (self factors))
+        unwrap))
     (merge-factor (left Math)
                   (right Math)
        Math
@@ -260,6 +281,15 @@
     (coeff-plus (other Math)
        Prod
        (Prod new 2 (List of self)))
+    (+ (n Int)
+       Math
+       ((Sum new (List of self) n) unwrap))
+    (+ (other Math)
+       Sum
+       (Sum new (List of other self) 0))
+    (* (n Int)
+       Math
+       ((Prod new n (List of self)) unwrap))
     (^ (n Int)
        Pow
        (Pow new
@@ -291,3 +321,36 @@
              (self base)
              ((self exp) + (other exp)))
            (Prod new 1 (List of self other))))))
+
+(define-methods Num
+  (methods
+    (math-name ()
+       String
+       "0")
+    (same-term? (other Math)
+       Bool
+       ((self math-name) = (other math-name)))
+    (coeff-plus (other Math)
+       Math
+       self)
+    (factor-base ()
+       Math
+       self)
+    (factor-exp ()
+       Int
+       1)
+    (^ (n Int)
+       Math
+       self)
+    (* (other Math)
+       Math
+       self)
+    (* (n Int)
+       Math
+       self)
+    (+ (n Int)
+       Math
+       (Num new ((self value) + n)))
+    (+ (other Math)
+       Math
+       other)))

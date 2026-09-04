@@ -23,12 +23,12 @@
           "((((x + 2) + x) + x) + x)"))])
   (check-equal?
    (type->datum (typecheck-source expression checker-environment))
-   'Sum))
+   'Math))
 
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + 3)" checker-environment))
- 'Sum)
+ 'Math)
 (check-exn
  exn:fail:aloe-type?
  (lambda () (typecheck-source "(2 + x)" checker-environment)))
@@ -41,7 +41,7 @@
   (eval-expr (car (read-program source)) runtime-environment))
 
 (check-equal?
- (eval-source "(((x + 2) + 3) const)" runtime-environment)
+ (inspect "(((x + 2) + 3) const)")
  5)
 
 (define (check-linear-sum expression coefficient)
@@ -52,9 +52,7 @@
    (inspect (format "(((~a terms) first) coeff)" expression))
    coefficient)
   (check-equal?
-   (eval-source
-    (format "(~a const)" expression)
-    runtime-environment)
+   (inspect (format "(~a const)" expression))
    2))
 
 (check-linear-sum "((x + 2) + x)" 2)

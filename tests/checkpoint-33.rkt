@@ -19,7 +19,7 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
  'Math)
@@ -30,11 +30,11 @@
 ;; Existing sum construction and overloaded collection remain unchanged.
 (check-equal?
  (type->datum (typecheck-source "(x + 2)" checker-environment))
- 'Sum)
+ 'Math)
 (check-equal?
  (type->datum
   (typecheck-source "((x + 2) + x)" checker-environment))
- 'Sum)
+ 'Math)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -45,7 +45,7 @@
 (define (inspect source)
   (eval-expr (car (read-program source)) runtime-environment))
 
-(check-equal? (eval-source "((x * 2) coeff)" runtime-environment)
+(check-equal? (inspect "((x * 2) coeff)")
               2)
 (check-eq? (inspect "(((x * 2) factors) first)")
            x-value)
@@ -57,5 +57,5 @@
            y-value)
 
 (check-equal?
- (eval-source "(((x + 2) + x) const)" runtime-environment)
+ (inspect "(((x + 2) + x) const)")
  2)

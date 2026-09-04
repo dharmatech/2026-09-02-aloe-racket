@@ -26,20 +26,22 @@
           "((x + x) + (x + 1))"))])
   (check-equal?
    (type->datum (typecheck-source expression checker-environment))
-   'Sum))
+   'Math))
 (check-equal?
  (type->datum
   (typecheck-source "((x * 2) * (y * 3))" checker-environment))
- 'Prod)
+ 'Math)
 
 ;; The older exact Int and Sym overloads remain selected.
-(for ([expression (in-list '("(x + 2)" "(x + y)"))])
-  (check-equal?
-   (type->datum (typecheck-source expression checker-environment))
-   'Sum))
+(check-equal?
+ (type->datum (typecheck-source "(x + 2)" checker-environment))
+ 'Math)
+(check-equal?
+ (type->datum (typecheck-source "(x + y)" checker-environment))
+ 'Sum)
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
  'Math)
@@ -60,25 +62,21 @@
 
 ;; (x + 2) + (y + 3): concatenate unlike terms and add constants.
 (check-equal?
- (eval-source "((((x + 2) + (y + 3)) terms) len)"
-              runtime-environment)
+ (inspect "((((x + 2) + (y + 3)) terms) len)")
  2)
 (check-eq?
- (eval-source "((((x + 2) + (y + 3)) terms) first)"
-              runtime-environment)
+ (inspect "((((x + 2) + (y + 3)) terms) first)")
  y-value)
 (check-eq?
- (eval-source "(((((x + 2) + (y + 3)) terms) rest) first)"
-              runtime-environment)
+ (inspect "(((((x + 2) + (y + 3)) terms) rest) first)")
  x-value)
 (check-equal?
- (eval-source "(((x + 2) + (y + 3)) const)" runtime-environment)
+ (inspect "(((x + 2) + (y + 3)) const)")
  5)
 
 ;; Duplicate terms across two sums collapse through coeff-plus.
 (check-equal?
- (eval-source "((((x + x) + (x + 1)) terms) len)"
-              runtime-environment)
+ (inspect "((((x + x) + (x + 1)) terms) len)")
  1)
 (check-equal?
  (inspect "(((((x + x) + (x + 1)) terms) first) coeff)")
@@ -87,30 +85,26 @@
  (inspect "((((((x + x) + (x + 1)) terms) first) factors) first)")
  x-value)
 (check-equal?
- (eval-source "(((x + x) + (x + 1)) const)" runtime-environment)
+ (inspect "(((x + x) + (x + 1)) const)")
  1)
 
 ;; Compound products multiply coefficients and retain both unlike factors.
 (check-equal?
- (eval-source "(((x * 2) * (y * 3)) coeff)" runtime-environment)
+ (inspect "(((x * 2) * (y * 3)) coeff)")
  6)
 (check-equal?
- (eval-source "((((x * 2) * (y * 3)) factors) len)"
-              runtime-environment)
+ (inspect "((((x * 2) * (y * 3)) factors) len)")
  2)
 (check-eq?
- (eval-source "((((x * 2) * (y * 3)) factors) first)"
-              runtime-environment)
+ (inspect "((((x * 2) * (y * 3)) factors) first)")
  y-value)
 (check-eq?
- (eval-source "(((((x * 2) * (y * 3)) factors) rest) first)"
-              runtime-environment)
+ (inspect "(((((x * 2) * (y * 3)) factors) rest) first)")
  x-value)
 
 ;; One same-base compound case exercises exponent addition through Math.
 (check-equal?
- (eval-source "((((x * 2) * (x * 3)) factors) len)"
-              runtime-environment)
+ (inspect "((((x * 2) * (x * 3)) factors) len)")
  1)
 (check-eq?
  (inspect "(((((x * 2) * (x * 3)) factors) first) base)")

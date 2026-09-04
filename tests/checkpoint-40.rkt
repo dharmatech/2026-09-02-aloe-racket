@@ -34,10 +34,10 @@
  'Pow)
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "((x + 2) + x)" checker-environment))
- 'Sum)
+ 'Math)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -65,12 +65,10 @@
  (aloe-value->string
   (eval-source "((x ^ 2) * (y ^ 3))" runtime-environment)))
 
-(check-equal? (eval-source "((x * 2) coeff)" runtime-environment) 2)
-(check-eq? (eval-source "(((x * 2) factors) first)"
-                        runtime-environment)
+(check-equal? (inspect "((x * 2) coeff)") 2)
+(check-eq? (inspect "(((x * 2) factors) first)")
            x-value)
-(check-equal? (eval-source "(((x + 2) + x) const)"
-                           runtime-environment)
+(check-equal? (inspect "(((x + 2) + x) const)")
               2)
 
 (for ([name

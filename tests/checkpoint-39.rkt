@@ -19,16 +19,16 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "((x * 2) * 3)" checker-environment))
- 'Prod)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x * y)" checker-environment))
  'Math)
 (check-equal?
  (type->datum (typecheck-source "((x * 2) * y)" checker-environment))
- 'Prod)
+ 'Math)
 (check-exn
  exn:fail:aloe-type?
  (lambda () (typecheck-source "(2 * x)" checker-environment)))
@@ -43,7 +43,7 @@
           "((x + 2) + y)"))])
   (check-equal?
    (type->datum (typecheck-source expression checker-environment))
-   'Sum))
+   'Math))
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -53,15 +53,14 @@
 (define (inspect source)
   (eval-expr (car (read-program source)) runtime-environment))
 
-(check-equal? (eval-source "((x * 2) coeff)" runtime-environment)
+(check-equal? (inspect "((x * 2) coeff)")
               2)
-(check-eq? (eval-source "(((x * 2) factors) first)" runtime-environment)
+(check-eq? (inspect "(((x * 2) factors) first)")
            x-value)
 
-(check-equal? (eval-source "(((x * 2) * 3) coeff)" runtime-environment)
+(check-equal? (inspect "(((x * 2) * 3) coeff)")
               6)
-(check-eq? (eval-source "((((x * 2) * 3) factors) first)"
-                        runtime-environment)
+(check-eq? (inspect "((((x * 2) * 3) factors) first)")
            x-value)
 
 (check-equal? (inspect "((x * y) coeff)") 1)
@@ -76,12 +75,10 @@
   (eval-source "((x * 2) * y)" runtime-environment))
  "#<Prod coeff=2 factors=#<List #<Sym \"y\"> #<Sym \"x\">>>")
 
-(check-equal? (eval-source "(((x + 2) + 3) const)"
-                           runtime-environment)
+(check-equal? (inspect "(((x + 2) + 3) const)")
               5)
 (check-equal?
  (inspect "((((((x + 2) + x) + x) terms) first) coeff)")
  3)
-(check-equal? (eval-source "((((x + 2) + y) terms) len)"
-                           runtime-environment)
+(check-equal? (inspect "((((x + 2) + y) terms) len)")
               2)
