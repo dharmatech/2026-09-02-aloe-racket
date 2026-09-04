@@ -83,7 +83,7 @@
 ;; Recent addition and power goldens remain intact.
 (check-equal? (inspect "(((x * 2) + (x * 3)) coeff)") 5)
 (check-equal?
- (eval-source "(((x ^ 2) ^ 3) exp)" runtime-environment)
+ (inspect "(((x ^ 2) ^ 3) exp)")
  6)
 
 ;; Boids remains independent of Math.*.

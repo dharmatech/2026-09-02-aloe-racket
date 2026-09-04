@@ -2,4 +2,10 @@
   (fields
     (base Math)
     (exp Int))
-  (methods))
+  (methods
+    (unwrap () Math
+      (if ((self exp) = 0)
+          (Num new 1)
+          (if ((self exp) = 1)
+              (self base)
+              self)))))

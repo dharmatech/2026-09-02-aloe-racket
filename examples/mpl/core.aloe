@@ -49,22 +49,22 @@
     (* (other Sym)
        Math
        (if (self same-term? other)
-           (Pow new self 2)
+           ((Pow new self 2) unwrap)
            (Prod new 1 (List of self other))))
     (* (other Pow)
        Math
        (if (self same-term? (other base))
-           (Pow new self ((other exp) + 1))
+           ((Pow new self ((other exp) + 1)) unwrap)
            (Prod new 1 (self math-factors self other))))
     (* (n Int)
        Math
        ((Prod new n (List of self)) unwrap))
     (* (other Math)
-       Prod
+       Math
        (Prod new 1 (self math-factors self other)))
     (^ (n Int)
-       Pow
-       (Pow new self n))
+       Math
+       ((Pow new self n) unwrap))
     (coeff-plus (other Math)
        Prod
        (Prod new 2 (List of self)))))
@@ -87,8 +87,8 @@
        Sum
        self)
     (^ (n Int)
-       Pow
-       (Pow new self n))
+       Math
+       ((Pow new self n) unwrap))
     (* (other Math)
        Prod
        (Prod new 1 (List of other self)))
@@ -209,9 +209,10 @@
     (merge-factor (left Math)
                   (right Math)
        Math
-       (Pow new
-         (left factor-base)
-         ((left factor-exp) + (right factor-exp))))
+       ((Pow new
+          (left factor-base)
+          ((left factor-exp) + (right factor-exp)))
+        unwrap))
     (insert-factor (factors (List Math))
                    (factor Math)
        (List Math)
@@ -291,16 +292,18 @@
        Math
        ((Prod new n (List of self)) unwrap))
     (^ (n Int)
-       Pow
-       (Pow new
-         (self base)
-         ((self exp) * n)))
+       Math
+       ((Pow new
+          (self base)
+          ((self exp) * n))
+        unwrap))
     (* (other Sym)
        Math
        (if ((self base) same-term? other)
-           (Pow new
-             (self base)
-             ((self exp) + 1))
+           ((Pow new
+              (self base)
+              ((self exp) + 1))
+            unwrap)
            ((Prod new 1 (List of self)) * other)))
     (* (other Prod)
        Prod
@@ -310,16 +313,18 @@
     (* (other Math)
        Math
        (if ((self base) same-term? (other factor-base))
-           (Pow new
-             (self base)
-             ((self exp) + (other factor-exp)))
+           ((Pow new
+              (self base)
+              ((self exp) + (other factor-exp)))
+            unwrap)
            (Prod new 1 (List of other self))))
     (* (other Pow)
        Math
        (if ((self base) same-term? (other base))
-           (Pow new
-             (self base)
-             ((self exp) + (other exp)))
+           ((Pow new
+              (self base)
+              ((self exp) + (other exp)))
+            unwrap)
            (Prod new 1 (List of self other))))))
 
 (define-methods Num

@@ -105,7 +105,7 @@
  (inspect "(((x * 2) * (y * 3)) coeff)")
  6)
 (check-equal?
- (eval-source "(((x ^ 2) ^ 3) exp)" runtime-environment)
+ (inspect "(((x ^ 2) ^ 3) exp)")
  6)
 
 ;; Boids remains independent of MPL addition.

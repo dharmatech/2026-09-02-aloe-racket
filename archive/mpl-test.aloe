@@ -62,3 +62,7 @@ y
 ((x * y) * x)           ; x^2 y
 (x + x + y + y)         ; 2x+2y
 ((x + 2) + (x + 3))     ; 2x+5  — already a Sum+Sum case
+
+((x * -3) + (x * 3))
+
+((x ^ 2) * (x ^ -2))

@@ -23,7 +23,7 @@
 (check-equal?
  (type->datum
   (typecheck-source "((x ^ 2) ^ 3)" checker-environment))
- 'Pow)
+ 'Math)
 (check-equal?
  (type->datum
   (typecheck-source "((x * y) ^ 2)" checker-environment))
@@ -34,7 +34,7 @@
  'Math)
 (check-equal?
  (type->datum (typecheck-source "(x ^ 0)" checker-environment))
- 'Pow)
+ 'Math)
 
 (define runtime-environment (make-top-level-env))
 (void (eval-source mpl-setup runtime-environment))
@@ -44,21 +44,17 @@
 (define (inspect source)
   (eval-expr (car (read-program source)) runtime-environment))
 
-;; Pow exponents multiply, including identity and represented zero powers.
-(check-eq? (eval-source "(((x ^ 2) ^ 3) base)" runtime-environment)
+;; Pow exponents multiply; the resulting power is then unwrapped.
+(check-eq? (inspect "(((x ^ 2) ^ 3) base)")
            x-value)
-(check-equal? (eval-source "(((x ^ 2) ^ 3) exp)" runtime-environment)
+(check-equal? (inspect "(((x ^ 2) ^ 3) exp)")
               6)
-(check-eq? (eval-source "(((x ^ 2) ^ 1) base)" runtime-environment)
+(check-eq? (inspect "(((x ^ 2) ^ 1) base)")
            x-value)
-(check-equal? (eval-source "(((x ^ 2) ^ 1) exp)" runtime-environment)
+(check-equal? (inspect "(((x ^ 2) ^ 1) exp)")
               2)
-(check-eq? (eval-source "(((x ^ 2) ^ 0) base)" runtime-environment)
-           x-value)
-(check-equal? (eval-source "(((x ^ 2) ^ 0) exp)" runtime-environment)
-              0)
-(check-eq? (eval-source "((x ^ 0) base)" runtime-environment) x-value)
-(check-equal? (eval-source "((x ^ 0) exp)" runtime-environment) 0)
+(check-equal? (inspect "(((x ^ 2) ^ 0) value)") 1)
+(check-equal? (inspect "((x ^ 0) value)") 1)
 
 ;; Power distributes over the factors of a flat product, not over sums.
 (check-equal? (inspect "(((x * y) ^ 2) coeff)") 1)

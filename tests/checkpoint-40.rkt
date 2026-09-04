@@ -21,7 +21,7 @@
 
 (check-equal?
  (type->datum (typecheck-source "(x ^ 2)" checker-environment))
- 'Pow)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x * x)" checker-environment))
  'Math)
@@ -31,7 +31,7 @@
  'Math)
 (check-equal?
  (type->datum (typecheck-source "(x ^ 0)" checker-environment))
- 'Pow)
+ 'Math)
 (check-equal?
  (type->datum (typecheck-source "(x * 2)" checker-environment))
  'Math)
@@ -46,8 +46,8 @@
 (define (inspect source)
   (eval-expr (car (read-program source)) runtime-environment))
 
-(check-eq? (eval-source "((x ^ 2) base)" runtime-environment) x-value)
-(check-equal? (eval-source "((x ^ 2) exp)" runtime-environment) 2)
+(check-eq? (inspect "((x ^ 2) base)") x-value)
+(check-equal? (inspect "((x ^ 2) exp)") 2)
 
 (check-eq? (inspect "((x * x) base)") x-value)
 (check-equal? (inspect "((x * x) exp)") 2)
@@ -55,9 +55,8 @@
 (check-eq? (inspect "(((x ^ 2) * (x ^ 3)) base)") x-value)
 (check-equal? (inspect "(((x ^ 2) * (x ^ 3)) exp)") 5)
 
-;; Exponent zero remains represented, not collapsed through an untyped 1.
-(check-eq? (eval-source "((x ^ 0) base)" runtime-environment) x-value)
-(check-equal? (eval-source "((x ^ 0) exp)" runtime-environment) 0)
+;; Exponent zero now unwraps to the typed CAS multiplicative identity.
+(check-equal? (inspect "((x ^ 0) value)") 1)
 
 ;; Different bases remain a nested product rather than being flattened.
 (check-regexp-match
