@@ -4,7 +4,8 @@
   (coeff-plus (other Math) Math)
   (factor-base () Math)
   (factor-exp () Int)
-  (^ (n Int) Math))
+  (^ (n Int) Math)
+  (* (other Math) Math))
 
 (load "sym.aloe")
 (load "sum.aloe")
@@ -51,6 +52,9 @@
     (* (n Int)
        Prod
        (Prod new n (List of self)))
+    (* (other Math)
+       Prod
+       (Prod new 1 (self math-factors self other)))
     (^ (n Int)
        Pow
        (Pow new self n))
@@ -78,6 +82,9 @@
     (^ (n Int)
        Pow
        (Pow new self n))
+    (* (other Math)
+       Prod
+       (Prod new 1 (List of other self)))
     (insert-term (terms (List Math))
                  (term Math)
        (List Math)
@@ -215,6 +222,11 @@
        (Prod new
          (self coeff)
          (self insert-factor (self factors) p)))
+    (* (other Math)
+       Prod
+       (Prod new
+         (self coeff)
+         (self insert-factor (self factors) other)))
     (* (other Prod)
        Prod
        (Prod new
@@ -265,6 +277,13 @@
        (Prod new
          (other coeff)
          (other insert-factor (other factors) self)))
+    (* (other Math)
+       Math
+       (if ((self base) same-term? (other factor-base))
+           (Pow new
+             (self base)
+             ((self exp) + (other factor-exp)))
+           (Prod new 1 (List of other self))))
     (* (other Pow)
        Math
        (if ((self base) same-term? (other base))

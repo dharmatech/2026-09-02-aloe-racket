@@ -121,12 +121,27 @@
     [else (unknown-message selector)]))
 
 (define (make-list-value class elements)
+  (define element-types (map runtime-type-of elements))
   (define element-type
-    (and (pair? elements) (runtime-type-of (car elements))))
-  (when element-type
-    (for ([element (in-list (cdr elements))])
-      (unless (same-runtime-type? element-type (runtime-type-of element))
-        (error 'eval-aloe "List of elements must have one type"))))
+    (cond
+      [(null? element-types) #f]
+      [(andmap (lambda (type)
+                 (same-runtime-type? (car element-types) type))
+               (cdr element-types))
+       (car element-types)]
+      [else
+       (define protocols
+         (for/list ([type (in-list element-types)])
+           (and (runtime-class-type? type)
+                (class-value-protocol
+                 (runtime-class-type-class type)))))
+       (and (car protocols)
+            (andmap (lambda (protocol)
+                      (eq? protocol (car protocols)))
+                    (cdr protocols))
+            (car protocols))]))
+  (when (and (pair? elements) (not element-type))
+    (error 'eval-aloe "List of elements must have one type"))
   (list-value class element-type (apply vector-immutable elements)))
 
 (define (construct-instance class arguments)
