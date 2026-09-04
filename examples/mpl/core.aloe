@@ -34,11 +34,20 @@
     (+ (s Sym)
        Sum
        (Sum new (List of self s) 0))
+    (math-factors (left Math)
+                  (right Math)
+       (List Math)
+       (List of left right))
     (* (other Sym)
        Math
        (if (self same-term? other)
            (Pow new self 2)
            (Prod new 1 (List of self other))))
+    (* (other Pow)
+       Math
+       (if (self same-term? (other base))
+           (Pow new self ((other exp) + 1))
+           (Prod new 1 (self math-factors self other))))
     (* (n Int)
        Prod
        (Prod new n (List of self)))
@@ -201,6 +210,11 @@
        (Prod new
          (self coeff)
          (self insert-factor (self factors) s)))
+    (* (p Pow)
+       Prod
+       (Prod new
+         (self coeff)
+         (self insert-factor (self factors) p)))
     (* (other Prod)
        Prod
        (Prod new
@@ -239,6 +253,18 @@
        (Pow new
          (self base)
          ((self exp) * n)))
+    (* (other Sym)
+       Math
+       (if ((self base) same-term? other)
+           (Pow new
+             (self base)
+             ((self exp) + 1))
+           ((Prod new 1 (List of self)) * other)))
+    (* (other Prod)
+       Prod
+       (Prod new
+         (other coeff)
+         (other insert-factor (other factors) self)))
     (* (other Pow)
        Math
        (if ((self base) same-term? (other base))
