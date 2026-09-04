@@ -1,68 +1,86 @@
+;; examples/mpl/session.aloe
+;; Expected output is what the REPL prints after show (checkpoint 51).
+;; Load examples/mpl/core.aloe first; x and y are (Sym new "x") / "y".
 
 (load "examples/mpl/core.aloe")
 (define x (Sym new "x"))
 (define y (Sym new "y"))
 
 x
-y
+; => x
 
+y
+; => y
 
 (x + 2)
+; => (x + 2)
 
 (x + y)
+; => (x + y)
 
 ((x + 2) + 3)
-
-; ((x + 2) plus x)
+; => (x + 5)
 
 ((x + 2) + x)
+; => ((x * 2) + 2)
 
 (((x + 2) + x) + x)
-
-; (((x + 2) plus x) plus x)
-
+; => ((x * 3) + 2)
 
 ((x + 2) + y)
-(((x + 2) + y) terms)
-((((x + 2) + y) terms) first)
-(((((x + 2) + y) terms) rest) first)
-
-(List of 10 20 30)
-
-
+; => ((y + x) + 2)
 
 (x * 2)
+; => (x * 2)
 
 ((x * 2) * 3)
+; => (x * 6)
 
 (x * y)
+; => (x * y)
 
 ((x * 2) * y)
-
+; => ((y * x) * 2)
 
 (x ^ 2)
+; => (x ^ 2)
+
 (x * x)
+; => (x ^ 2)
+
 ((x ^ 2) * (x ^ 3))
+; => (x ^ 5)
+
 (x ^ 0)
-
-(x * 2)
-((x * 2) * 3)
-((x * 2) * y)
-
-
+; => 1
 
 (x + 0)
-(x * 0)
-(x * 1)
-(x ^ 0)
-(x ^ 1)
+; => x
 
-((x * 2) + (x * 3))     ; 5x   — like terms that are already Prods
-((x ^ 2) * x)           ; x^3
-((x * y) * x)           ; x^2 y
-(x + x + y + y)         ; 2x+2y
-((x + 2) + (x + 3))     ; 2x+5  — already a Sum+Sum case
+(x * 0)
+; => 0
+
+(x * 1)
+; => x
+
+(x ^ 1)
+; => x
+
+((x * 2) + (x * 3))
+; => (x * 5)
+
+((x ^ 2) * x)
+; => (x ^ 3)
+
+((x * y) * x)
+; => ((x ^ 2) * y)
+
+((x + 2) + (x + 3))
+; => ((x * 2) + 5)
 
 ((x * -3) + (x * 3))
+; => 0
 
 ((x ^ 2) * (x ^ -2))
+; => 1
+
