@@ -18,27 +18,23 @@ Slogan / equation: Scheme + Smalltalk + Types. Grow the kernel only when
 an application forces it. Convenience that adds a second meaning of a
 list, or a second lookup rule, loses.
 
-## What 0.1 already is (main)
+## Current state (0.2 on main)
 
 - Interpreter + type checker in Racket. No compiler, no macros.
 - `define-class`, `fn`/`call`, `let`, `if`/`cond`, `load`.
 - Generics, `define-methods`, `List` library in `lib/list.aloe`.
 - `String` primitive.
 - Boids in `examples/boids.aloe` + `examples/point.aloe`.
-- Tag: `v0.1.0-boids` (older); current main includes strings.
-
-## Branches
-
-| Branch | Role |
-|---|---|
-| `main` | Validated Aloe + Boids + strings |
-| `experiment/math-interface` | `define-protocol`, empty `Math` |
-| `experiment/mpl-interface` | MPL on `Math`; `plus` for like terms |
-| `experiment/overload` | **current** C# overloading; `((x + 2) + x)` is `+` |
-| `experiment/mpl` | Old blocked sums; ignore |
-
-Language that you would keep if MPL died belongs on `main` or
-`experiment/math-interface`. Incomplete CAS stays on an MPL branch.
+- Protocols with required methods and C#-style method overloads.
+- Cohen-style CAS fragment in `examples/mpl/`, with `Math` implemented by
+  `Sym`, `Num`, `Sum`, `Prod`, and `Pow`; primitive `Int` is not `Math`.
+- Like-term addition, product merging, power merging, and identity unwrapping:
+  `x+0`, `x*0`, `x*1`, `x^0`, `x^1`, and a zero combined coefficient becomes
+  `Num 0`.
+- `Math.show` and default display through `show`; REPL `:raw` retains the
+  structural `#<…>` printer.
+- Tests through checkpoint 51 are green on `main`.
+- Tag: `v0.1.0-boids` records the older 0.1 milestone.
 
 ## How to work
 
@@ -63,21 +59,20 @@ Scheme: `github.com/dharmatech/mpl`
 C# objects: `github.com/dharmatech/Symbolism`
 Lean closed ADT: `github.com/dharmatech/symbolism.lean`
 
-Port piecemeal, idiomatic Aloe (methods, not Wright `match`).
-`examples/mpl/` only. Do not put MPL in `lib/` until a second app wants it.
+The current port is deliberately a fragment, written as idiomatic Aloe methods
+rather than Wright `match`. Keep MPL in `examples/mpl/`; do not put it in
+`lib/` until a second application wants it.
 
 ## Open / deferred
 
-- `x + 0 = x` needs `zero?` on `Math` or a typecase; not a union punch.
-- Closed `data` / ADTs: later control experiment, not now.
-- Macros, `->`, `sl` / `bi`, `#lang aloe`: later.
-- Graphics / FFI: later.
+- N-ary `+`.
+- `show-math`.
+- Macros.
+- `#lang aloe`.
+- Graphics / FFI.
 
-## Current goal (as of 2026-09-03)
-
-`experiment/overload`, checkpoint 32 green: `Sum` has two `+` methods
-(`Int` and `Sym`). Next algebra only if the user asks. Next language
-work only if an application golden requires it.
+The implemented identities and algebra rules above are current behavior, not a
+plan. Add further algebra only as a separately approved checkpoint.
 
 ## Designer vs implementer
 

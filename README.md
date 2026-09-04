@@ -46,3 +46,16 @@ Typecheck `examples/boids.aloe` and evaluate `(demo step)`.
 Interpreter + type checker in Racket only. No compiler.
 
 Legal now: Aloe 0.1 typechecks and evaluates the complete `examples/boids.aloe` program, including both trailing `step` sends.
+
+## 0.2 additions
+
+Aloe 0.2 adds protocols and method overloads. `examples/mpl/` is a
+Cohen-style CAS fragment built around the `Math` protocol: primitive `Int` is
+not `Math`, so algebraic constants use `Num`. The default printer sends `show`
+when an object provides it, while the REPL command `:raw` prints the structural
+`#<…>` form. To try it, load the MPL core and bind a symbol:
+
+```lisp
+(load "examples/mpl/core.aloe")
+(define x (Sym new "x"))
+```

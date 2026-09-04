@@ -459,3 +459,19 @@ sexpr → parse → AST → type-of → interp
 ```
 
 Do not elaborate into Racket evaluation for object sends. `let` may be expanded to `fn` + `call` before `type-of` / `interp`.
+
+---
+
+## 11. 0.2 additions
+
+- `load` reads, typechecks, and evaluates another Aloe file in the same
+  environment, resolving relative paths from the loading file before the
+  current directory and project root.
+- `cond` is syntax sugar for nested `if` forms; its final `else` clause is
+  required.
+- `define-protocol` declares a protocol type and may declare required method
+  signatures for classes that opt in.
+- Methods may overload a selector by parameter types. Lookup uses the receiver
+  class, selector, and argument types; exact matches beat protocol matches.
+- `String` is a primitive type. Objects may implement `show`; the default REPL
+  printer uses it when present, and `:raw` prints the structural `#<…>` form.

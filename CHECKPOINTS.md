@@ -1,5 +1,8 @@
 # Aloe 0.1 checkpoints
 
+> Checkpoints 12–51 live as `tests/checkpoint-N.rkt`; the original 1–11
+> implementation sequence remains below unchanged.
+
 Work one checkpoint at a time. Each ends when `raco test` is green and you have run one expression by hand. Do not start Boids until checkpoint 11.
 
 Rules for every slice:
