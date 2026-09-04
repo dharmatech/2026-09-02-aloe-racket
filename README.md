@@ -19,6 +19,16 @@ The core stays small on purpose. Libraries and programs grow the rest
 
 `ALOE = Scheme + Smalltalk + Types`
 
+## Status
+
+Aloe 0.2 is an exploratory prototype.
+The implementation is a definitional interpreter
+plus a type checker,
+written in Racket.
+There is no bytecode VM and no native compiler.
+Types are checked before evaluation;
+inference fills in what you do not write.
+
 ## Layout
 
 - [SPEC.md](SPEC.md) — language 0.1 plus 0.2 additions
