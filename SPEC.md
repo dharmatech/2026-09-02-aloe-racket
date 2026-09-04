@@ -1,4 +1,6 @@
-# Aloe 0.1 spec
+# Aloe 0.2 spec
+
+Sections 1–10 describe the 0.1 language. Section 11 lists 0.2 additions.
 
 Aloe is an s-expression language. Evaluation is message send, not Scheme apply.
 Prototype host: Racket (`2026-09-02-aloe-racket`).
