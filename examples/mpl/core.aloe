@@ -130,6 +130,19 @@
     (same-term? (other Math)
        Bool
        ((self math-name) = (other math-name)))
+    (same-factors? (left (List Math))
+                   (right (List Math))
+       Bool
+       (if (left empty?)
+           (right empty?)
+           (if (right empty?)
+               #f
+               (if ((left first) same-term? (right first))
+                   (self same-factors? (left rest) (right rest))
+                   #f))))
+    (same-term? (other Prod)
+       Bool
+       (self same-factors? (self factors) (other factors)))
     (factor-base ()
        Math
        self)
@@ -141,6 +154,16 @@
        (Prod new
          ((self coeff) + 1)
          (self factors)))
+    (+ (other Prod)
+       Math
+       (if (self same-term? other)
+           (Prod new
+             ((self coeff) + (other coeff))
+             (self factors))
+           (Sum new (List of self other) 0)))
+    (+ (n Int)
+       Sum
+       (Sum new (List of self) n))
     (* (n Int)
        Prod
        (Prod new
