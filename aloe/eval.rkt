@@ -1,9 +1,11 @@
 #lang racket/base
 
-(require racket/match
+(require racket/list
+         racket/match
          racket/string
          "env.rkt"
          "host.rkt"
+         "mirror.rkt"
          "parse.rkt"
          "symbol.rkt")
 
@@ -106,6 +108,8 @@
      (send-to-list-class receiver selector arguments)]
     [(symbol-class-object? receiver)
      (send-to-symbol-class selector arguments)]
+    [(mirror-class-object? receiver)
+     (send-to-mirror-class receiver selector arguments)]
     [(class-value? receiver)
      (if (eq? selector 'new)
          (construct-instance receiver arguments)
@@ -128,8 +132,58 @@
      (send-to-string receiver selector arguments)]
     [(symbol-value? receiver)
      (send-to-symbol receiver selector arguments)]
+    [(mirror-value? receiver)
+     (send-to-mirror receiver selector arguments)]
     [else
      (unknown-message selector)]))
+
+(define (send-to-mirror-class receiver selector arguments)
+  (unless (eq? selector 'of)
+    (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (arity-error "Mirror of" 1 (length arguments)))
+  (mirror-value (car arguments) (mirror-class-object-list-class receiver)))
+
+(define (declaration-selectors methods)
+  (map method-declaration-selector methods))
+
+(define (value-selector-names value)
+  (remove-duplicates
+   (cond
+     [(exact-integer? value) '(+ - * / < > <= >= = float text)]
+     [(flonum? value) '(+ - * / < > <= >= =)]
+     [(boolean? value) '(if)]
+     [(string? value) '(= append)]
+     [(symbol-value? value) '(name =)]
+     [(function-value? value) '(call)]
+     [(list-value? value)
+      (append
+       '(empty? first rest cons len)
+       (declaration-selectors
+        (list-class-object-methods (list-value-class value))))]
+     [(instance-value? value)
+      (define class (instance-value-class value))
+      (append
+       (map field-declaration-name (class-value-fields class))
+       (declaration-selectors (class-value-methods class)))]
+     [(class-value? value) '(new)]
+     [(list-class-object? value) '(of empty)]
+     [(symbol-class-object? value) '(intern)]
+     [(mirror-class-object? value) '(of)]
+     [(mirror-value? value) '(messages)]
+     [else '()])
+   eq?))
+
+(define (send-to-mirror receiver selector arguments)
+  (unless (eq? selector 'messages)
+    (unknown-message selector))
+  (unless (null? arguments)
+    (arity-error "Mirror messages" 0 (length arguments)))
+  (make-list-value
+   (mirror-value-list-class receiver)
+   (map intern-symbol
+        (map symbol->string
+             (value-selector-names (mirror-value-subject receiver))))))
 
 (define (send-to-symbol-class selector arguments)
   (unless (eq? selector 'intern)
@@ -266,6 +320,7 @@
     [(boolean? value) 'Bool]
     [(string? value) 'String]
     [(symbol-value? value) 'Symbol]
+    [(mirror-value? value) 'Mirror]
     [(instance-value? value)
      (runtime-class-type (instance-value-class value)
                          (instance-value-type-arguments value))]
@@ -715,6 +770,8 @@
     [(symbol-value? value)
      (format "#<Symbol ~a>" (symbol-value-name value))]
     [(symbol-class-object? value) "#<class Symbol>"]
+    [(mirror-class-object? value) "#<class Mirror>"]
+    [(mirror-value? value) "#<Mirror>"]
     [(class-value? value)
      (format "#<class ~a>" (class-value-name value))]
     [(and (instance-value? value)

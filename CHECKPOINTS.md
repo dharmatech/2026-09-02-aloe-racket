@@ -84,3 +84,8 @@ success, and reports both source datums and displayed values on failure.
 
 - Primitive interned names support `(Symbol intern String)`, `(sym name)`, and
   `(sym = other)`; selectors remain implicit and `perform` is not implemented.
+
+## 55. `Mirror` + `messages`
+
+- `(Mirror of value)` reflects a value and `(mirror messages)` returns its
+  unique `(List Symbol)` selectors; `signatures` and `invoke` are not included.

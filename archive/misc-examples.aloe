@@ -1,0 +1,12 @@
+
+(Symbol intern "dist2")
+
+(Symbol intern "abc")
+
+((Symbol intern "abc") = (Symbol intern "abc"))
+
+((Symbol intern "abc") = (Symbol intern "bcd"))
+
+((Symbol intern "abc") = (Symbol intern "ABC"))
+
+

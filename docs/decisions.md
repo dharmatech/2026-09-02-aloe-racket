@@ -85,3 +85,11 @@ and constructed explicitly with `(Symbol intern String)`.
 
 Rejected for this slice: reader literals for symbols, treating Racket symbols
 as Aloe values, and `perform`.
+
+## Reflection mirrors (2026-09-05)
+
+Decided: reflection lives on a separate primitive `Mirror`, rather than adding
+`perform` or reflection messages to every object.
+
+Rejected for this slice: `#%` reflection sigils, `perform`, signatures, and
+invocation.

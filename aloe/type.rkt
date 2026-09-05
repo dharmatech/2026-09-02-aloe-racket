@@ -10,12 +10,14 @@
          (struct-out bool-type)
          (struct-out string-type)
          (struct-out symbol-type)
+         (struct-out mirror-type)
          (struct-out protocol-type)
          (struct-out instance-type)
          (struct-out list-type)
          (struct-out class-type)
          (struct-out list-class-type)
          (struct-out symbol-class-type)
+         (struct-out mirror-class-type)
          (struct-out function-type)
          type-environment?
          make-type-environment
@@ -30,12 +32,14 @@
 (struct bool-type () #:transparent)
 (struct string-type () #:transparent)
 (struct symbol-type () #:transparent)
+(struct mirror-type () #:transparent)
 (struct protocol-type (name signatures) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
 (struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
 (struct symbol-class-type () #:transparent)
+(struct mirror-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
 (struct parameter-type (id name) #:transparent)
 (struct type-variable
@@ -56,6 +60,7 @@
 (define BOOL (bool-type))
 (define STRING (string-type))
 (define SYMBOL (symbol-type))
+(define MIRROR (mirror-type))
 (define VOID (void-type))
 
 (define current-typecheck-load-paths (make-parameter '()))
@@ -80,7 +85,8 @@
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
                 (list-class-type list-element-parameter '()))
-          (cons 'Symbol (symbol-class-type))))
+          (cons 'Symbol (symbol-class-type))
+          (cons 'Mirror (mirror-class-type))))
    #f))
 
 (define (make-local-type-environment parent bindings)
@@ -115,6 +121,7 @@
     [(bool-type? resolved) 'Bool]
     [(string-type? resolved) 'String]
     [(symbol-type? resolved) 'Symbol]
+    [(mirror-type? resolved) 'Mirror]
     [(protocol-type? resolved) (protocol-type-name resolved)]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
@@ -127,6 +134,7 @@
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
     [(symbol-class-type? resolved) '(Class Symbol)]
+    [(mirror-class-type? resolved) '(Class Mirror)]
     [(function-type? resolved)
      (cons '->
            (append
@@ -205,6 +213,7 @@
     [(and (bool-type? resolved-left) (bool-type? resolved-right)) BOOL]
     [(and (string-type? resolved-left) (string-type? resolved-right)) STRING]
     [(and (symbol-type? resolved-left) (symbol-type? resolved-right)) SYMBOL]
+    [(and (mirror-type? resolved-left) (mirror-type? resolved-right)) MIRROR]
     [(and (protocol-type? resolved-left)
           (protocol-type? resolved-right)
           (eq? (protocol-type-name resolved-left)
@@ -244,6 +253,9 @@
      resolved-left]
     [(and (symbol-class-type? resolved-left)
           (symbol-class-type? resolved-right))
+     resolved-left]
+    [(and (mirror-class-type? resolved-left)
+          (mirror-class-type? resolved-right))
      resolved-left]
     [(and (function-type? resolved-left) (function-type? resolved-right)
           (= (length (function-type-parameters resolved-left))
@@ -587,6 +599,7 @@
        [(eq? datum 'Bool) BOOL]
        [(eq? datum 'String) STRING]
        [(eq? datum 'Symbol) SYMBOL]
+       [(eq? datum 'Mirror) MIRROR]
        [(hash-has-key? substitution datum)
         (hash-ref substitution datum)]
        [else
@@ -674,6 +687,8 @@
           [else (unknown-message selector)])]
        [(symbol-class-type? receiver-type)
         (infer-symbol-class-send selector arguments environment)]
+       [(mirror-class-type? receiver-type)
+        (infer-mirror-class-send selector arguments environment)]
        [(instance-type? receiver-type)
         (infer-instance-send
          receiver-type selector arguments environment)]
@@ -696,6 +711,8 @@
         (infer-string-send selector arguments environment)]
        [(symbol-type? receiver-type)
         (infer-symbol-send selector arguments environment)]
+       [(mirror-type? receiver-type)
+        (infer-mirror-send selector arguments)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -1166,6 +1183,23 @@
    STRING
    "Symbol intern expects a String argument")
   SYMBOL)
+
+(define (infer-mirror-class-send selector arguments environment)
+  (unless (eq? selector 'of) (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (raise-type-error
+     "arity error for Mirror of: expected 1 argument, got ~a"
+     (length arguments)))
+  (infer-expression (car arguments) environment #f)
+  MIRROR)
+
+(define (infer-mirror-send selector arguments)
+  (unless (eq? selector 'messages) (unknown-message selector))
+  (unless (null? arguments)
+    (raise-type-error
+     "arity error for Mirror messages: expected 0 arguments, got ~a"
+     (length arguments)))
+  (list-type SYMBOL))
 
 (define (infer-symbol-send selector arguments environment)
   (case selector

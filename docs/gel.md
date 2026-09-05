@@ -108,6 +108,8 @@ the language.
 `bin/aloe` stays term-free. A separate host runner binds `term` and
 loads Gel.
 
+The reflection hatch is `Mirror`, not a `perform` message on every object.
+
 ---
 
 ## 6. What already exists (2026-09-04)

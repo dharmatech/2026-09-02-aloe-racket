@@ -307,7 +307,7 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```
-Type ::= Int | Float | Bool | String | Symbol | Sim | Math
+Type ::= Int | Float | Bool | String | Symbol | Mirror | Sim | Math
        | (Point Type)
        | (Boid Type)
        | (List Type)
@@ -324,6 +324,7 @@ Int
 Float
 String
 Symbol
+Mirror
 Math
 (Point Int)
 (Point Float)
@@ -434,6 +435,14 @@ other)` compares two `Symbol` values. Equal strings intern to the same object.
 Source symbols remain environment lookups in expression position and
 unevaluated selectors in selector position.
 
+### 7.3 `Mirror`
+
+`Mirror` is the primitive reflection boundary. `(Mirror of value)` accepts any
+Aloe value, and `(mirror messages)` returns the unique instance or class
+selectors known for that value as a `(List Symbol)`. Fields appear as
+zero-argument selectors. These kernel messages exist only on `Mirror`; user
+objects do not acquire `messages`, and source selectors remain unevaluated.
+
 ---
 
 ## 8. Out of scope for 0.1
@@ -499,3 +508,9 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   printer uses it when present, and `:raw` prints the structural `#<…>` form.
 - `Symbol` is a primitive interned name constructed with `(Symbol intern
   String)`; it does not change source-symbol lookup or selector syntax.
+
+## 12. 0.3 additions
+
+- `Mirror` keeps reflection separate from the base object protocol;
+  `(Mirror of value)` produces a mirror whose `messages` result is the value's
+  unique `(List Symbol)` selectors.

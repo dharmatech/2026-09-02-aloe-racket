@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "symbol.rkt")
+(require "mirror.rkt"
+         "symbol.rkt")
 
 (provide top-level-env?
          (struct-out list-class-object)
@@ -14,10 +15,12 @@
 (struct list-class-object ([methods #:mutable] [environment #:mutable]))
 
 (define (make-top-level-env)
+  (define list-class (list-class-object '() #f))
   (top-level-env
    (make-hasheq (list (cons 'dummy (dummy-object))
-                      (cons 'List (list-class-object '() #f))
-                      (cons 'Symbol (symbol-class-object))))
+                      (cons 'List list-class)
+                      (cons 'Symbol (symbol-class-object))
+                      (cons 'Mirror (mirror-class-object list-class))))
    #f))
 
 (define (make-local-env parent bindings)
