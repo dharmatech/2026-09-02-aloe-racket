@@ -42,3 +42,6 @@
         ((self tos) invoke
           (row signature)
           arg)))))
+
+(define gel-empty-stack
+  (GelStack new (List empty)))

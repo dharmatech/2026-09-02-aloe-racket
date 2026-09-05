@@ -34,7 +34,7 @@
 (void (eval-source "(define rows (gel-rows call 10))" environment))
 (void (bind-row! "plus-row" "rows" "+" 1))
 (void (eval-source "(define plus-key ((plus-row index) text))" environment))
-(void (eval-source "(define stack (gel-start call 10))" environment))
+(void (eval-source "(define stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
   "(define pending (gel-handle-key call stack plus-key))"

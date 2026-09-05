@@ -23,7 +23,7 @@
  (eval-expr
   (parse-datum
    '(define stack
-      (gel-start call (Point new 10 20))))
+      (gel-empty-stack push (Point new 10 20))))
   environment))
 
 ;; TOS presentation uses the subject's structural form.
@@ -36,8 +36,8 @@
 ;; Atomic structural text is still concise.
 (check-equal?
  (eval-expr
-  (parse-datum
-   '(gel-tos-text call (gel-start call 10)))
+   (parse-datum
+   '(gel-tos-text call (gel-empty-stack push 10)))
   environment)
  "TOS: 10")
 

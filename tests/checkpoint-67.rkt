@@ -50,7 +50,7 @@ ALOE
 ;; TOS: 10 receives + with argument 2.
 (void
  (eval-source
-  "(define int-stack (gel-start-two call 2 10))"
+  "(define int-stack ((gel-empty-stack push 2) push 10))"
   environment))
 (void (eval-source "(define int-rows (gel-rows call 10))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
@@ -86,9 +86,9 @@ ALOE
  (eval-source
   (string-append
    "(define point-stack\n"
-   "  (gel-start-two call\n"
-   "    (Point new 1 2)\n"
-   "    (Point new 10 20)))")
+   "  ((gel-empty-stack push (Point new 1 2))\n"
+   "   push\n"
+   "   (Point new 10 20)))")
   environment))
 (void
  (eval-source
@@ -124,7 +124,7 @@ ALOE
 
 ;; With no argument mirror beneath TOS, selecting an arity-one row is pending
 ;; rather than an eager invocation.
-(void (eval-source "(define one-stack (gel-start call 10))" environment))
+(void (eval-source "(define one-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
   "(define one-step (gel-handle-key call one-stack int-plus-key))"

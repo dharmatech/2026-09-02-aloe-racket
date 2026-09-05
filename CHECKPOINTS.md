@@ -186,3 +186,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `GelStack.invoke-zero` and the two `invoke-one` overloads invoke reflected
   rows against TOS and push their results; the callable helpers are removed.
+
+## 74. Empty `GelStack`
+
+- `gel-empty-stack` is the shared immutable starting stack; callers construct
+  one- and two-item stacks with direct `push` sends instead of start wrappers.

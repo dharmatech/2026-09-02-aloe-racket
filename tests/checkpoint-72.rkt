@@ -42,7 +42,7 @@
  (type->datum
   (typecheck-source
    (format
-    "(load ~s) (gel-start-two call 1 2)"
+    "(load ~s) ((gel-empty-stack push 1) push 2)"
     (path->string gel-loop-path))))
  'GelStack)
 (check-exn
@@ -74,7 +74,7 @@
  (eval-source "((((two-stack items) rest) first) subject)" environment)
  10)
 
-(void (eval-source "(define started-two (gel-start-two call 1 2))"
+(void (eval-source "(define started-two ((gel-empty-stack push 1) push 2))"
                    environment))
 (check-equal? (eval-source "((started-two tos) subject)" environment) 2)
 (check-equal?
@@ -107,7 +107,8 @@
 (void (eval-source "(define point (Point new 10 20))" environment))
 (void (eval-source "(define point-rows (gel-rows call point))" environment))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
-(void (eval-source "(define point-stack (gel-start call point))" environment))
+(void (eval-source "(define point-stack (gel-empty-stack push point))"
+                   environment))
 (void
  (eval-source
   "(define x-stack (point-stack invoke-zero point-x-row))"
@@ -119,7 +120,7 @@
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void
  (eval-source
-  "(define sum-stack ((gel-start call 10) invoke-one int-plus-row 2))"
+  "(define sum-stack ((gel-empty-stack push 10) invoke-one int-plus-row 2))"
   environment))
 (check-equal? (eval-source "((sum-stack tos) subject)" environment) 12)
 (void (eval-source "(define two-mirror (Mirror of 2))" environment))
@@ -127,7 +128,7 @@
  (eval-source
   (string-append
    "(define mirrored-sum-stack "
-   "  ((gel-start call 10) invoke-one int-plus-row two-mirror))")
+   "  ((gel-empty-stack push 10) invoke-one int-plus-row two-mirror))")
   environment))
 (check-equal?
  (eval-source "((mirrored-sum-stack tos) subject)" environment)
@@ -185,7 +186,7 @@
 (void
  (eval-expr
   (parse-datum
-   '(gel-main call (gel-start call (Point new 10 20))))
+   '(gel-main call (gel-empty-stack push (Point new 10 20))))
   transcript-environment))
 (define transcript (get-output-string (fake-term-state-output transcript-state)))
 (check-regexp-match #rx"key 1\r\nTOS: 10\r\n" transcript)

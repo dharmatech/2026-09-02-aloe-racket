@@ -37,7 +37,7 @@
    environment))
 
 (void (eval-source "(define p (Point new 10 20))" environment))
-(void (eval-source "(define st (gel-start call p))" environment))
+(void (eval-source "(define st (gel-empty-stack push p))" environment))
 (check-equal? (eval-source "((st items) len)" environment) 1)
 (check-equal?
  (aloe-value->string (eval-source "(st tos)" environment))

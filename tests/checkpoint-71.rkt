@@ -59,7 +59,7 @@
  (eval-expr
   (parse-datum
    '(gel-main call
-      (gel-start call (Point new 10 20))))
+      (gel-empty-stack push (Point new 10 20))))
   environment))
 
 (define transcript (get-output-string (fake-term-state-output state)))

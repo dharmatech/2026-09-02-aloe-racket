@@ -45,7 +45,7 @@
 ;; row; selecting pick 2 then invokes that exact row with 2.
 (void
  (eval-source
-  "(define int-stack (gel-start-two call 2 10))"
+  "(define int-stack ((gel-empty-stack push 2) push 10))"
   environment))
 (void
  (eval-source
@@ -90,7 +90,7 @@
  (eval-source
   (string-append
    "(define mixed-stack\n"
-   "  (gel-start-two call 10 point))")
+   "  ((gel-empty-stack push 10) push point))")
   environment))
 (void
  (eval-source
@@ -110,7 +110,8 @@
 
 ;; Even a one-item Point stack may select +; it becomes pending and does not
 ;; invoke until a stack pick is made.
-(void (eval-source "(define point-stack (gel-start call point))" environment))
+(void (eval-source "(define point-stack (gel-empty-stack push point))"
+                   environment))
 (void
  (eval-source
   "(define point-pending (gel-handle-key call point-stack point-plus-key))"

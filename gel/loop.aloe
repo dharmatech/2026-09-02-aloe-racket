@@ -11,27 +11,6 @@
     (has-digits Bool))
   (methods))
 
-(define-class GelStart
-  (fields)
-  (methods
-    (call (type T)
-      (value T)
-      GelStack
-      ((GelStack new (List empty)) push value))))
-
-(define gel-start (GelStart new))
-
-(define-class GelStartTwo
-  (fields)
-  (methods
-    (call (type Under Tos)
-      (under Under)
-      (tos Tos)
-      GelStack
-      (((GelStack new (List empty)) push under) push tos))))
-
-(define gel-start-two (GelStartTwo new))
-
 (define-class GelKeyIndex
   (fields)
   (methods

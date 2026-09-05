@@ -56,7 +56,8 @@
    environment))
 
 (void (eval-source "(define point (Point new 10 20))" environment))
-(void (eval-source "(define point-stack (gel-start call point))" environment))
+(void (eval-source "(define point-stack (gel-empty-stack push point))"
+                   environment))
 (void
  (eval-source
   (string-append
@@ -76,7 +77,7 @@
 (check-equal? (eval-source "((x-stack tos) subject)" environment) 10)
 
 ;; One-argument sends accept either an ordinary value or a Mirror.
-(void (eval-source "(define int-stack (gel-start call 10))" environment))
+(void (eval-source "(define int-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
   "(define int-rows (gel-rows-from-mirror call (int-stack tos)))"

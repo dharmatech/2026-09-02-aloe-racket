@@ -33,9 +33,9 @@
      (eval-expr
       (parse-datum
        '(gel-main call
-          (gel-start-two call
-            (Point new 1 2)
-            (Point new 10 20))))
+          ((gel-empty-stack push (Point new 1 2))
+           push
+           (Point new 10 20))))
       environment))))
 
 (module+ main

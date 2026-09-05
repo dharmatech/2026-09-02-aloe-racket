@@ -35,7 +35,7 @@
 
 (void
  (eval-source
-  "(define stack (gel-start call (Point new 10 20)))"
+  "(define stack (gel-empty-stack push (Point new 10 20)))"
   environment))
 (define tos-text
   (eval-source "(gel-tos-text call stack)" environment))

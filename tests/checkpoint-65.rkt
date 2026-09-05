@@ -30,7 +30,7 @@
 (check-equal?
  (type->datum
   (typecheck-source
-   "(gel-main call (gel-start call (Point new 10 20)))"
+   "(gel-main call (gel-empty-stack push (Point new 10 20)))"
    checker-environment))
  'GelStack)
 
@@ -85,7 +85,7 @@
   (eval-expr
    (parse-datum
     '(define initial-stack
-       (gel-start call (Point new 10 20))))
+       (gel-empty-stack push (Point new 10 20))))
    environment)
   (eval-expr
    (parse-datum
