@@ -101,3 +101,9 @@ success, and reports both source datums and displayed values on failure.
 - `Mirror.invoke` checks the signature owner, arity, argument types, and result
   type, then runs that exact dispatch-table row without resolving its selector
   again; `perform` remains absent.
+
+## 58. Gel menu rows in Aloe
+
+- `gel/menu.aloe` turns any value's reflected signatures into ordered,
+  one-based `GelRow` menu data; keyboard input, the stack loop, and send
+  building remain deferred.

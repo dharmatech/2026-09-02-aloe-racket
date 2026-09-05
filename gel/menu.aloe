@@ -1,0 +1,33 @@
+;; Gel v0 menu rows. This file is application code, not an Aloe library.
+
+(define-class GelRow
+  (fields
+    (index Int)
+    (selector Symbol)
+    (arity Int)
+    (signature Signature))
+  (methods
+    (label () String
+      ((self selector) name))))
+
+;; Top-level fn values are monomorphic in the current checker. A generic call
+;; method keeps T fresh for each use while preserving the normal `call` send.
+(define-class GelRows
+  (fields)
+  (methods
+    (call (type T)
+      (v T)
+      (List GelRow)
+      (let ((m (Mirror of v)))
+        (((m signatures) fold
+           (List empty)
+           (fn (rows signature)
+             (rows cons
+               (GelRow new
+                 ((rows len) + 1)
+                 (signature selector)
+                 ((signature params) len)
+                 signature))))
+         reverse)))))
+
+(define gel-rows (GelRows new))

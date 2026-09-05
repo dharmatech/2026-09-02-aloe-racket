@@ -27,3 +27,16 @@
 ((Mirror of x) signatures)
 
 
+(define mirror-123 (Mirror of 123))
+
+(define sig-123 ((mirror-123 signatures) first))
+
+(mirror-123 invoke sig-123)
+
+(mirror-123 invoke sig-123 234)
+
+
+
+(load "gel/menu.aloe")
+(load "examples/point.aloe")
+
