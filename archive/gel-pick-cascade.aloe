@@ -1,0 +1,44 @@
+
+
+
+
+    (pick-line (pick GelPick) String
+      (((((pick index) text) append "  ") append
+         ((pick mirror) raw))
+       append "\r\n"))
+
+
+
+    (pick-line (pick GelPick) String
+      (((((pick index) text) append "  ") append ((pick mirror) raw)) append "\r\n"))
+
+
+
+    (pick-line (pick GelPick) String
+      (((((pick index) text) append "  ") append ((pick mirror) raw)) append "\r\n"))
+
+
+    (pick-line (pick GelPick) String
+      (
+        (
+          (
+            ((pick index) text) append "  "
+          ) 
+          append ((pick mirror) raw)
+        )
+        append "\r\n"
+      )
+    )
+
+
+    (pick-line (pick GelPick) String
+      (-> ((pick index) text)
+          (append "  "))
+          (append ((pick mirror) raw))
+          (append "\r\n"))
+
+
+
+
+pick.index.append(" ").append(pick.mirror.raw).append("\r\n")
+

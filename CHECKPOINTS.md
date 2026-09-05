@@ -201,3 +201,9 @@ success, and reports both source datums and displayed values on failure.
 
 - `GelKey` gives terminal text `digit-value`, `menu-index`, `quit?`, and
   `return?`; `GelStep` constructs one per public String key transition.
+
+## 77. `GelRows` mirror overload
+
+- `GelRows.call` builds rows in one exact `Mirror` overload; its generic
+  overload reflects ordinary values and delegates, and the separate
+  mirror-row callable is removed.

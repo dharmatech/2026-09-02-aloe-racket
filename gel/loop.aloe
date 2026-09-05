@@ -67,27 +67,6 @@
 
 (define gel-select-row (GelSelectRow new))
 
-;; A stack slot is already the mirror whose signatures Gel needs. Building
-;; rows directly avoids wrapping that Mirror or guessing its subject's type.
-(define-class GelRowsFromMirror
-  (fields)
-  (methods
-    (call
-      (mirror Mirror)
-      (List GelRow)
-      (((mirror signatures) fold
-         (List empty)
-         (fn (rows signature)
-           (rows cons
-             (GelRow new
-               ((rows len) + 1)
-               (signature selector)
-               ((signature params) len)
-               signature))))
-       reverse))))
-
-(define gel-rows-from-mirror (GelRowsFromMirror new))
-
 (define-class GelPick
   (fields
     (index Int)
@@ -183,7 +162,7 @@
     ;; A stack TOS is already a Mirror. Its rows describe the subject, not
     ;; the Mirror reflection API itself.
     (call (value Mirror) String
-      (self rows-text (gel-rows-from-mirror call value)))
+      (self rows-text (gel-rows call value)))
 
     (call (state GelStep) String
       (if ((state pending) empty?)
@@ -216,7 +195,7 @@
       (if (key quit?)
           (GelStep new (self stack) #t (List empty) 0 #f)
           (let ((rows
-                 (gel-rows-from-mirror call
+                 (gel-rows call
                    ((self stack) tos)))
                 (index (key menu-index)))
             (if (index = 0)

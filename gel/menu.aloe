@@ -15,19 +15,23 @@
 (define-class GelRows
   (fields)
   (methods
-    (call (type T)
-      (v T)
+    (call
+      (mirror Mirror)
       (List GelRow)
-      (let ((m (Mirror of v)))
-        (((m signatures) fold
-           (List empty)
-           (fn (rows signature)
-             (rows cons
-               (GelRow new
-                 ((rows len) + 1)
-                 (signature selector)
-                 ((signature params) len)
-                 signature))))
-         reverse)))))
+      (((mirror signatures) fold
+         (List empty)
+         (fn (rows signature)
+           (rows cons
+             (GelRow new
+               ((rows len) + 1)
+               (signature selector)
+               ((signature params) len)
+               signature))))
+       reverse))
+
+    (call (type T)
+      (value T)
+      (List GelRow)
+      (self call (Mirror of value)))))
 
 (define gel-rows (GelRows new))

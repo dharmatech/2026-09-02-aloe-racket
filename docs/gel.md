@@ -112,7 +112,10 @@ The reflection hatch is `Mirror`, not a `perform` message on every object.
 
 Gel v0 menu rows now live in `gel/menu.aloe`. `(gel-rows call value)` builds
 ordered `GelRow` values from the subject's reflected signatures, including a
-one-based index, selector, arity, and signature. The stack loop and key input
+one-based index, selector, arity, and signature. An exact `Mirror` overload
+uses an existing mirror directly, while the generic overload reflects an
+ordinary value and delegates to it; both routes therefore share the same row
+construction and never reflect a mirror twice. The stack loop and key input
 come later.
 
 The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
