@@ -43,6 +43,15 @@ later as a wrapper around that pipeline, not a rewrite.
 Rejected for 0.1: Turnstile, PLAI student languages, expanding sends into
 Racket apply.
 
+## Host terminal input (2026-09-04)
+
+Decided: host key input uses the `tui-term` package, not `#%terminal` directly
+and not a project C FFI. Aloe may later expose `(term read-key)`; this
+checkpoint does not add that send.
+
+`raco pkg install tui-term` is required only for the optional host terminal
+spike and driver; ordinary `bin/aloe`, Boids, and MPL do not load it.
+
 ## Collections (2026-09-02)
 
 Decided: the host provides `of`, `empty`, `empty?`, `first`, `rest`, `cons`,

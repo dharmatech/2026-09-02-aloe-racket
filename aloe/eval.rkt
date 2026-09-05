@@ -3,6 +3,7 @@
 (require racket/match
          racket/string
          "env.rkt"
+         "host.rkt"
          "parse.rkt")
 
 (provide eval-expr
@@ -112,6 +113,8 @@
      (send-to-function receiver selector arguments)]
     [(list-value? receiver)
      (send-to-list receiver selector arguments)]
+    [(host-receiver? receiver)
+     (host-receiver-send receiver selector arguments)]
     [(exact-integer? receiver)
      (send-to-int receiver selector arguments)]
     [(flonum? receiver)
@@ -717,6 +720,13 @@
              (if (null? parts)
                  ""
                  (string-append " " (string-join parts " "))))]
+    [(host-receiver? value)
+     (define state (host-receiver-state value))
+     (format "#<~a~a>"
+             (host-receiver-name value)
+             (if (string? state)
+                 (format " ~s" state)
+                 ""))]
     [(list-class-object? value) "#<class List>"]
     [(void? value) "#<void>"]
     [else "#<object>"]))
@@ -759,5 +769,9 @@
      (and (eq? (list-value-class left) (list-value-class right))
           (value-vectors-equal? (list-value-elements left)
                                 (list-value-elements right)))]
+    [(and (host-receiver? left) (host-receiver? right))
+     (and (eq? (host-receiver-name left) (host-receiver-name right))
+          (aloe-values-equal? (host-receiver-state left)
+                              (host-receiver-state right)))]
     [(and (void? left) (void? right)) #t]
     [else (eq? left right)]))
