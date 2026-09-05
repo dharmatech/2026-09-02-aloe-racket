@@ -1,0 +1,59 @@
+;; Gel v0 stack. Every slot is a Mirror, so the ordinary List stays
+;; homogeneous even as Gel moves between unrelated Aloe value types.
+
+(load "menu.aloe")
+
+(define-class GelTos
+  (fields)
+  (methods
+    (call (stack (List Mirror)) Mirror
+      (stack first))))
+
+(define gel-tos (GelTos new))
+
+(define-class GelPush
+  (fields)
+  (methods
+    (call (stack (List Mirror)) (value Mirror) (List Mirror)
+      (stack cons value))
+
+    (call (type T)
+      (stack (List Mirror))
+      (value T)
+      (List Mirror)
+      (stack cons (Mirror of value)))))
+
+(define gel-push (GelPush new))
+
+(define-class GelInvokeZero
+  (fields)
+  (methods
+    (call (stack (List Mirror)) (row GelRow) (List Mirror)
+      (let ((tos (gel-tos call stack)))
+        (gel-push call stack
+          (tos invoke (row signature)))))))
+
+(define gel-invoke-zero (GelInvokeZero new))
+
+(define-class GelInvokeOne
+  (fields)
+  (methods
+    (call
+      (stack (List Mirror))
+      (row GelRow)
+      (arg Mirror)
+      (List Mirror)
+      (let ((tos (gel-tos call stack)))
+        (gel-push call stack
+          (tos invoke (row signature) (arg subject)))))
+
+    (call (type T)
+      (stack (List Mirror))
+      (row GelRow)
+      (arg T)
+      (List Mirror)
+      (let ((tos (gel-tos call stack)))
+        (gel-push call stack
+          (tos invoke (row signature) arg))))))
+
+(define gel-invoke-one (GelInvokeOne new))

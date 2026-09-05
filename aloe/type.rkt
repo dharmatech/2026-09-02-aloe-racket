@@ -1236,6 +1236,12 @@
      (for ([argument (in-list (cdr arguments))])
        (infer-expression argument environment #f))
      (or expected (fresh-type-variable 'invoke-result))]
+    [(subject)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Mirror subject: expected 0 arguments, got ~a"
+        (length arguments)))
+     (or expected (fresh-type-variable 'subject-result))]
     [else (unknown-message selector)]))
 
 (define (infer-signature-send selector arguments)

@@ -107,3 +107,20 @@ success, and reports both source datums and displayed values on failure.
 - `gel/menu.aloe` turns any value's reflected signatures into ordered,
   one-based `GelRow` menu data; keyboard input, the stack loop, and send
   building remain deferred.
+
+## 59. Gel `(List Mirror)` stack + zero-argument invoke
+
+- `gel/stack.aloe` stores one mirror per stack slot, treats `first` as TOS,
+  and invokes an arity-zero `GelRow` before pushing its mirrored result;
+  subject unwrapping and argument builders remain deferred.
+
+## 60. `(mirror subject)`
+
+- `(mirror subject)` returns the value held by a `Mirror`; its checker result
+  is the expected type when available and otherwise a fresh type variable.
+
+## 61. One-argument Gel invoke from the stack
+
+- `(gel-invoke-one call stack row argument)` invokes the row against the TOS
+  mirror, unwrapping a mirrored argument with `subject`, then pushes the
+  mirrored result.

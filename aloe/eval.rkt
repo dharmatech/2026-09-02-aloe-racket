@@ -295,7 +295,8 @@
     [(mirror-value? value)
      (list (signature-spec 'messages '() '(List Symbol))
            (signature-spec 'signatures '() '(List Signature))
-           (signature-spec 'invoke '(Signature) 'U))]
+           (signature-spec 'invoke '(Signature) 'U)
+           (signature-spec 'subject '() 'U))]
     [(signature-value? value)
      (list (signature-spec 'selector '() 'Symbol)
            (signature-spec 'params '() '(List TypeData))
@@ -345,7 +346,7 @@
     [(function-value? subject) '(T U)]
     [(list-class-object? subject) '(T)]
     [(mirror-class-object? subject) '(T)]
-    [(and (mirror-value? subject) (= row-index 2)) '(U)]
+    [(and (mirror-value? subject) (memv row-index '(2 3))) '(U)]
     [else '()]))
 
 (define (runtime-owner-type value)
@@ -407,6 +408,10 @@
         (signature-spec->value
          class (mirror-value-subject receiver) spec row-index)))]
     [(invoke) (invoke-with-signature receiver arguments)]
+    [(subject)
+     (unless (null? arguments)
+       (arity-error "Mirror subject" 0 (length arguments)))
+     (mirror-value-subject receiver)]
     [else (unknown-message selector)]))
 
 (define (bind-runtime-type-parameter! name actual bindings)

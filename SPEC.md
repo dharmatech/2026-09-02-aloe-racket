@@ -444,6 +444,13 @@ selectors known for that value as a `(List Symbol)`. Fields appear as
 zero-argument selectors. These kernel messages exist only on `Mirror`; user
 objects do not acquire `messages`, and source selectors remain unevaluated.
 
+`(mirror subject)` returns the ordinary Aloe value originally passed to
+`(Mirror of value)`; it does not wrap that value in another mirror. The
+checker uses the expected result type when one is present and otherwise a
+fresh type variable. At a runtime type boundary, a subject that does not match
+that expected type is rejected using the same runtime type relation as
+`Mirror.invoke` arguments.
+
 ### 7.4 `Signature`
 
 `(mirror signatures)` returns a `(List Signature)` with one kernel-created row
@@ -538,3 +545,5 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   their types are reified as `Symbol` and `List` grammar data.
 - `(mirror invoke signature argument ...)` invokes that exact owned row with
   runtime checks, without turning a selector symbol into `perform`.
+- `(mirror subject)` unwraps the reflected value; its result type is supplied
+  by context or represented by a fresh type variable.

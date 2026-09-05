@@ -99,4 +99,8 @@ names are `Symbol` values and compound types are `List` values.
 it does not turn the row's selector into `perform` and does not run overload
 resolution a second time.
 
+Mirror unwrapping is the kernel message `(mirror subject)`. It returns the
+stored value directly; there is no `Object` cast syntax, and `List` remains
+homogeneous rather than becoming a heterogeneous container.
+
 Rejected for this slice: `#%` reflection sigils and `perform`.
