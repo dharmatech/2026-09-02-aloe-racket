@@ -196,3 +196,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `(step handle-key key)` and its transition methods live on immutable
   `GelStep` values; the stateless callable key handler is removed.
+
+## 76. `GelKey`
+
+- `GelKey` gives terminal text `digit-value`, `menu-index`, `quit?`, and
+  `return?`; `GelStep` constructs one per public String key transition.

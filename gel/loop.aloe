@@ -11,40 +11,32 @@
     (has-digits Bool))
   (methods))
 
-(define-class GelKeyIndex
-  (fields)
+(define-class GelKey
+  (fields
+    (text String))
   (methods
-    (call (key String) Int
-      (cond ((key = "1") 1)
-            ((key = "2") 2)
-            ((key = "3") 3)
-            ((key = "4") 4)
-            ((key = "5") 5)
-            ((key = "6") 6)
-            ((key = "7") 7)
-            ((key = "8") 8)
-            ((key = "9") 9)
-            (else 0)))))
+    (digit-value () Int
+      (cond (((self text) = "0") 0)
+            (((self text) = "1") 1)
+            (((self text) = "2") 2)
+            (((self text) = "3") 3)
+            (((self text) = "4") 4)
+            (((self text) = "5") 5)
+            (((self text) = "6") 6)
+            (((self text) = "7") 7)
+            (((self text) = "8") 8)
+            (((self text) = "9") 9)
+            (else -1)))
 
-(define gel-key-index (GelKeyIndex new))
+    (menu-index () Int
+      (let ((digit (self digit-value)))
+        (if (digit > 0) digit 0)))
 
-(define-class GelDigitValue
-  (fields)
-  (methods
-    (call (key String) Int
-      (cond ((key = "0") 0)
-            ((key = "1") 1)
-            ((key = "2") 2)
-            ((key = "3") 3)
-            ((key = "4") 4)
-            ((key = "5") 5)
-            ((key = "6") 6)
-            ((key = "7") 7)
-            ((key = "8") 8)
-            ((key = "9") 9)
-            (else -1)))))
+    (quit? () Bool
+      ((self text) = "q"))
 
-(define gel-digit-value (GelDigitValue new))
+    (return? () Bool
+      ((self text) = "return"))))
 
 (define-class GelIntHole
   (fields)
@@ -219,14 +211,14 @@
 (define-methods GelStep
   (methods
     (handle-idle
-      (key String)
+      (key GelKey)
       GelStep
-      (if (key = "q")
+      (if (key quit?)
           (GelStep new (self stack) #t (List empty) 0 #f)
           (let ((rows
                  (gel-rows-from-mirror call
                    ((self stack) tos)))
-                (index (gel-key-index call key)))
+                (index (key menu-index)))
             (if (index = 0)
                 (GelStep new (self stack) #f (List empty) 0 #f)
                 (let ((row (gel-select-row call rows index)))
@@ -243,9 +235,9 @@
 
     (handle-int
       (row GelRow)
-      (key String)
+      (key GelKey)
       GelStep
-      (if (key = "return")
+      (if (key return?)
           (if (self has-digits)
               (GelStep new
                 ((self stack) invoke-one
@@ -256,7 +248,7 @@
                 0
                 #f)
               self)
-          (let ((digit (gel-digit-value call key)))
+          (let ((digit (key digit-value)))
             (if (digit < 0)
                 self
                 (GelStep new
@@ -268,9 +260,9 @@
 
     (handle-pick
       (row GelRow)
-      (key String)
+      (key GelKey)
       GelStep
-      (let ((index (gel-key-index call key)))
+      (let ((index (key menu-index)))
         (if (index = 0)
             self
             (let ((picks
@@ -291,9 +283,9 @@
                       #f)))))))
 
     (handle-pending
-      (key String)
+      (key GelKey)
       GelStep
-      (if (key = "q")
+      (if (key quit?)
           (GelStep new (self stack) #f (List empty) 0 #f)
           (let ((row ((self pending) first)))
             (if (gel-int-hole? call row)
@@ -301,8 +293,9 @@
                 (self handle-pick row key)))))
 
     (handle-key
-      (key String)
+      (text String)
       GelStep
-      (if ((self pending) empty?)
-          (self handle-idle key)
-          (self handle-pending key)))))
+      (let ((key (GelKey new text)))
+        (if ((self pending) empty?)
+            (self handle-idle key)
+            (self handle-pending key))))))

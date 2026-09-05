@@ -130,7 +130,9 @@ there are no separate callable invocation helpers.
 The key step in `gel/loop.aloe` is Aloe application code on the immutable
 `GelStep` state itself: `(step handle-key key)` returns the next state. `"q"`
 requests quit, and digit strings select reflected rows. Zero-argument rows
-invoke directly.
+invoke directly. The public transition still accepts terminal `String` text
+and constructs one immutable `GelKey`; its `menu-index`, `digit-value`,
+`quit?`, and `return?` messages carry the meanings Gel assigns to that text.
 Selecting an arity-one row stores it as an empty-or-singleton `(List GelRow)`
 in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
 mirrors accepted by the row's first parameter, in stack order, and the next
