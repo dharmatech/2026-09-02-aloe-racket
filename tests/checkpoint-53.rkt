@@ -4,18 +4,11 @@
          racket/runtime-path
          rackunit
          (only-in tui/term/messages make-tkeymsg)
-         (only-in "../aloe/env.rkt" env-define!)
-         "../aloe/eval.rkt"
          "../aloe/host.rkt"
          (only-in "../aloe/main.rkt" make-top-level-env eval-source)
-         "../aloe/parse.rkt"
          "../host/racket/term.rkt")
 
 (define-runtime-path project-root "..")
-
-(define (key-name value)
-  (check-true (host-receiver? value))
-  (host-receiver-send value 'name '()))
 
 (test-case "printable a maps to an Aloe String"
   (check-equal? (tkeymsg->aloe-key (make-tkeymsg #\a)) "a"))
@@ -23,26 +16,14 @@
 (test-case "printable q maps to an Aloe String"
   (check-equal? (tkeymsg->aloe-key (make-tkeymsg #\q)) "q"))
 
-(test-case "return maps to a Key named return"
-  (check-equal? (key-name (tkeymsg->aloe-key (make-tkeymsg 'return)))
-                "return"))
+(test-case "return maps to an Aloe String"
+  (check-equal? (tkeymsg->aloe-key (make-tkeymsg 'return)) "return"))
 
-(test-case "escape maps to a Key named escape"
-  (check-equal? (key-name (tkeymsg->aloe-key (make-tkeymsg 'esc)))
-                "escape"))
+(test-case "escape maps to an Aloe String"
+  (check-equal? (tkeymsg->aloe-key (make-tkeymsg 'esc)) "escape"))
 
-(test-case "an unknown named key keeps its symbolic name"
-  (check-equal? (key-name (tkeymsg->aloe-key (make-tkeymsg 'left)))
-                "left"))
-
-(test-case "Key exposes name as an Aloe message"
-  (define environment (make-top-level-env))
-  (env-define!
-   environment
-   'key
-   (tkeymsg->aloe-key (make-tkeymsg 'return)))
-  (check-equal? (eval-expr (parse-datum '(key name)) environment)
-                "return"))
+(test-case "an unknown named key becomes an Aloe String"
+  (check-equal? (tkeymsg->aloe-key (make-tkeymsg 'left)) "left"))
 
 (test-case "term receiver exposes read-key without reading the TTY"
   (define term (make-term-receiver))

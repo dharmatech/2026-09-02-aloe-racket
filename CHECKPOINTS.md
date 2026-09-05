@@ -134,3 +134,13 @@ success, and reports both source datums and displayed values on failure.
 
 - `(gel-menu-text call value)` formats indexed selector/arity rows in Aloe;
   `host/racket/gel-run.rkt` is the thin interactive TTY skin.
+
+## 64. `(term write-line String)`
+
+- The injected `term` receiver writes a `String`, CRLF, and a flush using
+  Racket `display`, then returns the original string; it is not a tui-term API.
+
+## 65. `gel-main` in Aloe
+
+- `gel/main.aloe` prints menus, reads `String` keys, steps, and recurses;
+  `host/racket/gel-run.rkt` only injects `term`, loads Gel, and starts it.

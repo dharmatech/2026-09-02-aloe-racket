@@ -86,7 +86,7 @@
         (((((index-text append "  ") append selector-text)
            append "  ")
           append arity-text)
-         append "\n")))
+         append "\r\n")))
 
     (rows-text (rows (List GelRow)) String
       (rows fold ""

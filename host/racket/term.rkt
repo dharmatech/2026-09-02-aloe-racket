@@ -7,22 +7,15 @@
 ;; normal return, errors, and breaks, which restores cooked mode.
 
 (require tui/term
-         "../../aloe/host.rkt")
+         "../../aloe/host.rkt"
+         (only-in "../../aloe/main.rkt"
+                  make-type-environment
+                  typecheck-source))
 
 (provide tkeymsg->aloe-key
          make-term-receiver
+         make-term-type-environment
          call-with-tty-term-receiver)
-
-(define key-name-message
-  (host-message
-   0
-   (lambda (receiver _arguments)
-     (host-receiver-state receiver))))
-
-(define (make-key name)
-  (host-receiver 'Key
-                 (hasheq 'name key-name-message)
-                 name))
 
 (define (return-key? key)
   (or (eq? key 'return)
@@ -44,15 +37,13 @@
   (define key (tkeymsg-key message))
   (define character (tkeymsg-char message))
   (cond
-    [(return-key? key) (make-key "return")]
-    [(escape-key? key) (make-key "escape")]
+    [(return-key? key) "return"]
+    [(escape-key? key) "escape"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))
      (string key)]
-    [(symbol? key)
-     ;; Preserve unknown named keys as data for later Aloe menus.
-     (make-key (symbol->string key))]
+    [(symbol? key) (symbol->string key)]
     [else
      (error 'term "unsupported key: ~s" key)]))
 
@@ -75,10 +66,41 @@
    (lambda (_receiver _arguments)
      (read-next-key))))
 
-(define (make-term-receiver)
+(define write-line-message
+  (host-message
+   1
+   (lambda (receiver arguments)
+     (define value (car arguments))
+     (unless (string? value)
+       (error 'term "Term write-line expects a String argument"))
+     (define output (host-receiver-state receiver))
+     (display value output)
+     (display "\r\n" output)
+     (flush-output output)
+     value)))
+
+(define (make-term-receiver [output (current-output-port)])
   (host-receiver 'Term
-                 (hasheq 'read-key read-key-message)
-                 #f))
+                 (hasheq 'read-key read-key-message
+                         'write-line write-line-message)
+                 output))
+
+;; The optional terminal runner injects its runtime receiver separately. This
+;; private Aloe facade supplies the corresponding checked shape without
+;; binding term in Aloe's default environment.
+(define (make-term-type-environment)
+  (define environment (make-type-environment))
+  (typecheck-source
+   #<<ALOE
+(define-class HostTerm
+  (fields)
+  (methods
+    (read-key () String "")
+    (write-line (value String) String value)))
+(define term (HostTerm new))
+ALOE
+   environment)
+  environment)
 
 (define (call-with-tty-term-receiver procedure)
   (with-term (make-tty-term)

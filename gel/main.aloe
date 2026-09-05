@@ -1,0 +1,25 @@
+;; Gel's interactive loop. The host only injects `term` and starts this call.
+
+(load "loop.aloe")
+
+(define-class GelMain
+  (fields)
+  (methods
+    (call
+      (stack (List Mirror))
+      (List Mirror)
+      (let ((written
+             (term write-line
+               (gel-menu-text call (gel-tos call stack)))))
+        (let ((key (term read-key)))
+          (if (key = "q")
+              stack
+              (let ((index (gel-key-index call key)))
+                (if (index = 0)
+                    (self call stack)
+                    (let ((step (gel-handle-key call stack key)))
+                      (if (step quit)
+                          (step stack)
+                          (self call (step stack))))))))))))
+
+(define gel-main (GelMain new))

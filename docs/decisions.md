@@ -52,6 +52,10 @@ checkpoint does not add that send.
 `raco pkg install tui-term` is required only for the optional host terminal
 spike and driver; ordinary `bin/aloe`, Boids, and MPL do not load it.
 
+`(term write-line string)` is implemented by Racket `display` followed by
+`"\r\n"` and a flush, returning the string. It is a method on the injected
+`term` receiver, not a tui-term API or a new kernel printing primitive.
+
 ## Collections (2026-09-02)
 
 Decided: the host provides `of`, `empty`, `empty?`, `first`, `rest`, `cons`,
