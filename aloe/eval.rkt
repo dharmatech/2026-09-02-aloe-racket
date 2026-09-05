@@ -4,7 +4,8 @@
          racket/string
          "env.rkt"
          "host.rkt"
-         "parse.rkt")
+         "parse.rkt"
+         "symbol.rkt")
 
 (provide eval-expr
          eval-exprs
@@ -103,6 +104,8 @@
   (cond
     [(list-class-object? receiver)
      (send-to-list-class receiver selector arguments)]
+    [(symbol-class-object? receiver)
+     (send-to-symbol-class selector arguments)]
     [(class-value? receiver)
      (if (eq? selector 'new)
          (construct-instance receiver arguments)
@@ -123,8 +126,35 @@
      (send-to-bool receiver selector arguments)]
     [(string? receiver)
      (send-to-string receiver selector arguments)]
+    [(symbol-value? receiver)
+     (send-to-symbol receiver selector arguments)]
     [else
      (unknown-message selector)]))
+
+(define (send-to-symbol-class selector arguments)
+  (unless (eq? selector 'intern)
+    (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (arity-error "Symbol intern" 1 (length arguments)))
+  (define name (car arguments))
+  (unless (string? name)
+    (error 'eval-aloe "Symbol intern expects a String argument"))
+  (intern-symbol name))
+
+(define (send-to-symbol receiver selector arguments)
+  (case selector
+    [(name)
+     (unless (null? arguments)
+       (arity-error "Symbol name" 0 (length arguments)))
+     (symbol-value-name receiver)]
+    [(=)
+     (unless (= (length arguments) 1)
+       (arity-error "Symbol =" 1 (length arguments)))
+     (define other (car arguments))
+     (unless (symbol-value? other)
+       (error 'eval-aloe "Symbol = expects a Symbol argument"))
+     (eq? receiver other)]
+    [else (unknown-message selector)]))
 
 (define (send-to-list-class receiver selector arguments)
   (case selector
@@ -235,6 +265,7 @@
     [(flonum? value) 'Float]
     [(boolean? value) 'Bool]
     [(string? value) 'String]
+    [(symbol-value? value) 'Symbol]
     [(instance-value? value)
      (runtime-class-type (instance-value-class value)
                          (instance-value-type-arguments value))]
@@ -681,6 +712,9 @@
     [(boolean? value) (if value "#t" "#f")]
     [(number? value) (number->string value)]
     [(string? value) (format "~s" value)]
+    [(symbol-value? value)
+     (format "#<Symbol ~a>" (symbol-value-name value))]
+    [(symbol-class-object? value) "#<class Symbol>"]
     [(class-value? value)
      (format "#<class ~a>" (class-value-name value))]
     [(and (instance-value? value)

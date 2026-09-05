@@ -1,5 +1,7 @@
 #lang racket/base
 
+(require "symbol.rkt")
+
 (provide top-level-env?
          (struct-out list-class-object)
          make-top-level-env
@@ -14,7 +16,8 @@
 (define (make-top-level-env)
   (top-level-env
    (make-hasheq (list (cons 'dummy (dummy-object))
-                      (cons 'List (list-class-object '() #f))))
+                      (cons 'List (list-class-object '() #f))
+                      (cons 'Symbol (symbol-class-object))))
    #f))
 
 (define (make-local-env parent bindings)

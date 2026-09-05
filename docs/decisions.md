@@ -77,3 +77,11 @@ Rejected for this experiment: C# implementation inheritance, closed ADT
 
 Deferred: `simplify` as a required protocol method; multiple protocols
 per class; ADT control experiment on a separate branch.
+
+## Symbol values (2026-09-05)
+
+Decided: `Symbol` is a primitive interned name, separate from Racket symbols
+and constructed explicitly with `(Symbol intern String)`.
+
+Rejected for this slice: reader literals for symbols, treating Racket symbols
+as Aloe values, and `perform`.

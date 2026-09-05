@@ -9,11 +9,13 @@
          (struct-out float-type)
          (struct-out bool-type)
          (struct-out string-type)
+         (struct-out symbol-type)
          (struct-out protocol-type)
          (struct-out instance-type)
          (struct-out list-type)
          (struct-out class-type)
          (struct-out list-class-type)
+         (struct-out symbol-class-type)
          (struct-out function-type)
          type-environment?
          make-type-environment
@@ -27,11 +29,13 @@
 (struct float-type () #:transparent)
 (struct bool-type () #:transparent)
 (struct string-type () #:transparent)
+(struct symbol-type () #:transparent)
 (struct protocol-type (name signatures) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
 (struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
+(struct symbol-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
 (struct parameter-type (id name) #:transparent)
 (struct type-variable
@@ -51,6 +55,7 @@
 (define FLOAT (float-type))
 (define BOOL (bool-type))
 (define STRING (string-type))
+(define SYMBOL (symbol-type))
 (define VOID (void-type))
 
 (define current-typecheck-load-paths (make-parameter '()))
@@ -74,7 +79,8 @@
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
-                (list-class-type list-element-parameter '()))))
+                (list-class-type list-element-parameter '()))
+          (cons 'Symbol (symbol-class-type))))
    #f))
 
 (define (make-local-type-environment parent bindings)
@@ -108,6 +114,7 @@
     [(float-type? resolved) 'Float]
     [(bool-type? resolved) 'Bool]
     [(string-type? resolved) 'String]
+    [(symbol-type? resolved) 'Symbol]
     [(protocol-type? resolved) (protocol-type-name resolved)]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
@@ -119,6 +126,7 @@
     [(class-type? resolved)
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
+    [(symbol-class-type? resolved) '(Class Symbol)]
     [(function-type? resolved)
      (cons '->
            (append
@@ -196,6 +204,7 @@
     [(and (float-type? resolved-left) (float-type? resolved-right)) FLOAT]
     [(and (bool-type? resolved-left) (bool-type? resolved-right)) BOOL]
     [(and (string-type? resolved-left) (string-type? resolved-right)) STRING]
+    [(and (symbol-type? resolved-left) (symbol-type? resolved-right)) SYMBOL]
     [(and (protocol-type? resolved-left)
           (protocol-type? resolved-right)
           (eq? (protocol-type-name resolved-left)
@@ -232,6 +241,9 @@
      resolved-left]
     [(and (list-class-type? resolved-left)
           (list-class-type? resolved-right))
+     resolved-left]
+    [(and (symbol-class-type? resolved-left)
+          (symbol-class-type? resolved-right))
      resolved-left]
     [(and (function-type? resolved-left) (function-type? resolved-right)
           (= (length (function-type-parameters resolved-left))
@@ -574,6 +586,7 @@
        [(eq? datum 'Float) FLOAT]
        [(eq? datum 'Bool) BOOL]
        [(eq? datum 'String) STRING]
+       [(eq? datum 'Symbol) SYMBOL]
        [(hash-has-key? substitution datum)
         (hash-ref substitution datum)]
        [else
@@ -659,6 +672,8 @@
           [(of) (infer-list-construction arguments environment)]
           [(empty) (infer-empty-list arguments expected)]
           [else (unknown-message selector)])]
+       [(symbol-class-type? receiver-type)
+        (infer-symbol-class-send selector arguments environment)]
        [(instance-type? receiver-type)
         (infer-instance-send
          receiver-type selector arguments environment)]
@@ -679,6 +694,8 @@
         (infer-bool-send selector arguments environment expected)]
        [(string-type? receiver-type)
         (infer-string-send selector arguments environment)]
+       [(symbol-type? receiver-type)
+        (infer-symbol-send selector arguments environment)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -1135,6 +1152,42 @@
    STRING
    (format "String ~a expects a String argument" selector))
   (if (eq? selector '=) BOOL STRING))
+
+(define (infer-symbol-class-send selector arguments environment)
+  (unless (eq? selector 'intern) (unknown-message selector))
+  (unless (= (length arguments) 1)
+    (raise-type-error
+     "arity error for Symbol intern: expected 1 argument, got ~a"
+     (length arguments)))
+  (define argument-type
+    (infer-expression (car arguments) environment STRING))
+  (unify-types!
+   argument-type
+   STRING
+   "Symbol intern expects a String argument")
+  SYMBOL)
+
+(define (infer-symbol-send selector arguments environment)
+  (case selector
+    [(name)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Symbol name: expected 0 arguments, got ~a"
+        (length arguments)))
+     STRING]
+    [(=)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for Symbol =: expected 1 argument, got ~a"
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment SYMBOL))
+     (unify-types!
+      argument-type
+      SYMBOL
+      "Symbol = expects a Symbol argument")
+     BOOL]
+    [else (unknown-message selector)]))
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))

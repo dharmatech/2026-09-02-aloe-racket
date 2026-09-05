@@ -79,3 +79,8 @@ success, and reports both source datums and displayed values on failure.
 `examples/mpl/identities.aloe` records the established MPL show-identities.
 
 ## 53. MPL identities use normalized value equality
+
+## 54. `Symbol`
+
+- Primitive interned names support `(Symbol intern String)`, `(sym name)`, and
+  `(sym = other)`; selectors remain implicit and `perform` is not implemented.

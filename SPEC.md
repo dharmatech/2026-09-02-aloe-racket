@@ -307,7 +307,7 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```
-Type ::= Int | Float | Bool | String | Sim | Math
+Type ::= Int | Float | Bool | String | Symbol | Sim | Math
        | (Point Type)
        | (Boid Type)
        | (List Type)
@@ -323,6 +323,7 @@ Examples:
 Int
 Float
 String
+Symbol
 Math
 (Point Int)
 (Point Float)
@@ -425,6 +426,14 @@ Boids must use `(avg-pos / (n float))`, not `(avg-pos / n)`. No implicit promoti
 
 `Bool` understands `(condition if then-fn else-fn)`. Both arguments are zero-argument function objects with the same result type. Exactly one receives `call`, according to the receiver.
 
+### 7.2 `Symbol`
+
+`Symbol` is a primitive interned name with no reader literal. `(Symbol intern
+string)` accepts a `String`, `(sym name)` returns that string, and `(sym =
+other)` compares two `Symbol` values. Equal strings intern to the same object.
+Source symbols remain environment lookups in expression position and
+unevaluated selectors in selector position.
+
 ---
 
 ## 8. Out of scope for 0.1
@@ -488,3 +497,5 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   class, selector, and argument types; exact matches beat protocol matches.
 - `String` is a primitive type. Objects may implement `show`; the default REPL
   printer uses it when present, and `:raw` prints the structural `#<…>` form.
+- `Symbol` is a primitive interned name constructed with `(Symbol intern
+  String)`; it does not change source-symbol lookup or selector syntax.
