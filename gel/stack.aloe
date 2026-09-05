@@ -1,37 +1,30 @@
-;; Gel v0 stack. Every slot is a Mirror, so the ordinary List stays
+;; Gel v0 stack. Every slot is a Mirror, so the underlying List stays
 ;; homogeneous even as Gel moves between unrelated Aloe value types.
 
 (load "menu.aloe")
 
-(define-class GelTos
-  (fields)
+(define-class GelStack
+  (fields
+    (items (List Mirror)))
   (methods
-    (call (stack (List Mirror)) Mirror
-      (stack first))))
+    (tos () Mirror
+      ((self items) first))
 
-(define gel-tos (GelTos new))
+    (push (value Mirror) GelStack
+      (GelStack new
+        ((self items) cons value)))
 
-(define-class GelPush
-  (fields)
-  (methods
-    (call (stack (List Mirror)) (value Mirror) (List Mirror)
-      (stack cons value))
-
-    (call (type T)
-      (stack (List Mirror))
+    (push (type T)
       (value T)
-      (List Mirror)
-      (stack cons (Mirror of value)))))
-
-(define gel-push (GelPush new))
+      GelStack
+      (self push (Mirror of value)))))
 
 (define-class GelInvokeZero
   (fields)
   (methods
-    (call (stack (List Mirror)) (row GelRow) (List Mirror)
-      (let ((tos (gel-tos call stack)))
-        (gel-push call stack
-          (tos invoke (row signature)))))))
+    (call (stack GelStack) (row GelRow) GelStack
+      (stack push
+        ((stack tos) invoke (row signature))))))
 
 (define gel-invoke-zero (GelInvokeZero new))
 
@@ -39,21 +32,19 @@
   (fields)
   (methods
     (call
-      (stack (List Mirror))
+      (stack GelStack)
       (row GelRow)
       (arg Mirror)
-      (List Mirror)
-      (let ((tos (gel-tos call stack)))
-        (gel-push call stack
-          (tos invoke (row signature) (arg subject)))))
+      GelStack
+      (stack push
+        ((stack tos) invoke (row signature) (arg subject))))
 
     (call (type T)
-      (stack (List Mirror))
+      (stack GelStack)
       (row GelRow)
       (arg T)
-      (List Mirror)
-      (let ((tos (gel-tos call stack)))
-        (gel-push call stack
-          (tos invoke (row signature) arg))))))
+      GelStack
+      (stack push
+        ((stack tos) invoke (row signature) arg)))))
 
 (define gel-invoke-one (GelInvokeOne new))

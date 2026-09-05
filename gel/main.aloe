@@ -6,14 +6,14 @@
   (fields)
   (methods
     (call
-      (stack (List Mirror))
-      (List Mirror)
+      (stack GelStack)
+      GelStack
       (self loop
         (GelStep new stack #f (List empty) 0 #f)))
 
     (loop
       (state GelStep)
-      (List Mirror)
+      GelStack
       (let ((tos-written
              (term write-line
                (gel-tos-text call (state stack)))))

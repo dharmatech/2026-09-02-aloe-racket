@@ -32,7 +32,7 @@
   (typecheck-source
    "(gel-main call (gel-start call (Point new 10 20)))"
    checker-environment))
- '(List Mirror))
+ 'GelStack)
 
 (struct fake-term-state ([keys #:mutable] output) #:transparent)
 
@@ -105,11 +105,11 @@
 ;; Row 1 is Point.x: its result is pushed, then q returns that new stack.
 (define-values (step-environment step-state) (run-script '("1" "q")))
 (check-equal?
- (eval-expr (parse-datum '(final-stack len)) step-environment)
+ (eval-expr (parse-datum '((final-stack items) len)) step-environment)
  2)
 (check-equal?
  (eval-expr
-  (parse-datum '((gel-tos call final-stack) subject))
+  (parse-datum '((final-stack tos) subject))
   step-environment)
  10)
 (check-regexp-match

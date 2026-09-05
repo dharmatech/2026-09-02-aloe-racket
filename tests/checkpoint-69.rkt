@@ -76,7 +76,7 @@
 (check-false (eval-source "(int-result quit)" environment))
 (check-equal? (eval-source "((int-result pending) len)" environment) 0)
 (check-equal?
- (eval-source "((gel-tos call (int-result stack)) subject)" environment)
+ (eval-source "(((int-result stack) tos) subject)" environment)
  12)
 
 ;; Non-Int holes retain checkpoint 69's typed stack picks. Int does not appear

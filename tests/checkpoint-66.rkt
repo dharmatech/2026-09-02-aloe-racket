@@ -44,7 +44,7 @@
 ;; The existing Point menu remains unchanged.
 (define menu-from-stack
   (eval-expr
-   (parse-datum '(gel-menu-text call (gel-tos call stack)))
+  (parse-datum '(gel-menu-text call (stack tos)))
    environment))
 (define menu-from-subject
   (eval-expr

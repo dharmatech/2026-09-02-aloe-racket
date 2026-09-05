@@ -39,28 +39,28 @@
 (check-equal?
  (type->datum
   (typecheck-source
-   (format "(load ~s) (gel-push call (List empty) 1)"
+   (format "(load ~s) ((GelStack new (List empty)) push 1)"
            (path->string stack-path))))
- '(List Mirror))
+ 'GelStack)
 
 (void (eval-source "(define p (Point new 10 20))" environment))
 (void
  (eval-source
-  "(define s (gel-push call (List empty) p))"
+  "(define s ((GelStack new (List empty)) push p))"
   environment))
-(check-equal? (aloe-value->string (eval-source "(gel-tos call s)"
+(check-equal? (aloe-value->string (eval-source "(s tos)"
                                                environment))
               "#<Mirror>")
-(check-equal? (eval-source "(s len)" environment) 1)
+(check-equal? (eval-source "((s items) len)" environment) 1)
 
 ;; Pushing a Mirror uses the exact overload and does not wrap it again.
 (void (eval-source "(define existing-mirror (Mirror of 1))" environment))
 (void
  (eval-source
-  "(define mirror-stack (gel-push call (List empty) existing-mirror))"
+  "(define mirror-stack ((GelStack new (List empty)) push existing-mirror))"
   environment))
 (check-eq? (eval-source "existing-mirror" environment)
-           (eval-source "(gel-tos call mirror-stack)" environment))
+           (eval-source "(mirror-stack tos)" environment))
 
 (void (eval-source "(define point-rows (gel-rows call p))" environment))
 (void (bind-row! "x-row" "point-rows" "x" 0))
@@ -72,14 +72,14 @@
  (eval-source
   "(define s2 (gel-invoke-zero call s x-row))"
   environment))
-(check-equal? (aloe-value->string (eval-source "(gel-tos call s2)"
+(check-equal? (aloe-value->string (eval-source "(s2 tos)"
                                                environment))
               "#<Mirror>")
-(check-equal? (eval-source "(s2 len)" environment) 2)
+(check-equal? (eval-source "((s2 items) len)" environment) 2)
 
 (check-exn #rx"first on empty List"
            (lambda ()
-             (eval-source "(gel-tos call (List empty))" environment)))
+             (eval-source "((GelStack new (List empty)) tos)" environment)))
 (check-exn #rx"arity error"
            (lambda ()
              (eval-source

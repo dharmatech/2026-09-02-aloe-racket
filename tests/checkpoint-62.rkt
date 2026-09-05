@@ -38,9 +38,9 @@
 
 (void (eval-source "(define p (Point new 10 20))" environment))
 (void (eval-source "(define st (gel-start call p))" environment))
-(check-equal? (eval-source "(st len)" environment) 1)
+(check-equal? (eval-source "((st items) len)" environment) 1)
 (check-equal?
- (aloe-value->string (eval-source "(gel-tos call st)" environment))
+ (aloe-value->string (eval-source "(st tos)" environment))
  "#<Mirror>")
 
 ;; Discover the current row positions instead of freezing dispatch order in
@@ -56,9 +56,9 @@
   "(define x-step (gel-handle-key call st x-key))"
   environment))
 (check-false (eval-source "(x-step quit)" environment))
-(check-equal? (eval-source "((x-step stack) len)" environment) 2)
+(check-equal? (eval-source "(((x-step stack) items) len)" environment) 2)
 (check-equal?
- (eval-source "((gel-tos call (x-step stack)) subject)" environment)
+ (eval-source "(((x-step stack) tos) subject)" environment)
  10)
 
 (void
@@ -96,5 +96,5 @@
 (check-exn #rx"first on empty List"
            (lambda ()
              (eval-source
-              "(gel-handle-key call (List empty) \"1\")"
+              "(gel-handle-key call (GelStack new (List empty)) \"1\")"
               environment)))

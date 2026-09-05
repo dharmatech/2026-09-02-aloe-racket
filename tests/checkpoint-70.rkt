@@ -59,7 +59,7 @@
   environment))
 (check-equal? (eval-source "((result pending) len)" environment) 0)
 (check-equal?
- (eval-source "((gel-tos call (result stack)) subject)" environment)
+ (eval-source "(((result stack) tos) subject)" environment)
  12)
 
 ;; The accumulator uses acc * 10 + digit.

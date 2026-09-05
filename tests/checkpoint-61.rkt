@@ -37,7 +37,7 @@
    environment))
 
 ;; Int + with a raw argument.
-(void (eval-source "(define int-stack (gel-push call (List empty) 1))"
+(void (eval-source "(define int-stack ((GelStack new (List empty)) push 1))"
                    environment))
 (void (eval-source "(define int-rows (gel-rows call 1))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
@@ -52,9 +52,9 @@
  (eval-source
   "(define int-stack-2 (gel-invoke-one call int-stack int-plus-row 2))"
   environment))
-(check-equal? (eval-source "(int-stack-2 len)" environment) 2)
+(check-equal? (eval-source "((int-stack-2 items) len)" environment) 2)
 (check-equal?
- (eval-source "((gel-tos call int-stack-2) subject)" environment)
+ (eval-source "((int-stack-2 tos) subject)" environment)
  3)
 
 ;; The exact Mirror overload unwraps a mirrored argument before invoke.
@@ -66,13 +66,13 @@
    "  (gel-invoke-one call int-stack int-plus-row other-mirror))")
   environment))
 (check-equal?
- (eval-source "((gel-tos call int-stack-3) subject)" environment)
+ (eval-source "((int-stack-3 tos) subject)" environment)
  11)
 
 ;; Point + with a raw Point argument.
 (void (eval-source "(define p (Point new 1 2))" environment))
 (void (eval-source "(define q (Point new 3 4))" environment))
-(void (eval-source "(define point-stack (gel-push call (List empty) p))"
+(void (eval-source "(define point-stack ((GelStack new (List empty)) push p))"
                    environment))
 (void (eval-source "(define point-rows (gel-rows call p))" environment))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
@@ -83,7 +83,7 @@
    "(define point-stack-2 "
    "  (gel-invoke-one call point-stack point-plus-row q))")
   environment))
-(check-equal? (eval-source "(point-stack-2 len)" environment) 2)
+(check-equal? (eval-source "((point-stack-2 items) len)" environment) 2)
 
 ;; These annotated parameters supply the expected Point type for subject.
 (void
@@ -100,14 +100,14 @@ ALOE
  (eval-source
   (string-append
    "((PointProbe new) x-of "
-   "  ((gel-tos call point-stack-2) subject))")
+   "  ((point-stack-2 tos) subject))")
   environment)
  4)
 (check-equal?
  (eval-source
   (string-append
    "((PointProbe new) y-of "
-   "  ((gel-tos call point-stack-2) subject))")
+   "  ((point-stack-2 tos) subject))")
   environment)
  6)
 

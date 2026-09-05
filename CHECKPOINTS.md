@@ -176,3 +176,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `gel-main` writes `key ` followed by every `String` received from
   `term read-key` before handling that key, including no-ops and quit.
+
+## 72. Nominal `GelStack`
+
+- `GelStack` owns the immutable `(List Mirror)` storage behind `items`, with
+  `tos` and overloaded `push`; all Gel stack boundaries now use `GelStack`.

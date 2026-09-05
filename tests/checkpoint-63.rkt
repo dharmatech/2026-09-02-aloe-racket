@@ -31,7 +31,7 @@
 ;; A stack mirror formats the subject's menu, not Mirror's hatch methods.
 (define mirror-menu
   (eval-source
-   "(gel-menu-text call (gel-tos call (gel-start call (Point new 10 20))))"
+   "(gel-menu-text call ((gel-start call (Point new 10 20)) tos))"
    environment))
 (check-regexp-match #rx"[1-9]  x  0" mirror-menu)
 (check-false (regexp-match? #rx"  subject  " mirror-menu))

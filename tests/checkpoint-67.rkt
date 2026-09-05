@@ -77,7 +77,7 @@ ALOE
   environment))
 (check-equal?
  (eval-source
-  "((gel-tos call (int-result-step stack)) subject)"
+  "(((int-result-step stack) tos) subject)"
   environment)
  12)
 
@@ -111,14 +111,14 @@ ALOE
  (eval-source
   (string-append
    "((PointProbe67 new) x-of "
-   "  ((gel-tos call (point-result-step stack)) subject))")
+   "  (((point-result-step stack) tos) subject))")
   environment)
  11)
 (check-equal?
  (eval-source
   (string-append
    "((PointProbe67 new) y-of "
-   "  ((gel-tos call (point-result-step stack)) subject))")
+   "  (((point-result-step stack) tos) subject))")
   environment)
  22)
 

@@ -4,7 +4,7 @@
 
 (define-class GelStep
   (fields
-    (stack (List Mirror))
+    (stack GelStack)
     (quit Bool)
     (pending (List GelRow))
     (int-input Int)
@@ -16,8 +16,8 @@
   (methods
     (call (type T)
       (value T)
-      (List Mirror)
-      (gel-push call (List empty) value))))
+      GelStack
+      ((GelStack new (List empty)) push value))))
 
 (define gel-start (GelStart new))
 
@@ -27,10 +27,8 @@
     (call (type Under Tos)
       (under Under)
       (tos Tos)
-      (List Mirror)
-      (gel-push call
-        (gel-push call (List empty) under)
-        tos))))
+      GelStack
+      (((GelStack new (List empty)) push under) push tos))))
 
 (define gel-start-two (GelStartTwo new))
 
@@ -129,10 +127,10 @@
   (fields)
   (methods
     (call
-      (stack (List Mirror))
+      (stack GelStack)
       (row GelRow)
       (List GelPick)
-      ((stack fold
+      (((stack items) fold
           (List empty)
           (fn (picks candidate)
             (if ((row signature) accepts? candidate)
@@ -218,7 +216,7 @@
 
     (call (state GelStep) String
       (if ((state pending) empty?)
-          (self call (gel-tos call (state stack)))
+          (self call ((state stack) tos))
           (self pending-text state)))
 
     (call (type T)
@@ -232,9 +230,9 @@
   (fields)
   (methods
     (call
-      (stack (List Mirror))
+      (stack GelStack)
       String
-      (let ((tos (gel-tos call stack)))
+      (let ((tos (stack tos)))
         ("TOS: " append (tos raw))))))
 
 (define gel-tos-text (GelTosText new))
@@ -243,14 +241,14 @@
   (fields)
   (methods
     (idle
-      (stack (List Mirror))
+      (stack GelStack)
       (key String)
       GelStep
       (if (key = "q")
           (GelStep new stack #t (List empty) 0 #f)
           (let ((rows
                  (gel-rows-from-mirror call
-                   (gel-tos call stack)))
+                   (stack tos)))
                 (index (gel-key-index call key)))
             (if (index = 0)
                 (GelStep new stack #f (List empty) 0 #f)
@@ -331,7 +329,7 @@
                 (self handle-pick state row key)))))
 
     (call
-      (stack (List Mirror))
+      (stack GelStack)
       (key String)
       GelStep
       (self idle stack key))
