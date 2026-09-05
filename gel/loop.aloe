@@ -1,0 +1,102 @@
+;; Gel's pure key step. Terminal input is a skin that supplies a String.
+
+(load "stack.aloe")
+
+(define-class GelStep
+  (fields
+    (stack (List Mirror))
+    (quit Bool))
+  (methods))
+
+(define-class GelStart
+  (fields)
+  (methods
+    (call (type T)
+      (value T)
+      (List Mirror)
+      (gel-push call (List empty) value))))
+
+(define gel-start (GelStart new))
+
+(define-class GelKeyIndex
+  (fields)
+  (methods
+    (call (key String) Int
+      (cond ((key = "1") 1)
+            ((key = "2") 2)
+            ((key = "3") 3)
+            ((key = "4") 4)
+            ((key = "5") 5)
+            ((key = "6") 6)
+            ((key = "7") 7)
+            ((key = "8") 8)
+            ((key = "9") 9)
+            ;; Aloe has no error form. `first` supplies the required error
+            ;; while its expected element type remains Int.
+            (else ((List empty) first))))))
+
+(define gel-key-index (GelKeyIndex new))
+
+(define-class GelSelectRow
+  (fields)
+  (methods
+    (call
+      (rows (List GelRow))
+      (index Int)
+      GelRow
+      (let ((row
+             (rows fold
+               (rows first)
+               (fn (found candidate)
+                 (if ((candidate index) = index)
+                     candidate
+                     found)))))
+        (if ((row index) = index)
+            row
+            ((List empty) first))))))
+
+(define gel-select-row (GelSelectRow new))
+
+;; A stack slot is already the mirror whose signatures Gel needs. Building
+;; rows directly avoids wrapping that Mirror or guessing its subject's type.
+(define-class GelRowsFromMirror
+  (fields)
+  (methods
+    (call
+      (mirror Mirror)
+      (List GelRow)
+      (((mirror signatures) fold
+         (List empty)
+         (fn (rows signature)
+           (rows cons
+             (GelRow new
+               ((rows len) + 1)
+               (signature selector)
+               ((signature params) len)
+               signature))))
+       reverse))))
+
+(define gel-rows-from-mirror (GelRowsFromMirror new))
+
+(define-class GelHandleKey
+  (fields)
+  (methods
+    (call
+      (stack (List Mirror))
+      (key String)
+      GelStep
+      (if (key = "q")
+          (GelStep new stack #t)
+          (let ((rows
+                 (gel-rows-from-mirror call
+                   (gel-tos call stack)))
+                (index (gel-key-index call key)))
+            (let ((row (gel-select-row call rows index)))
+              (if ((row arity) = 0)
+                  (GelStep new
+                    (gel-invoke-zero call stack row)
+                    #f)
+                  ;; Nonzero-argument rows belong to a later builder slice.
+                  ((List empty) first))))))))
+
+(define gel-handle-key (GelHandleKey new))

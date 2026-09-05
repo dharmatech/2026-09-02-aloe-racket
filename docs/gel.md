@@ -122,6 +122,11 @@ TOS mirror and pushes the result as another mirror. A one-argument row accepts
 either an ordinary value or a mirror; the latter is unwrapped with `subject`
 before invoking the row's exact signature. The result is pushed as a mirror.
 
+The key step in `gel/loop.aloe` is Aloe application code: `"q"` requests quit,
+and digit strings select reflected zero-argument rows. A TTY only supplies the
+key-shaped `String`; terminal handling remains a host skin around this pure
+step.
+
 ---
 
 ## 6. What already exists (2026-09-04)

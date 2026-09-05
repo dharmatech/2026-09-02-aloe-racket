@@ -124,3 +124,8 @@ success, and reports both source datums and displayed values on failure.
 - `(gel-invoke-one call stack row argument)` invokes the row against the TOS
   mirror, unwrapping a mirrored argument with `subject`, then pushes the
   mirrored result.
+
+## 62. Pure Gel key step
+
+- `(gel-handle-key call stack key)` maps `"q"` and digit strings in Aloe;
+  digits select arity-zero reflected rows, while TTY input remains a host skin.
