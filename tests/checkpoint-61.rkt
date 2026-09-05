@@ -50,7 +50,7 @@
  "#<Symbol Int>")
 (void
  (eval-source
-  "(define int-stack-2 (gel-invoke-one call int-stack int-plus-row 2))"
+  "(define int-stack-2 (int-stack invoke-one int-plus-row 2))"
   environment))
 (check-equal? (eval-source "((int-stack-2 items) len)" environment) 2)
 (check-equal?
@@ -63,7 +63,7 @@
  (eval-source
   (string-append
    "(define int-stack-3 "
-   "  (gel-invoke-one call int-stack int-plus-row other-mirror))")
+   "  (int-stack invoke-one int-plus-row other-mirror))")
   environment))
 (check-equal?
  (eval-source "((int-stack-3 tos) subject)" environment)
@@ -81,7 +81,7 @@
  (eval-source
   (string-append
    "(define point-stack-2 "
-   "  (gel-invoke-one call point-stack point-plus-row q))")
+   "  (point-stack invoke-one point-plus-row q))")
   environment))
 (check-equal? (eval-source "((point-stack-2 items) len)" environment) 2)
 
@@ -116,11 +116,11 @@ ALOE
            (lambda ()
              (eval-source
               (string-append
-               "(gel-invoke-one call point-stack point-plus-row 1)")
+               "(point-stack invoke-one point-plus-row 1)")
               environment)))
 (check-exn #rx"arity error"
            (lambda ()
              (eval-source
               (string-append
-               "(gel-invoke-one call point-stack point-x-row q)")
+               "(point-stack invoke-one point-x-row q)")
               environment)))

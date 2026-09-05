@@ -181,3 +181,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `GelStack` owns the immutable `(List Mirror)` storage behind `items`, with
   `tos` and overloaded `push`; all Gel stack boundaries now use `GelStack`.
+
+## 73. `GelStack` invocation
+
+- `GelStack.invoke-zero` and the two `invoke-one` overloads invoke reflected
+  rows against TOS and push their results; the callable helpers are removed.

@@ -118,10 +118,12 @@ come later.
 The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
 holds the underlying `(List Mirror)`, `tos` reads the first item, and `push`
 constructs a new stack. Ordinary values are wrapped once on push; an existing
-mirror is stored unchanged. A zero-argument row invokes against the TOS mirror
-and pushes the result as another mirror. A one-argument row accepts either an
-ordinary value or a mirror; the latter is unwrapped with `subject` before
-invoking the row's exact signature. The result is pushed as a mirror.
+mirror is stored unchanged. `(stack invoke-zero row)` invokes a zero-argument
+row against the TOS mirror and pushes the result as another mirror.
+`(stack invoke-one row argument)` accepts either an ordinary value or a mirror;
+the latter is unwrapped with `subject` before invoking the row's exact
+signature. The result is pushed as a mirror. Invocation belongs to `GelStack`;
+there are no separate callable invocation helpers.
 
 The key step in `gel/loop.aloe` is Aloe application code: `"q"` requests quit,
 and digit strings select reflected rows. Zero-argument rows invoke directly.

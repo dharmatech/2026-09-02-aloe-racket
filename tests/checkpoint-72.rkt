@@ -103,14 +103,14 @@
     arity)
    environment))
 
-;; The adapted invocation helpers still push mirrored results.
+;; Stack invocation pushes mirrored results.
 (void (eval-source "(define point (Point new 10 20))" environment))
 (void (eval-source "(define point-rows (gel-rows call point))" environment))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
 (void (eval-source "(define point-stack (gel-start call point))" environment))
 (void
  (eval-source
-  "(define x-stack (gel-invoke-zero call point-stack point-x-row))"
+  "(define x-stack (point-stack invoke-zero point-x-row))"
   environment))
 (check-equal? (eval-source "((x-stack items) len)" environment) 2)
 (check-equal? (eval-source "((x-stack tos) subject)" environment) 10)
@@ -119,7 +119,7 @@
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void
  (eval-source
-  "(define sum-stack (gel-invoke-one call (gel-start call 10) int-plus-row 2))"
+  "(define sum-stack ((gel-start call 10) invoke-one int-plus-row 2))"
   environment))
 (check-equal? (eval-source "((sum-stack tos) subject)" environment) 12)
 (void (eval-source "(define two-mirror (Mirror of 2))" environment))
@@ -127,7 +127,7 @@
  (eval-source
   (string-append
    "(define mirrored-sum-stack "
-   "  (gel-invoke-one call (gel-start call 10) int-plus-row two-mirror))")
+   "  ((gel-start call 10) invoke-one int-plus-row two-mirror))")
   environment))
 (check-equal?
  (eval-source "((mirrored-sum-stack tos) subject)" environment)

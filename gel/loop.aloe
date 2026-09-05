@@ -255,7 +255,7 @@
                 (let ((row (gel-select-row call rows index)))
                   (if ((row arity) = 0)
                       (GelStep new
-                        (gel-invoke-zero call stack row)
+                        (stack invoke-zero row)
                         #f
                         (List empty)
                         0
@@ -272,8 +272,7 @@
       (if (key = "return")
           (if (state has-digits)
               (GelStep new
-                (gel-invoke-one call
-                  (state stack)
+                ((state stack) invoke-one
                   row
                   (state int-input))
                 #f
@@ -308,8 +307,7 @@
                   (let ((pick
                          (gel-select-pick call picks index)))
                     (GelStep new
-                      (gel-invoke-one call
-                        (state stack)
+                      ((state stack) invoke-one
                         row
                         (pick mirror))
                       #f

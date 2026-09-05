@@ -70,7 +70,7 @@
 
 (void
  (eval-source
-  "(define s2 (gel-invoke-zero call s x-row))"
+  "(define s2 (s invoke-zero x-row))"
   environment))
 (check-equal? (aloe-value->string (eval-source "(s2 tos)"
                                                environment))
@@ -83,5 +83,5 @@
 (check-exn #rx"arity error"
            (lambda ()
              (eval-source
-              "(gel-invoke-zero call s plus-row)"
+              "(s invoke-zero plus-row)"
               environment)))

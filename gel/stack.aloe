@@ -17,34 +17,28 @@
     (push (type T)
       (value T)
       GelStack
-      (self push (Mirror of value)))))
+      (self push (Mirror of value)))
 
-(define-class GelInvokeZero
-  (fields)
-  (methods
-    (call (stack GelStack) (row GelRow) GelStack
-      (stack push
-        ((stack tos) invoke (row signature))))))
+    (invoke-zero
+      (row GelRow)
+      GelStack
+      (self push
+        ((self tos) invoke (row signature))))
 
-(define gel-invoke-zero (GelInvokeZero new))
-
-(define-class GelInvokeOne
-  (fields)
-  (methods
-    (call
-      (stack GelStack)
+    (invoke-one
       (row GelRow)
       (arg Mirror)
       GelStack
-      (stack push
-        ((stack tos) invoke (row signature) (arg subject))))
+      (self push
+        ((self tos) invoke
+          (row signature)
+          (arg subject))))
 
-    (call (type T)
-      (stack GelStack)
+    (invoke-one (type T)
       (row GelRow)
       (arg T)
       GelStack
-      (stack push
-        ((stack tos) invoke (row signature) arg)))))
-
-(define gel-invoke-one (GelInvokeOne new))
+      (self push
+        ((self tos) invoke
+          (row signature)
+          arg)))))
