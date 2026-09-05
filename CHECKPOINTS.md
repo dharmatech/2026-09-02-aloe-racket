@@ -213,3 +213,9 @@ success, and reports both source datums and displayed values on failure.
 - `GelRow.expected-text`, `int-hole?`, and `accepts?` own pending-argument
   presentation, exact-Int detection, and mirror acceptance; the separate
   Int-hole callable is removed.
+
+## 79. Nominal `GelPicks`
+
+- `GelPicks` wraps the ordered `(List GelPick)` and owns `len` and valid-index
+  `select`; matching and menu boundaries use it, and the separate pick
+  selector callable is removed.

@@ -64,41 +64,43 @@
     (mirror Mirror))
   (methods))
 
+(define-class GelPicks
+  (fields
+    (items (List GelPick)))
+  (methods
+    (len () Int
+      ((self items) len))
+
+    (select
+      (index Int)
+      GelPick
+      ((self items) fold
+        ((self items) first)
+        (fn (found candidate)
+          (if ((candidate index) = index)
+              candidate
+              found))))))
+
 (define-class GelMatchingPicks
   (fields)
   (methods
     (call
       (stack GelStack)
       (row GelRow)
-      (List GelPick)
-      (((stack items) fold
-          (List empty)
-          (fn (picks candidate)
-            (if (row accepts? candidate)
-                (picks cons
-                  (GelPick new
-                    ((picks len) + 1)
-                    candidate))
-                picks)))
-        reverse))))
+      GelPicks
+      (GelPicks new
+        (((stack items) fold
+            (List empty)
+            (fn (picks candidate)
+              (if (row accepts? candidate)
+                  (picks cons
+                    (GelPick new
+                      ((picks len) + 1)
+                      candidate))
+                  picks)))
+          reverse)))))
 
 (define gel-matching-picks (GelMatchingPicks new))
-
-(define-class GelSelectPick
-  (fields)
-  (methods
-    (call
-      (picks (List GelPick))
-      (index Int)
-      GelPick
-      (picks fold
-        (picks first)
-        (fn (found candidate)
-          (if ((candidate index) = index)
-              candidate
-              found))))))
-
-(define gel-select-pick (GelSelectPick new))
 
 (define-class GelMenuText
   (fields)
@@ -122,8 +124,8 @@
          ((pick mirror) raw))
        append "\r\n"))
 
-    (picks-text (picks (List GelPick)) String
-      (picks fold ""
+    (picks-text (picks GelPicks) String
+      ((picks items) fold ""
         (fn (text pick)
           (text append (self pick-line pick)))))
 
@@ -241,7 +243,7 @@
               (if (index > (picks len))
                   self
                   (let ((pick
-                         (gel-select-pick call picks index)))
+                         (picks select index)))
                     (GelStep new
                       ((self stack) invoke-one
                         row
