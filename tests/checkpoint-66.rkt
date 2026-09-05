@@ -26,14 +26,14 @@
       (gel-start call (Point new 10 20))))
   environment))
 
-;; Point has no show/text/name presentation, so Gel uses its object fallback.
+;; TOS presentation uses the subject's structural form.
 (define tos-text
   (eval-expr (parse-datum '(gel-tos-text call stack)) environment))
 (check-true (string? tos-text))
 (check-regexp-match #rx"TOS" tos-text)
-(check-regexp-match #rx"object" tos-text)
+(check-regexp-match #rx"Point" tos-text)
 
-;; Int supplies its existing text message, proving the subject can be shown.
+;; Atomic structural text is still concise.
 (check-equal?
  (eval-expr
   (parse-datum

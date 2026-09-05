@@ -1242,6 +1242,12 @@
         "arity error for Mirror subject: expected 0 arguments, got ~a"
         (length arguments)))
      (or expected (fresh-type-variable 'subject-result))]
+    [(raw)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Mirror raw: expected 0 arguments, got ~a"
+        (length arguments)))
+     STRING]
     [else (unknown-message selector)]))
 
 (define (infer-signature-send selector arguments)

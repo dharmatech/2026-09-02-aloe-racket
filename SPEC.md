@@ -451,6 +451,10 @@ fresh type variable. At a runtime type boundary, a subject that does not match
 that expected type is rejected using the same runtime type relation as
 `Mirror.invoke` arguments.
 
+`(mirror raw)` returns a `String` containing the subject's structural display,
+using the same printer as the REPL's `:raw` command. It is a kernel method on
+`Mirror` only.
+
 ### 7.4 `Signature`
 
 `(mirror signatures)` returns a `(List Signature)` with one kernel-created row
@@ -547,3 +551,4 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   runtime checks, without turning a selector symbol into `perform`.
 - `(mirror subject)` unwraps the reflected value; its result type is supplied
   by context or represented by a fresh type variable.
+- `(mirror raw)` returns the subject's structural REPL display as a `String`.

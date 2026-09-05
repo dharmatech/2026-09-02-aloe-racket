@@ -154,3 +154,8 @@ success, and reports both source datums and displayed values on failure.
 
 - Selecting an arity-one row uses the subject of the mirror immediately under
   TOS as its argument; a one-item stack leaves the key as a no-op.
+
+## 68. `(mirror raw)` + structural TOS text
+
+- `(mirror raw)` returns the reflected subject's structural printer text;
+  `gel-tos-text` prefixes that text with `TOS: ` and does not use `show`.

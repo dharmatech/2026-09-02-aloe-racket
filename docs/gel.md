@@ -137,11 +137,12 @@ value, and `q` to leave with the terminal restored.
 
 The interactive recursion now lives in `gel/main.aloe`: it writes a TOS line
 from `(gel-tos-text call stack)`, then the menu, reads a `String` key, steps or
-ignores it, and recurses. TOS text uses a reflected zero-argument `show`,
-`text`, or `name` String result where available, with a generic object fallback.
-The Racket runner is only the FFI skin that opens the TTY, injects `term`, loads
-Gel and `Point`, and starts `gel-main`. Its demo stack puts `(Point new 1 2)`
-under `(Point new 10 20)`, so selecting `+` produces `(Point new 11 22)`.
+ignores it, and recurses. TOS text is `"TOS: "` plus `(tos raw)`, the structural
+printer exposed through the TOS mirror; it does not select a subject's optional
+`show` method. The Racket runner is only the FFI skin that opens the TTY,
+injects `term`, loads Gel and `Point`, and starts `gel-main`. Its demo stack puts
+`(Point new 1 2)` under `(Point new 10 20)`, so selecting `+` produces
+`(Point new 11 22)`. A separate Gel `show` choice remains later work.
 
 ---
 

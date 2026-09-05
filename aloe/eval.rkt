@@ -296,7 +296,8 @@
      (list (signature-spec 'messages '() '(List Symbol))
            (signature-spec 'signatures '() '(List Signature))
            (signature-spec 'invoke '(Signature) 'U)
-           (signature-spec 'subject '() 'U))]
+           (signature-spec 'subject '() 'U)
+           (signature-spec 'raw '() 'String))]
     [(signature-value? value)
      (list (signature-spec 'selector '() 'Symbol)
            (signature-spec 'params '() '(List TypeData))
@@ -412,6 +413,10 @@
      (unless (null? arguments)
        (arity-error "Mirror subject" 0 (length arguments)))
      (mirror-value-subject receiver)]
+    [(raw)
+     (unless (null? arguments)
+       (arity-error "Mirror raw" 0 (length arguments)))
+     (aloe-value->string (mirror-value-subject receiver))]
     [else (unknown-message selector)]))
 
 (define (bind-runtime-type-parameter! name actual bindings)
