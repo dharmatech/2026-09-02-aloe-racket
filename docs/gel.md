@@ -127,8 +127,10 @@ the latter is unwrapped with `subject` before invoking the row's exact
 signature. The result is pushed as a mirror. Invocation belongs to `GelStack`;
 there are no separate callable invocation helpers.
 
-The key step in `gel/loop.aloe` is Aloe application code: `"q"` requests quit,
-and digit strings select reflected rows. Zero-argument rows invoke directly.
+The key step in `gel/loop.aloe` is Aloe application code on the immutable
+`GelStep` state itself: `(step handle-key key)` returns the next state. `"q"`
+requests quit, and digit strings select reflected rows. Zero-argument rows
+invoke directly.
 Selecting an arity-one row stores it as an empty-or-singleton `(List GelRow)`
 in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
 mirrors accepted by the row's first parameter, in stack order, and the next

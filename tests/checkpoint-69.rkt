@@ -49,7 +49,11 @@
   environment))
 (void
  (eval-source
-  "(define int-pending (gel-handle-key call int-stack int-plus-key))"
+  "(define int-state (GelStep new int-stack #f (List empty) 0 #f))"
+  environment))
+(void
+ (eval-source
+  "(define int-pending (int-state handle-key int-plus-key))"
   environment))
 (check-false (eval-source "(int-pending quit)" environment))
 (check-eq? (eval-source "int-stack" environment)
@@ -65,13 +69,13 @@
 
 (void
  (eval-source
-  "(define int-digit (gel-handle-key call int-pending \"2\"))"
+  "(define int-digit (int-pending handle-key \"2\"))"
   environment))
 (check-equal? (eval-source "(int-digit int-input)" environment) 2)
 (check-true (eval-source "(int-digit has-digits)" environment))
 (void
  (eval-source
-  "(define int-result (gel-handle-key call int-digit \"return\"))"
+  "(define int-result (int-digit handle-key \"return\"))"
   environment))
 (check-false (eval-source "(int-result quit)" environment))
 (check-equal? (eval-source "((int-result pending) len)" environment) 0)
@@ -94,7 +98,11 @@
   environment))
 (void
  (eval-source
-  "(define mixed-pending (gel-handle-key call mixed-stack point-plus-key))"
+  "(define mixed-state (GelStep new mixed-stack #f (List empty) 0 #f))"
+  environment))
+(void
+ (eval-source
+  "(define mixed-pending (mixed-state handle-key point-plus-key))"
   environment))
 (define mixed-menu
   (eval-source "(gel-menu-text call mixed-pending)" environment))
@@ -102,7 +110,7 @@
 (check-false (regexp-match? #rx"2  " mixed-menu))
 (void
  (eval-source
-  "(define mixed-pick (gel-handle-key call mixed-pending \"2\"))"
+  "(define mixed-pick (mixed-pending handle-key \"2\"))"
   environment))
 (check-eq? (eval-source "mixed-pending" environment)
            (eval-source "mixed-pick" environment))
@@ -114,7 +122,11 @@
                    environment))
 (void
  (eval-source
-  "(define point-pending (gel-handle-key call point-stack point-plus-key))"
+  "(define point-state (GelStep new point-stack #f (List empty) 0 #f))"
+  environment))
+(void
+ (eval-source
+  "(define point-pending (point-state handle-key point-plus-key))"
   environment))
 (check-false (eval-source "(point-pending quit)" environment))
 (check-eq? (eval-source "point-stack" environment)
@@ -124,7 +136,7 @@
 ;; q cancels a pending row but does not request application exit.
 (void
  (eval-source
-  "(define cancelled (gel-handle-key call point-pending \"q\"))"
+  "(define cancelled (point-pending handle-key \"q\"))"
   environment))
 (check-false (eval-source "(cancelled quit)" environment))
 (check-eq? (eval-source "point-stack" environment)

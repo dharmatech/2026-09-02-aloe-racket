@@ -216,77 +216,73 @@
 
 (define gel-tos-text (GelTosText new))
 
-(define-class GelHandleKey
-  (fields)
+(define-methods GelStep
   (methods
-    (idle
-      (stack GelStack)
+    (handle-idle
       (key String)
       GelStep
       (if (key = "q")
-          (GelStep new stack #t (List empty) 0 #f)
+          (GelStep new (self stack) #t (List empty) 0 #f)
           (let ((rows
                  (gel-rows-from-mirror call
-                   (stack tos)))
+                   ((self stack) tos)))
                 (index (gel-key-index call key)))
             (if (index = 0)
-                (GelStep new stack #f (List empty) 0 #f)
+                (GelStep new (self stack) #f (List empty) 0 #f)
                 (let ((row (gel-select-row call rows index)))
                   (if ((row arity) = 0)
                       (GelStep new
-                        (stack invoke-zero row)
+                        ((self stack) invoke-zero row)
                         #f
                         (List empty)
                         0
                         #f)
                       (if ((row arity) = 1)
-                          (GelStep new stack #f (List of row) 0 #f)
-                          (GelStep new stack #f (List empty) 0 #f))))))))
+                          (GelStep new (self stack) #f (List of row) 0 #f)
+                          (GelStep new (self stack) #f (List empty) 0 #f))))))))
 
     (handle-int
-      (state GelStep)
       (row GelRow)
       (key String)
       GelStep
       (if (key = "return")
-          (if (state has-digits)
+          (if (self has-digits)
               (GelStep new
-                ((state stack) invoke-one
+                ((self stack) invoke-one
                   row
-                  (state int-input))
+                  (self int-input))
                 #f
                 (List empty)
                 0
                 #f)
-              state)
+              self)
           (let ((digit (gel-digit-value call key)))
             (if (digit < 0)
-                state
+                self
                 (GelStep new
-                  (state stack)
+                  (self stack)
                   #f
-                  (state pending)
-                  (((state int-input) * 10) + digit)
+                  (self pending)
+                  (((self int-input) * 10) + digit)
                   #t)))))
 
     (handle-pick
-      (state GelStep)
       (row GelRow)
       (key String)
       GelStep
       (let ((index (gel-key-index call key)))
         (if (index = 0)
-            state
+            self
             (let ((picks
                    (gel-matching-picks call
-                     (state stack)
+                     (self stack)
                      row)))
               (if (index > (picks len))
-                  state
+                  self
                   (let ((pick
                          (gel-select-pick call picks index)))
                     (GelStep new
-                      ((state stack) invoke-one
+                      ((self stack) invoke-one
                         row
                         (pick mirror))
                       #f
@@ -295,28 +291,18 @@
                       #f)))))))
 
     (handle-pending
-      (state GelStep)
       (key String)
       GelStep
       (if (key = "q")
-          (GelStep new (state stack) #f (List empty) 0 #f)
-          (let ((row ((state pending) first)))
+          (GelStep new (self stack) #f (List empty) 0 #f)
+          (let ((row ((self pending) first)))
             (if (gel-int-hole? call row)
-                (self handle-int state row key)
-                (self handle-pick state row key)))))
+                (self handle-int row key)
+                (self handle-pick row key)))))
 
-    (call
-      (stack GelStack)
+    (handle-key
       (key String)
       GelStep
-      (self idle stack key))
-
-    (call
-      (state GelStep)
-      (key String)
-      GelStep
-      (if ((state pending) empty?)
-          (self idle (state stack) key)
-          (self handle-pending state key)))))
-
-(define gel-handle-key (GelHandleKey new))
+      (if ((self pending) empty?)
+          (self handle-idle key)
+          (self handle-pending key)))))

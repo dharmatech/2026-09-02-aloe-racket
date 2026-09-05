@@ -104,7 +104,13 @@
 (void (eval-source "(define x-key ((point-x-row index) text))" environment))
 (void
  (eval-source
-  "(define x-step (gel-handle-key call point-stack x-key))"
+  (string-append
+   "(define point-state "
+   "  (GelStep new point-stack #f (List empty) 0 #f))")
+  environment))
+(void
+ (eval-source
+  "(define x-step (point-state handle-key x-key))"
   environment))
 (check-equal? (eval-source "(((x-step stack) tos) subject)" environment) 10)
 (check-regexp-match #rx"[1-9][0-9]*  \\+  1"

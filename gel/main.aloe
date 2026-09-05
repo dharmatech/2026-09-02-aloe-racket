@@ -23,7 +23,7 @@
           (let ((key (term read-key)))
             (let ((echoed
                    (term write-line ("key " append key))))
-              (let ((step (gel-handle-key call state key)))
+              (let ((step (state handle-key key)))
                 (if (step quit)
                     (step stack)
                     (self loop step))))))))))

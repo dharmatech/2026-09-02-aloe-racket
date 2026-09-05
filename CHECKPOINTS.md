@@ -191,3 +191,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `gel-empty-stack` is the shared immutable starting stack; callers construct
   one- and two-item stacks with direct `push` sends instead of start wrappers.
+
+## 75. `GelStep` key transitions
+
+- `(step handle-key key)` and its transition methods live on immutable
+  `GelStep` values; the stateless callable key handler is removed.

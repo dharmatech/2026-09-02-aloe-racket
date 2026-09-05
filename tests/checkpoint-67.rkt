@@ -52,13 +52,19 @@ ALOE
  (eval-source
   "(define int-stack ((gel-empty-stack push 2) push 10))"
   environment))
+(void
+ (eval-source
+  (string-append
+   "(define int-state "
+   "  (GelStep new int-stack #f (List empty) 0 #f))")
+  environment))
 (void (eval-source "(define int-rows (gel-rows call 10))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void (eval-source "(define int-plus-key ((int-plus-row index) text))"
                    environment))
 (void
  (eval-source
-  "(define int-step (gel-handle-key call int-stack int-plus-key))"
+  "(define int-step (int-state handle-key int-plus-key))"
   environment))
 (check-false (eval-source "(int-step quit)" environment))
 (check-eq? (eval-source "int-stack" environment)
@@ -66,14 +72,14 @@ ALOE
 (check-equal? (eval-source "((int-step pending) len)" environment) 1)
 (void
  (eval-source
-  "(define int-digit-step (gel-handle-key call int-step \"2\"))"
+  "(define int-digit-step (int-step handle-key \"2\"))"
   environment))
 (check-equal? (eval-source "(int-digit-step int-input)" environment) 2)
 (void
  (eval-source
   (string-append
    "(define int-result-step "
-   "  (gel-handle-key call int-digit-step \"return\"))")
+   "  (int-digit-step handle-key \"return\"))")
   environment))
 (check-equal?
  (eval-source
@@ -92,6 +98,12 @@ ALOE
   environment))
 (void
  (eval-source
+  (string-append
+   "(define point-state "
+   "  (GelStep new point-stack #f (List empty) 0 #f))")
+  environment))
+(void
+ (eval-source
   "(define point-rows (gel-rows call (Point new 10 20)))"
   environment))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
@@ -99,13 +111,13 @@ ALOE
                    environment))
 (void
  (eval-source
-  "(define point-step (gel-handle-key call point-stack point-plus-key))"
+  "(define point-step (point-state handle-key point-plus-key))"
   environment))
 (check-false (eval-source "(point-step quit)" environment))
 (check-equal? (eval-source "((point-step pending) len)" environment) 1)
 (void
  (eval-source
-  "(define point-result-step (gel-handle-key call point-step \"2\"))"
+  "(define point-result-step (point-step handle-key \"2\"))"
   environment))
 (check-equal?
  (eval-source
@@ -127,7 +139,11 @@ ALOE
 (void (eval-source "(define one-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
-  "(define one-step (gel-handle-key call one-stack int-plus-key))"
+  "(define one-state (GelStep new one-stack #f (List empty) 0 #f))"
+  environment))
+(void
+ (eval-source
+  "(define one-step (one-state handle-key int-plus-key))"
   environment))
 (check-false (eval-source "(one-step quit)" environment))
 (check-eq? (eval-source "one-stack" environment)

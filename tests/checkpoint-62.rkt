@@ -37,10 +37,15 @@
    environment))
 
 (void (eval-source "(define p (Point new 10 20))" environment))
-(void (eval-source "(define st (gel-empty-stack push p))" environment))
-(check-equal? (eval-source "((st items) len)" environment) 1)
+(void
+ (eval-source
+  (string-append
+   "(define st "
+   "  (GelStep new (gel-empty-stack push p) #f (List empty) 0 #f))")
+  environment))
+(check-equal? (eval-source "(((st stack) items) len)" environment) 1)
 (check-equal?
- (aloe-value->string (eval-source "(st tos)" environment))
+ (aloe-value->string (eval-source "((st stack) tos)" environment))
  "#<Mirror>")
 
 ;; Discover the current row positions instead of freezing dispatch order in
@@ -53,7 +58,7 @@
 
 (void
  (eval-source
-  "(define x-step (gel-handle-key call st x-key))"
+  "(define x-step (st handle-key x-key))"
   environment))
 (check-false (eval-source "(x-step quit)" environment))
 (check-equal? (eval-source "(((x-step stack) items) len)" environment) 2)
@@ -63,38 +68,40 @@
 
 (void
  (eval-source
-  "(define quit-step (gel-handle-key call st \"q\"))"
+  "(define quit-step (st handle-key \"q\"))"
   environment))
 (check-true (eval-source "(quit-step quit)" environment))
-(check-eq? (eval-source "st" environment)
+(check-eq? (eval-source "(st stack)" environment)
            (eval-source "(quit-step stack)" environment))
 
 (void
  (eval-source
-  "(define zero-step (gel-handle-key call st \"0\"))"
+  "(define zero-step (st handle-key \"0\"))"
   environment))
 (check-false (eval-source "(zero-step quit)" environment))
-(check-eq? (eval-source "st" environment)
+(check-eq? (eval-source "(st stack)" environment)
            (eval-source "(zero-step stack)" environment))
 
 (void
  (eval-source
-  "(define unknown-step (gel-handle-key call st \"+\"))"
+  "(define unknown-step (st handle-key \"+\"))"
   environment))
 (check-false (eval-source "(unknown-step quit)" environment))
-(check-eq? (eval-source "st" environment)
+(check-eq? (eval-source "(st stack)" environment)
            (eval-source "(unknown-step stack)" environment))
 
 (void
  (eval-source
-  "(define argument-step (gel-handle-key call st plus-key))"
+  "(define argument-step (st handle-key plus-key))"
   environment))
 (check-false (eval-source "(argument-step quit)" environment))
-(check-eq? (eval-source "st" environment)
+(check-eq? (eval-source "(st stack)" environment)
            (eval-source "(argument-step stack)" environment))
 
 (check-exn #rx"first on empty List"
            (lambda ()
              (eval-source
-              "(gel-handle-key call (GelStack new (List empty)) \"1\")"
+              (string-append
+               "((GelStep new gel-empty-stack #f (List empty) 0 #f) "
+               " handle-key \"1\")")
               environment)))
