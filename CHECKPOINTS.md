@@ -171,3 +171,8 @@ success, and reports both source datums and displayed values on failure.
 - For an exact `Int` hole, digit keys accumulate `acc * 10 + digit` and
   `"return"` invokes with the entered value; stack picks are paused for that
   hole, while pending `q` cancels and discards the accumulator.
+
+## 71. Echo Gel keys
+
+- `gel-main` writes `key ` followed by every `String` received from
+  `term read-key` before handling that key, including no-ops and quit.

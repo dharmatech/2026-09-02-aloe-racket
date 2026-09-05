@@ -21,9 +21,11 @@
                (term write-line
                  (gel-menu-text call state))))
           (let ((key (term read-key)))
-            (let ((step (gel-handle-key call state key)))
-              (if (step quit)
-                  (step stack)
-                  (self loop step)))))))))
+            (let ((echoed
+                   (term write-line ("key " append key))))
+              (let ((step (gel-handle-key call state key)))
+                (if (step quit)
+                    (step stack)
+                    (self loop step))))))))))
 
 (define gel-main (GelMain new))
