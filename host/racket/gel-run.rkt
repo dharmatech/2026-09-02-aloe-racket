@@ -6,9 +6,10 @@
 ;; Optional prerequisite: raco pkg install tui-term
 
 (require racket/runtime-path
-         (only-in "../../aloe/driver.rkt" write-aloe-result)
          (only-in "../../aloe/env.rkt" env-define!)
-         (only-in "../../aloe/eval.rkt" eval-expr)
+         (only-in "../../aloe/eval.rkt"
+                  aloe-value->display-string
+                  eval-expr)
          "../../aloe/host.rkt"
          (only-in "../../aloe/main.rkt" eval-source make-top-level-env)
          (only-in "../../aloe/parse.rkt" parse-datum)
@@ -34,21 +35,30 @@
   (eval-expr (parse-datum '(term read-key)) environment))
 
 (define (key-value->string value)
-  (cond
-    [(string? value) value]
-    [(and (host-receiver? value)
-          (eq? (host-receiver-name value) 'Key))
-     (define name (host-receiver-state value))
-     (and (string? name)
-          (regexp-match? #px"^[A-Za-z]$" name)
-          name)]
-    [else #f]))
+  (define candidate
+    (cond
+      [(string? value) value]
+      [(and (host-receiver? value)
+            (eq? (host-receiver-name value) 'Key))
+       (host-receiver-state value)]
+      [else #f]))
+  (and (string? candidate)
+       (regexp-match? #px"^[1-9q]$" candidate)
+       candidate))
+
+(define (write-crlf text [output (current-output-port)])
+  (display (regexp-replace* #rx"\r?\n" text "\r\n") output))
+
+(define (write-crlf-line text [output (current-output-port)])
+  (write-crlf text output)
+  (display "\r\n" output))
 
 (define (print-current-state environment)
   (display "TOS: ")
-  (write-aloe-result
-   (eval-source "((gel-tos call gel-stack) subject)" environment))
-  (display
+  (write-crlf-line
+   (aloe-value->display-string
+    (eval-source "((gel-tos call gel-stack) subject)" environment)))
+  (write-crlf
    (eval-source
     "(gel-menu-text call (gel-tos call gel-stack))"
     environment))
@@ -73,7 +83,7 @@
   (call-with-tty-term-receiver
    (lambda (term)
      (env-define! environment 'term term)
-     (displayln "Gel — digit selects a zero-argument row; q quits.")
+     (write-crlf-line "Gel — digit selects a zero-argument row; q quits.")
      (print-current-state environment)
      (let loop ()
        (define key (key-value->string (read-aloe-key environment)))
@@ -83,7 +93,10 @@
            [else
             (with-handlers ([exn:fail?
                              (lambda (exception)
-                               (printf "gel: ~a\n" (exn-message exception))
+                               (write-crlf-line
+                                (format "gel: ~a"
+                                        (exn-message exception)))
+                               (print-current-state environment)
                                (flush-output)
                                #t)])
               (handle-key! environment key))]))
@@ -92,6 +105,8 @@
 (module+ main
   (with-handlers ([exn:fail?
                    (lambda (exception)
-                     (eprintf "gel: ~a\n" (exn-message exception))
+                     (write-crlf-line
+                      (format "gel: ~a" (exn-message exception))
+                      (current-error-port))
                      (exit 1))])
     (run-gel)))

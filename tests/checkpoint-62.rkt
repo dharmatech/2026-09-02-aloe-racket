@@ -69,17 +69,30 @@
 (check-eq? (eval-source "st" environment)
            (eval-source "(quit-step stack)" environment))
 
-(check-exn #rx"first on empty List"
-           (lambda ()
-             (eval-source "(gel-handle-key call st \"0\")" environment)))
-(check-exn #rx"first on empty List"
-           (lambda ()
-             (eval-source "(gel-handle-key call st \"+\")" environment)))
-(check-exn #rx"first on empty List"
-           (lambda ()
-             (eval-source
-              "(gel-handle-key call st plus-key)"
-              environment)))
+(void
+ (eval-source
+  "(define zero-step (gel-handle-key call st \"0\"))"
+  environment))
+(check-false (eval-source "(zero-step quit)" environment))
+(check-eq? (eval-source "st" environment)
+           (eval-source "(zero-step stack)" environment))
+
+(void
+ (eval-source
+  "(define unknown-step (gel-handle-key call st \"+\"))"
+  environment))
+(check-false (eval-source "(unknown-step quit)" environment))
+(check-eq? (eval-source "st" environment)
+           (eval-source "(unknown-step stack)" environment))
+
+(void
+ (eval-source
+  "(define argument-step (gel-handle-key call st plus-key))"
+  environment))
+(check-false (eval-source "(argument-step quit)" environment))
+(check-eq? (eval-source "st" environment)
+           (eval-source "(argument-step stack)" environment))
+
 (check-exn #rx"first on empty List"
            (lambda ()
              (eval-source

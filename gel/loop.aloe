@@ -31,9 +31,7 @@
             ((key = "7") 7)
             ((key = "8") 8)
             ((key = "9") 9)
-            ;; Aloe has no error form. `first` supplies the required error
-            ;; while its expected element type remains Int.
-            (else ((List empty) first))))))
+            (else 0)))))
 
 (define gel-key-index (GelKeyIndex new))
 
@@ -120,12 +118,15 @@
                  (gel-rows-from-mirror call
                    (gel-tos call stack)))
                 (index (gel-key-index call key)))
-            (let ((row (gel-select-row call rows index)))
-              (if ((row arity) = 0)
-                  (GelStep new
-                    (gel-invoke-zero call stack row)
-                    #f)
-                  ;; Nonzero-argument rows belong to a later builder slice.
-                  ((List empty) first))))))))
+            (if (index = 0)
+                (GelStep new stack #f)
+                (let ((row (gel-select-row call rows index)))
+                  (if ((row arity) = 0)
+                      (GelStep new
+                        (gel-invoke-zero call stack row)
+                        #f)
+                      ;; Nonzero-argument rows belong to a later builder
+                      ;; slice, so selecting one is currently a no-op.
+                      (GelStep new stack #f)))))))))
 
 (define gel-handle-key (GelHandleKey new))
