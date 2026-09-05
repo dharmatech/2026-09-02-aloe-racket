@@ -8,18 +8,21 @@
     (call
       (stack (List Mirror))
       (List Mirror)
-      (let ((written
+      (let ((tos-written
              (term write-line
-               (gel-menu-text call (gel-tos call stack)))))
-        (let ((key (term read-key)))
-          (if (key = "q")
-              stack
-              (let ((index (gel-key-index call key)))
-                (if (index = 0)
-                    (self call stack)
-                    (let ((step (gel-handle-key call stack key)))
-                      (if (step quit)
-                          (step stack)
-                          (self call (step stack))))))))))))
+               (gel-tos-text call stack))))
+        (let ((menu-written
+               (term write-line
+                 (gel-menu-text call (gel-tos call stack)))))
+          (let ((key (term read-key)))
+            (if (key = "q")
+                stack
+                (let ((index (gel-key-index call key)))
+                  (if (index = 0)
+                      (self call stack)
+                      (let ((step (gel-handle-key call stack key)))
+                        (if (step quit)
+                            (step stack)
+                            (self call (step stack)))))))))))))
 
 (define gel-main (GelMain new))

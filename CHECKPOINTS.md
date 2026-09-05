@@ -144,3 +144,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `gel/main.aloe` prints menus, reads `String` keys, steps, and recurses;
   `host/racket/gel-run.rkt` only injects `term`, loads Gel, and starts it.
+
+## 66. Print Gel TOS from Aloe
+
+- `(gel-tos-text call stack)` builds a `String` containing `TOS` and a
+  subject presentation; `gel-main` writes it before the unchanged menu.

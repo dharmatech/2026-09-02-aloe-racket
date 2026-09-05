@@ -133,10 +133,12 @@ launch the thin TTY skin with `racket host/racket/gel-run.rkt` (after installing
 the optional `tui-term` package). Press the displayed digit for `x` to push its
 value, and `q` to leave with the terminal restored.
 
-The interactive recursion now lives in `gel/main.aloe`: it writes the menu,
-reads a `String` key, steps or ignores it, and recurses. The Racket runner is
-only the FFI skin that opens the TTY, injects `term`, loads Gel and `Point`, and
-starts `gel-main`.
+The interactive recursion now lives in `gel/main.aloe`: it writes a TOS line
+from `(gel-tos-text call stack)`, then the menu, reads a `String` key, steps or
+ignores it, and recurses. TOS text uses a reflected zero-argument `show`,
+`text`, or `name` String result where available, with a generic object fallback.
+The Racket runner is only the FFI skin that opens the TTY, injects `term`, loads
+Gel and `Point`, and starts `gel-main`.
 
 ---
 

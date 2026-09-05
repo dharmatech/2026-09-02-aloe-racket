@@ -105,6 +105,35 @@
 
 (define gel-menu-text (GelMenuText new))
 
+;; Prefer a subject's own zero-argument String presentation when reflection
+;; exposes one. Values such as Point have no such message, so keep the TOS
+;; visible with an honest generic fallback.
+(define-class GelTosText
+  (fields)
+  (methods
+    (call
+      (stack (List Mirror))
+      String
+      (let ((tos (gel-tos call stack)))
+        ((gel-rows-from-mirror call tos) fold
+          "TOS: object"
+          (fn (text row)
+            (if ((row arity) = 0)
+                (let ((selector-name ((row selector) name)))
+                  (cond ((selector-name = "show")
+                         ("TOS: " append
+                           (tos invoke (row signature))))
+                        ((selector-name = "text")
+                         ("TOS: " append
+                           (tos invoke (row signature))))
+                        ((selector-name = "name")
+                         ("TOS: " append
+                           (tos invoke (row signature))))
+                        (else text)))
+                text)))))))
+
+(define gel-tos-text (GelTosText new))
+
 (define-class GelHandleKey
   (fields)
   (methods

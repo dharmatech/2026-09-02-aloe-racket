@@ -40,3 +40,4 @@
 (load "gel/menu.aloe")
 (load "examples/point.aloe")
 
+(gel-rows call 1)
