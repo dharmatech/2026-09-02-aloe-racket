@@ -91,5 +91,8 @@ as Aloe values, and `perform`.
 Decided: reflection lives on a separate primitive `Mirror`, rather than adding
 `perform` or reflection messages to every object.
 
-Rejected for this slice: `#%` reflection sigils, `perform`, signatures, and
-invocation.
+Signatures are kernel-created dispatch-table rows, not user-built objects.
+Their parameter and return types are reified directly as grammar data: simple
+names are `Symbol` values and compound types are `List` values.
+
+Rejected for this slice: `#%` reflection sigils, `perform`, and invocation.

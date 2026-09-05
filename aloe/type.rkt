@@ -11,6 +11,7 @@
          (struct-out string-type)
          (struct-out symbol-type)
          (struct-out mirror-type)
+         (struct-out signature-type)
          (struct-out protocol-type)
          (struct-out instance-type)
          (struct-out list-type)
@@ -33,6 +34,8 @@
 (struct string-type () #:transparent)
 (struct symbol-type () #:transparent)
 (struct mirror-type () #:transparent)
+(struct signature-type () #:transparent)
+(struct type-data-type () #:transparent)
 (struct protocol-type (name signatures) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
@@ -61,6 +64,8 @@
 (define STRING (string-type))
 (define SYMBOL (symbol-type))
 (define MIRROR (mirror-type))
+(define SIGNATURE (signature-type))
+(define TYPE-DATA (type-data-type))
 (define VOID (void-type))
 
 (define current-typecheck-load-paths (make-parameter '()))
@@ -122,6 +127,8 @@
     [(string-type? resolved) 'String]
     [(symbol-type? resolved) 'Symbol]
     [(mirror-type? resolved) 'Mirror]
+    [(signature-type? resolved) 'Signature]
+    [(type-data-type? resolved) 'TypeData]
     [(protocol-type? resolved) (protocol-type-name resolved)]
     [(instance-type? resolved)
      (define name (class-info-name (instance-type-class resolved)))
@@ -214,6 +221,12 @@
     [(and (string-type? resolved-left) (string-type? resolved-right)) STRING]
     [(and (symbol-type? resolved-left) (symbol-type? resolved-right)) SYMBOL]
     [(and (mirror-type? resolved-left) (mirror-type? resolved-right)) MIRROR]
+    [(and (signature-type? resolved-left)
+          (signature-type? resolved-right))
+     SIGNATURE]
+    [(and (type-data-type? resolved-left)
+          (type-data-type? resolved-right))
+     TYPE-DATA]
     [(and (protocol-type? resolved-left)
           (protocol-type? resolved-right)
           (eq? (protocol-type-name resolved-left)
@@ -600,6 +613,7 @@
        [(eq? datum 'String) STRING]
        [(eq? datum 'Symbol) SYMBOL]
        [(eq? datum 'Mirror) MIRROR]
+       [(eq? datum 'Signature) SIGNATURE]
        [(hash-has-key? substitution datum)
         (hash-ref substitution datum)]
        [else
@@ -713,6 +727,8 @@
         (infer-symbol-send selector arguments environment)]
        [(mirror-type? receiver-type)
         (infer-mirror-send selector arguments)]
+       [(signature-type? receiver-type)
+        (infer-signature-send selector arguments)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -1194,12 +1210,27 @@
   MIRROR)
 
 (define (infer-mirror-send selector arguments)
-  (unless (eq? selector 'messages) (unknown-message selector))
   (unless (null? arguments)
     (raise-type-error
-     "arity error for Mirror messages: expected 0 arguments, got ~a"
+     "arity error for Mirror ~a: expected 0 arguments, got ~a"
+     selector
      (length arguments)))
-  (list-type SYMBOL))
+  (case selector
+    [(messages) (list-type SYMBOL)]
+    [(signatures) (list-type SIGNATURE)]
+    [else (unknown-message selector)]))
+
+(define (infer-signature-send selector arguments)
+  (unless (null? arguments)
+    (raise-type-error
+     "arity error for Signature ~a: expected 0 arguments, got ~a"
+     selector
+     (length arguments)))
+  (case selector
+    [(selector) SYMBOL]
+    [(params) (list-type TYPE-DATA)]
+    [(return) TYPE-DATA]
+    [else (unknown-message selector)]))
 
 (define (infer-symbol-send selector arguments environment)
   (case selector

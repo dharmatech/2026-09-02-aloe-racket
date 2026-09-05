@@ -10,3 +10,19 @@
 ((Symbol intern "abc") = (Symbol intern "ABC"))
 
 
+(123 messages)
+
+(Mirror of 123)
+
+((Mirror of 123) messages)
+
+
+(load "examples/mpl/core.aloe")
+
+
+(define x (Sym new "x"))
+
+(x signatures)
+
+((Mirror of x) signatures)
+

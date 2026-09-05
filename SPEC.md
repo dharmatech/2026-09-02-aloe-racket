@@ -307,7 +307,7 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```
-Type ::= Int | Float | Bool | String | Symbol | Mirror | Sim | Math
+Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Math
        | (Point Type)
        | (Boid Type)
        | (List Type)
@@ -325,6 +325,7 @@ Float
 String
 Symbol
 Mirror
+Signature
 Math
 (Point Int)
 (Point Float)
@@ -443,6 +444,17 @@ selectors known for that value as a `(List Symbol)`. Fields appear as
 zero-argument selectors. These kernel messages exist only on `Mirror`; user
 objects do not acquire `messages`, and source selectors remain unevaluated.
 
+### 7.4 `Signature`
+
+`(mirror signatures)` returns a `(List Signature)` with one kernel-created row
+per overload. `(signature selector)` returns a `Symbol`, `(signature params)`
+returns the parameter types as a `List`, and `(signature return)` returns the
+result type. Type grammar is reified as values: a simple type name is a
+`Symbol`, while a compound type such as `(Point Float)` is a `List` containing
+the `Point` and `Float` symbols. These lists are data, not sends. `Signature`
+values are not user-constructed, and `invoke` is reserved for a later slice.
+Selectors in source remain unevaluated.
+
 ---
 
 ## 8. Out of scope for 0.1
@@ -514,3 +526,5 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 - `Mirror` keeps reflection separate from the base object protocol;
   `(Mirror of value)` produces a mirror whose `messages` result is the value's
   unique `(List Symbol)` selectors.
+- `(mirror signatures)` exposes overload-table rows as `Signature` values;
+  their types are reified as `Symbol` and `List` grammar data.

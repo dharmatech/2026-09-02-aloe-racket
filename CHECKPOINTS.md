@@ -89,3 +89,9 @@ success, and reports both source datums and displayed values on failure.
 
 - `(Mirror of value)` reflects a value and `(mirror messages)` returns its
   unique `(List Symbol)` selectors; `signatures` and `invoke` are not included.
+
+## 56. `Signature` + `(mirror signatures)`
+
+- `(mirror signatures)` returns one kernel-created `Signature` per dispatch
+  row. `selector`, `params`, and `return` expose the row as `Symbol`/`List`
+  type-grammar data; `invoke` remains deferred.

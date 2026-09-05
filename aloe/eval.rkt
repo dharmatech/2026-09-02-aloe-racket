@@ -7,6 +7,7 @@
          "host.rkt"
          "mirror.rkt"
          "parse.rkt"
+         "signature.rkt"
          "symbol.rkt")
 
 (provide eval-expr
@@ -23,6 +24,7 @@
 (struct runtime-class-type (class type-arguments) #:transparent)
 (struct runtime-list-type (element-type) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
+(struct signature-spec (selector parameters return) #:transparent)
 
 (define current-eval-load-paths (make-parameter '()))
 
@@ -134,6 +136,8 @@
      (send-to-symbol receiver selector arguments)]
     [(mirror-value? receiver)
      (send-to-mirror receiver selector arguments)]
+    [(signature-value? receiver)
+     (send-to-signature receiver selector arguments)]
     [else
      (unknown-message selector)]))
 
@@ -144,46 +148,217 @@
     (arity-error "Mirror of" 1 (length arguments)))
   (mirror-value (car arguments) (mirror-class-object-list-class receiver)))
 
-(define (declaration-selectors methods)
-  (map method-declaration-selector methods))
+(define (runtime-type->datum type)
+  (cond
+    [(runtime-class-type? type)
+     (define class (runtime-class-type-class type))
+     (define arguments
+       (map runtime-type->datum
+            (vector->list
+             (runtime-class-type-type-arguments type))))
+     (if (null? arguments)
+         (class-value-name class)
+         (cons (class-value-name class) arguments))]
+    [(runtime-list-type? type)
+     (list 'List
+           (if (runtime-list-type-element-type type)
+               (runtime-type->datum
+                (runtime-list-type-element-type type))
+               '?))]
+    [(symbol? type) type]
+    [else '?]))
+
+(define (substitute-type-datum datum substitution)
+  (cond
+    [(and (symbol? datum) (hash-has-key? substitution datum))
+     (hash-ref substitution datum)]
+    [(list? datum)
+     (map (lambda (part)
+            (substitute-type-datum part substitution))
+          datum)]
+    [else datum]))
+
+(define (method->signature-spec method substitution)
+  (signature-spec
+   (method-declaration-selector method)
+   (for/list ([parameter
+               (in-list (method-declaration-parameters method))])
+     (substitute-type-datum
+      (parameter-declaration-type parameter)
+      substitution))
+   (substitute-type-datum
+    (method-declaration-return-type method)
+    substitution)))
+
+(define (methods->signature-specs methods substitution)
+  (for/list ([method (in-list methods)])
+    (method->signature-spec method substitution)))
+
+(define (instance-signature-specs instance)
+  (define class (instance-value-class instance))
+  (define substitution
+    (make-hasheq
+     (map cons
+          (class-value-type-parameters class)
+          (map runtime-type->datum
+               (vector->list
+                (instance-value-type-arguments instance))))))
+  (append
+   (for/list ([field (in-list (class-value-fields class))])
+     (signature-spec
+      (field-declaration-name field)
+      '()
+      (substitute-type-datum
+       (field-declaration-type field)
+       substitution)))
+   (methods->signature-specs (class-value-methods class) substitution)))
+
+(define (class-instance-type-datum class)
+  (define parameters (class-value-type-parameters class))
+  (if (null? parameters)
+      (class-value-name class)
+      (cons (class-value-name class) parameters)))
+
+(define (class-signature-specs class)
+  (list
+   (signature-spec
+    'new
+    (map field-declaration-type (class-value-fields class))
+    (class-instance-type-datum class))))
+
+(define (list-signature-specs value)
+  (define element-type
+    (if (list-value-element-type value)
+        (runtime-type->datum (list-value-element-type value))
+        'T))
+  (define substitution (make-hasheq (list (cons 'T element-type))))
+  (append
+   (list (signature-spec 'empty? '() 'Bool)
+         (signature-spec 'first '() element-type)
+         (signature-spec 'rest '() (list 'List element-type))
+         (signature-spec 'cons (list element-type)
+                         (list 'List element-type))
+         (signature-spec 'len '() 'Int))
+   (methods->signature-specs
+    (list-class-object-methods (list-value-class value))
+    substitution)))
+
+(define (value-signature-specs value)
+  (cond
+    [(exact-integer? value)
+     (list (signature-spec '+ '(Int) 'Int)
+           (signature-spec '- '(Int) 'Int)
+           (signature-spec '* '(Int) 'Int)
+           (signature-spec '/ '(Int) 'Int)
+           (signature-spec '< '(Int) 'Bool)
+           (signature-spec '> '(Int) 'Bool)
+           (signature-spec '<= '(Int) 'Bool)
+           (signature-spec '>= '(Int) 'Bool)
+           (signature-spec '= '(Int) 'Bool)
+           (signature-spec 'float '() 'Float)
+           (signature-spec 'text '() 'String))]
+    [(flonum? value)
+     (list (signature-spec '+ '(Float) 'Float)
+           (signature-spec '- '(Float) 'Float)
+           (signature-spec '* '(Float) 'Float)
+           (signature-spec '/ '(Float) 'Float)
+           (signature-spec '< '(Float) 'Bool)
+           (signature-spec '> '(Float) 'Bool)
+           (signature-spec '<= '(Float) 'Bool)
+           (signature-spec '>= '(Float) 'Bool)
+           (signature-spec '= '(Float) 'Bool))]
+    [(boolean? value)
+     (list (signature-spec 'if '((-> T) (-> T)) 'T))]
+    [(string? value)
+     (list (signature-spec '= '(String) 'Bool)
+           (signature-spec 'append '(String) 'String))]
+    [(symbol-value? value)
+     (list (signature-spec 'name '() 'String)
+           (signature-spec '= '(Symbol) 'Bool))]
+    [(function-value? value)
+     (list
+      (signature-spec
+       'call
+       (make-list (length (function-value-parameters value)) 'T)
+       'U))]
+    [(list-value? value) (list-signature-specs value)]
+    [(instance-value? value) (instance-signature-specs value)]
+    [(class-value? value) (class-signature-specs value)]
+    [(list-class-object? value)
+     (list (signature-spec 'of '(T) '(List T))
+           (signature-spec 'empty '() '(List T)))]
+    [(symbol-class-object? value)
+     (list (signature-spec 'intern '(String) 'Symbol))]
+    [(mirror-class-object? value)
+     (list (signature-spec 'of '(T) 'Mirror))]
+    [(mirror-value? value)
+     (list (signature-spec 'messages '() '(List Symbol))
+           (signature-spec 'signatures '() '(List Signature)))]
+    [(signature-value? value)
+     (list (signature-spec 'selector '() 'Symbol)
+           (signature-spec 'params '() '(List TypeData))
+           (signature-spec 'return '() 'TypeData))]
+    [else '()]))
 
 (define (value-selector-names value)
   (remove-duplicates
-   (cond
-     [(exact-integer? value) '(+ - * / < > <= >= = float text)]
-     [(flonum? value) '(+ - * / < > <= >= =)]
-     [(boolean? value) '(if)]
-     [(string? value) '(= append)]
-     [(symbol-value? value) '(name =)]
-     [(function-value? value) '(call)]
-     [(list-value? value)
-      (append
-       '(empty? first rest cons len)
-       (declaration-selectors
-        (list-class-object-methods (list-value-class value))))]
-     [(instance-value? value)
-      (define class (instance-value-class value))
-      (append
-       (map field-declaration-name (class-value-fields class))
-       (declaration-selectors (class-value-methods class)))]
-     [(class-value? value) '(new)]
-     [(list-class-object? value) '(of empty)]
-     [(symbol-class-object? value) '(intern)]
-     [(mirror-class-object? value) '(of)]
-     [(mirror-value? value) '(messages)]
-     [else '()])
+   (map signature-spec-selector (value-signature-specs value))
    eq?))
 
+(define (make-type-data-list class elements)
+  (list-value class 'TypeData (apply vector-immutable elements)))
+
+(define (type-datum->aloe-value class datum)
+  (cond
+    [(symbol? datum) (intern-symbol (symbol->string datum))]
+    [(list? datum)
+     (make-type-data-list
+      class
+      (map (lambda (part)
+             (type-datum->aloe-value class part))
+           datum))]
+    [else
+     (error 'eval-aloe "cannot reify type datum: ~a" datum)]))
+
+(define (signature-spec->value class spec)
+  (signature-value
+   (intern-symbol (symbol->string (signature-spec-selector spec)))
+   (make-type-data-list
+    class
+    (map (lambda (parameter)
+           (type-datum->aloe-value class parameter))
+         (signature-spec-parameters spec)))
+   (type-datum->aloe-value class (signature-spec-return spec))))
+
 (define (send-to-mirror receiver selector arguments)
-  (unless (eq? selector 'messages)
-    (unknown-message selector))
   (unless (null? arguments)
-    (arity-error "Mirror messages" 0 (length arguments)))
-  (make-list-value
-   (mirror-value-list-class receiver)
-   (map intern-symbol
-        (map symbol->string
-             (value-selector-names (mirror-value-subject receiver))))))
+    (arity-error (format "Mirror ~a" selector) 0 (length arguments)))
+  (define class (mirror-value-list-class receiver))
+  (case selector
+    [(messages)
+     (make-list-value
+      class
+      (map intern-symbol
+           (map symbol->string
+                (value-selector-names
+                 (mirror-value-subject receiver)))))]
+    [(signatures)
+     (make-list-value
+      class
+      (map (lambda (spec)
+             (signature-spec->value class spec))
+           (value-signature-specs
+            (mirror-value-subject receiver))))]
+    [else (unknown-message selector)]))
+
+(define (send-to-signature receiver selector arguments)
+  (unless (null? arguments)
+    (arity-error (format "Signature ~a" selector) 0 (length arguments)))
+  (case selector
+    [(selector) (signature-value-selector receiver)]
+    [(params) (signature-value-params receiver)]
+    [(return) (signature-value-return receiver)]
+    [else (unknown-message selector)]))
 
 (define (send-to-symbol-class selector arguments)
   (unless (eq? selector 'intern)
@@ -321,6 +496,7 @@
     [(string? value) 'String]
     [(symbol-value? value) 'Symbol]
     [(mirror-value? value) 'Mirror]
+    [(signature-value? value) 'Signature]
     [(instance-value? value)
      (runtime-class-type (instance-value-class value)
                          (instance-value-type-arguments value))]
@@ -772,6 +948,9 @@
     [(symbol-class-object? value) "#<class Symbol>"]
     [(mirror-class-object? value) "#<class Mirror>"]
     [(mirror-value? value) "#<Mirror>"]
+    [(signature-value? value)
+     (format "#<Signature ~a>"
+             (symbol-value-name (signature-value-selector value)))]
     [(class-value? value)
      (format "#<class ~a>" (class-value-name value))]
     [(and (instance-value? value)
