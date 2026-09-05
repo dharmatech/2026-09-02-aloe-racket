@@ -728,7 +728,7 @@
        [(mirror-type? receiver-type)
         (infer-mirror-send selector arguments environment expected)]
        [(signature-type? receiver-type)
-        (infer-signature-send selector arguments)]
+        (infer-signature-send selector arguments environment)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -1250,16 +1250,29 @@
      STRING]
     [else (unknown-message selector)]))
 
-(define (infer-signature-send selector arguments)
-  (unless (null? arguments)
-    (raise-type-error
-     "arity error for Signature ~a: expected 0 arguments, got ~a"
-     selector
-     (length arguments)))
+(define (infer-signature-send selector arguments environment)
   (case selector
-    [(selector) SYMBOL]
-    [(params) (list-type TYPE-DATA)]
-    [(return) TYPE-DATA]
+    [(selector params return)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Signature ~a: expected 0 arguments, got ~a"
+        selector
+        (length arguments)))
+     (case selector
+       [(selector) SYMBOL]
+       [(params) (list-type TYPE-DATA)]
+       [(return) TYPE-DATA])]
+    [(accepts?)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for Signature accepts?: expected 1 argument, got ~a"
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment MIRROR))
+     (unify-types!
+      argument-type MIRROR
+      "Signature accepts? expects a Mirror argument")
+     BOOL]
     [else (unknown-message selector)]))
 
 (define (infer-symbol-send selector arguments environment)

@@ -159,3 +159,9 @@ success, and reports both source datums and displayed values on failure.
 
 - `(mirror raw)` returns the reflected subject's structural printer text;
   `gel-tos-text` prefixes that text with `TOS: ` and does not use `show`.
+
+## 69. Pending arity-one sends + typed stack picks
+
+- Selecting an arity-one row stores it in `GelStep.pending`; the pending menu
+  numbers only stack mirrors accepted by that signature, and a second digit
+  invokes with the chosen subject. Pending `q` cancels without quitting Gel.

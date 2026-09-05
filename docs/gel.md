@@ -123,11 +123,14 @@ either an ordinary value or a mirror; the latter is unwrapped with `subject`
 before invoking the row's exact signature. The result is pushed as a mirror.
 
 The key step in `gel/loop.aloe` is Aloe application code: `"q"` requests quit,
-and digit strings select reflected rows. Zero-argument rows invoke directly;
-an arity-one row takes its argument from the mirror immediately beneath TOS,
-unwrapping it with `subject`. With only one stack item, an arity-one key is a
-no-op. A TTY only supplies the key-shaped `String`; terminal handling remains
-a host skin around this pure step.
+and digit strings select reflected rows. Zero-argument rows invoke directly.
+Selecting an arity-one row stores it as an empty-or-singleton `(List GelRow)`
+in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
+mirrors accepted by the row's first parameter, in stack order, and the next
+digit invokes with that mirror's subject. A mismatching or missing pick is a
+no-op that stays pending. While pending, `q` cancels the row and returns to the
+ordinary Gel menu rather than quitting. A TTY only supplies the key-shaped
+`String`; terminal handling remains a host skin around this pure step.
 
 Menu text is also Aloe application code: `(gel-menu-text call value)` emits
 one indexed selector/arity line per reflected row. From the project directory,

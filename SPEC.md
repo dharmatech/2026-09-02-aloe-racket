@@ -465,6 +465,10 @@ result type. Type grammar is reified as values: a simple type name is a
 the `Point` and `Float` symbols. These lists are data, not sends. `Signature`
 values are not user-constructed. Selectors in source remain unevaluated.
 
+`(signature accepts? mirror)` returns whether a one-parameter signature accepts
+the mirror's subject under the same runtime type relation used by `invoke`; it
+returns `#f` for signatures of any other arity.
+
 `(mirror invoke signature argument ...)` sends to the mirror's subject using
 the chosen table row, not a fresh overload search by selector. The signature
 must come from a mirror of the same subject type. At runtime `invoke` checks
@@ -552,3 +556,5 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 - `(mirror subject)` unwraps the reflected value; its result type is supplied
   by context or represented by a fresh type variable.
 - `(mirror raw)` returns the subject's structural REPL display as a `String`.
+- A one-parameter signature answers `(signature accepts? mirror)` for Gel's
+  typed stack-slot filtering.

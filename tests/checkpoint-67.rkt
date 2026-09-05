@@ -46,7 +46,8 @@ ALOE
     arity)
    environment))
 
-;; Int + takes the value beneath TOS: 10 receives + with argument 2.
+;; Int + first becomes pending, then stack pick 2 supplies the value beneath
+;; TOS: 10 receives + with argument 2.
 (void
  (eval-source
   "(define int-stack (gel-start-two call 2 10))"
@@ -60,11 +61,20 @@ ALOE
   "(define int-step (gel-handle-key call int-stack int-plus-key))"
   environment))
 (check-false (eval-source "(int-step quit)" environment))
+(check-eq? (eval-source "int-stack" environment)
+           (eval-source "(int-step stack)" environment))
+(check-equal? (eval-source "((int-step pending) len)" environment) 1)
+(void
+ (eval-source
+  "(define int-result-step (gel-handle-key call int-step \"2\"))"
+  environment))
 (check-equal?
- (eval-source "((gel-tos call (int-step stack)) subject)" environment)
+ (eval-source
+  "((gel-tos call (int-result-step stack)) subject)"
+  environment)
  12)
 
-;; Point + uses the Point under TOS and pushes the resulting Point.
+;; Point + likewise becomes pending before pick 2 uses the Point under TOS.
 (void
  (eval-source
   (string-append
@@ -85,18 +95,28 @@ ALOE
   "(define point-step (gel-handle-key call point-stack point-plus-key))"
   environment))
 (check-false (eval-source "(point-step quit)" environment))
+(check-equal? (eval-source "((point-step pending) len)" environment) 1)
+(void
+ (eval-source
+  "(define point-result-step (gel-handle-key call point-step \"2\"))"
+  environment))
 (check-equal?
  (eval-source
-  "((PointProbe67 new) x-of ((gel-tos call (point-step stack)) subject))"
+  (string-append
+   "((PointProbe67 new) x-of "
+   "  ((gel-tos call (point-result-step stack)) subject))")
   environment)
  11)
 (check-equal?
  (eval-source
-  "((PointProbe67 new) y-of ((gel-tos call (point-step stack)) subject))"
+  (string-append
+   "((PointProbe67 new) y-of "
+   "  ((gel-tos call (point-result-step stack)) subject))")
   environment)
  22)
 
-;; With no argument mirror beneath TOS, an arity-one selection is a no-op.
+;; With no argument mirror beneath TOS, selecting an arity-one row is pending
+;; rather than an eager invocation.
 (void (eval-source "(define one-stack (gel-start call 10))" environment))
 (void
  (eval-source
@@ -105,3 +125,4 @@ ALOE
 (check-false (eval-source "(one-step quit)" environment))
 (check-eq? (eval-source "one-stack" environment)
            (eval-source "(one-step stack)" environment))
+(check-equal? (eval-source "((one-step pending) len)" environment) 1)

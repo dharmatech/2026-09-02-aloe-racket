@@ -8,21 +8,22 @@
     (call
       (stack (List Mirror))
       (List Mirror)
+      (self loop
+        (GelStep new stack #f (List empty))))
+
+    (loop
+      (state GelStep)
+      (List Mirror)
       (let ((tos-written
              (term write-line
-               (gel-tos-text call stack))))
+               (gel-tos-text call (state stack)))))
         (let ((menu-written
                (term write-line
-                 (gel-menu-text call (gel-tos call stack)))))
+                 (gel-menu-text call state))))
           (let ((key (term read-key)))
-            (if (key = "q")
-                stack
-                (let ((index (gel-key-index call key)))
-                  (if (index = 0)
-                      (self call stack)
-                      (let ((step (gel-handle-key call stack key)))
-                        (if (step quit)
-                            (step stack)
-                            (self call (step stack)))))))))))))
+            (let ((step (gel-handle-key call state key)))
+              (if (step quit)
+                  (step stack)
+                  (self loop step)))))))))
 
 (define gel-main (GelMain new))

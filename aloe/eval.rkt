@@ -301,7 +301,8 @@
     [(signature-value? value)
      (list (signature-spec 'selector '() 'Symbol)
            (signature-spec 'params '() '(List TypeData))
-           (signature-spec 'return '() 'TypeData))]
+           (signature-spec 'return '() 'TypeData)
+           (signature-spec 'accepts? '(Mirror) 'Bool))]
     [else '()]))
 
 (define (value-selector-names value)
@@ -579,12 +580,27 @@
     [else (unknown-message selector)]))
 
 (define (send-to-signature receiver selector arguments)
-  (unless (null? arguments)
-    (arity-error (format "Signature ~a" selector) 0 (length arguments)))
   (case selector
-    [(selector) (signature-value-selector receiver)]
-    [(params) (signature-value-params receiver)]
-    [(return) (signature-value-return receiver)]
+    [(selector params return)
+     (unless (null? arguments)
+       (arity-error (format "Signature ~a" selector) 0 (length arguments)))
+     (case selector
+       [(selector) (signature-value-selector receiver)]
+       [(params) (signature-value-params receiver)]
+       [(return) (signature-value-return receiver)])]
+    [(accepts?)
+     (unless (= (length arguments) 1)
+       (arity-error "Signature accepts?" 1 (length arguments)))
+     (define mirror (car arguments))
+     (unless (mirror-value? mirror)
+       (error 'eval-aloe "Signature accepts? expects a Mirror argument"))
+     (define parameters (signature-value-parameter-data receiver))
+     (and (= (length parameters) 1)
+          (runtime-type-matches-datum?
+           (car parameters)
+           (runtime-type-of (mirror-value-subject mirror))
+           (signature-value-type-parameters receiver)
+           (make-hasheq)))]
     [else (unknown-message selector)]))
 
 (define (send-to-symbol-class selector arguments)
