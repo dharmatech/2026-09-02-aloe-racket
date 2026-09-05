@@ -207,3 +207,9 @@ success, and reports both source datums and displayed values on failure.
 - `GelRows.call` builds rows in one exact `Mirror` overload; its generic
   overload reflects ordinary values and delegates, and the separate
   mirror-row callable is removed.
+
+## 78. `GelRow` semantics
+
+- `GelRow.expected-text`, `int-hole?`, and `accepts?` own pending-argument
+  presentation, exact-Int detection, and mirror acceptance; the separate
+  Int-hole callable is removed.

@@ -8,7 +8,16 @@
     (signature Signature))
   (methods
     (label () String
-      ((self selector) name))))
+      ((self selector) name))
+
+    (expected-text () String
+      ((Mirror of (((self signature) params) first)) raw))
+
+    (int-hole? () Bool
+      ((self expected-text) = "#<Symbol Int>"))
+
+    (accepts? (candidate Mirror) Bool
+      ((self signature) accepts? candidate))))
 
 ;; Top-level fn values are monomorphic in the current checker. A generic call
 ;; method keeps T fresh for each use while preserving the normal `call` send.

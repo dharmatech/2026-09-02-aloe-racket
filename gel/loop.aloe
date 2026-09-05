@@ -38,15 +38,6 @@
     (return? () Bool
       ((self text) = "return"))))
 
-(define-class GelIntHole
-  (fields)
-  (methods
-    (call (row GelRow) Bool
-      (((Mirror of (((row signature) params) first)) raw)
-       = "#<Symbol Int>"))))
-
-(define gel-int-hole? (GelIntHole new))
-
 (define-class GelSelectRow
   (fields)
   (methods
@@ -83,7 +74,7 @@
       (((stack items) fold
           (List empty)
           (fn (picks candidate)
-            (if ((row signature) accepts? candidate)
+            (if (row accepts? candidate)
                 (picks cons
                   (GelPick new
                     ((picks len) + 1)
@@ -139,11 +130,10 @@
     (pending-text (state GelStep) String
       (let ((row ((state pending) first)))
         (let ((selector-text ((row selector) name))
-              (expected-text
-               ((Mirror of (((row signature) params) first)) raw))
+              (expected-text (row expected-text))
               (picks
                (gel-matching-picks call (state stack) row)))
-          (if (gel-int-hole? call row)
+          (if (row int-hole?)
               (let ((digits
                      (if (state has-digits)
                          ((state int-input) text)
@@ -267,7 +257,7 @@
       (if (key quit?)
           (GelStep new (self stack) #f (List empty) 0 #f)
           (let ((row ((self pending) first)))
-            (if (gel-int-hole? call row)
+            (if (row int-hole?)
                 (self handle-int row key)
                 (self handle-pick row key)))))
 
