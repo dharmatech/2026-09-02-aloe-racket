@@ -78,6 +78,35 @@
 
 (define gel-rows-from-mirror (GelRowsFromMirror new))
 
+(define-class GelMenuText
+  (fields)
+  (methods
+    (line (row GelRow) String
+      (let ((index-text ((row index) text))
+            (selector-text ((row selector) name))
+            (arity-text ((row arity) text)))
+        (((((index-text append "  ") append selector-text)
+           append "  ")
+          append arity-text)
+         append "\n")))
+
+    (rows-text (rows (List GelRow)) String
+      (rows fold ""
+        (fn (text row)
+          (text append (self line row)))))
+
+    ;; A stack TOS is already a Mirror. Its rows describe the subject, not
+    ;; the Mirror reflection API itself.
+    (call (value Mirror) String
+      (self rows-text (gel-rows-from-mirror call value)))
+
+    (call (type T)
+      (value T)
+      String
+      (self rows-text (gel-rows call value)))))
+
+(define gel-menu-text (GelMenuText new))
+
 (define-class GelHandleKey
   (fields)
   (methods

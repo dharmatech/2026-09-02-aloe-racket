@@ -127,6 +127,12 @@ and digit strings select reflected zero-argument rows. A TTY only supplies the
 key-shaped `String`; terminal handling remains a host skin around this pure
 step.
 
+Menu text is also Aloe application code: `(gel-menu-text call value)` emits
+one indexed selector/arity line per reflected row. From the project directory,
+launch the thin TTY skin with `racket host/racket/gel-run.rkt` (after installing
+the optional `tui-term` package). Press the displayed digit for `x` to push its
+value, and `q` to leave with the terminal restored.
+
 ---
 
 ## 6. What already exists (2026-09-04)

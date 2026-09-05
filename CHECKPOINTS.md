@@ -129,3 +129,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `(gel-handle-key call stack key)` maps `"q"` and digit strings in Aloe;
   digits select arity-zero reflected rows, while TTY input remains a host skin.
+
+## 63. Gel menu text + runner
+
+- `(gel-menu-text call value)` formats indexed selector/arity rows in Aloe;
+  `host/racket/gel-run.rkt` is the thin interactive TTY skin.
