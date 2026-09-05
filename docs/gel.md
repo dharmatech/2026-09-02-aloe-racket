@@ -123,9 +123,11 @@ either an ordinary value or a mirror; the latter is unwrapped with `subject`
 before invoking the row's exact signature. The result is pushed as a mirror.
 
 The key step in `gel/loop.aloe` is Aloe application code: `"q"` requests quit,
-and digit strings select reflected zero-argument rows. A TTY only supplies the
-key-shaped `String`; terminal handling remains a host skin around this pure
-step.
+and digit strings select reflected rows. Zero-argument rows invoke directly;
+an arity-one row takes its argument from the mirror immediately beneath TOS,
+unwrapping it with `subject`. With only one stack item, an arity-one key is a
+no-op. A TTY only supplies the key-shaped `String`; terminal handling remains
+a host skin around this pure step.
 
 Menu text is also Aloe application code: `(gel-menu-text call value)` emits
 one indexed selector/arity line per reflected row. From the project directory,
@@ -138,7 +140,8 @@ from `(gel-tos-text call stack)`, then the menu, reads a `String` key, steps or
 ignores it, and recurses. TOS text uses a reflected zero-argument `show`,
 `text`, or `name` String result where available, with a generic object fallback.
 The Racket runner is only the FFI skin that opens the TTY, injects `term`, loads
-Gel and `Point`, and starts `gel-main`.
+Gel and `Point`, and starts `gel-main`. Its demo stack puts `(Point new 1 2)`
+under `(Point new 10 20)`, so selecting `+` produces `(Point new 11 22)`.
 
 ---
 

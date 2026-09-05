@@ -149,3 +149,8 @@ success, and reports both source datums and displayed values on failure.
 
 - `(gel-tos-text call stack)` builds a `String` containing `TOS` and a
   subject presentation; `gel-main` writes it before the unchanged menu.
+
+## 67. One-argument Gel keys from the stack
+
+- Selecting an arity-one row uses the subject of the mirror immediately under
+  TOS as its argument; a one-item stack leaves the key as a no-op.

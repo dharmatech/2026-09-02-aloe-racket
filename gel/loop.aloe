@@ -18,6 +18,19 @@
 
 (define gel-start (GelStart new))
 
+(define-class GelStartTwo
+  (fields)
+  (methods
+    (call (type Under Tos)
+      (under Under)
+      (tos Tos)
+      (List Mirror)
+      (gel-push call
+        (gel-push call (List empty) under)
+        tos))))
+
+(define gel-start-two (GelStartTwo new))
+
 (define-class GelKeyIndex
   (fields)
   (methods
@@ -154,8 +167,15 @@
                       (GelStep new
                         (gel-invoke-zero call stack row)
                         #f)
-                      ;; Nonzero-argument rows belong to a later builder
-                      ;; slice, so selecting one is currently a no-op.
-                      (GelStep new stack #f)))))))))
+                      (if ((row arity) = 1)
+                          (if ((stack len) >= 2)
+                              ;; gel-invoke-one's Mirror overload unwraps the
+                              ;; next stack slot with subject.
+                              (GelStep new
+                                (gel-invoke-one call stack row
+                                  ((stack rest) first))
+                                #f)
+                              (GelStep new stack #f))
+                          (GelStep new stack #f))))))))))
 
 (define gel-handle-key (GelHandleKey new))
