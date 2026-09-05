@@ -452,8 +452,16 @@ returns the parameter types as a `List`, and `(signature return)` returns the
 result type. Type grammar is reified as values: a simple type name is a
 `Symbol`, while a compound type such as `(Point Float)` is a `List` containing
 the `Point` and `Float` symbols. These lists are data, not sends. `Signature`
-values are not user-constructed, and `invoke` is reserved for a later slice.
-Selectors in source remain unevaluated.
+values are not user-constructed. Selectors in source remain unevaluated.
+
+`(mirror invoke signature argument ...)` sends to the mirror's subject using
+the chosen table row, not a fresh overload search by selector. The signature
+must come from a mirror of the same subject type. At runtime `invoke` checks
+the row owner, argument count, each argument type, and the result type before
+returning the ordinary Aloe result. The checker requires the first argument to
+be `Signature` and infers the remaining arguments normally; because it cannot
+know a signature variable's row, its result is the expected type when present
+and otherwise a fresh type variable.
 
 ---
 
@@ -528,3 +536,5 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   unique `(List Symbol)` selectors.
 - `(mirror signatures)` exposes overload-table rows as `Signature` values;
   their types are reified as `Symbol` and `List` grammar data.
+- `(mirror invoke signature argument ...)` invokes that exact owned row with
+  runtime checks, without turning a selector symbol into `perform`.

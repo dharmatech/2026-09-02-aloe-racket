@@ -726,7 +726,7 @@
        [(symbol-type? receiver-type)
         (infer-symbol-send selector arguments environment)]
        [(mirror-type? receiver-type)
-        (infer-mirror-send selector arguments)]
+        (infer-mirror-send selector arguments environment expected)]
        [(signature-type? receiver-type)
         (infer-signature-send selector arguments)]
        [(type-variable? receiver-type)
@@ -1209,15 +1209,33 @@
   (infer-expression (car arguments) environment #f)
   MIRROR)
 
-(define (infer-mirror-send selector arguments)
-  (unless (null? arguments)
-    (raise-type-error
-     "arity error for Mirror ~a: expected 0 arguments, got ~a"
-     selector
-     (length arguments)))
+(define (infer-mirror-send selector arguments environment expected)
   (case selector
-    [(messages) (list-type SYMBOL)]
-    [(signatures) (list-type SIGNATURE)]
+    [(messages)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Mirror messages: expected 0 arguments, got ~a"
+        (length arguments)))
+     (list-type SYMBOL)]
+    [(signatures)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for Mirror signatures: expected 0 arguments, got ~a"
+        (length arguments)))
+     (list-type SIGNATURE)]
+    [(invoke)
+     (unless (pair? arguments)
+       (raise-type-error
+        "arity error for Mirror invoke: expected at least a Signature"))
+     (define signature-type
+       (infer-expression (car arguments) environment SIGNATURE))
+     (unify-types!
+      signature-type
+      SIGNATURE
+      "Mirror invoke expects a Signature first")
+     (for ([argument (in-list (cdr arguments))])
+       (infer-expression argument environment #f))
+     (or expected (fresh-type-variable 'invoke-result))]
     [else (unknown-message selector)]))
 
 (define (infer-signature-send selector arguments)

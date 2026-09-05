@@ -95,4 +95,8 @@ Signatures are kernel-created dispatch-table rows, not user-built objects.
 Their parameter and return types are reified directly as grammar data: simple
 names are `Symbol` values and compound types are `List` values.
 
-Rejected for this slice: `#%` reflection sigils, `perform`, and invocation.
+`Mirror.invoke` consumes one of those owned rows and dispatches it directly;
+it does not turn the row's selector into `perform` and does not run overload
+resolution a second time.
+
+Rejected for this slice: `#%` reflection sigils and `perform`.

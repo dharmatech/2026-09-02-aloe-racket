@@ -4,4 +4,13 @@
 
 ;; Reflection creates signatures from the dispatch table. Aloe source has no
 ;; constructor for this kernel value.
-(struct signature-value (selector params return) #:transparent)
+(struct signature-value
+  (selector
+   params
+   return
+   owner-type
+   row-index
+   parameter-data
+   return-data
+   type-parameters)
+  #:transparent)

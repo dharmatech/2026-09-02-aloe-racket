@@ -95,3 +95,9 @@ success, and reports both source datums and displayed values on failure.
 - `(mirror signatures)` returns one kernel-created `Signature` per dispatch
   row. `selector`, `params`, and `return` expose the row as `Symbol`/`List`
   type-grammar data; `invoke` remains deferred.
+
+## 57. `(mirror invoke signature argument ...)`
+
+- `Mirror.invoke` checks the signature owner, arity, argument types, and result
+  type, then runs that exact dispatch-table row without resolving its selector
+  again; `perform` remains absent.

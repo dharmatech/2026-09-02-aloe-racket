@@ -23,6 +23,7 @@
 (struct list-value (class element-type elements) #:transparent)
 (struct runtime-class-type (class type-arguments) #:transparent)
 (struct runtime-list-type (element-type) #:transparent)
+(struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
 (struct signature-spec (selector parameters return) #:transparent)
 
@@ -293,7 +294,8 @@
      (list (signature-spec 'of '(T) 'Mirror))]
     [(mirror-value? value)
      (list (signature-spec 'messages '() '(List Symbol))
-           (signature-spec 'signatures '() '(List Signature)))]
+           (signature-spec 'signatures '() '(List Signature))
+           (signature-spec 'invoke '(Signature) 'U))]
     [(signature-value? value)
      (list (signature-spec 'selector '() 'Symbol)
            (signature-spec 'params '() '(List TypeData))
@@ -320,7 +322,52 @@
     [else
      (error 'eval-aloe "cannot reify type datum: ~a" datum)]))
 
-(define (signature-spec->value class spec)
+(define (signature-type-parameters subject row-index)
+  (cond
+    [(instance-value? subject)
+     (define class (instance-value-class subject))
+     (define method-index
+       (- row-index (length (class-value-fields class))))
+     (if (negative? method-index)
+         '()
+         (method-declaration-type-parameters
+          (list-ref (class-value-methods class) method-index)))]
+    [(list-value? subject)
+     (define method-index (- row-index 5))
+     (if (negative? method-index)
+         '()
+         (method-declaration-type-parameters
+          (list-ref
+           (list-class-object-methods (list-value-class subject))
+           method-index)))]
+    [(class-value? subject) (class-value-type-parameters subject)]
+    [(boolean? subject) '(T)]
+    [(function-value? subject) '(T U)]
+    [(list-class-object? subject) '(T)]
+    [(mirror-class-object? subject) '(T)]
+    [(and (mirror-value? subject) (= row-index 2)) '(U)]
+    [else '()]))
+
+(define (runtime-owner-type value)
+  (cond
+    [(class-value? value) (runtime-class-object-type value)]
+    [(list-class-object? value) 'ListClass]
+    [(symbol-class-object? value) 'SymbolClass]
+    [(mirror-class-object? value) 'MirrorClass]
+    [else (runtime-type-of value)]))
+
+(define (same-runtime-owner-type? left right)
+  (cond
+    [(and (runtime-class-object-type? left)
+          (runtime-class-object-type? right))
+     (eq? (runtime-class-object-type-class left)
+          (runtime-class-object-type-class right))]
+    [(or (runtime-class-object-type? left)
+         (runtime-class-object-type? right))
+     #f]
+    [else (same-runtime-type? left right)]))
+
+(define (signature-spec->value class subject spec row-index)
   (signature-value
    (intern-symbol (symbol->string (signature-spec-selector spec)))
    (make-type-data-list
@@ -328,14 +375,19 @@
     (map (lambda (parameter)
            (type-datum->aloe-value class parameter))
          (signature-spec-parameters spec)))
-   (type-datum->aloe-value class (signature-spec-return spec))))
+   (type-datum->aloe-value class (signature-spec-return spec))
+   (runtime-owner-type subject)
+   row-index
+   (signature-spec-parameters spec)
+   (signature-spec-return spec)
+   (signature-type-parameters subject row-index)))
 
 (define (send-to-mirror receiver selector arguments)
-  (unless (null? arguments)
-    (arity-error (format "Mirror ~a" selector) 0 (length arguments)))
   (define class (mirror-value-list-class receiver))
   (case selector
     [(messages)
+     (unless (null? arguments)
+       (arity-error "Mirror messages" 0 (length arguments)))
      (make-list-value
       class
       (map intern-symbol
@@ -343,12 +395,177 @@
                 (value-selector-names
                  (mirror-value-subject receiver)))))]
     [(signatures)
+     (unless (null? arguments)
+       (arity-error "Mirror signatures" 0 (length arguments)))
      (make-list-value
       class
-      (map (lambda (spec)
-             (signature-spec->value class spec))
-           (value-signature-specs
-            (mirror-value-subject receiver))))]
+      (for/list ([spec
+                  (in-list
+                   (value-signature-specs
+                    (mirror-value-subject receiver)))]
+                 [row-index (in-naturals)])
+        (signature-spec->value
+         class (mirror-value-subject receiver) spec row-index)))]
+    [(invoke) (invoke-with-signature receiver arguments)]
+    [else (unknown-message selector)]))
+
+(define (bind-runtime-type-parameter! name actual bindings)
+  (cond
+    [(hash-has-key? bindings name)
+     (same-runtime-type? (hash-ref bindings name) actual)]
+    [else
+     (hash-set! bindings name actual)
+     #t]))
+
+(define (runtime-named-type-matches? expected actual)
+  (cond
+    [(eq? expected '?) #t]
+    [(and (eq? expected 'TypeData)
+          (or (eq? actual 'Symbol)
+              (and (runtime-list-type? actual)
+                   (eq? (runtime-list-type-element-type actual)
+                        'TypeData))))
+     #t]
+    [(symbol? actual) (eq? expected actual)]
+    [(runtime-class-type? actual)
+     (define class (runtime-class-type-class actual))
+     (or (eq? expected (class-value-name class))
+         (eq? expected (class-value-protocol class)))]
+    [else #f]))
+
+(define (runtime-type-matches-datum?
+         expected actual type-parameters bindings)
+  (cond
+    [(symbol? expected)
+     (if (memq expected type-parameters)
+         (bind-runtime-type-parameter! expected actual bindings)
+         (runtime-named-type-matches? expected actual))]
+    [(and (list? expected) (pair? expected))
+     (define name (car expected))
+     (define arguments (cdr expected))
+     (cond
+       [(eq? name '->) (eq? actual 'Fn)]
+       [(eq? name 'List)
+        (and (= (length arguments) 1)
+             (runtime-list-type? actual)
+             (or (not (runtime-list-type-element-type actual))
+                 (runtime-type-matches-datum?
+                  (car arguments)
+                  (runtime-list-type-element-type actual)
+                  type-parameters
+                  bindings)))]
+       [(runtime-class-type? actual)
+        (define class (runtime-class-type-class actual))
+        (define actual-arguments
+          (runtime-class-type-type-arguments actual))
+        (and (eq? name (class-value-name class))
+             (= (length arguments) (vector-length actual-arguments))
+             (for/and ([expected-argument (in-list arguments)]
+                       [actual-argument (in-vector actual-arguments)])
+               (runtime-type-matches-datum?
+                expected-argument
+                actual-argument
+                type-parameters
+                bindings)))]
+       [else #f])]
+    [else #f]))
+
+(define (invoke-with-signature mirror arguments)
+  (unless (pair? arguments)
+    (arity-error "Mirror invoke" "at least 1" (length arguments)))
+  (define signature (car arguments))
+  (unless (signature-value? signature)
+    (error 'eval-aloe "Mirror invoke expects a Signature first"))
+  (define subject (mirror-value-subject mirror))
+  (unless
+      (same-runtime-owner-type?
+       (signature-value-owner-type signature)
+       (runtime-owner-type subject))
+    (error 'eval-aloe
+           "Mirror invoke signature does not belong to the subject type"))
+  (define invoke-arguments (cdr arguments))
+  (define parameter-data (signature-value-parameter-data signature))
+  (unless (= (length invoke-arguments) (length parameter-data))
+    (arity-error
+     (format "Mirror invoke ~a"
+             (symbol-value-name (signature-value-selector signature)))
+     (length parameter-data)
+     (length invoke-arguments)))
+  (define bindings (make-hasheq))
+  (for ([argument (in-list invoke-arguments)]
+        [expected (in-list parameter-data)]
+        [position (in-naturals 1)])
+    (unless
+        (runtime-type-matches-datum?
+         expected
+         (runtime-type-of argument)
+         (signature-value-type-parameters signature)
+         bindings)
+      (error 'eval-aloe
+             "Mirror invoke argument ~a does not match ~a"
+             position
+             expected)))
+  (define result
+    (invoke-signature-row
+     subject (signature-value-row-index signature) invoke-arguments))
+  (unless
+      (runtime-type-matches-datum?
+       (signature-value-return-data signature)
+       (runtime-type-of result)
+       (signature-value-type-parameters signature)
+       bindings)
+    (error 'eval-aloe
+           "Mirror invoke result does not match ~a"
+           (signature-value-return-data signature)))
+  result)
+
+(define (invoke-signature-row subject row-index arguments)
+  (define spec (list-ref (value-signature-specs subject) row-index))
+  (define selector (signature-spec-selector spec))
+  (cond
+    [(instance-value? subject)
+     (define class (instance-value-class subject))
+     (define field-count (length (class-value-fields class)))
+     (if (< row-index field-count)
+         (vector-ref (instance-value-field-values subject) row-index)
+         (apply-method
+          subject
+          class
+          (list-ref (class-value-methods class)
+                    (- row-index field-count))
+          arguments))]
+    [(list-value? subject)
+     (if (< row-index 5)
+         (send-to-list subject selector arguments)
+         (apply-list-method
+          subject
+          (list-ref
+           (list-class-object-methods (list-value-class subject))
+           (- row-index 5))
+          arguments))]
+    [(class-value? subject) (construct-instance subject arguments)]
+    [(list-class-object? subject)
+     (send-to-list-class subject selector arguments)]
+    [(symbol-class-object? subject)
+     (send-to-symbol-class selector arguments)]
+    [(mirror-class-object? subject)
+     (send-to-mirror-class subject selector arguments)]
+    [(function-value? subject)
+     (send-to-function subject selector arguments)]
+    [(exact-integer? subject)
+     (send-to-int subject selector arguments)]
+    [(flonum? subject)
+     (send-to-float subject selector arguments)]
+    [(boolean? subject)
+     (send-to-bool subject selector arguments)]
+    [(string? subject)
+     (send-to-string subject selector arguments)]
+    [(symbol-value? subject)
+     (send-to-symbol subject selector arguments)]
+    [(mirror-value? subject)
+     (send-to-mirror subject selector arguments)]
+    [(signature-value? subject)
+     (send-to-signature subject selector arguments)]
     [else (unknown-message selector)]))
 
 (define (send-to-signature receiver selector arguments)
@@ -826,7 +1043,16 @@
        (method-arguments-specificity
         method arguments (hash-copy type-bindings)))))
   (define method (runtime-method-match-method selected))
+  (apply-list-method receiver method arguments))
+
+(define (apply-list-method receiver method arguments)
+  (define class (list-value-class receiver))
   (define parameters (method-declaration-parameters method))
+  (unless (= (length parameters) (length arguments))
+    (arity-error
+     (format "List method ~a" (method-declaration-selector method))
+     (length parameters)
+     (length arguments)))
   (define bindings
     (cons (cons 'self receiver)
           (for/list ([parameter (in-list parameters)]
