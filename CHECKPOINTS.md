@@ -165,3 +165,9 @@ success, and reports both source datums and displayed values on failure.
 - Selecting an arity-one row stores it in `GelStep.pending`; the pending menu
   numbers only stack mirrors accepted by that signature, and a second digit
   invokes with the chosen subject. Pending `q` cancels without quitting Gel.
+
+## 70. Type an `Int` into a pending hole
+
+- For an exact `Int` hole, digit keys accumulate `acc * 10 + digit` and
+  `"return"` invokes with the entered value; stack picks are paused for that
+  hole, while pending `q` cancels and discards the accumulator.

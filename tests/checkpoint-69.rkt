@@ -61,12 +61,17 @@
 (check-regexp-match #rx"pending" pending-menu)
 (check-regexp-match #rx"\\+" pending-menu)
 (check-regexp-match #rx"Int" pending-menu)
-(check-regexp-match #rx"1  10" pending-menu)
-(check-regexp-match #rx"2  2" pending-menu)
+(check-false (regexp-match? #rx"1  10" pending-menu))
 
 (void
  (eval-source
-  "(define int-result (gel-handle-key call int-pending \"2\"))"
+  "(define int-digit (gel-handle-key call int-pending \"2\"))"
+  environment))
+(check-equal? (eval-source "(int-digit int-input)" environment) 2)
+(check-true (eval-source "(int-digit has-digits)" environment))
+(void
+ (eval-source
+  "(define int-result (gel-handle-key call int-digit \"return\"))"
   environment))
 (check-false (eval-source "(int-result quit)" environment))
 (check-equal? (eval-source "((int-result pending) len)" environment) 0)
@@ -74,22 +79,27 @@
  (eval-source "((gel-tos call (int-result stack)) subject)" environment)
  12)
 
-;; Point does not appear among the matching Int picks. Its original slot 2 is
-;; therefore a missing compact pick and leaves the state pending.
+;; Non-Int holes retain checkpoint 69's typed stack picks. Int does not appear
+;; among the matching Point picks, so compact pick 2 remains missing.
+(void (eval-source "(define point (Point new 10 20))" environment))
+(void (eval-source "(define point-rows (gel-rows call point))" environment))
+(void (bind-row! "point-plus-row" "point-rows" "+" 1))
+(void (eval-source "(define point-plus-key ((point-plus-row index) text))"
+                   environment))
 (void
  (eval-source
   (string-append
    "(define mixed-stack\n"
-   "  (gel-start-two call (Point new 1 2) 10))")
+   "  (gel-start-two call 10 point))")
   environment))
 (void
  (eval-source
-  "(define mixed-pending (gel-handle-key call mixed-stack int-plus-key))"
+  "(define mixed-pending (gel-handle-key call mixed-stack point-plus-key))"
   environment))
 (define mixed-menu
   (eval-source "(gel-menu-text call mixed-pending)" environment))
-(check-regexp-match #rx"1  10" mixed-menu)
-(check-false (regexp-match? #rx"Point" mixed-menu))
+(check-regexp-match #rx"1  #<Point 10 20>" mixed-menu)
+(check-false (regexp-match? #rx"2  " mixed-menu))
 (void
  (eval-source
   "(define mixed-pick (gel-handle-key call mixed-pending \"2\"))"
@@ -100,11 +110,6 @@
 
 ;; Even a one-item Point stack may select +; it becomes pending and does not
 ;; invoke until a stack pick is made.
-(void (eval-source "(define point (Point new 10 20))" environment))
-(void (eval-source "(define point-rows (gel-rows call point))" environment))
-(void (bind-row! "point-plus-row" "point-rows" "+" 1))
-(void (eval-source "(define point-plus-key ((point-plus-row index) text))"
-                   environment))
 (void (eval-source "(define point-stack (gel-start call point))" environment))
 (void
  (eval-source

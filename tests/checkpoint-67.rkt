@@ -66,7 +66,14 @@ ALOE
 (check-equal? (eval-source "((int-step pending) len)" environment) 1)
 (void
  (eval-source
-  "(define int-result-step (gel-handle-key call int-step \"2\"))"
+  "(define int-digit-step (gel-handle-key call int-step \"2\"))"
+  environment))
+(check-equal? (eval-source "(int-digit-step int-input)" environment) 2)
+(void
+ (eval-source
+  (string-append
+   "(define int-result-step "
+   "  (gel-handle-key call int-digit-step \"return\"))")
   environment))
 (check-equal?
  (eval-source

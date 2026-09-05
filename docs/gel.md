@@ -129,8 +129,12 @@ in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
 mirrors accepted by the row's first parameter, in stack order, and the next
 digit invokes with that mirror's subject. A mismatching or missing pick is a
 no-op that stays pending. While pending, `q` cancels the row and returns to the
-ordinary Gel menu rather than quitting. A TTY only supplies the key-shaped
-`String`; terminal handling remains a host skin around this pure step.
+ordinary Gel menu rather than quitting. An exact `Int` hole temporarily pauses
+those stack-pick digits: `"0"` through `"9"` accumulate an integer with
+`acc * 10 + digit`, and `"return"` invokes only after at least one digit. The
+pending line shows the accumulator. Canceling drops it. Non-Int holes keep the
+typed stack-pick behavior. A TTY only supplies the key-shaped `String`;
+terminal handling remains a host skin around this pure step.
 
 Menu text is also Aloe application code: `(gel-menu-text call value)` emits
 one indexed selector/arity line per reflected row. From the project directory,

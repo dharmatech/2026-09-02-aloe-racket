@@ -9,7 +9,7 @@
       (stack (List Mirror))
       (List Mirror)
       (self loop
-        (GelStep new stack #f (List empty))))
+        (GelStep new stack #f (List empty) 0 #f)))
 
     (loop
       (state GelStep)

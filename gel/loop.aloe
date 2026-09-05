@@ -6,7 +6,9 @@
   (fields
     (stack (List Mirror))
     (quit Bool)
-    (pending (List GelRow)))
+    (pending (List GelRow))
+    (int-input Int)
+    (has-digits Bool))
   (methods))
 
 (define-class GelStart
@@ -48,6 +50,33 @@
             (else 0)))))
 
 (define gel-key-index (GelKeyIndex new))
+
+(define-class GelDigitValue
+  (fields)
+  (methods
+    (call (key String) Int
+      (cond ((key = "0") 0)
+            ((key = "1") 1)
+            ((key = "2") 2)
+            ((key = "3") 3)
+            ((key = "4") 4)
+            ((key = "5") 5)
+            ((key = "6") 6)
+            ((key = "7") 7)
+            ((key = "8") 8)
+            ((key = "9") 9)
+            (else -1)))))
+
+(define gel-digit-value (GelDigitValue new))
+
+(define-class GelIntHole
+  (fields)
+  (methods
+    (call (row GelRow) Bool
+      (((Mirror of (((row signature) params) first)) raw)
+       = "#<Symbol Int>"))))
+
+(define gel-int-hole? (GelIntHole new))
 
 (define-class GelSelectRow
   (fields)
@@ -166,12 +195,21 @@
                ((Mirror of (((row signature) params) first)) raw))
               (picks
                (gel-matching-picks call (state stack) row)))
-          (let ((header
-                 (((("pending " append selector-text)
-                    append "  ")
-                   append expected-text)
-                  append "\r\n")))
-            (header append (self picks-text picks))))))
+          (if (gel-int-hole? call row)
+              (let ((digits
+                     (if (state has-digits)
+                         ((state int-input) text)
+                         "")))
+                (((("pending " append selector-text)
+                   append "  Int ")
+                  append digits)
+                 append "\r\n"))
+              (let ((header
+                     (((("pending " append selector-text)
+                        append "  ")
+                       append expected-text)
+                      append "\r\n")))
+                (header append (self picks-text picks)))))))
 
     ;; A stack TOS is already a Mirror. Its rows describe the subject, not
     ;; the Mirror reflection API itself.
@@ -209,48 +247,88 @@
       (key String)
       GelStep
       (if (key = "q")
-          (GelStep new stack #t (List empty))
+          (GelStep new stack #t (List empty) 0 #f)
           (let ((rows
                  (gel-rows-from-mirror call
                    (gel-tos call stack)))
                 (index (gel-key-index call key)))
             (if (index = 0)
-                (GelStep new stack #f (List empty))
+                (GelStep new stack #f (List empty) 0 #f)
                 (let ((row (gel-select-row call rows index)))
                   (if ((row arity) = 0)
                       (GelStep new
                         (gel-invoke-zero call stack row)
                         #f
-                        (List empty))
+                        (List empty)
+                        0
+                        #f)
                       (if ((row arity) = 1)
-                          (GelStep new stack #f (List of row))
-                          (GelStep new stack #f (List empty)))))))))
+                          (GelStep new stack #f (List of row) 0 #f)
+                          (GelStep new stack #f (List empty) 0 #f))))))))
+
+    (handle-int
+      (state GelStep)
+      (row GelRow)
+      (key String)
+      GelStep
+      (if (key = "return")
+          (if (state has-digits)
+              (GelStep new
+                (gel-invoke-one call
+                  (state stack)
+                  row
+                  (state int-input))
+                #f
+                (List empty)
+                0
+                #f)
+              state)
+          (let ((digit (gel-digit-value call key)))
+            (if (digit < 0)
+                state
+                (GelStep new
+                  (state stack)
+                  #f
+                  (state pending)
+                  (((state int-input) * 10) + digit)
+                  #t)))))
+
+    (handle-pick
+      (state GelStep)
+      (row GelRow)
+      (key String)
+      GelStep
+      (let ((index (gel-key-index call key)))
+        (if (index = 0)
+            state
+            (let ((picks
+                   (gel-matching-picks call
+                     (state stack)
+                     row)))
+              (if (index > (picks len))
+                  state
+                  (let ((pick
+                         (gel-select-pick call picks index)))
+                    (GelStep new
+                      (gel-invoke-one call
+                        (state stack)
+                        row
+                        (pick mirror))
+                      #f
+                      (List empty)
+                      0
+                      #f)))))))
 
     (handle-pending
       (state GelStep)
       (key String)
       GelStep
       (if (key = "q")
-          (GelStep new (state stack) #f (List empty))
-          (let ((index (gel-key-index call key)))
-            (if (index = 0)
-                state
-                (let ((row ((state pending) first)))
-                  (let ((picks
-                         (gel-matching-picks call
-                           (state stack)
-                           row)))
-                    (if (index > (picks len))
-                        state
-                        (let ((pick
-                               (gel-select-pick call picks index)))
-                          (GelStep new
-                            (gel-invoke-one call
-                              (state stack)
-                              row
-                              (pick mirror))
-                            #f
-                            (List empty))))))))))
+          (GelStep new (state stack) #f (List empty) 0 #f)
+          (let ((row ((state pending) first)))
+            (if (gel-int-hole? call row)
+                (self handle-int state row key)
+                (self handle-pick state row key)))))
 
     (call
       (stack (List Mirror))
