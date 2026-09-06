@@ -22,7 +22,7 @@
  (type->datum
   (typecheck-source
    #<<ALOE
-(define rows-80 (gel-rows call 10))
+(define rows-80 (gel-rows of 10))
 (define row-80
   (rows-80 fold
     (rows-80 first)
@@ -57,7 +57,7 @@ ALOE
 (void
  (eval-source
   #<<ALOE
-(define rows-80 (gel-rows call 10))
+(define rows-80 (gel-rows of 10))
 (define row-80
   (rows-80 fold
     (rows-80 first)
@@ -89,7 +89,7 @@ ALOE
  (eval-source
   #<<ALOE
 (define point-80 (Point new 10 20))
-(define point-rows-80 (gel-rows call point-80))
+(define point-rows-80 (gel-rows of point-80))
 (define point-plus-row-80
   (point-rows-80 fold
     (point-rows-80 first)

@@ -110,11 +110,12 @@ loads Gel.
 
 The reflection hatch is `Mirror`, not a `perform` message on every object.
 
-Gel v0 menu rows now live in `gel/menu.aloe`. `(gel-rows call value)` builds
+Gel v0 menu rows now live in `gel/menu.aloe`. `(gel-rows of value)` builds
 ordered `GelRow` values from the subject's reflected signatures, including a
-one-based index, selector, arity, and signature. An exact `Mirror` overload
-uses an existing mirror directly, while the generic overload reflects an
-ordinary value and delegates to it; both routes therefore share the same row
+one-based index, selector, arity, and signature, while `(gel-rows select rows
+index)` returns a valid indexed row. An exact `Mirror` overload uses an
+existing mirror directly, while the generic overload reflects an ordinary
+value and delegates to it; both routes therefore share the same row
 construction and never reflect a mirror twice. The stack loop and key input
 come later.
 

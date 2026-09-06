@@ -39,7 +39,7 @@
 ;; Int + with a raw argument.
 (void (eval-source "(define int-stack ((GelStack new (List empty)) push 1))"
                    environment))
-(void (eval-source "(define int-rows (gel-rows call 1))" environment))
+(void (eval-source "(define int-rows (gel-rows of 1))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (check-equal?
  (eval-source "(((int-plus-row signature) params) len)" environment)
@@ -74,7 +74,7 @@
 (void (eval-source "(define q (Point new 3 4))" environment))
 (void (eval-source "(define point-stack ((GelStack new (List empty)) push p))"
                    environment))
-(void (eval-source "(define point-rows (gel-rows call p))" environment))
+(void (eval-source "(define point-rows (gel-rows of p))" environment))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
 (void

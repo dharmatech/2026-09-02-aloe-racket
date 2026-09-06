@@ -45,7 +45,7 @@
     selector)
    environment))
 
-(void (eval-source "(define int-rows (gel-rows call 1))" environment))
+(void (eval-source "(define int-rows (gel-rows of 1))" environment))
 (check-true (positive? (eval-source "(int-rows len)" environment)))
 (check-equal? (matching-row-count "int-rows" "+" 1) 1)
 (check-equal? (matching-row-count "int-rows" "=" 1) 1)
@@ -63,7 +63,7 @@
 ;; The same generic callable is reusable at a different subject type.
 (void
  (eval-source
-  "(define point-rows (gel-rows call (Point new 1 2)))"
+  "(define point-rows (gel-rows of (Point new 1 2)))"
   environment))
 (check-equal? (matching-row-count "point-rows" "x" 0) 1)
 (check-equal? (matching-row-count "point-rows" "+" 1) 1)
@@ -73,7 +73,7 @@
              (lambda () (eval-source source environment))))
 
 (check-type-error "(1 gel-rows)")
-(check-type-error "(gel-rows call)")
+(check-type-error "(gel-rows of)")
 
 ;; Gel menu construction consumes signatures but never invokes them.
 (check-false

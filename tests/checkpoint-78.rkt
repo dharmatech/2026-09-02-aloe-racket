@@ -19,24 +19,24 @@
 
 (check-equal?
  (type->datum
-  (typecheck-source "(((gel-rows call 10) first) expected-text)"
+  (typecheck-source "(((gel-rows of 10) first) expected-text)"
                     checker-environment))
  'String)
 (check-equal?
  (type->datum
-  (typecheck-source "(((gel-rows call 10) first) int-hole?)"
+  (typecheck-source "(((gel-rows of 10) first) int-hole?)"
                     checker-environment))
  'Bool)
 (check-equal?
  (type->datum
   (typecheck-source
-   "(((gel-rows call 10) first) accepts? (Mirror of 2))"
+   "(((gel-rows of 10) first) accepts? (Mirror of 2))"
    checker-environment))
  'Bool)
 (check-exn
  exn:fail:aloe-type?
  (lambda ()
-   (typecheck-source "(((gel-rows call 10) first) accepts? 2)"
+   (typecheck-source "(((gel-rows of 10) first) accepts? 2)"
                      checker-environment)))
 
 ;; Pending-argument semantics no longer have a separate callable owner.
@@ -74,10 +74,10 @@
     arity)
    environment))
 
-(void (eval-source "(define int-rows-78 (gel-rows call 10))" environment))
+(void (eval-source "(define int-rows-78 (gel-rows of 10))" environment))
 (void (bind-row! "int-plus-row-78" "int-rows-78" "+" 1))
 (void (eval-source "(define point-78 (Point new 10 20))" environment))
-(void (eval-source "(define point-rows-78 (gel-rows call point-78))"
+(void (eval-source "(define point-rows-78 (gel-rows of point-78))"
                    environment))
 (void (bind-row! "point-plus-row-78" "point-rows-78" "+" 1))
 

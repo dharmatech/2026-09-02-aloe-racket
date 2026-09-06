@@ -23,9 +23,9 @@
  (type->datum
   (typecheck-source
    #<<ALOE
-(define int-rows-77 (gel-rows call 10))
-(define point-rows-77 (gel-rows call (Point new 10 20)))
-(define mirror-rows-77 (gel-rows call (Mirror of (Point new 10 20))))
+(define int-rows-77 (gel-rows of 10))
+(define point-rows-77 (gel-rows of (Point new 10 20)))
+(define mirror-rows-77 (gel-rows of (Mirror of (Point new 10 20))))
 (mirror-rows-77 len)
 ALOE
    checker-environment))
@@ -50,9 +50,9 @@ ALOE
 
 (void (eval-source "(define point-77 (Point new 10 20))" environment))
 (void (eval-source "(define point-mirror-77 (Mirror of point-77))" environment))
-(void (eval-source "(define value-rows-77 (gel-rows call point-77))"
+(void (eval-source "(define value-rows-77 (gel-rows of point-77))"
                    environment))
-(void (eval-source "(define mirror-rows-77 (gel-rows call point-mirror-77))"
+(void (eval-source "(define mirror-rows-77 (gel-rows of point-mirror-77))"
                    environment))
 
 ;; Both routes preserve dispatch-table ordering, selectors, arities, and

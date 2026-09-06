@@ -105,7 +105,7 @@
 
 ;; Stack invocation pushes mirrored results.
 (void (eval-source "(define point (Point new 10 20))" environment))
-(void (eval-source "(define point-rows (gel-rows call point))" environment))
+(void (eval-source "(define point-rows (gel-rows of point))" environment))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
 (void (eval-source "(define point-stack (gel-empty-stack push point))"
                    environment))
@@ -116,7 +116,7 @@
 (check-equal? (eval-source "((x-stack items) len)" environment) 2)
 (check-equal? (eval-source "((x-stack tos) subject)" environment) 10)
 
-(void (eval-source "(define int-rows (gel-rows call 10))" environment))
+(void (eval-source "(define int-rows (gel-rows of 10))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void
  (eval-source

@@ -50,7 +50,7 @@
 
 ;; Discover the current row positions instead of freezing dispatch order in
 ;; the Racket test.
-(void (eval-source "(define point-rows (gel-rows call p))" environment))
+(void (eval-source "(define point-rows (gel-rows of p))" environment))
 (void (bind-row! "x-row" "point-rows" "x" 0))
 (void (bind-row! "plus-row" "point-rows" "+" 1))
 (void (eval-source "(define x-key ((x-row index) text))" environment))

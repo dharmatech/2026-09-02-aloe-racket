@@ -38,26 +38,6 @@
     (return? () Bool
       ((self text) = "return"))))
 
-(define-class GelSelectRow
-  (fields)
-  (methods
-    (call
-      (rows (List GelRow))
-      (index Int)
-      GelRow
-      (let ((row
-             (rows fold
-               (rows first)
-               (fn (found candidate)
-                 (if ((candidate index) = index)
-                     candidate
-                     found)))))
-        (if ((row index) = index)
-            row
-            ((List empty) first))))))
-
-(define gel-select-row (GelSelectRow new))
-
 (define-class GelPick
   (fields
     (index Int)
@@ -150,7 +130,7 @@
     ;; A stack TOS is already a Mirror. Its rows describe the subject, not
     ;; the Mirror reflection API itself.
     (call (value Mirror) String
-      (self rows-text (gel-rows call value)))
+      (self rows-text (gel-rows of value)))
 
     (call (state GelStep) String
       (if ((state pending) empty?)
@@ -160,7 +140,7 @@
     (call (type T)
       (value T)
       String
-      (self rows-text (gel-rows call value)))))
+      (self rows-text (gel-rows of value)))))
 
 (define gel-menu-text (GelMenuText new))
 
@@ -183,12 +163,12 @@
       (if (key quit?)
           (GelStep new (self stack) #t (List empty) 0 #f)
           (let ((rows
-                 (gel-rows call
+                 (gel-rows of
                    ((self stack) tos)))
                 (index (key menu-index)))
             (if (index = 0)
                 (GelStep new (self stack) #f (List empty) 0 #f)
-                (let ((row (gel-select-row call rows index)))
+                (let ((row (gel-rows select rows index)))
                   (if ((row arity) = 0)
                       (GelStep new
                         ((self stack) invoke-zero row)

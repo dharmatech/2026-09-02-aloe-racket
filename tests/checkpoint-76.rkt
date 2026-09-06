@@ -127,7 +127,7 @@ ALOE
   environment))
 (void
  (eval-source
-  "(define int-rows (gel-rows call (int-stack tos)))"
+  "(define int-rows (gel-rows of (int-stack tos)))"
   environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void (eval-source "(define int-plus-key ((int-plus-row index) text))"
@@ -165,7 +165,7 @@ ALOE
 (void (eval-source "(define point (Point new 10 20))" environment))
 (void
  (eval-source
-  "(define point-rows (gel-rows call (Mirror of point)))"
+  "(define point-rows (gel-rows of (Mirror of point)))"
   environment))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
 (void (eval-source "(define point-plus-key ((point-plus-row index) text))"

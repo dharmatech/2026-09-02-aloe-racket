@@ -98,7 +98,7 @@
   environment))
 (void
  (eval-source
-  "(define point-rows (gel-rows call (point-stack tos)))"
+  "(define point-rows (gel-rows of (point-stack tos)))"
   environment))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
 (void (eval-source "(define x-key ((point-x-row index) text))" environment))

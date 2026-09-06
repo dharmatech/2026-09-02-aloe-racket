@@ -62,7 +62,7 @@
 (check-eq? (eval-source "existing-mirror" environment)
            (eval-source "(mirror-stack tos)" environment))
 
-(void (eval-source "(define point-rows (gel-rows call p))" environment))
+(void (eval-source "(define point-rows (gel-rows of p))" environment))
 (void (bind-row! "x-row" "point-rows" "x" 0))
 (void (bind-row! "plus-row" "point-rows" "+" 1))
 (check-equal? (eval-source "(x-row arity)" environment) 0)

@@ -225,3 +225,9 @@ success, and reports both source datums and displayed values on failure.
 - `GelStack.matching-picks` filters its mirror items through a `GelRow` and
   returns compactly indexed `GelPicks`; the stateless matching callable is
   removed.
+
+## 81. `GelRows` operations
+
+- `GelRows.of` constructs rows from ordinary values or exact mirrors, and
+  `GelRows.select` owns valid-index lookup; the function-shaped `call` API and
+  separate row selector callable are removed.

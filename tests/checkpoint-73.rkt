@@ -62,7 +62,7 @@
  (eval-source
   (string-append
    "(define point-rows "
-   "  (gel-rows call (point-stack tos)))")
+   "  (gel-rows of (point-stack tos)))")
   environment))
 (void (bind-row! "point-x-row" "point-rows" "x" 0))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
@@ -80,7 +80,7 @@
 (void (eval-source "(define int-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
-  "(define int-rows (gel-rows call (int-stack tos)))"
+  "(define int-rows (gel-rows of (int-stack tos)))"
   environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void
@@ -131,7 +131,7 @@
  (eval-expr
   (parse-datum
    '(define bad-row
-      ((gel-rows call (bad-stack tos)) first)))
+      ((gel-rows of (bad-stack tos)) first)))
   environment))
 (check-exn #rx"result does not match Int"
            (lambda ()
@@ -161,7 +161,7 @@
    #<<ALOE
 (define stack (GelStack new (List empty)))
 (define row
-  ((gel-rows call
+  ((gel-rows of
      ((stack push 10) tos))
    first))
 ((stack push 10) invoke-zero row)

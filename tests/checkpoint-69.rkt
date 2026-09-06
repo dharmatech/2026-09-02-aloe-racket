@@ -36,7 +36,7 @@
     arity)
    environment))
 
-(void (eval-source "(define int-rows (gel-rows call 10))" environment))
+(void (eval-source "(define int-rows (gel-rows of 10))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
 (void (eval-source "(define int-plus-key ((int-plus-row index) text))"
                    environment))
@@ -86,7 +86,7 @@
 ;; Non-Int holes retain checkpoint 69's typed stack picks. Int does not appear
 ;; among the matching Point picks, so compact pick 2 remains missing.
 (void (eval-source "(define point (Point new 10 20))" environment))
-(void (eval-source "(define point-rows (gel-rows call point))" environment))
+(void (eval-source "(define point-rows (gel-rows of point))" environment))
 (void (bind-row! "point-plus-row" "point-rows" "+" 1))
 (void (eval-source "(define point-plus-key ((point-plus-row index) text))"
                    environment))

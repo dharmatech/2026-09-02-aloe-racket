@@ -19,12 +19,12 @@
     (accepts? (candidate Mirror) Bool
       ((self signature) accepts? candidate))))
 
-;; Top-level fn values are monomorphic in the current checker. A generic call
-;; method keeps T fresh for each use while preserving the normal `call` send.
+;; Top-level fn values are monomorphic in the current checker. A generic `of`
+;; method keeps T fresh for each use.
 (define-class GelRows
   (fields)
   (methods
-    (call
+    (of
       (mirror Mirror)
       (List GelRow)
       (((mirror signatures) fold
@@ -38,9 +38,24 @@
                signature))))
        reverse))
 
-    (call (type T)
+    (of (type T)
       (value T)
       (List GelRow)
-      (self call (Mirror of value)))))
+      (self of (Mirror of value)))
+
+    (select
+      (rows (List GelRow))
+      (index Int)
+      GelRow
+      (let ((row
+             (rows fold
+               (rows first)
+               (fn (found candidate)
+                 (if ((candidate index) = index)
+                     candidate
+                     found)))))
+        (if ((row index) = index)
+            row
+            ((List empty) first))))))
 
 (define gel-rows (GelRows new))
