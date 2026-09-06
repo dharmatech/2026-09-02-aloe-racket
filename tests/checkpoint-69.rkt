@@ -61,7 +61,7 @@
 (check-equal? (eval-source "((int-pending pending) len)" environment) 1)
 
 (define pending-menu
-  (eval-source "(gel-menu-text call int-pending)" environment))
+  (eval-source "(gel-text menu int-pending)" environment))
 (check-regexp-match #rx"pending" pending-menu)
 (check-regexp-match #rx"\\+" pending-menu)
 (check-regexp-match #rx"Int" pending-menu)
@@ -105,7 +105,7 @@
   "(define mixed-pending (mixed-state handle-key point-plus-key))"
   environment))
 (define mixed-menu
-  (eval-source "(gel-menu-text call mixed-pending)" environment))
+  (eval-source "(gel-text menu mixed-pending)" environment))
 (check-regexp-match #rx"1  #<Point 10 20>" mixed-menu)
 (check-false (regexp-match? #rx"2  " mixed-menu))
 (void

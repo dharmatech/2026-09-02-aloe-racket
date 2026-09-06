@@ -153,7 +153,7 @@
   environment))
 (check-equal? (eval-source "(((x-step stack) tos) subject)" environment) 10)
 (check-regexp-match #rx"[1-9][0-9]*  \\+  1"
-                    (eval-source "(gel-menu-text call x-step)" environment))
+                    (eval-source "(gel-text menu x-step)" environment))
 
 (check-equal?
  (type->datum

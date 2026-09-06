@@ -19,19 +19,19 @@
 
 (define point-menu
   (eval-source
-   "(gel-menu-text call (Point new 10 20))"
+   "(gel-text menu (Point new 10 20))"
    environment))
 (check-true (string? point-menu))
 (check-regexp-match #rx"[1-9]  x  0" point-menu)
 
-(define int-menu (eval-source "(gel-menu-text call 1)" environment))
+(define int-menu (eval-source "(gel-text menu 1)" environment))
 (check-true (string? int-menu))
 (check-regexp-match #rx"[1-9]  \\+  1" int-menu)
 
 ;; A stack mirror formats the subject's menu, not Mirror's hatch methods.
 (define mirror-menu
   (eval-source
-   "(gel-menu-text call ((gel-empty-stack push (Point new 10 20)) tos))"
+   "(gel-text menu ((gel-empty-stack push (Point new 10 20)) tos))"
    environment))
 (check-regexp-match #rx"[1-9]  x  0" mirror-menu)
 (check-false (regexp-match? #rx"  subject  " mirror-menu))

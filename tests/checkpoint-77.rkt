@@ -58,8 +58,8 @@ ALOE
 ;; Both routes preserve dispatch-table ordering, selectors, arities, and
 ;; one-based indexes, which are precisely the fields rendered by rows-text.
 (check-equal?
- (eval-source "(gel-menu-text rows-text value-rows-77)" environment)
- (eval-source "(gel-menu-text rows-text mirror-rows-77)" environment))
+ (eval-source "(gel-text rows-text value-rows-77)" environment)
+ (eval-source "(gel-text rows-text mirror-rows-77)" environment))
 (check-equal? (eval-source "(value-rows-77 len)" environment)
               (eval-source "(mirror-rows-77 len)" environment))
 (check-equal? (eval-source "((mirror-rows-77 first) index)" environment) 1)
@@ -139,5 +139,5 @@ ALOE
  10)
 
 ;; Public menu rendering remains identical for a value and its mirror.
-(check-equal? (eval-source "(gel-menu-text call point-77)" environment)
-              (eval-source "(gel-menu-text call point-mirror-77)" environment))
+(check-equal? (eval-source "(gel-text menu point-77)" environment)
+              (eval-source "(gel-text menu point-mirror-77)" environment))

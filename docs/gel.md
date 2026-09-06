@@ -153,22 +153,24 @@ pending line shows the accumulator. Canceling drops it. Non-Int holes keep the
 typed stack-pick behavior. A TTY only supplies the key-shaped `String`;
 terminal handling remains a host skin around this pure step.
 
-Menu text is also Aloe application code: `(gel-menu-text call value)` emits
-one indexed selector/arity line per reflected row. From the project directory,
-launch the thin TTY skin with `racket host/racket/gel-run.rkt` (after installing
-the optional `tui-term` package). Press the displayed digit for `x` to push its
-value, and `q` to leave with the terminal restored.
+Menu and TOS text share the Aloe `GelText` service. `(gel-text menu value)`
+emits one indexed selector/arity line per reflected row, with overloads for
+ordinary values, exact mirrors, and `GelStep` state. `(gel-text tos stack)`
+emits `"TOS: "` plus the top mirror's raw subject text. From the project
+directory, launch the thin TTY skin with `racket host/racket/gel-run.rkt`
+(after installing the optional `tui-term` package). Press the displayed digit
+for `x` to push its value, and `q` to leave with the terminal restored.
 
 The interactive recursion now lives in `gel/main.aloe`: it writes a TOS line
-from `(gel-tos-text call stack)`, then the menu, reads a `String` key, steps or
-ignores it, and recurses. Immediately after reading, it writes `key ` followed
-by the key before handling it, so the transcript records digits, no-ops,
-`return`, and quit alike. TOS text is `"TOS: "` plus `(tos raw)`, the structural
-printer exposed through the TOS mirror; it does not select a subject's optional
-`show` method. The Racket runner is only the FFI skin that opens the TTY,
-injects `term`, loads Gel and `Point`, and starts `gel-main`. Its demo stack puts
-`(Point new 1 2)` under `(Point new 10 20)`, so selecting `+` produces
-`(Point new 11 22)`. A separate Gel `show` choice remains later work.
+from `(gel-text tos stack)`, then `(gel-text menu state)`, reads a `String` key,
+steps or ignores it, and recurses. Immediately after reading, it writes `key `
+followed by the key before handling it, so the transcript records digits,
+no-ops, `return`, and quit alike. TOS text uses the structural printer exposed
+through the TOS mirror; it does not select a subject's optional `show` method.
+The Racket runner is only the FFI skin that opens the TTY, injects `term`, loads
+Gel and `Point`, and starts `gel-main`. Its demo stack puts `(Point new 1 2)`
+under `(Point new 10 20)`, so selecting `+` produces `(Point new 11 22)`. A
+separate Gel `show` choice remains later work.
 
 ---
 

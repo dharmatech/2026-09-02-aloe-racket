@@ -61,8 +61,8 @@ ALOE
 
 ;; Ordinary values and existing mirrors retain identical subject rows.
 (check-equal?
- (eval-source "(gel-menu-text rows-text value-rows-81)" environment)
- (eval-source "(gel-menu-text rows-text mirror-rows-81)" environment))
+ (eval-source "(gel-text rows-text value-rows-81)" environment)
+ (eval-source "(gel-text rows-text mirror-rows-81)" environment))
 (check-equal? (eval-source "(value-rows-81 len)" environment)
               (eval-source "(mirror-rows-81 len)" environment))
 
@@ -115,8 +115,8 @@ ALOE
                   environment))))
 
 ;; Menu rendering and the key-selected invocation still consume these rows.
-(check-equal? (eval-source "(gel-menu-text call point-81)" environment)
-              (eval-source "(gel-menu-text rows-text value-rows-81)"
+(check-equal? (eval-source "(gel-text menu point-81)" environment)
+              (eval-source "(gel-text rows-text value-rows-81)"
                            environment))
 (void
  (eval-source

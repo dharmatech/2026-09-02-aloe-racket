@@ -105,7 +105,7 @@ ALOE
 ALOE
   environment))
 (check-equal?
- (eval-source "(gel-menu-text call point-pending-80)" environment)
+ (eval-source "(gel-text menu point-pending-80)" environment)
  (string-append
   "pending +  #<List #<Symbol Point> #<Symbol Int>>\r\n"
   "1  #<Point 10 20>\r\n"

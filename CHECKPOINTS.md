@@ -231,3 +231,9 @@ success, and reports both source datums and displayed values on failure.
 - `GelRows.of` constructs rows from ordinary values or exact mirrors, and
   `GelRows.select` owns valid-index lookup; the function-shaped `call` API and
   separate row selector callable are removed.
+
+## 82. Unified `GelText` renderer
+
+- `GelText.menu` renders ordinary values, mirrors, and Gel state, while
+  `GelText.tos` renders the stack top; the separate menu/TOS renderers and
+  function-shaped rendering sends are removed.

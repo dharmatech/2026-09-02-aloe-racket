@@ -55,7 +55,7 @@
 (check-true (eval-source "(typed-two has-digits)" environment))
 (check-equal? (eval-source "((typed-two pending) len)" environment) 1)
 (check-regexp-match #rx"pending.*\\+.*Int.*2"
-                    (eval-source "(gel-menu-text call typed-two)" environment))
+                    (eval-source "(gel-text menu typed-two)" environment))
 
 (void
  (eval-source

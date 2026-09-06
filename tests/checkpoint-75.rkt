@@ -172,5 +172,5 @@ ALOE
  (eval-source "(((pick-result stack) tos) raw)" environment)
  "#<Point 11 22>")
 (check-regexp-match #rx"[1-9]  x  0"
-                    (eval-source "(gel-menu-text call idle-state)"
+                    (eval-source "(gel-text menu idle-state)"
                                  environment))

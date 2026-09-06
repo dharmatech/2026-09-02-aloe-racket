@@ -57,7 +57,7 @@ ALOE
  exn:fail:aloe-type?
  (lambda ()
    (typecheck-source
-    "(gel-menu-text picks-text (picks-79 items))"
+    "(gel-text picks-text (picks-79 items))"
     checker-environment)))
 
 ;; The separate raw-list selector and its class are gone.
@@ -130,7 +130,7 @@ ALOE
  (eval-source "(((matching-picks-79 select 2) mirror) raw)" environment)
  "#<Point 1 2>")
 (check-equal?
- (eval-source "(gel-menu-text picks-text matching-picks-79)" environment)
+ (eval-source "(gel-text picks-text matching-picks-79)" environment)
  "1  #<Point 10 20>\r\n2  #<Point 1 2>\r\n")
 
 ;; GelStep retains the bounds check and invokes the selected valid pick.

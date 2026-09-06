@@ -119,5 +119,5 @@
 ;; The runner is only the host lifecycle and one gel-main entry send.
 (define runner-source (file->string gel-run-path))
 (check-false (regexp-match? #rx"gel-handle-key" runner-source))
-(check-false (regexp-match? #rx"gel-menu-text" runner-source))
+(check-false (regexp-match? #rx"gel-text" runner-source))
 (check-false (regexp-match? #rx"key-value->string" runner-source))

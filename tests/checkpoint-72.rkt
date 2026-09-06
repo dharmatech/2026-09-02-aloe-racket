@@ -149,7 +149,7 @@
   environment))
 (check-equal? (eval-source "(((point-step stack) items) len)" environment) 2)
 (check-regexp-match #rx"[1-9]  x  0"
-                    (eval-source "(gel-menu-text call (point-stack tos))"
+                    (eval-source "(gel-text menu (point-stack tos))"
                                  environment))
 
 (struct fake-term-state ([keys #:mutable] output) #:transparent)

@@ -38,7 +38,7 @@
   "(define stack (gel-empty-stack push (Point new 10 20)))"
   environment))
 (define tos-text
-  (eval-source "(gel-tos-text call stack)" environment))
+  (eval-source "(gel-text tos stack)" environment))
 (check-regexp-match #rx"^TOS:" tos-text)
 (check-regexp-match #rx"Point" tos-text)
 

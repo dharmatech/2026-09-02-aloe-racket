@@ -78,7 +78,7 @@
                   picks)))
           reverse)))))
 
-(define-class GelMenuText
+(define-class GelText
   (fields)
   (methods
     (line (row GelRow) String
@@ -129,31 +129,26 @@
 
     ;; A stack TOS is already a Mirror. Its rows describe the subject, not
     ;; the Mirror reflection API itself.
-    (call (value Mirror) String
+    (menu (value Mirror) String
       (self rows-text (gel-rows of value)))
 
-    (call (state GelStep) String
+    (menu (state GelStep) String
       (if ((state pending) empty?)
-          (self call ((state stack) tos))
+          (self menu ((state stack) tos))
           (self pending-text state)))
 
-    (call (type T)
+    (menu (type T)
       (value T)
       String
-      (self rows-text (gel-rows of value)))))
+      (self rows-text (gel-rows of value)))
 
-(define gel-menu-text (GelMenuText new))
-
-(define-class GelTosText
-  (fields)
-  (methods
-    (call
+    (tos
       (stack GelStack)
       String
-      (let ((tos (stack tos)))
-        ("TOS: " append (tos raw))))))
+      (let ((top (stack tos)))
+        ("TOS: " append (top raw))))))
 
-(define gel-tos-text (GelTosText new))
+(define gel-text (GelText new))
 
 (define-methods GelStep
   (methods

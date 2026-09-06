@@ -28,7 +28,7 @@
 
 ;; TOS presentation uses the subject's structural form.
 (define tos-text
-  (eval-expr (parse-datum '(gel-tos-text call stack)) environment))
+  (eval-expr (parse-datum '(gel-text tos stack)) environment))
 (check-true (string? tos-text))
 (check-regexp-match #rx"TOS" tos-text)
 (check-regexp-match #rx"Point" tos-text)
@@ -37,18 +37,18 @@
 (check-equal?
  (eval-expr
    (parse-datum
-   '(gel-tos-text call (gel-empty-stack push 10)))
+   '(gel-text tos (gel-empty-stack push 10)))
   environment)
  "TOS: 10")
 
 ;; The existing Point menu remains unchanged.
 (define menu-from-stack
   (eval-expr
-  (parse-datum '(gel-menu-text call (stack tos)))
+  (parse-datum '(gel-text menu (stack tos)))
    environment))
 (define menu-from-subject
   (eval-expr
-   (parse-datum '(gel-menu-text call (Point new 10 20)))
+   (parse-datum '(gel-text menu (Point new 10 20)))
    environment))
 (check-equal? menu-from-stack menu-from-subject)
 (check-regexp-match #rx"1  x  0" menu-from-stack)

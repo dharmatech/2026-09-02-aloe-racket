@@ -16,10 +16,10 @@
       GelStack
       (let ((tos-written
              (term write-line
-               (gel-tos-text call (state stack)))))
+               (gel-text tos (state stack)))))
         (let ((menu-written
                (term write-line
-                 (gel-menu-text call state))))
+                 (gel-text menu state))))
           (let ((key (term read-key)))
             (let ((echoed
                    (term write-line ("key " append key))))

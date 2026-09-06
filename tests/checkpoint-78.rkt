@@ -125,7 +125,7 @@
     #f (List of int-plus-row-78) 0 #f))
 ALOE
   environment))
-(check-equal? (eval-source "(gel-menu-text call int-state-78)" environment)
+(check-equal? (eval-source "(gel-text menu int-state-78)" environment)
               "pending +  Int \r\n")
 (void
  (eval-source
