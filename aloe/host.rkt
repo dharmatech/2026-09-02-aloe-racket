@@ -174,11 +174,22 @@
            (host-receiver-state receiver)
            arguments)))
 
-(define (host-receiver-send receiver selector arguments)
-  (define method
-    (find-host-method (host-receiver-interface receiver) selector))
-  (unless method
-    (error 'eval-aloe "unknown message: ~a" selector))
+(define (host-receiver-invoke-method receiver method arguments)
+  (unless (host-receiver? receiver)
+    (raise-arguments-error
+     'host-receiver-invoke-method
+     "receiver must be a validated host receiver"
+     "receiver" receiver))
+  (unless (and (host-method? method)
+               (memq method
+                     (host-interface-methods
+                      (host-receiver-interface receiver))))
+    (raise-arguments-error
+     'host-receiver-invoke-method
+     "method must belong to the receiver's exact host interface"
+     "receiver" receiver
+     "method" method))
+  (define selector (host-method-selector method))
   (define parameter-types (host-method-parameter-types method))
   (define expected (length parameter-types))
   (define actual (length arguments))
@@ -199,3 +210,16 @@
     (call-host-implementation receiver method normalized-arguments))
   (normalize-crossing-value
    receiver selector "result" (host-method-return-type method) result))
+
+(define (host-receiver-send receiver selector arguments)
+  (define method
+    (find-host-method (host-receiver-interface receiver) selector))
+  (unless method
+    (error 'eval-aloe "unknown message: ~a" selector))
+  (host-receiver-invoke-method receiver method arguments))
+
+;; Reflection already owns an exact validated row. Keep this evaluator-facing
+;; seam out of the public host declaration API while sharing all guards with
+;; ordinary host sends.
+(module* evaluator-exact-host-method #f
+  (provide host-receiver-invoke-method))
