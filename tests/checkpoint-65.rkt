@@ -5,7 +5,6 @@
          rackunit
          (only-in "../aloe/env.rkt" env-define!)
          "../aloe/eval.rkt"
-         "../aloe/host.rkt"
          (only-in "../aloe/main.rkt"
                   make-top-level-env
                   type->datum
@@ -34,42 +33,19 @@
    checker-environment))
  'GelStack)
 
-(struct fake-term-state ([keys #:mutable] output) #:transparent)
-
-(define fake-read-key
-  (host-message
-   0
-   (lambda (receiver _arguments)
-     (define state (host-receiver-state receiver))
-     (define keys (fake-term-state-keys state))
-     (unless (pair? keys)
-       (error 'fake-term "script exhausted"))
-     (set-fake-term-state-keys! state (cdr keys))
-     (car keys))))
-
-(define fake-write-line
-  (host-message
-   1
-   (lambda (receiver arguments)
-     (define value (car arguments))
-     (unless (string? value)
-       (error 'fake-term "write-line expects a String"))
-     (define output
-       (fake-term-state-output (host-receiver-state receiver)))
-     (display value output)
-     (display "\r\n" output)
-     (flush-output output)
-     value)))
-
-(define (make-fake-term keys)
-  (define state (fake-term-state keys (open-output-string)))
+(define (make-scripted-term keys)
+  (define remaining-keys (box keys))
+  (define output (open-output-string))
   (values
-   (host-receiver
-    'Term
-    (hasheq 'read-key fake-read-key
-            'write-line fake-write-line)
-    state)
-   state))
+   (make-term-receiver
+    output
+    (lambda ()
+      (define keys (unbox remaining-keys))
+      (unless (pair? keys)
+        (error 'fake-term "script exhausted"))
+      (set-box! remaining-keys (cdr keys))
+      (car keys)))
+   output))
 
 (define (load-runtime! path environment)
   (eval-expr
@@ -78,7 +54,7 @@
 
 (define (run-script keys)
   (define environment (make-top-level-env))
-  (define-values (term state) (make-fake-term keys))
+  (define-values (term output) (make-scripted-term keys))
   (env-define! environment 'term term)
   (load-runtime! gel-main-path environment)
   (load-runtime! point-path environment)
@@ -92,18 +68,18 @@
     '(define final-stack
        (gel-main call initial-stack)))
    environment)
-  (values environment state))
+  (values environment output))
 
 ;; A q-only script prints once and returns the original stack.
-(define-values (quit-environment quit-state) (run-script '("q")))
+(define-values (quit-environment quit-output) (run-script '("q")))
 (check-eq? (eval-expr (parse-datum 'initial-stack) quit-environment)
            (eval-expr (parse-datum 'final-stack) quit-environment))
 (check-regexp-match
  #rx"1  x  0"
- (get-output-string (fake-term-state-output quit-state)))
+ (get-output-string quit-output))
 
 ;; Row 1 is Point.x: its result is pushed, then q returns that new stack.
-(define-values (step-environment step-state) (run-script '("1" "q")))
+(define-values (step-environment step-output) (run-script '("1" "q")))
 (check-equal?
  (eval-expr (parse-datum '((final-stack items) len)) step-environment)
  2)
@@ -114,7 +90,7 @@
  10)
 (check-regexp-match
  #rx"1  \\+  1"
- (get-output-string (fake-term-state-output step-state)))
+ (get-output-string step-output))
 
 ;; The runner is only the host lifecycle and one gel-main entry send.
 (define runner-source (file->string gel-run-path))

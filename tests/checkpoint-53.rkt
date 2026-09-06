@@ -28,7 +28,11 @@
 (test-case "term receiver exposes read-key without reading the TTY"
   (define term (make-term-receiver))
   (check-eq? (host-receiver-name term) 'Term)
-  (check-true (hash-has-key? (host-receiver-messages term) 'read-key)))
+  (check-eq? (host-receiver-interface term) term-interface)
+  (check-equal?
+   (map host-method-selector
+        (host-interface-methods (host-receiver-interface term)))
+   '(read-key write-line)))
 
 (test-case "the default evaluator does not bind term"
   (check-exn #rx"unbound symbol: term"

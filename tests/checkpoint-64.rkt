@@ -49,6 +49,6 @@
 (check-exn #rx"arity error"
            (lambda ()
              (host-receiver-send term 'write-line '())))
-(check-exn #rx"expects a String"
+(check-exn #rx"Term.*write-line.*argument 1.*String"
            (lambda ()
              (host-receiver-send term 'write-line '(1))))

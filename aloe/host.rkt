@@ -10,8 +10,12 @@
          host-interface?
          host-interface-name
          host-interface-methods
-         (struct-out host-message)
-         (struct-out host-receiver)
+         make-host-receiver
+         host-receiver?
+         host-receiver-interface
+         host-receiver-name
+         exn:fail:aloe-host?
+         exn:fail:aloe-host-cause
          host-receiver-send)
 
 ;; Host declarations are opaque so an interface is a nominal identity rather
@@ -113,18 +117,70 @@
      "duplicate selector" duplicate-selector))
   (host-interface name methods))
 
-;; A host receiver is an explicitly injected Aloe value. Its messages use the
-;; ordinary receiver/selector/arguments send shape, but their implementations
-;; live in Racket. This module deliberately knows nothing about terminals.
-(struct host-message (arity procedure) #:transparent)
-(struct host-receiver (name messages state) #:transparent)
+;; A host receiver is an explicitly injected Aloe value whose opaque state is
+;; available only to the implementation selected through its interface.
+(struct host-receiver (interface state))
+
+(define (make-host-receiver interface state)
+  (unless (host-interface? interface)
+    (raise-arguments-error
+     'make-host-receiver
+     "interface must be a validated host interface"
+     "interface" interface))
+  (host-receiver interface state))
+
+(define (host-receiver-name receiver)
+  (host-interface-name (host-receiver-interface receiver)))
+
+;; Host implementations are foreign code. Keep their original failure
+;; available while presenting one stable Aloe runtime failure at the boundary.
+(struct exn:fail:aloe-host exn:fail (cause))
+
+(define (find-host-method interface selector)
+  (for/first ([method (in-list (host-interface-methods interface))]
+              #:when (eq? selector (host-method-selector method)))
+    method))
+
+(define (normalize-crossing-value receiver selector position type value)
+  (define valid?
+    (case type
+      [(Int) (exact-integer? value)]
+      [(Bool) (boolean? value)]
+      [(String) (string? value)]))
+  (unless valid?
+    (error 'eval-aloe
+           "host crossing error for ~a ~a ~a: expected ~a"
+           (host-receiver-name receiver)
+           selector
+           position
+           type))
+  (if (eq? type 'String)
+      (string->immutable-string value)
+      value))
+
+(define (call-host-implementation receiver method arguments)
+  (with-handlers
+      ([exn:fail?
+        (lambda (cause)
+          (raise
+           (exn:fail:aloe-host
+            (format "eval-aloe: host failure for ~a ~a: ~a"
+                    (host-receiver-name receiver)
+                    (host-method-selector method)
+                    (exn-message cause))
+            (exn-continuation-marks cause)
+            cause)))])
+    (apply (host-method-implementation method)
+           (host-receiver-state receiver)
+           arguments)))
 
 (define (host-receiver-send receiver selector arguments)
-  (define message
-    (hash-ref (host-receiver-messages receiver) selector #f))
-  (unless message
+  (define method
+    (find-host-method (host-receiver-interface receiver) selector))
+  (unless method
     (error 'eval-aloe "unknown message: ~a" selector))
-  (define expected (host-message-arity message))
+  (define parameter-types (host-method-parameter-types method))
+  (define expected (length parameter-types))
   (define actual (length arguments))
   (unless (= expected actual)
     (error 'eval-aloe
@@ -133,4 +189,13 @@
            selector
            expected
            actual))
-  ((host-message-procedure message) receiver arguments))
+  (define normalized-arguments
+    (for/list ([argument (in-list arguments)]
+               [type (in-list parameter-types)]
+               [index (in-naturals 1)])
+      (normalize-crossing-value
+       receiver selector (format "argument ~a" index) type argument)))
+  (define result
+    (call-host-implementation receiver method normalized-arguments))
+  (normalize-crossing-value
+   receiver selector "result" (host-method-return-type method) result))

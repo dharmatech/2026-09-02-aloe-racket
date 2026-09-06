@@ -10,7 +10,8 @@
                   make-top-level-env
                   type->datum
                   typecheck-source)
-         "../aloe/parse.rkt")
+         "../aloe/parse.rkt"
+         "../host/racket/term.rkt")
 
 (define-runtime-path gel-loop-path "../gel/loop.aloe")
 (define-runtime-path gel-main-path "../gel/main.aloe")
@@ -152,41 +153,18 @@
                     (eval-source "(gel-text menu (point-stack tos))"
                                  environment))
 
-(struct fake-term-state ([keys #:mutable] output) #:transparent)
-
-(define fake-read-key
-  (host-message
-   0
-   (lambda (receiver _arguments)
-     (define state (host-receiver-state receiver))
-     (define keys (fake-term-state-keys state))
-     (set-fake-term-state-keys! state (cdr keys))
-     (car keys))))
-
-(define fake-write-line
-  (host-message
-   1
-   (lambda (receiver arguments)
-     (define value (car arguments))
-     (display value
-              (fake-term-state-output
-               (host-receiver-state receiver)))
-     (display "\r\n"
-              (fake-term-state-output
-               (host-receiver-state receiver)))
-     value)))
-
 (define transcript-environment (make-top-level-env))
-(define transcript-state
-  (fake-term-state '("1" "q") (open-output-string)))
+(define transcript-keys (box '("1" "q")))
+(define transcript-output (open-output-string))
 (env-define!
  transcript-environment
  'term
- (host-receiver
-  'Term
-  (hasheq 'read-key fake-read-key
-          'write-line fake-write-line)
-  transcript-state))
+ (make-term-receiver
+  transcript-output
+  (lambda ()
+    (define keys (unbox transcript-keys))
+    (set-box! transcript-keys (cdr keys))
+    (car keys))))
 (load-runtime! gel-main-path transcript-environment)
 (load-runtime! point-path transcript-environment)
 (void
@@ -194,6 +172,6 @@
   (parse-datum
    '(gel-main call (gel-empty-stack push (Point new 10 20))))
   transcript-environment))
-(define transcript (get-output-string (fake-term-state-output transcript-state)))
+(define transcript (get-output-string transcript-output))
 (check-regexp-match #rx"key 1\r\nTOS: 10\r\n" transcript)
 (check-regexp-match #rx"key q\r\n" transcript)

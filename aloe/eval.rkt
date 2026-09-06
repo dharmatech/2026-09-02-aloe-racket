@@ -1243,12 +1243,7 @@
                  ""
                  (string-append " " (string-join parts " "))))]
     [(host-receiver? value)
-     (define state (host-receiver-state value))
-     (format "#<~a~a>"
-             (host-receiver-name value)
-             (if (string? state)
-                 (format " ~s" state)
-                 ""))]
+     (format "#<~a>" (host-receiver-name value))]
     [(list-class-object? value) "#<class List>"]
     [(void? value) "#<void>"]
     [else "#<object>"]))
@@ -1292,8 +1287,6 @@
           (value-vectors-equal? (list-value-elements left)
                                 (list-value-elements right)))]
     [(and (host-receiver? left) (host-receiver? right))
-     (and (eq? (host-receiver-name left) (host-receiver-name right))
-          (aloe-values-equal? (host-receiver-state left)
-                              (host-receiver-state right)))]
+     (eq? left right)]
     [(and (void? left) (void? right)) #t]
     [else (eq? left right)]))

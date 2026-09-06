@@ -13,6 +13,7 @@
                   typecheck-source))
 
 (provide tkeymsg->aloe-key
+         term-interface
          make-term-receiver
          make-term-type-environment
          call-with-tty-term-receiver)
@@ -60,30 +61,29 @@
       [else
        (loop)])))
 
-(define read-key-message
-  (host-message
-   0
-   (lambda (_receiver _arguments)
-     (read-next-key))))
+(struct term-state (output reader))
 
-(define write-line-message
-  (host-message
-   1
-   (lambda (receiver arguments)
-     (define value (car arguments))
-     (unless (string? value)
-       (error 'term "Term write-line expects a String argument"))
-     (define output (host-receiver-state receiver))
-     (display value output)
-     (display "\r\n" output)
-     (flush-output output)
-     value)))
+(define (term-read-key state)
+  ((term-state-reader state)))
 
-(define (make-term-receiver [output (current-output-port)])
-  (host-receiver 'Term
-                 (hasheq 'read-key read-key-message
-                         'write-line write-line-message)
-                 output))
+(define (term-write-line state value)
+  (define output (term-state-output state))
+  (display value output)
+  (display "\r\n" output)
+  (flush-output output)
+  value)
+
+(define term-interface
+  (make-host-interface
+   'Term
+   (list
+    (make-host-method 'read-key '() 'String term-read-key)
+    (make-host-method
+     'write-line '(String) 'String term-write-line))))
+
+(define (make-term-receiver [output (current-output-port)]
+                            [reader read-next-key])
+  (make-host-receiver term-interface (term-state output reader)))
 
 ;; The optional terminal runner injects its runtime receiver separately. This
 ;; private Aloe facade supplies the corresponding checked shape without
