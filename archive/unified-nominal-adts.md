@@ -3,9 +3,9 @@
 Status: **provisional and non-normative**
 
 This working note records the design direction approved in conversation through
-Decision 9. It is a working memory aid, not an amendment to `SPEC.md`, an
-implementation plan, or authorization to change the language. The design can
-still be revised as the remaining decisions are made and as applications expose
+Decision 10. It is a working memory aid and provisional implementation-boundary
+record, not an amendment to `SPEC.md` or authorization to change the language.
+The design can still be revised during formalization and as applications expose
 its strengths and weaknesses.
 
 The eventual accepted design should be rewritten as normative specification
@@ -40,13 +40,11 @@ Approved as a provisional direction:
 7. Runtime behavior
 8. Reflection
 9. Concrete syntax
-
-Still to decide:
-
 10. Static and implementation consequences
 
-No exact implementation checkpoints should be planned until the semantic
-design has been reviewed through Decision 10.
+The ten-decision semantic design is provisionally complete. Decision 10 records
+a safe implementation sequence, but this document does not itself authorize
+normative specification changes or implementation.
 
 ## Decision 1: ontology
 
@@ -434,8 +432,8 @@ The preferred term is therefore **recursive nominal algebraic family**, not
 "inductive type."
 
 Recursion is part of the semantic destination but not the first implementation
-slice. Nonrecursive `Option` and `Result` should establish the model before a
-recursive `Tree`. The exact staging remains for Decision 10.
+slice. Nonrecursive `Option` and `Result` establish the model before a recursive
+`Tree`, following the staging in Decision 10.
 
 ## Decision 6: open protocols and closed data
 
@@ -2057,9 +2055,9 @@ explicit sole constructor. Positional protocol syntax moves to `(conforms ...)`,
 while existing `define-methods` extensions largely retain their shape.
 
 Keeping both `define-class` and `define-family` in the normative language would
-preserve two apparent ontologies after choosing one. A temporary migration tool
-or implementation compatibility window can be considered in Decision 10, but
-it is not part of the language semantics.
+preserve two apparent ontologies after choosing one. Decision 10 permits a
+temporary implementation-only migration bridge, but it is not part of the
+language semantics.
 
 ### Rejected syntax alternatives
 
@@ -2119,6 +2117,790 @@ selectors remain literal, type syntax remains in annotation positions, methods
 remain receiver-owned, exhaustive elimination remains receiver-anchored, and
 one or many constructors use one nominal declaration model.
 
+## Decision 10: static and implementation consequences
+
+### Implementation boundary
+
+The design replaces Aloe's nominal core through a checked elaboration pipeline
+and an incremental implementation sequence. The destination has one ontology:
+
+- family declarations;
+- family type objects;
+- representation constructors;
+- immutable family values;
+- whole-family and constructor-local messages;
+- open protocols;
+- internal constructor-set refinements.
+
+The implementation does not permanently retain `class` as a parallel concept.
+
+The current architecture independently checks an AST and evaluates essentially
+the same unannotated AST. That is insufficient for generic parameterless
+constructors because the evaluator must receive the type arguments selected by
+the checker. It must not try to recover an argument such as `Int` from a `None`
+payload that does not exist.
+
+The revised pipeline is:
+
+```text
+source
+  -> parsed source AST
+  -> linked nominal declarations and opaque identities
+  -> type checking and elaboration
+  -> globally validated checked program
+  -> evaluation
+```
+
+The checker produces an elaborated program containing runtime-relevant checked
+decisions, including:
+
+- resolved family and constructor identities;
+- resolved static type arguments;
+- resolved case-clause constructor identities;
+- static row obligations needed for result checking;
+- refinement information used only during checking.
+
+Only a successfully checked and finalized program is evaluated. The evaluator
+continues to perform defensive checks at dynamic boundaries but does not accept
+unresolved construction semantics.
+
+Public conveniences such as `typecheck-source`, `eval-source`, and the driver
+may retain their broad roles. Internally:
+
+- typechecking may discard the elaborated program when a caller asks only for
+  its type;
+- evaluation helpers and the driver evaluate checked programs;
+- production evaluation does not accept arbitrary raw parsed programs;
+- tests that directly combine parsing with unchecked evaluation move to the
+  checked driver or an explicitly internal helper.
+
+This closes a boundary that generic nullary constructors would otherwise make
+unsound.
+
+### Shared nominal descriptors
+
+Within a program image, the checker, evaluator, and reflection system refer to
+one linked graph of nominal descriptors. The important opaque identities are:
+
+- protocol identity;
+- family identity;
+- constructor identity;
+- dispatch-row identity.
+
+A family descriptor contains its name, type parameters, declared protocol
+conformances, ordered constructor descriptors, factory rows, and whole-family
+rows.
+
+A constructor descriptor contains its opaque identity, owning family, selector
+label, ordered payload declarations, local rows, and declaration position.
+
+A method-row descriptor contains its selector, generic parameters, parameter
+and result types, semantic role, body mode, and opaque row identity.
+
+These descriptors are not Aloe-visible reflective objects. Source programs
+receive the family type object and opaque `Signature` capabilities only.
+
+Common descriptors keep type lookup, runtime dispatch, protocol conformance,
+and reflection from drifting apart. The existing host-interface descriptor is
+the precedent for this arrangement.
+
+### Component consequences
+
+| Component | Required change |
+| --- | --- |
+| Parser | Parse `define-family`, constructors, conformances, factories, local methods, per-constructor bodies, case clauses, and send type headers |
+| Source AST | Retain family declarations, cases, explicit type arguments, and alias provenance needed by checking |
+| Linker and elaborator | Mint nominal identities, resolve declarations and types, and produce checked runtime annotations |
+| Type checker | Track invariant family types and internal constructor-set refinements |
+| Evaluator | Construct and dispatch through family and constructor descriptors |
+| Protocol checker | Support multiple explicit whole-family conformances and row compatibility |
+| Reflection | Reflect semantic rows, roles, and generics while hiding multi-constructor representation |
+| Printer and equality | Include family instantiation and constructor identity in structural behavior |
+| Driver | Stage, validate, and commit a coherent program before evaluation |
+| Examples and tests | Migrate from `define-class` and validate products, variants, recursion, protocols, Gel, and reflection |
+
+Built-in primitives and host capabilities retain specialized implementations
+behind the same boundary.
+
+### Static family types and refinements
+
+The checker keeps nominal type and constructor knowledge conceptually separate.
+The base type is `F A...`; internal flow metadata adds its currently possible
+constructor set.
+
+An implementation may use a dedicated internal refined-type wrapper or
+equivalent metadata. It must not fold constructor sets into ordinary nominal
+equality, which would invite accidental subtyping behavior.
+
+Central checker operations provide the equivalents of:
+
+- obtaining the base nominal type;
+- obtaining possible constructors;
+- intersecting with a branch constructor;
+- subtracting explicitly handled constructors;
+- unioning branch refinements;
+- widening to the base family;
+- forgetting refinement during protocol conversion or storage.
+
+`type->datum`, ordinary diagnostics, and source annotations expose only the base
+type.
+
+The checker introduces refinements from direct representation construction,
+case branches, per-constructor family bodies, and immutable direct aliases.
+
+A direct immutable `define` or `let` alias may retain the outer refinement of
+its value. The current parser immediately lowers `let` to `fn` and `call`, which
+loses the distinction between an alias and a function boundary. Parsing must
+therefore retain a source `let` node, or equivalent provenance, through
+checking.
+
+Runtime `let` behavior remains the existing `fn`/`call` definition. Refinement
+preservation is a checker fact granted to a source alias, not a general
+function-argument refinement rule.
+
+Refinement is normally forgotten through:
+
+- declared method and factory results;
+- protocol conversion;
+- general function parameters and results;
+- generic storage such as `List`;
+- payload positions declared with an unrefined family type;
+- reflective unwrapping.
+
+These loss points require explicit tests so refinements do not become deep
+types accidentally.
+
+### Declaration linking
+
+A family is linked in three phases.
+
+#### Header and identities
+
+Before checking payloads or bodies:
+
+- bind the family name;
+- mint its opaque family identity;
+- create its family type object;
+- bind its type parameters;
+- register all constructor names and opaque identities.
+
+This permits direct regular self-reference in payload types.
+
+#### Representation and signatures
+
+Resolve constructor payload types, accessor rows, local signatures, factory
+signatures, whole-family signatures, and conformance names.
+
+At this stage enforce:
+
+- a nonempty constructor set;
+- unique constructor selectors;
+- reserved selector rules;
+- unique payload names per constructor;
+- family/local selector partitioning;
+- exact row uniqueness.
+
+#### Bodies
+
+Install all declaration signatures before checking bodies so methods in the
+declaration may call one another.
+
+Then check:
+
+- local bodies with singleton-refined `self`;
+- uniform family bodies with unrefined `self`;
+- per-constructor bodies with the corresponding refined `self`;
+- factories with the family type object as `self`.
+
+While resolving payloads, the current family may refer to itself only at full
+arity with the same parameters in the same order. Previously declared families
+remain available. General forward and mutually recursive family groups remain
+rejected.
+
+### Additive extensions and finalization
+
+`define-methods` additions are staged rather than mutating a committed
+descriptor before validation.
+
+Within one extension form:
+
+1. resolve every proposed row signature;
+2. reject forbidden selectors and exact replacements;
+3. install proposed signatures in a staging view so their bodies can call one
+   another;
+4. check all bodies;
+5. run ambiguity and return-coherence checks;
+6. commit the rows only if the complete extension is valid.
+
+Factory additions use the same process on the type-object surface. Extensions
+never reopen constructors, local tables, per-constructor body tables, or the
+conformance list.
+
+After a complete source unit and its transitive loads have been checked,
+validate:
+
+- every declared protocol conformance;
+- every per-constructor body table;
+- every overload set;
+- dynamic-overload return coherence;
+- selector classification;
+- unresolved type variables;
+- extension ownership.
+
+Methods supplied by later `define-methods` forms in the same source unit
+participate in conformance.
+
+For an interactive REPL, each submitted datum is its own transaction. A family
+claiming a protocol must be coherent when that transaction commits. A loaded
+file containing a declaration followed by required extensions is checked as one
+larger transaction.
+
+A failed declaration or extension does not partially modify the checker
+environment. Ordinary runtime effects after successful checking are not
+retroactively rolled back.
+
+### Generic inference and elaboration
+
+The existing local unification machinery evolves rather than being replaced by
+a full Hindley-Milner system.
+
+For each constructor or factory send, the checker gathers constraints from:
+
+- the optional explicit `(type ...)` header;
+- the expected exact family result;
+- payload or factory arguments;
+- the enclosing expression;
+- sibling branches whose results must agree.
+
+Constraint collection does not commit based on the first branch visited.
+Branch order cannot affect inferred types.
+
+The explicit header is checked against family and row-level parameter counts,
+source type well-formedness, payloads, and expected-type constraints. Resolved
+arguments are copied into the checked send and are not runtime expressions.
+
+Unresolved inference variables may exist while solving constraints. They may
+not remain after a top-level expression or definition, a method or factory
+body, an explicitly typed function body, or a complete program transaction.
+Declared family and row parameters remain valid bound parameters rather than
+unresolved variables.
+
+A context-free `(Option None)` therefore fails unless its surrounding context
+determines `T`.
+
+Every checked constructor send carries its resolved family arguments. Runtime
+payload inference is removed instead of retained as fallback behavior.
+
+### Static message lookup
+
+Static lookup depends on the receiver view:
+
+- A family type object exposes constructors and factories. Constructor results
+  are singleton-refined; factory results have only their declared type.
+- An unrefined family value exposes whole-family messages.
+- A singleton-refined value additionally exposes that constructor's local
+  methods and payload accessors.
+- A one-constructor family is inherently singleton-refined.
+- A protocol value exposes protocol signatures only.
+- A broader refinement containing several constructors exposes only
+  whole-family messages.
+
+Protocol conversion forgets constructor knowledge. Repeated local selector
+names never create an inferred shared surface.
+
+### Exhaustive case checking
+
+The parser records source constructor labels and binders. The checker resolves
+each label relative to the scrutinee family and elaborates it to its opaque
+constructor identity. Runtime case dispatch never compares names.
+
+The checker:
+
+1. checks the scrutinee once;
+2. extracts its concrete family and possible constructor set `S`;
+3. resolves explicit clauses;
+4. rejects duplicate, unknown, and impossible cases;
+5. validates payload-binder arity;
+6. computes the residual set for `else`;
+7. checks coverage;
+8. checks every reachable branch result without order bias;
+9. records resolved constructor identities in the checked case.
+
+An explicit branch receives substituted payload types and an optional whole
+binding with singleton refinement. A default whole binding receives the
+residual refinement.
+
+Runtime evaluation evaluates the scrutinee once, compares its opaque
+constructor with the checked clause identities, binds the immutable payloads,
+and evaluates one body. Malformed foreign values are rejected rather than sent
+through `else`.
+
+### Branch result checking
+
+With an expected type, every reachable branch is checked against it.
+
+Without an expected type:
+
+- exact ordinary types unify;
+- same-family generic arguments unify invariantly;
+- outer family refinements are unioned;
+- distinct conforming families do not invent a protocol result;
+- an `else` branch participates like every explicit branch.
+
+The join is an explicit symmetric operation rather than a left-biased
+first-branch rule.
+
+### Protocol conformance and overload coherence
+
+A family stores a list of exact protocol identities. For every required
+protocol row, finalization finds a whole-family row whose parameters accept the
+complete protocol domain and whose result is usable as the protocol result.
+
+Constructor rows, factories, accessors, and local rows are not candidates.
+
+Compatibility uses the same central type relation as ordinary calls, runtime
+argument validation, `Signature.accepts?`, reflective invocation, and host
+boundaries. No parallel name-based relation is introduced.
+
+For every runtime-overlapping overload pair where a narrower row may be chosen
+in place of a statically broader row, the narrower result must be usable as the
+broader result. This is checked across declaration-owned and extension-owned
+rows after the complete overload set is known.
+
+MPL's useful concrete overload dispatch remains, but an extension cannot
+invalidate a caller's static result promise.
+
+### Runtime family values
+
+The current conceptual `class-value` and `instance-value` pair becomes:
+
+```text
+family type object / family descriptor
+
+family data value:
+  family descriptor
+  resolved type arguments
+  constructor descriptor
+  immutable payload vector
+```
+
+Values do not contain method closures or factory provenance.
+
+Dispatch consults the constructor/factory table for type objects, the
+whole-family table for instances, the local table only when permitted, and the
+constructor-indexed body map for per-constructor family rows.
+
+Descriptors are append-only for allowed method extensions. Constructor sets and
+conformance claims are fixed when their declaration commits.
+
+### Runtime type checks, equality, and printing
+
+One central runtime type relation handles exact family identity, invariant
+family arguments, explicit protocol conformance, refined constructor
+membership, primitives, functions, lists, and host interfaces.
+
+Direct sends, reflective invocation, factories, and host crossings use that
+relation rather than maintaining divergent implementations.
+
+Kernel family equality requires the same family identity, resolved type
+arguments, constructor identity, and recursively equal payloads. This extends
+the current product comparison to the full approved model.
+
+The structural printer derives output from family and constructor descriptors:
+
+```text
+#<Point 1 2>
+#<Option.None>
+#<Option.Some 1>
+```
+
+Ad hoc user-family printer cases disappear. Domain presentation remains in
+ordinary `show` methods.
+
+### Reflection implementation
+
+A `Signature` retains an opaque row descriptor rather than depending primarily
+on an integer position in a flattened table. Row indices are fragile when
+constructors, factories, family rows, local rows, and extensions occupy distinct
+surfaces.
+
+Signature authority includes its exact owner, receiver instantiation where
+relevant, row identity, generic description, and semantic role.
+
+`Mirror` constructs its surface according to Decision 8:
+
+- a multi-constructor instance exposes whole-family rows;
+- a one-constructor instance exposes family and sole local rows;
+- a family type object exposes constructors and factories;
+- primitive and host receivers retain their public rows.
+
+`role` and `type-params` derive directly from row descriptors. Reflective
+invocation uses the descriptor and does not perform selector lookup again.
+
+Multi-constructor local rows are filtered when signatures are created, rather
+than exposed and rejected only during later invocation.
+
+### Built-ins remain specialized
+
+This implementation does not require rewriting `Bool`, `List`, primitive
+numbers and strings, `Symbol`, `Mirror`, `Signature`, or host capabilities as
+source-defined families.
+
+They use adapters into common runtime type and reflection relations where
+necessary. A later application may justify a built-in rewrite, but it is not an
+implementation prerequisite or completion criterion here.
+
+### Compatibility boundary
+
+The completed language rejects:
+
+- `define-class`;
+- the positional protocol after a class header;
+- family-level `fields`;
+- implicitly generated `new`;
+- permanent class/family aliases.
+
+All repository Aloe source, examples, fixtures, and tests eventually use
+`define-family`.
+
+#### Temporary migration bridge
+
+During implementation only, a legacy declaration such as:
+
+```aloe
+(define-class (Point T) Math
+  (fields
+    (x T)
+    (y T))
+  (methods
+    ...))
+```
+
+may lower internally to:
+
+```aloe
+(define-family (Point T)
+  (conforms Math)
+  (constructors
+    (new
+      (fields
+        (x T)
+        (y T))))
+  (methods
+    ...))
+```
+
+This keeps the historical suite green during internal replacement and exercises
+one runtime ontology immediately. It is not documented as language syntax and
+has an explicit removal checkpoint. The final suite contains rejection tests
+for `define-class`.
+
+This is development sequencing, not a compatibility promise.
+
+Public Racket driver conveniences remain when inexpensive. Internal structures
+such as `class-info`, `class-value`, `instance-value`, and integer-indexed
+reflection rows do not constrain the redesign. The guarded host-interface API
+remains a real boundary and is adapted rather than bypassed.
+
+### Transactional checking
+
+A source load operates against a staging environment:
+
+1. link declarations and extensions;
+2. check all expressions and bodies;
+3. run final coherence and conformance validation;
+4. commit static descriptors;
+5. evaluate the checked program into the corresponding runtime environment.
+
+A REPL datum follows the same smaller transaction. Static failures do not poison
+a live driver. Runtime failures after evaluation begins retain ordinary current
+behavior; arbitrary host effects are not rolled back.
+
+### Validation applications
+
+The design is not complete after isolated `Option` tests.
+
+| Program | What it validates |
+| --- | --- |
+| `Point` | One-constructor products, fields, construction, equality, printing, and local reflection |
+| Boids | Nested generics, immutable products, lists, numeric messages, and application-scale migration |
+| MPL | Open protocols, additive family methods, overload specificity, return coherence, and `show` |
+| `Option` | Nullary and unary generic constructors, inference, explicit type arguments, and exhaustive case |
+| `Result` | Two independent generic parameters and constraints gathered across alternatives |
+| `Tree` | Direct regular recursion, nested family payloads, recursive methods, and nested elimination |
+| Filesystem model | Domain `Other`, local capabilities, defaults, and closed representation |
+| Gel | Useful reflection while application state moves away from sentinel lists and booleans |
+| Term and host tests | Exact nominal host identity and guarded reflective invocation remain intact |
+
+Gel is especially important because it exercises both halves of the design. Its
+empty-or-singleton `(List GelRow)` pending representation first becomes an
+`Option GelRow`. A subsequent application-specific state family may represent
+idle, pending-pick, pending-integer, and quit states if that materially clarifies
+the code.
+
+That refactor preserves existing key behavior and emitted text byte-for-byte
+unless a separate UI decision is made. Gel continues using `Mirror`, exact
+signatures, `accepts?`, reflective invocation, and raw subject presentation.
+
+### Required negative tests
+
+Declaration tests cover zero or duplicate constructors, reserved selectors,
+constructor/factory and family/local collisions, payload/local collisions,
+duplicate exact overloads, and incomplete per-constructor tables.
+
+Construction tests cover wrong payload arity or type, explicit type-argument
+arity, conflicting evidence, unresolved nullary constructors, and invariant
+family mismatch.
+
+Case tests cover invalid scrutinees, protocol scrutinees, missing, duplicate,
+unknown, and impossible constructors, payload-binder arity, misplaced or
+unreachable `else`, incompatible branches, branch laziness, and single
+scrutinee evaluation.
+
+Refinement tests cover invalid local sends on unrefined, factory-returned,
+protocol-converted, or generically stored values; direct-alias preservation;
+and branch unions and widening.
+
+Protocol tests cover per-constructor conformance attempts, local methods offered
+for requirements, missing or incompatible rows, nonuniform generic conformance,
+and incoherent narrower overload results.
+
+Recursion tests cover wrong self arguments, reordered parameters, nonregular
+recursion, mutual forward recursion, and unresolved external families.
+
+Reflection tests cover hidden multi-constructor locals, constructor and factory
+roles, exact generic ownership, rejection of same-named unrelated owners,
+unforgeable signatures, absence of selector-based invocation, and the fact that
+names and raw strings produce no refinement.
+
+### Safe checkpoint sequence
+
+The repository is complete through Checkpoint 88. The provisional implementation
+sequence is below. A checkpoint may be subdivided if its change becomes hard to
+review, but the dependency order remains.
+
+#### Checkpoint 89: ratify the language design
+
+- Rewrite the approved design into normative `SPEC.md` language.
+- Add the implementation sequence to `CHECKPOINTS.md`.
+- Produce the separate self-contained implementation handoff.
+- Do not change runtime behavior.
+
+This occurs before adding `case`, satisfying the repository rule that special
+forms must first be specified.
+
+#### Checkpoint 90: checked evaluation seam
+
+- Introduce an internal checked or elaborated expression result.
+- Route the driver and source evaluation helpers through it.
+- Preserve current behavior.
+- Remove production dependence on unchecked parsed sends.
+- Test that failed checking prevents evaluation and commit.
+
+#### Checkpoint 91: nominal descriptor nucleus
+
+- Introduce shared family, constructor, protocol, and row descriptors.
+- Represent legacy classes internally as one-constructor `new` families.
+- Preserve legacy syntax through the temporary bridge.
+- Keep the historical suite green.
+
+#### Checkpoint 92: one-constructor `define-family`
+
+- Accept the new product-family grammar.
+- Support uniform methods and explicit `new` constructors.
+- Demonstrate equivalence with `Point`.
+- Retain temporary `define-class` lowering.
+- Reject malformed sections and constructor collisions.
+
+#### Checkpoint 93: multiple representation constructors
+
+- Support multiple named constructors and immutable payloads.
+- Implement opaque constructor identity.
+- Implement constructor-aware equality and raw printing.
+- Begin with a non-generic closed family.
+- Keep multi-constructor local reflection unavailable.
+
+#### Checkpoint 94: explicit type arguments and generic constructors
+
+- Parse send `(type ...)` headers.
+- Carry resolved type arguments in checked sends.
+- Support generic `Some`, `None`, `Ok`, and `Error`.
+- Reject unresolved generic arguments at checking boundaries.
+- Test invariance and branch-order-independent constraints.
+
+#### Checkpoint 95: constructor refinements and local surfaces
+
+- Produce singleton refinements from direct construction.
+- Preserve direct immutable aliases.
+- Add payload accessors and constructor-local methods.
+- Restrict local lookup to singleton knowledge.
+- Implement widening through protocols, storage, and declared results.
+
+#### Checkpoint 96: exhaustive explicit case
+
+- Implement receiver-anchored `case` with explicit clauses.
+- Evaluate the scrutinee once and one branch lazily.
+- Bind payload positions and optional whole values.
+- Diagnose missing, duplicate, unknown, impossible, and wrong-arity cases.
+
+#### Checkpoint 97: defaults and branch joins
+
+- Add final `else` with residual refinement.
+- Reject empty residual defaults.
+- Gather branch constraints symmetrically.
+- Union outer constructor refinements.
+- Keep protocol results explicit.
+
+#### Checkpoint 98: whole-family body modes
+
+- Add `per-constructor` bodies.
+- Enforce complete constructor coverage.
+- Dispatch through the actual constructor while reflecting one family row.
+- Seal selector partitions and row coherence.
+
+#### Checkpoint 99: factories and additive extensions
+
+- Add declaration factories and extension factory sections.
+- Give factory bodies the family type object as `self`.
+- Keep factory results at their declared static type.
+- Stage additions atomically and forbid replacement.
+
+#### Checkpoint 100: multiple protocols and global coherence
+
+- Implement `(conforms P ...)`.
+- Enforce whole-family conformance and signature compatibility.
+- Validate uniform generic conformance.
+- Run global overload ambiguity and return-coherence checks.
+- Revalidate MPL's dynamic concrete overload behavior.
+
+#### Checkpoint 101: direct regular recursion
+
+- Register family and constructor headers before payload resolution.
+- Accept regular self-recursive payloads.
+- Reject nonregular and mutually recursive groups.
+- Validate recursive `Tree` construction, methods, equality, printing, and case.
+
+#### Checkpoint 102: family-aware reflection
+
+- Add signature `role` and `type-params`.
+- Reflect constructors and factories from type objects.
+- Reflect only whole-family rows from multi-constructor instances.
+- Preserve one-constructor local reflection.
+- Replace fragile row indices with exact row descriptors.
+- Re-run Gel and host-reflection tests.
+
+#### Checkpoint 103: repository migration and bridge removal
+
+- Convert all Aloe sources, examples, fixtures, and tests to `define-family`.
+- Move positional protocol claims into `(conforms ...)`.
+- Preserve Point, Boids, MPL, Gel, and Term behavior.
+- Remove the temporary `define-class` bridge.
+- Add rejection tests for legacy syntax.
+- Audit normative documentation for one ontology.
+
+#### Checkpoint 104: canonical `Option` and `Result`
+
+- Add small readable application examples.
+- Exercise contextual and explicit nullary construction.
+- Exercise two-parameter branch inference.
+- Cover exhaustive consumers, defaults, factories, and reflection.
+- Keep them ordinary user families rather than magical built-ins.
+
+#### Checkpoint 105: Gel state validation
+
+- Replace the empty-or-singleton pending list with `Option`.
+- Add an application state family only where it clarifies the Boolean state.
+- Preserve Gel menu, stack, key, reflection, host, and output behavior.
+- Confirm reflection does not expose multi-constructor local rows.
+
+#### Checkpoint 106: filesystem and final seal
+
+- Validate a closed filesystem classification family with explicit `Other`.
+- Exercise local capabilities and exhaustive external consumers.
+- Run the complete regression suite and application runners.
+- Finalize normative documentation and implementation notes.
+- Review implementation size and remove transitional duplication.
+- Leave built-in algebraic rewrites explicitly deferred.
+
+### Checkpoint discipline
+
+Every implementation checkpoint includes its tests, runs the entire suite,
+leaves later syntax clearly rejected, avoids behavior contrary to an approved
+semantic rule, remains independently reviewable, and stops when green.
+
+An intermediate implementation does not infer generic arguments at runtime,
+use constructor names as tags, expose multi-constructor local reflection, accept
+partial case analysis, infer family messages from repeated local selectors, or
+fall back to structural protocol conformance.
+
+When a later feature is unavailable, the implementation rejects it rather than
+approximating it unsafely.
+
+### Completion criteria
+
+The unified nominal algebraic model is complete when:
+
+- `SPEC.md` contains the normative design;
+- `define-family` is the sole user nominal declaration;
+- no public parser accepts `define-class`;
+- products, variants, factories, local and family operations, protocols,
+  generics, case analysis, recursion, equality, printing, and reflection obey
+  Decisions 1 through 9;
+- evaluation receives all checked construction arguments;
+- the migrated historical checkpoint suite is green;
+- Boids, MPL, Gel, Term, `Option`, `Result`, `Tree`, and the filesystem model
+  run;
+- reflection and host boundaries retain exact nominal ownership;
+- no temporary dual class/family runtime remains;
+- built-in rewrites remain optional rather than hidden unfinished work.
+
+### Rejected implementation strategies
+
+The design rejects:
+
+- a flag-day rewrite, because independent regressions would be difficult to
+  isolate;
+- permanent dual class and family runtimes, because they recreate the ontology
+  split internally;
+- lowering constructors to unrelated classes, because it breaks family identity
+  and exhaustiveness;
+- implementing case with names or reflection;
+- runtime reconstruction of generic arguments;
+- continued production evaluation of unannotated programs;
+- migrating Gel before reflection and case behavior stabilize;
+- immediately rewriting `List`, `Bool`, and every primitive;
+- indefinite `define-class` compatibility;
+- adding general subtyping, GADTs, mutual recursion, or a first-class type
+  universe during this implementation;
+- postponing documentation until the end, because `case` and the compatibility
+  boundary must be normative before code.
+
+### Implementation nucleus
+
+The implementation introduces one linked nominal descriptor model, makes type
+checking produce every runtime decision evaluation requires, and migrates the
+repository through a temporary legacy parser bridge that is removed before
+completion.
+
+The dependency order is:
+
+```text
+specification
+  -> checked elaboration
+  -> one-constructor family core
+  -> multiple constructors
+  -> generics and refinements
+  -> exhaustive case
+  -> family behavior and factories
+  -> protocols and recursion
+  -> reflection
+  -> repository migration
+  -> application validation
+  -> final seal
+```
+
+This is the implementation boundary, not authorization to begin it.
+
 ## Cross-decision guardrails
 
 The approved direction so far preserves these constraints:
@@ -2150,13 +2932,20 @@ The approved direction so far preserves these constraints:
   expression form introduced by this design.
 - Source annotations contain nominal family types but never constructor-set
   refinements or constructor types.
+- Type checking elaborates source into a globally validated checked program;
+  production evaluation does not reconstruct missing static decisions.
+- A temporary legacy parser bridge may support migration, but the completed
+  language and runtime contain no parallel class ontology.
+- Each implementation checkpoint includes tests, runs the full suite, and
+  rejects unavailable later features rather than approximating them unsafely.
 - Runtime closure representation remains unobservable.
 - Built-ins need not be rewritten immediately to validate the user-facing
   semantic model.
 - Source compatibility with the current prototype is not a design constraint.
 
-## Questions reserved for the remaining decisions
+## Next boundary
 
-Decision 10 must state the checker and evaluator consequences, compatibility
-boundary, validation applications, and safe checkpoint sequence. It is the
-earliest point at which an implementation plan should be proposed.
+The ten semantic and implementation-boundary decisions are provisionally
+approved. The next artifact is a separate, self-contained implementation
+handoff. Normative specification changes and implementation begin only after
+explicit direction outside this design record.
