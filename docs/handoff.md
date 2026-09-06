@@ -1,84 +1,111 @@
 # Aloe handoff
 
 Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
-`AGENTS.md`, `CHECKPOINTS.md`, this file. Spec is law. Decisions are
-rejected ideas. Do not replay rejected designs.
+`AGENTS.md`, `CHECKPOINTS.md`, this file. If the work touches Gel, also read
+`docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
+do not replay rejected designs.
 
 ## What Aloe is
 
-S-expression language. A list is a **send**, not Scheme apply:
+Aloe is an s-expression language implemented by a definitional interpreter and
+type checker in Racket. A list is a **send**, not Scheme apply:
 
-    (receiver selector arg ...)
+    (receiver selector argument ...)
 
-Selector is a source symbol and is not evaluated. Functions are objects
-that understand `call`. Types are static; infer where the user did not
-write them.
+The selector is a source symbol and is not evaluated. Functions are objects
+that understand `call`. Types are static and inferred where the programmer did
+not write them.
 
-Slogan / equation: Scheme + Smalltalk + Types. Grow the kernel only when
-an application forces it. Convenience that adds a second meaning of a
-list, or a second lookup rule, loses.
+Slogan: `Scheme + Smalltalk + Types`.
 
-## Current state (0.2 on main)
+Keep the kernel small. Grow the language from applications, and add host access
+only through explicit typed capabilities.
 
-- Interpreter + type checker in Racket. No compiler, no macros.
-- `define-class`, `fn`/`call`, `let`, `if`/`cond`, `load`.
-- Generics, `define-methods`, `List` library in `lib/list.aloe`.
-- `String` primitive.
-- Boids in `examples/boids.aloe` + `examples/point.aloe`.
-- Protocols with required methods and C#-style method overloads.
-- Cohen-style CAS fragment in `examples/mpl/`, with `Math` implemented by
-  `Sym`, `Num`, `Sum`, `Prod`, and `Pow`; primitive `Int` is not `Math`.
-- Like-term addition, product merging, power merging, and identity unwrapping:
-  `x+0`, `x*0`, `x*1`, `x^0`, `x^1`, and a zero combined coefficient becomes
-  `Num 0`.
-- `Math.show` and default display through `show`; REPL `:raw` retains the
-  structural `#<…>` printer.
-- Tests through checkpoint 51 are green on `main`.
-- Tag: `v0.1.0-boids` records the older 0.1 milestone.
+## Current state (main through checkpoint 88)
+
+- Interpreter and type checker in Racket; no compiler or macros.
+- `define-class`, `define-methods`, `fn`/`call`, `let`, `if`/`cond`, `load`,
+  and `check`.
+- Generics, homogeneous `List`, protocols with required methods, and
+  C#-style method overloading. Exact argument types beat protocol matches.
+- Primitive `Int`, `Float`, `Bool`, `String`, and interned `Symbol` values.
+- Boids in `examples/boids.aloe` and `examples/point.aloe`.
+- Cohen-style symbolic algebra in `examples/mpl/`, including `Math`, `Sym`,
+  `Num`, `Sum`, `Prod`, and `Pow`.
+- `Mirror` and `Signature` provide nominally owned reflection and exact-row
+  invocation without adding `perform` to ordinary objects.
+- Gel is an Aloe-written keystroke object environment with an immutable
+  `(List Mirror)` stack, reflected menus, typed one-argument pending sends,
+  integer entry, and a thin Racket terminal runner.
+- Typed host capabilities use descriptor-defined interfaces shared by runtime
+  dispatch, static checking, driver injection, and reflection.
+- Checkpoints through 88 are present. The full suite passed after checkpoint
+  88. Tag `v0.1.0-boids` records the earlier 0.1 milestone.
+
+## Typed host boundary
+
+A host capability is a Racket-created receiver explicitly injected into a
+driver with `driver-inject-host!`. One opaque nominal `host-interface`
+descriptor owns ordered, uniquely selected `host-method` declarations. Each
+declaration supplies its selector, fixed parameter types, return type, and
+Racket implementation.
+
+The current crossing vocabulary is deliberately limited to `Int`, `Bool`, and
+`String`. Arguments and results are validated; strings are normalized to
+immutable values. Host failures retain their Racket cause under consistent
+Aloe context, and breaks pass through.
+
+The same exact interface identity drives the checker, evaluator, and reflected
+signature ownership. Interface names appear in diagnostics but cannot be
+written as Aloe type annotations. Default environments contain no optional
+capability. Term is the first production capability and is injected only by
+the optional checked terminal runners.
+
+Do not add handwritten checker facades, capability-specific evaluator paths,
+ambient host bindings, or arbitrary Racket calls. If an application cannot be
+expressed through the current boundary, specify the blocked golden first and
+make any generic boundary extension a separate reviewed checkpoint before the
+application feature that consumes it.
 
 ## How to work
 
-- Small checkpoints. `raco test` green before the next feature.
-- Do not one-shot MPL or the checker.
+- Work one small checkpoint at a time.
+- Add tests in the same change and run the full suite before finishing an arc.
+- Run one required expression or interaction by hand when the checkpoint calls
+  for it.
 - Do not weaken the type checker to make a golden pass.
-- Do not patch `Int.+` for algebra. CAS lives on `Sym` / `Sum` / `Prod` / `Num`.
-- Convention: math object first (`x + 2`). `(2 + x)` is still machine `Int`.
-- `Math` is a **supertype**. Do not erase the class type of a send you
-  will send to again. `(x + 2)` stays `(Sum Sym Int)`, which is also `Math`.
-- Protocols are types, not method tables. Lookup stays on the class
-  (now: class + selector + argument types).
-- Overloading is C# (receiver class, then argument types), not Julia/CLOS.
-- Most specific wins (exact class beats protocol). Tie → ambiguity error.
-- No implicit `Int` → `Math` lift.
-- `define-methods` after both classes exist (no forward declarations).
+- Do not add a second meaning for a list or a second dispatch rule.
+- Protocols are types, not method tables. Runtime lookup remains on the class.
+- Preserve exact `Int`/`Float` separation and explicit `(n float)` conversion.
+- Keep host facts and effects in Racket; keep domain objects, policy, and
+  composition in Aloe.
+- Keep Gel application code out of reusable domain vocabularies.
 
-## Driving application for 0.2
+## Current application pressures
 
-MPL: Cohen-style automatic simplification.
-Scheme: `github.com/dharmatech/mpl`
-C# objects: `github.com/dharmatech/Symbolism`
-Lean closed ADT: `github.com/dharmatech/symbolism.lean`
+Boids originally drove the core object and collection model. MPL drove
+protocols, overloading, strings, symbols, and richer display. Gel drove
+reflection, exact signature invocation, terminal input, and the typed host
+boundary.
 
-The current port is deliberately a fragment, written as idiomatic Aloe methods
-rather than Wright `match`. Keep MPL in `examples/mpl/`; do not put it in
-`lib/` until a second application wants it.
+A filesystem vocabulary is a candidate next application. Its types,
+selectors, path representation, enumeration boundary, error policy, and Gel
+presentation remain deliberately undecided. In particular, directory
+enumeration must supply concrete pressure before admitting compound crossing
+values or opaque host handles.
 
-## Open / deferred
+Other open directions include broader Gel object interaction, authored Gel
+surfaces, stack navigation, multi-argument builders, processes, repository
+work, structured presentations, and alternate terminal renderers. None is an
+instruction to implement ahead of an approved checkpoint.
 
-- N-ary `+`.
-- `show-math`.
-- Macros.
-- `#lang aloe`.
-- Graphics / FFI.
+## Designer and implementer roles
 
-The implemented identities and algebra rules above are current behavior, not a
-plan. Add further algebra only as a separately approved checkpoint.
+If you are the designer: inspect the current implementation, identify a
+concrete application pressure, propose or amend governing documentation, and
+write a small checkpoint specification. Wait for human approval before
+implementation.
 
-## Designer vs implementer
-
-If you are the designer: propose spec text and a checkpoint prompt;
-wait for human approval; review the diff against this file.
-
-If you are the implementer: implement only the approved checkpoint;
-stop when `raco test` is green; do not add features from this file
-that the prompt did not ask for.
+If you are the implementer: implement only the approved checkpoint, add its
+tests, run the required verification, and stop when green. Do not silently add
+adjacent features or continue into the next checkpoint.
