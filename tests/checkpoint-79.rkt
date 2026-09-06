@@ -48,9 +48,8 @@ ALOE
     (point-rows-79 first)
     (fn (found row)
       (if (((row selector) name) = "+") row found))))
-(gel-matching-picks call
-  (gel-empty-stack push (Point new 1 2))
-  point-plus-row-79)
+((gel-empty-stack push (Point new 1 2))
+ matching-picks point-plus-row-79)
 ALOE
    checker-environment))
  'GelPicks)
@@ -115,7 +114,7 @@ ALOE
 (define matching-stack-79
   (((gel-empty-stack push (Point new 1 2)) push 99) push point-79))
 (define matching-picks-79
-  (gel-matching-picks call matching-stack-79 point-plus-row-79))
+  (matching-stack-79 matching-picks point-plus-row-79))
 ALOE
   environment))
 (check-equal? (eval-source "(matching-picks-79 len)" environment) 2)

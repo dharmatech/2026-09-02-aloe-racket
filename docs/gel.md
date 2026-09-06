@@ -139,18 +139,18 @@ and constructs one immutable `GelKey`; its `menu-index`, `digit-value`,
 Selecting an arity-one row stores it as an empty-or-singleton `(List GelRow)`
 in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
 mirrors accepted by `(row accepts? candidate)`, in stack order, and the next
-digit invokes with that mirror's subject. Matching results cross the pending
-boundary as an immutable `GelPicks`; it wraps the ordered `(List GelPick)` and
-owns its `len` and valid one-based `select`. `GelRow.expected-text` presents
-the first parameter type, and `int-hole?` identifies the exact `Int` case. A
-mismatching or missing pick is a no-op that stays pending. While pending, `q`
-cancels the row and returns to the ordinary Gel menu rather than quitting. An
-exact `Int` hole temporarily pauses those stack-pick digits: `"0"` through
-`"9"` accumulate an integer with `acc * 10 + digit`, and `"return"` invokes
-only after at least one digit. The pending line shows the accumulator.
-Canceling drops it. Non-Int holes keep the typed stack-pick behavior. A TTY
-only supplies the key-shaped `String`; terminal handling remains a host skin
-around this pure step.
+digit invokes with that mirror's subject. `(stack matching-picks row)` filters
+the stack's mirrors and returns an immutable `GelPicks`; it wraps the ordered
+`(List GelPick)` and owns its `len` and valid one-based `select`.
+`GelRow.expected-text` presents the first parameter type, and `int-hole?`
+identifies the exact `Int` case. A mismatching or missing pick is a no-op that
+stays pending. While pending, `q` cancels the row and returns to the ordinary
+Gel menu rather than quitting. An exact `Int` hole temporarily pauses those
+stack-pick digits: `"0"` through `"9"` accumulate an integer with
+`acc * 10 + digit`, and `"return"` invokes only after at least one digit. The
+pending line shows the accumulator. Canceling drops it. Non-Int holes keep the
+typed stack-pick behavior. A TTY only supplies the key-shaped `String`;
+terminal handling remains a host skin around this pure step.
 
 Menu text is also Aloe application code: `(gel-menu-text call value)` emits
 one indexed selector/arity line per reflected row. From the project directory,

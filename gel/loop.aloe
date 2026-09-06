@@ -81,15 +81,13 @@
               candidate
               found))))))
 
-(define-class GelMatchingPicks
-  (fields)
+(define-methods GelStack
   (methods
-    (call
-      (stack GelStack)
+    (matching-picks
       (row GelRow)
       GelPicks
       (GelPicks new
-        (((stack items) fold
+        (((self items) fold
             (List empty)
             (fn (picks candidate)
               (if (row accepts? candidate)
@@ -99,8 +97,6 @@
                       candidate))
                   picks)))
           reverse)))))
-
-(define gel-matching-picks (GelMatchingPicks new))
 
 (define-class GelMenuText
   (fields)
@@ -134,7 +130,7 @@
         (let ((selector-text ((row selector) name))
               (expected-text (row expected-text))
               (picks
-               (gel-matching-picks call (state stack) row)))
+               ((state stack) matching-picks row)))
           (if (row int-hole?)
               (let ((digits
                      (if (state has-digits)
@@ -237,9 +233,7 @@
         (if (index = 0)
             self
             (let ((picks
-                   (gel-matching-picks call
-                     (self stack)
-                     row)))
+                   ((self stack) matching-picks row)))
               (if (index > (picks len))
                   self
                   (let ((pick

@@ -219,3 +219,9 @@ success, and reports both source datums and displayed values on failure.
 - `GelPicks` wraps the ordered `(List GelPick)` and owns `len` and valid-index
   `select`; matching and menu boundaries use it, and the separate pick
   selector callable is removed.
+
+## 80. `GelStack.matching-picks`
+
+- `GelStack.matching-picks` filters its mirror items through a `GelRow` and
+  returns compactly indexed `GelPicks`; the stateless matching callable is
+  removed.
