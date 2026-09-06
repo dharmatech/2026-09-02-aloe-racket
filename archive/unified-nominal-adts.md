@@ -3,7 +3,7 @@
 Status: **provisional and non-normative**
 
 This working note records the design direction approved in conversation through
-Decision 8. It is a working memory aid, not an amendment to `SPEC.md`, an
+Decision 9. It is a working memory aid, not an amendment to `SPEC.md`, an
 implementation plan, or authorization to change the language. The design can
 still be revised as the remaining decisions are made and as applications expose
 its strengths and weaknesses.
@@ -39,10 +39,10 @@ Approved as a provisional direction:
 6. Open protocols and closed data
 7. Runtime behavior
 8. Reflection
+9. Concrete syntax
 
 Still to decide:
 
-9. Concrete syntax
 10. Static and implementation consequences
 
 No exact implementation checkpoints should be planned until the semantic
@@ -267,7 +267,7 @@ Aloe should have one receiver-shaped exhaustive case form, schematically:
   ...clauses...)
 ```
 
-The spelling and complete grammar remain for Decision 9.
+The spelling and complete grammar are specified in Decision 9.
 
 This is a genuine special form because:
 
@@ -757,9 +757,9 @@ Its information content would resemble:
 #<Option.None>
 ```
 
-The exact punctuation belongs to Decision 9. For a one-constructor family, the
-renderer may omit the redundant constructor label, preserving the familiar
-product-like appearance. For a multi-constructor family, it must show the
+The exact punctuation is specified in Decision 9. For a one-constructor family,
+the renderer omits the redundant constructor label, preserving the familiar
+product-like appearance. For a multi-constructor family, it shows the
 constructor.
 
 For generic values whose payload does not reveal their instantiation, detailed
@@ -877,8 +877,8 @@ instantiation containing one opaque constructor and its payload. Nominal
 identities govern runtime type checks; structure governs kernel equality; names
 govern source presentation and diagnostics.
 
-The precise reflection surface is specified in Decision 8. The exact printed
-spelling remains for Decision 9.
+The precise reflection surface is specified in Decision 8. Its exact printed
+spelling is specified in Decision 9.
 
 ## Decision 8: reflection
 
@@ -1000,8 +1000,8 @@ A signature also reports its declared row-level generic parameters as
 presentation symbols. Existing parameter and return descriptions continue to
 use reified `Symbol` and `List` type grammar.
 
-The exact selectors for the additional metadata queries remain part of the
-concrete vocabulary in Decision 9. Semantically, tooling can obtain:
+Decision 9 names the additional metadata queries `role` and `type-params`.
+Semantically, tooling can obtain:
 
 ```text
 selector
@@ -1260,6 +1260,865 @@ object. It may not tell a program which constructor an arbitrary
 multi-constructor instance currently contains or extract that instance's
 representation.
 
+## Decision 9: concrete syntax
+
+### One nominal declaration form
+
+`define-family` is the single nominal data declaration. Products and variants
+differ only in the number of explicitly declared constructors.
+
+Construction remains an ordinary send:
+
+```aloe
+(Point new 1 2)
+(Option Some 1)
+(Option None (type Int))
+```
+
+The only new expression form is the receiver-anchored exhaustive `case`.
+
+### Family declaration grammar
+
+The declaration shape is:
+
+```text
+FamilyDeclaration ::=
+  (define-family FamilyHeader
+    ConformanceSection?
+    ConstructorSection
+    FactorySection?
+    FamilyMethodSection?)
+
+FamilyHeader ::=
+    Name
+  | (Name TypeVariable ...)
+
+ConformanceSection ::=
+  (conforms ProtocolName ...)
+
+ConstructorSection ::=
+  (constructors Constructor ...)
+
+Constructor ::=
+  (ConstructorSelector
+    (fields Field ...)
+    LocalMethodSection?)
+
+Field ::=
+  (name Type)
+
+FactorySection ::=
+  (factories Method ...)
+
+FamilyMethodSection ::=
+  (methods FamilyMethod ...)
+
+LocalMethodSection ::=
+  (methods Method ...)
+```
+
+Sections have a fixed order:
+
+1. optional `conforms`;
+2. required `constructors`;
+3. optional `factories`;
+4. optional whole-family `methods`.
+
+Every family has at least one constructor. Empty optional sections are normally
+omitted. Each constructor always has an explicit `fields` section, including a
+zero-payload constructor.
+
+This keeps the representation visually explicit without requiring a second
+`class` construct.
+
+### One-constructor product example
+
+The current generic `Point` becomes:
+
+```aloe
+(define-family (Point T)
+  (constructors
+    (new
+      (fields
+        (x T)
+        (y T))))
+  (methods
+    (+ (other (Point T)) (Point T)
+      (Point new
+        ((self x) + (other x))
+        ((self y) + (other y))))
+
+    (dot (other (Point T)) T
+      (((self x) * (other x)) +
+       ((self y) * (other y))))))
+```
+
+Construction remains:
+
+```aloe
+(Point new 10 20)
+```
+
+There is no automatically generated `new`. It is an explicitly declared
+representation constructor named `new`. The same declaration form works for
+every nominal family.
+
+### Multi-constructor family example
+
+`Option` is:
+
+```aloe
+(define-family (Option T)
+  (constructors
+    (None
+      (fields))
+    (Some
+      (fields
+        (value T))))
+  (methods
+    (present? () Bool
+      (per-constructor
+        (None #f)
+        (Some #t)))))
+```
+
+Its construction sends are:
+
+```aloe
+(Option Some 10)
+(Option None (type Int))
+```
+
+Constructor selectors are ordinary selector symbols. Capitalization is
+conventional rather than enforced, so `None`, `Some`, and `Branch` coexist with
+a product constructor named `new`.
+
+Constructors are not environment bindings. Writing `Some` as an expression does
+not produce a constructor value. A first-class constructor-like function is
+explicit:
+
+```aloe
+(fn (value) (Option Some value))
+```
+
+### Constructor declarations
+
+A constructor declaration contains its selector, one required `fields` section,
+and an optional local `methods` section. It has no body or explicit result type.
+Its result is its owning family instantiated with the family parameters.
+
+For example:
+
+```aloe
+(define-family (Tree T)
+  (constructors
+    (Leaf
+      (fields
+        (value T)))
+    (Branch
+      (fields
+        (left (Tree T))
+        (right (Tree T))))))
+```
+
+Construction is:
+
+```aloe
+(Tree Leaf 10)
+(Tree Branch left-tree right-tree)
+```
+
+Constructor-specific type parameters, existential fields, GADT result
+equations, and explicit constructor result annotations are absent. Payload
+declarations use family parameters under Decision 5's regular-recursion rules.
+
+Constructor selectors are unique and cannot be overloaded. A constructor
+selector is reserved throughout its owning family from factories, family
+messages, local messages, and additive extensions. Although the type-object and
+instance surfaces are operationally distinct, this reservation keeps every
+constructor label unambiguous in sends, reflection, and case clauses.
+
+### Payload fields and local methods
+
+Each payload field generates a zero-argument local accessor, as current class
+fields do. A constructor may also declare local methods:
+
+```aloe
+(define-family Entry
+  (constructors
+    (Directory
+      (fields
+        (path String))
+      (methods
+        (child-path (name String) String
+          (((self path) append "/") append name))))
+
+    (Regular
+      (fields
+        (path String)
+        (size Int))
+      (methods
+        (empty? () Bool
+          ((self size) = 0))))
+
+    (Other
+      (fields
+        (path String)))))
+```
+
+Inside a local method, `self` is singleton-refined to the owning constructor.
+
+Payload and local selectors:
+
+- are unique within a constructor except for valid local overloads;
+- may repeat on other constructors;
+- do not become whole-family messages through repetition;
+- cannot collide with a whole-family selector.
+
+There is initially no visibility syntax because all representation constructors
+are public.
+
+### Factories
+
+Factories are declared on the family type object:
+
+```aloe
+(define-family (Option T)
+  (constructors
+    (None
+      (fields))
+    (Some
+      (fields
+        (value T))))
+  (factories
+    (when (condition Bool) (value T) (Option T)
+      (if condition
+          (self Some value)
+          (self None)))))
+```
+
+Within a factory body, `self` is the family's type object. It can send
+constructor and other factory messages normally.
+
+Factories use the existing method grammar, have explicit return types, and may
+overload one another. Their selectors cannot collide with representation
+constructors.
+
+A factory call is an ordinary send:
+
+```aloe
+(Option when ready? value)
+```
+
+No surface punctuation distinguishes a factory from construction. Reflection's
+signature role describes the selected type-object row.
+
+### Method syntax
+
+The existing method-row syntax remains:
+
+```text
+(selector (parameter Type) ... ReturnType body)
+
+(selector () ReturnType body)
+
+(selector
+  (type U ...)
+  (parameter Type) ...
+  ReturnType
+  body)
+```
+
+For example:
+
+```aloe
+(map
+  (type U)
+  (f (-> T U))
+  (Option U)
+  body)
+```
+
+Protocol signatures retain the same shape without a body:
+
+```aloe
+(define-protocol Show
+  (show () String))
+```
+
+Protocols themselves remain non-generic initially.
+
+### Whole-family implementation modes
+
+A whole-family method has either an ordinary uniform body or a declaration-only
+`per-constructor` body table.
+
+An ordinary uniform body is written exactly like an existing method:
+
+```aloe
+(methods
+  (keep (fallback T) T
+    fallback))
+```
+
+Here, `self` is unrefined unless the family has one constructor. A uniform body
+may explicitly eliminate `self` with an ordinary case expression.
+
+A per-constructor table is:
+
+```aloe
+(methods
+  (present? () Bool
+    (per-constructor
+      (None #f)
+      (Some #t)))
+
+  (show () String
+    (per-constructor
+      (None "none")
+      (Some ((self value) text)))))
+```
+
+`per-constructor` is recognized only as the body mode of a whole-family method
+declaration. It is not a general expression.
+
+Each branch contains:
+
+```text
+(ConstructorSelector body)
+```
+
+There are no binders because ordinary method parameters are already in scope,
+`self` is singleton-refined in each body, and payload values are available
+through that constructor's local accessors.
+
+The table contains every constructor exactly once and has no `else`. Branch
+order is semantically irrelevant, although declaration order is the canonical
+style.
+
+Local methods and factories always have ordinary bodies. They cannot use this
+declaration mode.
+
+### Exhaustive case grammar
+
+The expression grammar is:
+
+```text
+CaseExpression ::=
+  (scrutinee case CaseClause ... DefaultClause?)
+
+CaseClause ::=
+    (ConstructorSelector (payload-name ...) body)
+  | (ConstructorSelector whole-name (payload-name ...) body)
+
+DefaultClause ::=
+    (else body)
+  | (else whole-name body)
+```
+
+The form contains at least one explicit or default clause.
+
+A basic `Option` elimination is:
+
+```aloe
+(option case
+  (None () fallback)
+  (Some (value) value))
+```
+
+A clause with an optional refined whole-value binder is:
+
+```aloe
+(option case
+  (None () fallback)
+  (Some some (value)
+    (some value)))
+```
+
+Within the `Some` branch, `some` has `Option T` refined to `Some`, while `value`
+has type `T`.
+
+A zero-payload constructor still has an explicit empty payload-binder list:
+
+```aloe
+(None () body)
+```
+
+If its refined whole value is needed:
+
+```aloe
+(None none () body)
+```
+
+This makes payload arity visible even for nullary constructors.
+
+### Default clause syntax
+
+A final default uses `else`, matching `cond`:
+
+```aloe
+(value case
+  (Known (payload) known-body)
+  (else other fallback-body))
+```
+
+Without a whole-value binding:
+
+```aloe
+(value case
+  (Known (payload) known-body)
+  (else fallback-body))
+```
+
+The default clause:
+
+- is final;
+- is legal only when it covers at least one possible constructor;
+- has no payload binders;
+- may bind the entire residual-refined value;
+- explicitly opts out of future missing-constructor diagnostics.
+
+A representation constructor named `Other` remains an ordinary explicit case:
+
+```aloe
+(entry case
+  (Directory (path) ...)
+  (Regular (path size) ...)
+  (Other (path) ...))
+```
+
+It is unrelated to `else`.
+
+### Case form properties
+
+Constructor labels in clauses are unqualified because the scrutinee's nominal
+family supplies their namespace:
+
+```aloe
+(option case
+  (Some (value) ...)
+  (None () ...))
+```
+
+There is no `Option.Some` expression or global `Some` binding.
+
+Clauses may be written in any order; declaration order is preferred. Missing-
+case diagnostics report constructors in declaration order.
+
+Each branch has exactly one expression. Nested elimination uses another
+receiver-anchored case:
+
+```aloe
+(outer case
+  (Some (inner)
+    (inner case
+      (None () ...)
+      (Some (value) ...)))
+  (None () ...))
+```
+
+There are initially no guards, nested patterns, alternatives, fallthrough, or
+wildcard payload patterns. An unwanted payload receives an ordinary lexical
+name.
+
+### Reserved case markers
+
+`case` is a reserved second-position marker:
+
+```aloe
+(receiver case ...)
+```
+
+Such a list is always an exhaustive case form, never an ordinary send. No
+message or constructor can therefore use `case` as its selector.
+
+`else` is reserved only as the head of a `case` or `cond` clause and cannot be a
+representation-constructor selector.
+
+`per-constructor` is reserved only in the body-mode position of a whole-family
+method declaration.
+
+Other section words such as `constructors`, `fields`, `factories`, `conforms`,
+and `methods` are special only in their declaration positions. They do not
+become globally reserved message selectors.
+
+### Explicit static type arguments
+
+A send may contain one optional type-argument header immediately after its
+selector:
+
+```text
+(receiver selector (type Type ...) argument ...)
+```
+
+The header is static syntax. Its contents are type expressions and are not
+evaluated as argument expressions.
+
+Examples:
+
+```aloe
+(Option None (type Int))
+(Option Some (type Math) x)
+(Result Error (type Int String) "failed")
+(Point new (type Float) 0.0 1.0)
+```
+
+Omitting the header requests inference:
+
+```aloe
+(Option Some 10)
+(Point new 0.0 1.0)
+```
+
+The first item remains the receiver, the second remains the literal selector,
+and runtime arguments follow. The `type` list is static metadata inside the
+send.
+
+For a send to a family type object, explicit arguments correspond in order to
+the family declaration parameters followed by any row-local factory type
+parameters. For an instance send, family arguments are fixed by the receiver,
+so the header supplies only row-local method parameters.
+
+When present, the header supplies every applicable type parameter. There is no
+partial `_` syntax. A program either provides the complete ordered list or omits
+the header and uses inference.
+
+The header works consistently for constructors, factories, and polymorphic
+methods. Overload candidates whose generic arity does not match are
+inapplicable.
+
+A `(type ...)` form immediately after a selector is therefore reserved as
+static send metadata and cannot simultaneously be a runtime first argument.
+
+### Source type grammar
+
+The existing nominal type grammar remains:
+
+```aloe
+Point
+(Point Float)
+(Option Int)
+(Result Int String)
+(Tree Math)
+(List (Option Int))
+```
+
+A constructor name never appears as a type. Forms such as `Some Int` and
+`(Option.Some Int)` are not types.
+
+Constructor-set refinements remain internal checker knowledge. There is no
+source annotation for a singleton or constructor set.
+
+Expected types continue to come from method and function parameter annotations,
+declared results, protocol positions, and enclosing expression constraints. The
+explicit send type header handles context-free constructions such as `None`
+without introducing a general cast or ascription expression.
+
+### Additive extension syntax
+
+`define-methods` remains the extension form used by MPL. It gains an optional
+`factories` section while retaining the existing `methods` section:
+
+```text
+(define-methods FamilyName
+  FactorySection?
+  FamilyMethodSection?)
+```
+
+At least one section is present, in factories-then-methods order.
+
+An existing-style family extension remains recognizable:
+
+```aloe
+(define-methods Sym
+  (methods
+    (+ (other Math) Math
+      body)))
+```
+
+A type-object extension is:
+
+```aloe
+(define-methods Point
+  (factories
+    (diagonal (value T) (Point T)
+      (self new value value))))
+```
+
+One form may add both sections.
+
+The target family's generic parameters are in scope, as `T` is for the current
+`define-methods List`.
+
+Extensions may add factories, uniform whole-family methods, and compatible
+overload rows. They may not add constructors, fields, local methods,
+`per-constructor` body tables, conformance claims, or replacement rows.
+
+An external family method requiring constructor knowledge uses an ordinary
+exhaustive case expression on `self`.
+
+### Protocol conformance syntax
+
+The current positional protocol after a class name is replaced by an explicit
+optional section that supports multiple protocols:
+
+```aloe
+(define-family Sym
+  (conforms Math Show)
+  (constructors
+    (new
+      (fields
+        (name String))))
+  (methods
+    ...))
+```
+
+An absent `conforms` section means no protocols. An empty section is rejected
+rather than retained as noise.
+
+Conformance remains declaration-owned. There is no external
+`define-conformance` form. Methods required by a declared conformance may still
+be supplied by additive `define-methods` forms before whole-program conformance
+validation.
+
+### Reflection selector spellings
+
+Decision 8's additional `Signature` selectors are:
+
+```aloe
+(signature role)
+(signature type-params)
+```
+
+Their result types are:
+
+```text
+role        : Symbol
+type-params : (List Symbol)
+```
+
+`role` returns an interned symbol whose name is one of:
+
+```text
+constructor
+factory
+family
+local
+operation
+```
+
+The existing reflection vocabulary remains:
+
+```aloe
+(signature selector)
+(signature params)
+(signature return)
+(signature accepts? candidate-mirror)
+
+(mirror messages)
+(mirror signatures)
+(mirror invoke signature argument ...)
+(mirror subject)
+(mirror raw)
+```
+
+There is no `mirror constructor`, `mirror payload`, `mirror type`, or general
+dynamic cast syntax. The exhaustive case form is syntax and never appears in
+reflected messages.
+
+### Raw rendering syntax
+
+The concise raw spelling is:
+
+```text
+#<Point 1 2>
+#<Option.None>
+#<Option.Some 1>
+#<Tree.Branch #<Tree.Leaf 1> #<Tree.Leaf 2>>
+```
+
+A one-constructor family prints its family label and payloads, omitting the
+redundant constructor label. A multi-constructor family prints
+`Family.Constructor`. Payloads follow declaration order, and a zero-payload
+constructor ends after its qualified label.
+
+Names remain presentation labels. Raw output is not parseable source or a
+serialization format. Normal display may use `show`; `:raw` and `(mirror raw)`
+use this structural form.
+
+When exact generic instantiation matters, type-aware diagnostics display it
+separately with ordinary type grammar:
+
+```text
+value: #<Option.None>
+type:  (Option Int)
+```
+
+This keeps ordinary values readable while allowing runtime type mismatches to
+distinguish otherwise identical parameterless constructions.
+
+### Complete `Result` example
+
+```aloe
+(define-family (Result T E)
+  (constructors
+    (Ok
+      (fields
+        (value T)))
+    (Error
+      (fields
+        (error E))))
+  (methods
+    (successful? () Bool
+      (per-constructor
+        (Ok #t)
+        (Error #f)))))
+```
+
+Construction:
+
+```aloe
+(Result Ok 10)
+(Result Error (type Int String) "not found")
+```
+
+Elimination:
+
+```aloe
+;; result : (Result String String)
+(result case
+  (Ok (value)
+    value)
+  (Error failed (message)
+    ("error: " append (failed error))))
+```
+
+### Complete recursive `Tree` example
+
+```aloe
+(define-family (Tree T)
+  (constructors
+    (Leaf
+      (fields
+        (value T)))
+    (Branch
+      (fields
+        (left (Tree T))
+        (right (Tree T)))))
+  (methods
+    (size () Int
+      (per-constructor
+        (Leaf 1)
+        (Branch
+          (((self left) size) + ((self right) size)))))))
+```
+
+External elimination:
+
+```aloe
+(tree case
+  (Leaf (value)
+    value)
+  (Branch node (left right)
+    ((left size) + (right size))))
+```
+
+### Source-language transition
+
+The unified language removes `define-class` rather than retaining it as a
+permanent alias.
+
+A current class:
+
+```aloe
+(define-class (Point T)
+  (fields
+    (x T)
+    (y T))
+  (methods
+    ...))
+```
+
+becomes:
+
+```aloe
+(define-family (Point T)
+  (constructors
+    (new
+      (fields
+        (x T)
+        (y T))))
+  (methods
+    ...))
+```
+
+Existing construction remains `(Point new ...)` because `new` is now the
+explicit sole constructor. Positional protocol syntax moves to `(conforms ...)`,
+while existing `define-methods` extensions largely retain their shape.
+
+Keeping both `define-class` and `define-family` in the normative language would
+preserve two apparent ontologies after choosing one. A temporary migration tool
+or implementation compatibility window can be considered in Decision 10, but
+it is not part of the language semantics.
+
+### Rejected syntax alternatives
+
+The design rejects:
+
+- separate `define-class` and `define-variant` forms, because they preserve the
+  ontology split;
+- constructor application such as `(Some value)`, because it violates
+  receiver-first send semantics;
+- globally bound constructor functions, because they introduce a second
+  construction mechanism and name collisions;
+- implicitly generated `new`, because it hides the one-constructor family's
+  representation constructor;
+- top-level `match value` syntax, because it loses the receiver-first shape;
+- qualified case labels such as `Option.Some`, because the scrutinee already
+  anchors the family;
+- handlers or visitors as the primary eliminator, because they add ceremony and
+  weaken missing-case diagnostics;
+- a full nested-pattern grammar before applications require it;
+- constructor-specific result annotations, because they imply GADT machinery;
+- a permanent `define-class` compatibility alias, because it leaves two mental
+  models in the language;
+- a positional conformance list after the family header, because it becomes
+  ambiguous as protocols multiply;
+- a general cast or type-ascription form solely for parameterless constructors,
+  because the send type header solves the local problem;
+- a separate factory-extension construct, because a labeled section on
+  `define-methods` is smaller;
+- reflective instance constructor tags, because they contradict Decision 8.
+
+### Syntax nucleus
+
+```aloe
+(define-family (Option T)
+  (constructors
+    (None
+      (fields))
+    (Some
+      (fields
+        (value T))))
+  (methods
+    (present? () Bool
+      (per-constructor
+        (None #f)
+        (Some #t)))))
+
+(define maybe
+  (Option None (type Int)))
+
+(maybe case
+  (None () 0)
+  (Some (value) value))
+```
+
+Definitions remain explicit s-expressions, construction remains a send,
+selectors remain literal, type syntax remains in annotation positions, methods
+remain receiver-owned, exhaustive elimination remains receiver-anchored, and
+one or many constructors use one nominal declaration model.
+
 ## Cross-decision guardrails
 
 The approved direction so far preserves these constraints:
@@ -1283,15 +2142,20 @@ The approved direction so far preserves these constraints:
   current constructor, payload, local rows, or refinement certificate.
 - Constructor schema is observable through the family type object's constructor
   signatures rather than through an instance discriminator.
+- `define-family` is the sole source form for user-defined nominal data;
+  one-constructor products explicitly declare their constructor.
+- Construction and factories remain sends to the family type object, with an
+  optional static `(type ...)` header after the selector.
+- `(receiver case ...)` is the sole exhaustive elimination form and the sole new
+  expression form introduced by this design.
+- Source annotations contain nominal family types but never constructor-set
+  refinements or constructor types.
 - Runtime closure representation remains unobservable.
 - Built-ins need not be rewritten immediately to validate the user-facing
   semantic model.
 - Source compatibility with the current prototype is not a design constraint.
 
 ## Questions reserved for the remaining decisions
-
-Decision 9 must settle concrete declaration, constructor, case, and annotation
-syntax only after the semantics are stable.
 
 Decision 10 must state the checker and evaluator consequences, compatibility
 boundary, validation applications, and safe checkpoint sequence. It is the
