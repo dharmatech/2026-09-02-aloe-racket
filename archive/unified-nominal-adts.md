@@ -3,7 +3,7 @@
 Status: **provisional and non-normative**
 
 This working note records the design direction approved in conversation through
-Decision 6. It is a working memory aid, not an amendment to `SPEC.md`, an
+Decision 7. It is a working memory aid, not an amendment to `SPEC.md`, an
 implementation plan, or authorization to change the language. The design can
 still be revised as the remaining decisions are made and as applications expose
 its strengths and weaknesses.
@@ -37,10 +37,10 @@ Approved as a provisional direction:
 4. Elimination and exhaustiveness
 5. Generics and recursion
 6. Open protocols and closed data
+7. Runtime behavior
 
 Still to decide:
 
-7. Runtime behavior
 8. Reflection
 9. Concrete syntax
 10. Static and implementation consequences
@@ -596,6 +596,290 @@ The initial design does not adopt:
 - protocol inheritance or intersections;
 - declaration-only methods that would remove MPL's additive organization.
 
+## Decision 7: runtime behavior
+
+### Semantic representation
+
+A nominal algebraic family instance is an immutable structural value whose
+nominal identity is carried by opaque runtime identities, not by names.
+
+Conceptually, every family value contains:
+
+```text
+<family-id, resolved-type-arguments, constructor-id, payload-values>
+```
+
+This is the semantic model, not a required physical representation. The
+implementation may optimize it freely as long as those optimizations are not
+observable.
+
+### Family and constructor identity
+
+Each family declaration creates one opaque family identity. Each representation
+constructor creates one opaque constructor identity owned by that family. A
+constructor identity uniquely determines its owning family.
+
+Names do not participate in identity:
+
+- two families with the same name are distinct when introduced by distinct
+  declarations;
+- same-spelled constructors in different families are distinct;
+- constructor identity cannot be forged with a corresponding `Symbol` or
+  `String`;
+- comparing printed names is not a runtime type test.
+
+Names remain source and presentation labels used for lookup, diagnostics,
+printing, and appropriately constrained reflection. Runtime checks use the
+resolved opaque identities.
+
+Identity is guaranteed within one linked Aloe program image. This design does
+not yet promise stable opaque identities across separate executions,
+recompilation, serialization, or a future module-reloading system.
+
+### Instantiated generic identity
+
+The runtime type of a generic family value includes its resolved type
+arguments. For example, `Option Int` and `Option String` are different runtime
+instantiations of the same family.
+
+Parameterless constructors retain the instantiation chosen by the checker. A
+`None` at `Option Int` and a `None` at `Option String` therefore have the same
+family declaration and representation constructor but different runtime types.
+
+Generic arguments remain invariant at runtime. The evaluator receives them from
+checked construction and never attempts to reconstruct them from the payload.
+
+### Values contain data, not behavior
+
+A family value contains its constructor and payload but no per-instance method
+dictionary or method closures. Behavior belongs to declaration-level metadata,
+including:
+
+- constructor descriptions;
+- whole-family method rows;
+- constructor-local method rows;
+- explicit protocol conformances.
+
+A send uses the receiver's family identity, its constructor identity when the
+selector is case-local or the family body is constructor-indexed, and the
+established overload rules.
+
+Consequently:
+
+- converting a family value to a protocol does not wrap or copy it;
+- widening or forgetting a constructor refinement does not alter it;
+- a factory leaves no provenance in its result beyond the representation
+  constructor and payload it ultimately produced;
+- adding protocol conformance does not change a family's value representation;
+- one-constructor products and multi-constructor variants use the same runtime
+  model.
+
+### Immutability and allocation identity
+
+A family value's constructor, resolved type arguments, and payload positions are
+fixed when it is created. There are no setters, constructor changes, or payload
+replacement.
+
+This is shallow semantic immutability. A payload may contain a function or an
+identity-bearing host capability whose external state changes. The enclosing
+family value cannot replace that payload, but it does not deep-freeze the
+referenced capability.
+
+Ordinary family instances do not expose allocation identity. Two separately
+allocated values with the same nominal structure are observationally the same
+data value. A runtime may share, copy, intern, or allocate them independently.
+
+This makes a constructor refinement permanently stable: a value known to be
+`Some` cannot later become `None`.
+
+Under normal Aloe construction, recursive algebraic data is finite and acyclic.
+Constructing an immutable recursive node requires its payload values to exist
+already. Opaque host values and function closures remain leaves from the
+algebraic structural perspective.
+
+### Kernel structural equality
+
+Aloe retains a small, non-overridable kernel equality used by `check` and other
+trusted runtime machinery.
+
+Two family values are structurally equal exactly when:
+
+1. their opaque family identities are the same;
+2. their resolved runtime type arguments are the same;
+3. their opaque constructor identities are the same;
+4. corresponding payload values are recursively kernel-equal.
+
+Thus separately allocated `Point` values with equal coordinates compare equal,
+as do separately allocated `Some` values with equal payloads. `Some 1` and
+`None` do not compare equal. Structurally identical instances introduced by
+distinct nominal family declarations do not compare equal.
+
+A `None` at `Option Int` and a `None` at `Option String` are unequal at the
+kernel level because their runtime instantiations differ.
+
+At payload leaves:
+
+- ordinary scalar and algebraic values use their established value equality;
+- functions, type objects, host capabilities, and other explicitly
+  identity-bearing opaque values use their own opaque identity unless that
+  built-in kind already defines value semantics.
+
+This gives equality a total runtime answer without first requiring generic
+constraints or an `Eq` protocol.
+
+Kernel equality does not inject a user-visible `=` message into every family.
+If a family or protocol declares `=`, it is an ordinary operation and may
+express domain-specific equality. It does not redefine the kernel comparison
+used by `check`. This separation prevents trusted testing behavior from
+depending on arbitrary user computation, normalization, or host effects.
+
+A future explicit equality protocol remains possible but is not required by the
+family model.
+
+### Raw printing and user display
+
+Aloe retains distinct raw and user-facing display paths.
+
+The raw structural renderer:
+
+- never invokes Aloe methods;
+- identifies the nominal family;
+- identifies the actual constructor when that information is not redundant;
+- renders payloads in declaration order;
+- uses family and constructor names only as presentation labels;
+- does not claim to produce parseable source or a serialization format.
+
+Its information content would resemble:
+
+```text
+#<Point 1 2>
+#<Option.Some 1>
+#<Option.None>
+```
+
+The exact punctuation belongs to Decision 9. For a one-constructor family, the
+renderer may omit the redundant constructor label, preserving the familiar
+product-like appearance. For a multi-constructor family, it must show the
+constructor.
+
+For generic values whose payload does not reveal their instantiation, detailed
+raw output must be capable of showing the resolved type arguments. Whether
+generic arguments appear always or only in a detailed diagnostic rendering is
+reserved with the concrete printing design.
+
+Raw rendering is diagnostic presentation. Its text is never used to establish
+identity, equality, or type compatibility.
+
+Normal interactive display may continue to use an applicable whole-family,
+zero-argument `show` message returning `String`. A multi-constructor family can
+implement `show` with exhaustive per-constructor bodies. If no suitable `show`
+exists, display falls back to structural rendering.
+
+The raw path remains independently available and never invokes `show`, giving
+debugging and reflection a dependable representation even when display code
+fails, recurses, or deliberately hides structure.
+
+An implementation may impose clearly marked depth or collection limits for
+interactive output. Such elision affects presentation only, never equality or
+program behavior.
+
+### Runtime type checks
+
+All runtime boundaries use one consistent nominal relation.
+
+For an expected concrete family type `F A...`, a value passes when:
+
+- its family identity is exactly `F`;
+- its resolved generic arguments exactly match `A...` invariantly.
+
+When an internal constructor-set refinement is relevant, the actual constructor
+must additionally belong to the permitted set.
+
+For an expected protocol `P`, a family value passes when its exact family
+declaration explicitly conforms to the opaque identity of `P`. The actual
+constructor is irrelevant because conformance belongs to the family.
+
+No runtime type check succeeds merely because:
+
+- family or constructor names match;
+- payload layouts match;
+- similarly named messages happen to exist.
+
+Protocol conversion changes the static view of a value but does not allocate a
+runtime wrapper.
+
+The same type relation applies at all dynamic boundaries, including:
+
+- constructor payload validation;
+- factory results;
+- dynamically selected overload arguments and results;
+- reflective invocation;
+- host-to-Aloe and Aloe-to-host calls.
+
+Trusted statically checked code may optimize redundant checks away, but its
+behavior must be equivalent to performing them.
+
+### Defensive constructor integrity
+
+Ordinary Aloe code cannot forge a constructor identity. The runtime must still
+preserve these invariants at any boundary that constructs or injects a value:
+
+- the constructor belongs to the recorded family;
+- payload arity matches the constructor declaration;
+- each payload passes its substituted declared type;
+- every generic argument is resolved.
+
+A malformed value is rejected at the boundary that attempted to create or
+inject it. It does not survive until a later case expression or send.
+
+Exhaustive case analysis may consequently rely on the family's closed
+constructor set. The runtime may defensively reject an impossible malformed
+value rather than route it through a default branch.
+
+### Built-ins and host values
+
+The runtime model does not require an immediate rewrite of built-ins. Types such
+as `Bool` and `List` may eventually expose equivalent family-and-constructor
+descriptions while retaining specialized internal representations initially.
+
+Host interfaces and capabilities remain opaque nominal values. They may have
+meaningful identity or external state and are not forced into algebraic payload
+representation merely for uniformity. Placing one inside an algebraic family
+does not make it structurally inspectable or deeply immutable.
+
+### Rejected runtime alternatives
+
+The design rejects:
+
+- constructor names as runtime tags, because they are forgeable,
+  collision-prone, and make spelling affect type identity;
+- treating each constructor as an independent class, because that recreates the
+  split ontology;
+- erasing generic arguments, because parameterless generic constructors and
+  dynamic boundary checks would become ambiguous;
+- reference equality for ordinary family values, because allocation is not
+  meaningful for immutable data;
+- user-overridable equality for `check`, because trusted comparison should not
+  invoke arbitrary behavior;
+- protocol wrapper objects, because a change of static view should not change
+  allocation or identity;
+- deep-freezing every payload, because host capabilities and functions are
+  intentionally opaque;
+- retaining factory provenance in values, because construction history is not
+  part of a value's meaning;
+- allowing raw rendering to invoke `show`, because that would remove the
+  dependable diagnostic path.
+
+### Semantic nucleus
+
+An Aloe algebraic value is an immutable, nominally identified family
+instantiation containing one opaque constructor and its payload. Nominal
+identities govern runtime type checks; structure governs kernel equality; names
+govern source presentation and diagnostics.
+
+The precise reflection surface remains for Decision 8. The exact printed
+spelling remains for Decision 9.
+
 ## Cross-decision guardrails
 
 The approved direction so far preserves these constraints:
@@ -607,6 +891,12 @@ The approved direction so far preserves these constraints:
   explicitly open implementation axis.
 - Constructor-set refinements are checker knowledge, not user-forgeable tags or
   new nominal types.
+- Family and constructor names are presentation labels, not nominal identities.
+- Ordinary family values are immutable structural data without observable
+  allocation identity.
+- Kernel structural equality remains separate from user-defined `=` messages.
+- Protocol widening and constructor-refinement widening do not wrap, copy, or
+  otherwise alter runtime values.
 - Reflection may observe the model but must not become an alternate,
   non-exhaustive discrimination mechanism.
 - Runtime closure representation remains unobservable.
@@ -615,9 +905,6 @@ The approved direction so far preserves these constraints:
 - Source compatibility with the current prototype is not a design constraint.
 
 ## Questions reserved for the remaining decisions
-
-Decision 7 must settle runtime representation, identity, immutability, equality,
-printing, and runtime type checks.
 
 Decision 8 must settle which family, constructor, payload, generic, refinement,
 and method facts are observable through reflection without undermining nominal
