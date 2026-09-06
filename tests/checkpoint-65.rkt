@@ -4,13 +4,9 @@
          racket/runtime-path
          rackunit
          "../aloe/driver.rkt"
-         (only-in "../aloe/env.rkt" env-define!)
-         "../aloe/eval.rkt"
          (only-in "../aloe/main.rkt"
-                  make-top-level-env
                   type->datum
                   typecheck-source)
-         "../aloe/parse.rkt"
          "../host/racket/term.rkt")
 
 (define-runtime-path gel-main-path "../gel/main.aloe")
@@ -24,14 +20,8 @@
  'term
  (make-term-receiver (open-output-string) (lambda () "q")))
 (define checker-environment (driver-type-environment checker-driver))
-(void
- (typecheck-source
-  (format "(load ~s)" (path->string gel-main-path))
-  checker-environment))
-(void
- (typecheck-source
-  (format "(load ~s)" (path->string point-path))
-  checker-environment))
+(void (driver-load-file! checker-driver gel-main-path (open-output-string)))
+(void (driver-load-file! checker-driver point-path (open-output-string)))
 (check-equal?
  (type->datum
   (typecheck-source
@@ -53,46 +43,37 @@
       (car keys)))
    output))
 
-(define (load-runtime! path environment)
-  (eval-expr
-   (parse-datum `(load ,(path->string path)))
-   environment))
-
 (define (run-script keys)
-  (define environment (make-top-level-env))
+  (define state (make-driver))
   (define-values (term output) (make-scripted-term keys))
-  (env-define! environment 'term term)
-  (load-runtime! gel-main-path environment)
-  (load-runtime! point-path environment)
-  (eval-expr
-   (parse-datum
-    '(define initial-stack
-       (gel-empty-stack push (Point new 10 20))))
-   environment)
-  (eval-expr
-   (parse-datum
-    '(define final-stack
-       (gel-main call initial-stack)))
-   environment)
-  (values environment output))
+  (driver-inject-host! state 'term term)
+  (void (driver-load-file! state gel-main-path (open-output-string)))
+  (void (driver-load-file! state point-path (open-output-string)))
+  (driver-eval!
+   state
+   '(define initial-stack
+      (gel-empty-stack push (Point new 10 20))))
+  (driver-eval!
+   state
+   '(define final-stack
+      (gel-main call initial-stack)))
+  (values state output))
 
 ;; A q-only script prints once and returns the original stack.
-(define-values (quit-environment quit-output) (run-script '("q")))
-(check-eq? (eval-expr (parse-datum 'initial-stack) quit-environment)
-           (eval-expr (parse-datum 'final-stack) quit-environment))
+(define-values (quit-driver quit-output) (run-script '("q")))
+(check-eq? (driver-eval! quit-driver 'initial-stack)
+           (driver-eval! quit-driver 'final-stack))
 (check-regexp-match
  #rx"1  x  0"
  (get-output-string quit-output))
 
 ;; Row 1 is Point.x: its result is pushed, then q returns that new stack.
-(define-values (step-environment step-output) (run-script '("1" "q")))
+(define-values (step-driver step-output) (run-script '("1" "q")))
 (check-equal?
- (eval-expr (parse-datum '((final-stack items) len)) step-environment)
+ (driver-eval! step-driver '((final-stack items) len))
  2)
 (check-equal?
- (eval-expr
-  (parse-datum '((final-stack tos) subject))
-  step-environment)
+ (driver-eval! step-driver '((final-stack tos) subject))
  10)
 (check-regexp-match
  #rx"1  \\+  1"

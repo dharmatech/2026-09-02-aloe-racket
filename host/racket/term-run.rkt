@@ -3,31 +3,24 @@
 ;; Optional file runner for Aloe programs that use (term read-key):
 ;;   racket host/racket/term-run.rkt path/to/program.aloe
 ;;
-;; The v0 key representation intentionally has two runtime shapes (String and
-;; Key), so this isolated host runner does not extend or weaken Aloe's static
-;; type language. The normal bin/aloe driver remains checked and term-free.
+;; The production Term interface gives read-key one checked result shape:
+;; String. The normal bin/aloe driver remains term-free.
 
-(require (only-in "../../aloe/driver.rkt" write-aloe-result)
-         (only-in "../../aloe/env.rkt" env-define!)
-         (only-in "../../aloe/eval.rkt" eval-expr)
-         (only-in "../../aloe/main.rkt" make-top-level-env)
-         (only-in "../../aloe/parse.rkt" read-program)
+(require (only-in "../../aloe/driver.rkt"
+                  driver-inject-host!
+                  driver-load-port!
+                  make-driver)
          "term.rkt")
 
-(define (load-runtime-file! path environment)
-  (define expressions
-    (call-with-input-file path
-      (lambda (input)
-        (read-program input #:source-path path))))
-  (for ([expression (in-list expressions)])
-    (write-aloe-result (eval-expr expression environment))))
-
 (define (run path)
-  (define environment (make-top-level-env))
   (call-with-tty-term-receiver
    (lambda (term)
-     (env-define! environment 'term term)
-     (load-runtime-file! path environment))))
+     (define state (make-driver))
+     (driver-inject-host! state 'term term)
+     (call-with-input-file path
+       (lambda (input)
+         (driver-load-port!
+          state input (current-output-port) #:source-path path))))))
 
 (module+ main
   (define arguments (vector->list (current-command-line-arguments)))
