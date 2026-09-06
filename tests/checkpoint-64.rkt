@@ -1,18 +1,20 @@
 #lang racket/base
 
 (require rackunit
-         (only-in "../aloe/env.rkt" env-define!)
-         "../aloe/eval.rkt"
+         "../aloe/driver.rkt"
          "../aloe/host.rkt"
          (only-in "../aloe/main.rkt"
                   exn:fail:aloe-type?
-                  make-top-level-env
                   type->datum
                   typecheck-source)
-         "../aloe/parse.rkt"
          "../host/racket/term.rkt")
 
-(define checker-environment (make-term-type-environment))
+(define output (open-output-string))
+(define term (make-term-receiver output))
+(define state (make-driver))
+(driver-inject-host! state 'term term)
+
+(define checker-environment (driver-type-environment state))
 
 (check-equal?
  (type->datum
@@ -30,19 +32,12 @@
 (check-type-error "(term write-line 1)")
 (check-type-error "(1 write-line)")
 
-(define output (open-output-string))
-(define term (make-term-receiver output))
-
 (check-equal? (host-receiver-send term 'write-line '("hi")) "hi")
 (check-equal? (get-output-string output) "hi\r\n")
 
 ;; Exercise the ordinary Aloe send path with the injected runtime receiver.
-(define runtime-environment (make-top-level-env))
-(env-define! runtime-environment 'term term)
 (check-equal?
- (eval-expr
-  (parse-datum '(term write-line "again"))
-  runtime-environment)
+ (driver-eval! state '(term write-line "again"))
  "again")
 (check-equal? (get-output-string output) "hi\r\nagain\r\n")
 

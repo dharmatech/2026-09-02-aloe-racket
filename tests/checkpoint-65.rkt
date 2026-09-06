@@ -3,6 +3,7 @@
 (require racket/file
          racket/runtime-path
          rackunit
+         "../aloe/driver.rkt"
          (only-in "../aloe/env.rkt" env-define!)
          "../aloe/eval.rkt"
          (only-in "../aloe/main.rkt"
@@ -16,8 +17,13 @@
 (define-runtime-path point-path "../examples/point.aloe")
 (define-runtime-path gel-run-path "../host/racket/gel-run.rkt")
 
-;; The injected host facade gives gel-main one String-shaped read-key result.
-(define checker-environment (make-term-type-environment))
+;; The injected production interface gives gel-main its checked Term shape.
+(define checker-driver (make-driver))
+(driver-inject-host!
+ checker-driver
+ 'term
+ (make-term-receiver (open-output-string) (lambda () "q")))
+(define checker-environment (driver-type-environment checker-driver))
 (void
  (typecheck-source
   (format "(load ~s)" (path->string gel-main-path))

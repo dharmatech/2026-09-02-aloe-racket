@@ -1,14 +1,20 @@
 #lang racket/base
 
 (require (only-in "env.rkt"
-                  [make-top-level-env make-runtime-environment])
+                  [make-top-level-env make-runtime-environment]
+                  env-bound?
+                  env-define!)
          "eval.rkt"
+         "host.rkt"
          "library.rkt"
          "parse.rkt"
-         "type.rkt")
+         "type.rkt"
+         (only-in (submod "type.rkt" driver-host-injection)
+                  type-environment-inject-host!))
 
 (provide (struct-out driver)
          make-driver
+         driver-inject-host!
          driver-eval!
          driver-load-port!
          driver-load-file!
@@ -25,6 +31,38 @@
   (typecheck-program (list-library-expressions) type-environment)
   (eval-exprs (list-library-expressions) runtime-environment)
   (driver runtime-environment type-environment))
+
+(define (driver-inject-host! state name receiver)
+  (unless (driver? state)
+    (raise-arguments-error
+     'driver-inject-host!
+     "a-driver must be a driver"
+     "a-driver" state))
+  (unless (symbol? name)
+    (raise-arguments-error
+     'driver-inject-host!
+     "binding-name must be a symbol"
+     "binding-name" name))
+  (unless (host-receiver? receiver)
+    (raise-arguments-error
+     'driver-inject-host!
+     "a-host-receiver must be a validated host receiver"
+     "a-host-receiver" receiver))
+  (define runtime-bound?
+    (env-bound? (driver-runtime-environment state) name))
+  (define checker-bound?
+    (type-environment-bound? (driver-type-environment state) name))
+  (when (or runtime-bound? checker-bound?)
+    (raise-arguments-error
+     'driver-inject-host!
+     "binding-name is already bound in the driver"
+     "binding-name" name
+     "runtime binding present" runtime-bound?
+     "checker binding present" checker-bound?))
+  (type-environment-inject-host!
+   (driver-type-environment state) name receiver)
+  (env-define! (driver-runtime-environment state) name receiver)
+  (void))
 
 (define (driver-eval! state datum)
   (define expression (parse-datum datum))

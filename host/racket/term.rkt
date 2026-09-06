@@ -7,15 +7,11 @@
 ;; normal return, errors, and breaks, which restores cooked mode.
 
 (require tui/term
-         "../../aloe/host.rkt"
-         (only-in "../../aloe/main.rkt"
-                  make-type-environment
-                  typecheck-source))
+         "../../aloe/host.rkt")
 
 (provide tkeymsg->aloe-key
          term-interface
          make-term-receiver
-         make-term-type-environment
          call-with-tty-term-receiver)
 
 (define (return-key? key)
@@ -84,23 +80,6 @@
 (define (make-term-receiver [output (current-output-port)]
                             [reader read-next-key])
   (make-host-receiver term-interface (term-state output reader)))
-
-;; The optional terminal runner injects its runtime receiver separately. This
-;; private Aloe facade supplies the corresponding checked shape without
-;; binding term in Aloe's default environment.
-(define (make-term-type-environment)
-  (define environment (make-type-environment))
-  (typecheck-source
-   #<<ALOE
-(define-class HostTerm
-  (fields)
-  (methods
-    (read-key () String "")
-    (write-line (value String) String value)))
-(define term (HostTerm new))
-ALOE
-   environment)
-  environment)
 
 (define (call-with-tty-term-receiver procedure)
   (with-term (make-tty-term)
