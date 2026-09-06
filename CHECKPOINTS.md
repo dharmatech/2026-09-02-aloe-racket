@@ -237,3 +237,38 @@ success, and reports both source datums and displayed values on failure.
 - `GelText.menu` renders ordinary values, mirrors, and Gel state, while
   `GelText.tos` renders the stack top; the separate menu/TOS renderers and
   function-shaped rendering sends are removed.
+
+## 83. Validated host declarations
+
+- Opaque nominal host interfaces contain ordered, uniquely selected method
+  declarations over the fixed `Int`/`Bool`/`String` crossing vocabulary.
+
+## 83A. Exact host implementation call shape
+
+- Host implementations accept exactly one state argument plus their declared
+  positional arguments, with no optional, variadic, or keyword call shape.
+
+## 84. Guarded descriptor-driven host sends
+
+- Runtime host sends validate both crossing directions through one descriptor;
+  the production Term interface supplies `read-key` and `write-line`.
+
+## 85. Typed atomic host injection
+
+- A driver atomically injects a receiver and its nominal interface type, and
+  the checker derives host sends from that exact descriptor identity.
+
+## 86. Checked terminal runners
+
+- The optional Term and Gel runners inject Term into one checked driver used
+  for full-file checking and evaluation.
+
+## 87. Descriptor-driven host reflection
+
+- Host receivers use the existing Mirror and Signature protocol with nominal
+  interface ownership and guarded exact-row invocation.
+
+## 88. Seal the typed host boundary
+
+- Canonical documentation records the accepted host-capability design, and a
+  compact test seals its intended public and internal Racket surfaces.

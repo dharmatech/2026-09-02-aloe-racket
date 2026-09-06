@@ -39,6 +39,13 @@ Send plus types exist so an editor can ask “what messages does this expression
 - application libraries: `Point`, `Boid`, `Sim`, Boids
 - `#lang aloe`, `require`, macros
 
+## Host boundary
+
+Racket supplies irreducible host facts and effects through explicitly injected
+capability values. Aloe owns domain objects, application policy, and the
+composition around those effects. A capability is authority carried by a
+value, never an ambient kernel power.
+
 ## Test of the diamond
 
 A new program that does not force a new Racket builtin — only new classes
