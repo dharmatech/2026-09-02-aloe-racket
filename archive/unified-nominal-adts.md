@@ -11,6 +11,10 @@ its strengths and weaknesses.
 The eventual accepted design should be rewritten as normative specification
 text. This draft may then be replaced or removed.
 
+The discussion transcripts used to assemble this consolidation are preserved
+in Git commit `8e6955c`. They are non-normative and should be consulted only if
+this document contains a material ambiguity.
+
 ## Purpose
 
 Aloe currently has nominal product-like classes. This design explores one
