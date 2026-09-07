@@ -1,27 +1,28 @@
 # Unified nominal algebraic families: implementation roadmap
 
-> **PROPOSED — NON-NORMATIVE — DRAFTED IN CHECKPOINT 89G**
+> **ACCEPTED PLAN — SUPPORTING ROADMAP — 89I RATIFICATION REVIEW PENDING**
 >
-> Runtime baseline: checkpoint 88. Design baseline: the accepted
-> [89F candidate][candidate] and [completed audit][audit], including the
-> [approved U1 amendment][u1]. Every implementation entry below is future
-> work, neither completed nor currently authorized. `SPEC.md` remains law.
-> The candidate remains incomplete and non-normative; checkpoint 89 as a
-> whole is not finished.
+> Runtime baseline: checkpoint 88. [SPEC.md][spec] contains the normative target
+> in the 89I review change; [CHECKPOINTS.md][index] governs implementation order.
+> This accepted corrected roadmap supplies detailed prerequisites, allocation
+> rationale, and evidence. All entries are future work, not completed or
+> blanket authorization.
 
-Implementation requires the remaining 89-series documentation, a durable
-implementation handoff, and later atomic ratification. That ratification must
-reconcile the governing documents and promote the reviewed sequence into
-`CHECKPOINTS.md` before implementation begins. This draft neither performs
-that promotion nor authorizes checkpoint 90 or new source syntax. Later final
-implementation documentation is a different obligation from this prerequisite
-normative ratification.
+The 89F audit including approved U1 is complete, and the corrected 89G plan
+and 89H handoff are accepted with no findings, as recorded by
+[89I][checkpoint89i]. That ratification change is submitted for review; its
+acceptance completes checkpoint 89. 90A still needs its own checkpoint document
+and authorization. The [implementation handoff][handoff] is available now.
+The final documentation reconciliation after implementation remains a separate
+106B obligation.
 
 ## Basis and planning level
 
 This plan expands [Decision 10's provisional 90–106 sequence][sequence] into
-reviewable outcomes. Decisions 1–10, as audited in 89F and amended only by U1,
-supply the semantics. The archive's blanket runtime-inference prohibition is
+reviewable outcomes. [SPEC.md][spec] supplies the normative semantics promoted
+from Decisions 1–10 as audited in 89F and amended only by U1. The
+[historical candidate][candidate], [audit][audit], and [U1 record][u1] retain
+that design provenance. The archive's blanket runtime-inference prohibition is
 qualified solely by U1's sealed-input selected-row invocation rule. Planning
 does not reopen that decision or add an exception elsewhere.
 
@@ -48,14 +49,14 @@ algorithms, internal API designs, or fixture specifications.
 
 | Current evidence | Planning consequence and owner |
 | --- | --- |
-| [Driver][driver] and [public helpers][main] check parsed expressions, then evaluate them without retaining elaboration. List bootstrap and transitive loads also use this separation. [Evaluator][eval] reloads source during evaluation. | 90A retains checked decisions; 90B routes all production entry points, bootstrap, and loaded units through the checked result. The complete candidate boundary is not claimed until 91C. |
-| [Parser][parse] lowers source `let` immediately; its `fn` branch currently accepts only untyped parameter names, although [SPEC §4.2](../SPEC.md#42-fn) specifies written annotations. | 90A retains alias provenance and supplies the already specified annotation/expected-arrow support needed to check and retain function types. 95 adds multi-constructor alias propagation. No new annotation syntax is chosen. |
+| [Driver][driver] and [public helpers][main] check parsed expressions, then evaluate them without retaining elaboration. List bootstrap and transitive loads also use this separation. [Evaluator][eval] reloads source during evaluation. | 90A retains checked decisions; 90B routes all production entry points, bootstrap, and loaded units through the checked result. The complete target boundary is not claimed until 91C. |
+| [Parser][parse] lowers source `let` immediately; its `fn` branch currently accepts only untyped parameter names, although [SPEC §1, fn](../SPEC.md#fn) specifies written annotations. | 90A retains alias provenance and supplies the already specified annotation/expected-arrow support needed to check and retain function types. 95 adds multi-constructor alias propagation. No new annotation syntax is chosen. |
 | [Checker][type] creates fresh types for `subject`, `invoke`, and context-free empties; it installs class and extension bindings while checking. Generic class bodies use the existing instantiation checking strategy. | 90B supplies staging; 91A supplies combined validation for the bridge; 91C closes all specified inference boundaries. Bound parameters remain legal; this plan adds no generic-constraint language. |
 | [Evaluator][eval] infers construction arguments from values, gives empty lists no element type, represents functions without checked arrows, and has name-based type matching. [Signature][signature] retains a flattened row index. | 90C retains collection/function types before 91A's exact relation relies on them; 91A replaces the user nominal model. 91B seals input evidence and exact row authority before 91C exposes U1. |
 | [GelStack][stack] has the three ordinary-result invocation helpers from U1. [Gel menu][menu] and [loop][loop] use contextual empty lists; pending state is `(List GelRow)`. | 91C rewrites only the three helpers and required closure-sensitive observations. 103B converts nominal declarations; 105 changes pending to `(Option GelRow)`. |
 | [Test 36][t36] uses unchecked evaluation to inspect concrete MPL fields when the source result has a protocol view. | 90B preserves these observations through checked contextual reflection as part of the checked-evaluation transition. |
 | [Tests 57][t57], [60][t60], [73][t73], and [87][t87] use uncontextualized reflection; [8][t8] and [16][t16] observe empties without determining an element type. Test 73 injects a bad body through unchecked evaluation. | 91C migrates closure-sensitive observations to a checked contextual or mirrored route and preserves defensive failure coverage internally. Closure must not turn intended runtime-guard tests into unrelated static failures. |
-| [List library][list] defines `fold`, `reverse`, and `map` with contextual accumulators and `call`. [MPL core][mpl] supplies protocol rows through later extensions and loads. The evaluator has special raw cases for `Sum` and `Prod`, reflected in tests 38–41, 44, and 46. | 90B/91A must support complete-unit finalization and the List extension route. 91A changes raw goldens to the candidate's descriptor-based product form while preserving MPL domain operations and `show`. |
+| [List library][list] defines `fold`, `reverse`, and `map` with contextual accumulators and `call`. [MPL core][mpl] supplies protocol rows through later extensions and loads. The evaluator has special raw cases for `Sum` and `Prod`, reflected in tests 38–41, 44, and 46. | 90B/91A must support complete-unit finalization and the List extension route. 91A changes raw goldens to SPEC's descriptor-based product form while preserving MPL domain operations and `show`. |
 | [Point][point], [Boids][boids], [Gel runner][gel-run], and [Term runner][term-run] exercise generic products, both step sends, and explicitly injected checked drivers. [Host][host] and [Term][term] already share guarded exact interface declarations. | Preserve them throughout; 103 owns broad source conversion. Descriptor work must preserve host preflight, exact state/row ownership, crossings, causes, breaks, and public sealing immediately. |
 
 ### Shared completion and transition requirements
@@ -75,7 +76,7 @@ structural conformance, or unresolved ordinary construction. A prerequisite
 implemented early is not implemented again at its archived milestone.
 
 The baseline's existing gaps are removed by the named early steps below;
-preparation is not evidence of a completed candidate boundary. There is one
+preparation is not evidence of a completed target boundary. There is one
 production path during transition, with no permanent permissive alternative,
 Gel exemption, disabled guard, or skipped test. Any newly exposed capability
 has all of its own required guards from its first usable release.
@@ -90,16 +91,18 @@ Specialized values keep their contracts and do not acquire family constructors,
 case eligibility, source host types, or general extension rights. The existing
 `define-methods List` route and its `T` scope remain available.
 
-## Proposed sequence
+<a id="proposed-sequence"></a>
+
+## Accepted sequence
 
 Execution order is the order below:
 **90A → 90B → 90C → 91A → 91B → 91C → 92 → 93 → 94 → 95 → 96 → 97 → 98 →
 99A → 99B → 100 → 101 → 102 → 103A → 103B → 103C → 104 → 105 → 106A → 106B**.
 Each entry requires the preceding entry and therefore all its transitive
 prerequisites, in addition to the specific support named in its text. 90A
-requires the completed later 89-series handoff and atomic ratification.
-This is an acyclic proposal; numbers are stable provisional anchors, not
-amendments to completed checkpoint history.
+requires the accepted handoff and acceptance of 89I's atomic ratification.
+The governing [index][index] promotes these 25 entries in this same order;
+the identifiers do not renumber completed checkpoint history.
 
 ### 90A — Retain the static decisions needed by execution
 
@@ -533,7 +536,7 @@ user nominal model. Built-in algebraic rewrites remain explicitly optional.
 
 ## Allocation changes and dependency closure
 
-| Archived anchor | Proposed owners and reason for subdivision or movement |
+| Archived anchor | Accepted owners and reason for subdivision or movement |
 | --- | --- |
 | 90 — checked seam | 90A retains information; 90B installs checked transactions and migrates checkpoint 36's unchecked MPL field observations to checked contextual reflection; 90C retains specialized value types before exact validation needs them. 91C finishes inference closure and removes remaining permissive behavior. Full closure cannot precede U1's evidence and client transition. |
 | 91 — nominal nucleus | 91A owns shared identity and the legacy bridge. 91B supplies sealed types and exact rows needed by 91C. These are bounded prerequisites before admitting family source. |
@@ -607,7 +610,7 @@ Every catalogue obligation is owned by its admitting feature, with final
 aggregation in 106B. These groups map [§§18–22][diagnostics] without copying
 their full validation tables:
 
-| Candidate obligations | Implementation owners |
+| SPEC obligations | Implementation owners |
 | --- | --- |
 | §18 detection timing and transactions; §19 preserved expressions/types | 90A–90B, 91C; each new form supplies its diagnostics on admission. |
 | §19 declaration/selector/body grammar and exclusions | 92–95, 98–100; 91A for bridge invariants, 103C for completed source rejection. |
@@ -625,11 +628,15 @@ their full validation tables:
 
 No required semantic choice was found missing during this dependency review.
 If later expansion reveals a material contradiction, report it against the
-candidate/audit before choosing a rule; an ordering note is not semantic
-authority. The durable handoff and atomic ratification remain later 89-series
-work. This roadmap awaits review and activates no implementation entry.
+SPEC and its candidate/audit provenance before choosing a rule; an ordering
+note is not semantic authority. The corrected roadmap and durable handoff are
+accepted. The 89I ratification change awaits review; no implementation entry
+is activated by this document.
 
 ## Validation of this documentation slice
+
+The following is the historical 89G validation record, preserved as performed.
+Current 89I validation is recorded in the [implementation handoff][handoff].
 
 For the initial draft, the unchanged `raco test tests` suite passed:
 **1,297 tests**. The exact
@@ -664,30 +671,30 @@ implementation remain unperformed.
 [audit]: unified-nominal-adts-design-audit.md
 [u1]: unified-nominal-adts-reflection-resolution-proposal.md
 [sequence]: ../archive/unified-nominal-adts.md#safe-checkpoint-sequence
-[declarations]: unified-nominal-adts-spec-candidate.md#3-family-declarations-and-callable-surfaces
-[factories]: unified-nominal-adts-spec-candidate.md#factories
-[case]: unified-nominal-adts-spec-candidate.md#4-exhaustive-receiver-anchored-case
-[coverage]: unified-nominal-adts-spec-candidate.md#coverage-and-validity
-[generics]: unified-nominal-adts-spec-candidate.md#5-types-generic-inference-and-constructor-refinements
-[refinements]: unified-nominal-adts-spec-candidate.md#shallow-constructor-refinements
-[recursion]: unified-nominal-adts-spec-candidate.md#6-direct-regular-recursion
-[protocols]: unified-nominal-adts-spec-candidate.md#7-protocols-and-additive-extensions
-[extensions]: unified-nominal-adts-spec-candidate.md#additive-define-methods
-[checked]: unified-nominal-adts-spec-candidate.md#8-checked-programs-and-elaboration
-[closure]: unified-nominal-adts-spec-candidate.md#inference-closure-and-source-aliases
-[transactions]: unified-nominal-adts-spec-candidate.md#9-shared-descriptors-linking-and-transactions
-[values]: unified-nominal-adts-spec-candidate.md#10-runtime-family-values-and-dispatch
-[surfaces]: unified-nominal-adts-spec-candidate.md#callable-surfaces-and-closed-instance-representation
-[reflection]: unified-nominal-adts-spec-candidate.md#14-family-aware-reflection
-[integration]: unified-nominal-adts-spec-candidate.md#15-specialized-built-ins-and-typed-host-integration
-[examples]: unified-nominal-adts-spec-candidate.md#16-candidate-examples
-[gel-examples]: unified-nominal-adts-spec-candidate.md#gel-invocation-through-mirrors
-[migration]: unified-nominal-adts-spec-candidate.md#17-reconciliation-and-compatibility-boundary
-[diagnostics]: unified-nominal-adts-spec-candidate.md#18-diagnostics-and-detection-boundaries
-[rejections]: unified-nominal-adts-spec-candidate.md#19-required-rejection-catalogue
-[exclusions]: unified-nominal-adts-spec-candidate.md#20-consolidated-exclusions-and-deferrals
-[u1-tests]: unified-nominal-adts-spec-candidate.md#mirrored-invocation-and-gel-inference-closure
-[applications]: unified-nominal-adts-spec-candidate.md#22-application-validation-and-eventual-completion-evidence
+[declarations]: ../SPEC.md#3-family-declarations-and-callable-surfaces
+[factories]: ../SPEC.md#factories
+[case]: ../SPEC.md#4-exhaustive-receiver-anchored-case
+[coverage]: ../SPEC.md#coverage-and-validity
+[generics]: ../SPEC.md#5-types-generic-inference-and-constructor-refinements
+[refinements]: ../SPEC.md#shallow-constructor-refinements
+[recursion]: ../SPEC.md#6-direct-regular-recursion
+[protocols]: ../SPEC.md#7-protocols-and-additive-extensions
+[extensions]: ../SPEC.md#additive-define-methods
+[checked]: ../SPEC.md#8-checked-programs-and-elaboration
+[closure]: ../SPEC.md#inference-closure-and-source-aliases
+[transactions]: ../SPEC.md#9-shared-descriptors-linking-and-transactions
+[values]: ../SPEC.md#10-runtime-family-values-and-dispatch
+[surfaces]: ../SPEC.md#callable-surfaces-and-closed-instance-representation
+[reflection]: ../SPEC.md#14-family-aware-reflection
+[integration]: ../SPEC.md#15-specialized-built-ins-and-typed-host-integration
+[examples]: ../SPEC.md#16-target-examples
+[gel-examples]: ../SPEC.md#gel-invocation-through-mirrors
+[migration]: ../SPEC.md#17-reconciliation-and-compatibility-boundary
+[diagnostics]: ../SPEC.md#18-diagnostics-and-detection-boundaries
+[rejections]: ../SPEC.md#19-required-rejection-catalogue
+[exclusions]: ../SPEC.md#20-consolidated-exclusions-and-deferrals
+[u1-tests]: ../SPEC.md#mirrored-invocation-and-gel-inference-closure
+[applications]: ../SPEC.md#22-application-validation-and-eventual-completion-evidence
 [driver]: ../aloe/driver.rkt
 [main]: ../aloe/main.rkt
 [parse]: ../aloe/parse.rkt
@@ -712,3 +719,8 @@ implementation remain unperformed.
 [t60]: ../tests/checkpoint-60.rkt
 [t73]: ../tests/checkpoint-73.rkt
 [t87]: ../tests/checkpoint-87.rkt
+
+[spec]: ../SPEC.md
+[index]: ../CHECKPOINTS.md#future-family-implementation
+[handoff]: unified-nominal-adts-implementation-handoff.md
+[checkpoint89i]: checkpoints/0089i-ratify-unified-family-design.md

@@ -1,47 +1,46 @@
 # Unified nominal algebraic families: implementation handoff
 
-> **DRAFT FOR 89H REVIEW — INCOMPLETE AND NON-NORMATIVE**
+> **ACCEPTED 89H HANDOFF — UPDATED FOR 89I RATIFICATION REVIEW**
 >
-> Runtime baseline: checkpoint 88. The 89F audit is complete, including the
-> approved U1 amendment. The corrected 89G roadmap is reviewed and accepted
-> as a plan, with no remaining review finding. This handoff is drafted for
-> review. The candidate remains incomplete and non-normative; `SPEC.md`
-> remains law. No family implementation entry is activated by this document.
+> Runtime baseline: checkpoint 88. The 89F audit with approved U1, corrected
+> 89G roadmap, and 89H handoff are accepted with no findings. [SPEC.md][spec]
+> contains the normative target and [CHECKPOINTS.md][index] the governing
+> implementation order in the 89I ratification change submitted for review.
+> Acceptance completes checkpoint 89; 90A requires its own checkpoint document
+> and authorization. No runtime implementation is supplied by this change.
 
 Read in this order before expanding or implementing a future slice:
 
-1. [SPEC.md](../SPEC.md), [philosophy](philosophy.md),
-   [decisions](decisions.md), [AGENTS.md](../AGENTS.md),
-   [CHECKPOINTS.md](../CHECKPOINTS.md), and the
-   [current implementation handoff](handoff.md). Read [Gel's contract](gel.md)
-   when touching Gel.
-2. The complete [candidate][candidate], then the [completed audit][audit]
-   and [approved U1 record][u1].
-3. The complete [accepted corrected roadmap][roadmap], then this handoff.
-   Use [Decision 10][decision10] and the [cross-decision guardrails][guardrails]
-   for provenance when needed.
-4. The particular authorized document under `docs/checkpoints/`, its
-   prerequisites, and the current session's scope. [89H][checkpoint89h]
-   supplies this draft's scope and the accepted starting dispositions.
+1. The complete [SPEC.md][spec], [philosophy](philosophy.md),
+   [decisions](decisions.md), [AGENTS.md](../AGENTS.md), governing
+   [CHECKPOINTS.md][index], and [runtime handoff](handoff.md).
+   Read [Gel's contract](gel.md) when touching Gel.
+2. The complete [accepted corrected roadmap][roadmap] and this handoff.
+3. Use the [historical candidate and promotion map][candidate], [completed
+   audit][audit], [approved U1 record][u1], [Decision 10][decision10], and
+   [cross-decision guardrails][guardrails] for design provenance.
+4. Read the particular authorized document under `docs/checkpoints/`, its
+   prerequisites, and the current session's scope. [89I][checkpoint89i]
+   records accepted entry conditions and the current review boundary.
 
 ## Authority and starting snapshot
 
-The current specification governs the implemented language. The candidate
-specifies the audited target; the audit and U1 record explain the accepted
-decisions. The roadmap owns the planned order, prerequisites, and evidence
-assignments. Individual checkpoint documents bound authorized changes.
-The archive supplies design provenance and its original provisional sequence,
-not a competing schedule. U1's sealed-input permission is the approved,
-specific amendment to its earlier runtime-inference prohibition.
+SPEC is the single normative target; it does not claim the checkpoint-88
+runtime already implements it. CHECKPOINTS governs order, while the roadmap
+supplies detailed prerequisites, allocation rationale and evidence. Individual
+checkpoint documents bound authorized changes. The historical candidate,
+audit, and U1 record explain the accepted design, not a second evolving spec.
+The archive supplies provenance and its original provisional sequence, not a
+competing schedule. U1's sealed-input permission is the specific approved
+amendment to its earlier runtime-inference prohibition.
 
-As recorded by [89H][checkpoint89h], checkpoint 36's MPL observations belong
-to **90B**, while the Gel helpers and closure-sensitive reflection/empty-list
-migrations remain in **91C**. Earlier headers and historical reports retain
-their stage-specific “proposed” or “awaiting review” wording; they do not
-reopen the completed audit or corrected roadmap review. Plan acceptance is
-neither normative ratification nor evidence of implementation. The transcripts
-in commit `8e6955c` and monolithic plan in `8b2c155` are non-normative and are
-not prerequisites or sources to restore.
+As recorded by [89I][checkpoint89i], checkpoint 36's MPL observations belong
+to **90B**, while Gel helpers and closure-sensitive reflection/empty-list
+migrations remain in **91C**. Earlier review-stage wording is historical and
+does not reopen those decisions. The transcripts in commit `8e6955c` and
+monolithic plan in `8b2c155` are non-normative and are not sources to restore.
+
+### Historical 89H starting snapshot
 
 The starting worktree on **2026-09-07**, on `codex/unified-nominal-adts` at
 `c20ab1f801b08b354e0d3629232f379181f1f903`, contained:
@@ -55,17 +54,19 @@ The starting worktree on **2026-09-07**, on `codex/unified-nominal-adts` at
 
 The candidate's existing status edits and corrected roadmap are accepted
 prior work; the checkpoint documents are supplied inputs. That revision alone
-does not contain all reviewed work. This slice adds this handoff and updates
+does not contain all reviewed work. 89H added this handoff and updated
 only candidate status, links, and pending-artifact prose. The existing
 `docs/handoff.md` continues to describe the checkpoint-88 implementation.
 
-After handoff review, later 89-series work must perform final reconciliation
-and **atomic ratification of the governing documents**, including promotion
-of the target language into `SPEC.md` and the reviewed sequence into
-`CHECKPOINTS.md`. A future implementer must verify that ratification occurred
-and that its specific checkpoint is authorized. Completing 89H does not
-complete checkpoint 89 or authorize 90A. This prerequisite ratification is
-distinct from 106B's final reconciliation with the implemented language.
+### Current ratification boundary
+
+The handoff review is complete. [89I][checkpoint89i] now supplies final
+reconciliation and atomic promotion into SPEC and CHECKPOINTS as one change
+submitted for review. Acceptance completes checkpoint 89. Before implementation,
+verify that acceptance and the authorization of the specific next checkpoint.
+90A needs its own document; it is not created or implemented here. This
+prerequisite ratification remains distinct from 106B's final reconciliation
+with the implemented language.
 
 ## Repository map at checkpoint 88
 
@@ -75,7 +76,7 @@ explains the dependencies in more detail.
 
 | Area | Existing files and why they matter |
 | --- | --- |
-| Parsing and checking | [aloe/parse.rkt](../aloe/parse.rkt) reads source and lowers `let` early; [aloe/type.rkt](../aloe/type.rkt) owns inference, nominal declarations, overloads, and checking. 90A must retain source alias provenance and checked decisions, including the written function annotations already specified by [SPEC §4.2](../SPEC.md#42-fn). |
+| Parsing and checking | [aloe/parse.rkt](../aloe/parse.rkt) reads source and lowers `let` early; [aloe/type.rkt](../aloe/type.rkt) owns inference, nominal declarations, overloads, and checking. 90A must retain source alias provenance and checked decisions, including the written function annotations already specified by [SPEC §1, fn](../SPEC.md#fn). |
 | Evaluation and bootstrap | [aloe/eval.rkt](../aloe/eval.rkt), [aloe/env.rkt](../aloe/env.rkt), and [aloe/library.rkt](../aloe/library.rkt) implement execution, environments, and List bootstrap. Construction currently reconstructs type arguments from values; empty lists and functions lack the retained closed types needed by U1. |
 | Public entry points and loads | [aloe/main.rkt](../aloe/main.rkt) exposes source/datum/program helpers; [aloe/driver.rkt](../aloe/driver.rkt) supplies CLI/REPL, loads, and host injection; [bin/aloe](../bin/aloe) enters that driver. Checking precedes evaluation of parsed expressions, and evaluation reads loaded source again. The target finalized checked transaction is future work, including bootstrap and transitive loads. |
 | Reflection | [aloe/mirror.rkt](../aloe/mirror.rkt), [aloe/signature.rkt](../aloe/signature.rkt), and evaluator/checker reflection paths describe and invoke rows. The current separate user nominal models, name-based compatibility, and flattened row indices must give way to shared opaque identities and exact row authority. Ordinary `subject`/`invoke` can currently leave inference unresolved; `invoke-mirrored` is not yet available. |
@@ -86,8 +87,8 @@ explains the dependencies in more detail.
 
 ## Target boundaries to retain
 
-The following summarizes the candidate; its linked sections govern details.
-All future family examples in [§16][examples], including the proposed helper
+The following summarizes SPEC; its linked sections govern details.
+All future family examples in [§16][examples], including the target helper
 fragments, are **unimplemented**, not checkpoint-88 runnable goldens.
 
 The [expression model][expressions] remains receiver-first sends with literal
@@ -184,8 +185,9 @@ generic row has enough evidence to execute in Gel.
 
 ## Following the accepted transition
 
-Use the roadmap's complete [25-entry sequence][sequence], [allocation
-notes][allocation], and [validation/application ownership table][ownership].
+Use the governing [25-entry index][index] together with the roadmap's
+[detailed sequence][sequence], [allocation notes][allocation], and
+[validation/application ownership table][ownership].
 The following highlights boundaries without defining another sequence.
 
 | Owner | Boundary to carry into its authorized checkpoint |
@@ -217,10 +219,10 @@ expand, or reassign any accepted entry.
    uncommitted inputs; a clean worktree or commit is not a prerequisite to
    reading the plan.
 2. Find the particular authorized checkpoint under `docs/checkpoints/` and
-   verify its completed prerequisites against the roadmap and, after atomic
-   ratification, `CHECKPOINTS.md`. A planned entry is not authorization. At
-   this snapshot, the next boundary is handoff review followed by later
-   89-series reconciliation/ratification, not implementation of 90A.
+   verify acceptance of 89I and completed prerequisites against CHECKPOINTS
+   and the supporting roadmap. A planned entry is not authorization. The
+   present boundary is 89I review, followed by a separately documented and
+   authorized 90A; do not start it from the plan alone.
 3. Implement that one slice with relevant tests. Follow its admitted boundary,
    preserved behavior, and required rejections. Historical syntax/inference
    tests migrate at their assigned owner while retaining valid behavioral
@@ -233,7 +235,7 @@ expand, or reassign any accepted entry.
    do not continue automatically into another checkpoint.
 
 If a semantic rule is missing or a material contradiction appears, report the
-exact candidate/audit/roadmap references before choosing a rule. Continue
+exact SPEC and provenance/roadmap references before choosing a rule. Continue
 unaffected work and identify any blocker explicitly; preserve the approved
 audit and plan. Ordinary implementation choices within an authorized slice
 remain the implementer's responsibility.
@@ -284,11 +286,15 @@ input and the optional `tui-term` dependency. Core Aloe, Boids, and MPL do not
 load that package. The full suite includes Term integration tests, and the
 in-memory hand check requires the Term module, which itself imports `tui/term`;
 these checks use supplied readers and need no physical TTY. The dependency
-is already available for this draft's validation. No package installation or
-live TTY session is required for 89H. Later Gel checkpoints retain their own
-required live interaction evidence.
+is already available for these documentation checks. No package installation
+or live TTY session is required for the 89H/89I documentation slices. Later
+Gel checkpoints retain their own required live interaction evidence.
 
 ## Validation of this documentation slice
+
+### Historical 89H validation
+
+The record below preserves checks and review status at the end of 89H.
 
 The [89G report][baseline-validation] reports **1,297 passing tests** for the
 unchanged baseline. That earlier run is separate from this slice's checks
@@ -321,7 +327,60 @@ not future family validation or activation. This draft is submitted for review
 without committing, ratifying the candidate, creating another checkpoint, or
 starting 90A.
 
-[candidate]: unified-nominal-adts-spec-candidate.md
+### 89I starting state and validation
+
+89I began on 2026-09-07 at `616c0ceecd7d52d7f9c3e2c4df89e9037ed57aaa`
+on `codex/unified-nominal-adts`. The index and tracked worktree were unchanged;
+the sole untracked input was:
+
+```text
+?? docs/checkpoints/0089i-ratify-unified-family-design.md
+```
+
+That supplied checkpoint is preserved. Starting copies of the governing and
+design documents, tracked/index diffs, status, and repository checksums were
+recorded for comparison. Historical bare SPEC section numbers refer to that
+revision. The current candidate [promotion map][candidate] records all 22
+target sections and the dispositions of preserved and superseded old rules.
+
+The unchanged full suite, `raco test tests`, passed **1,297 tests** for 89I.
+A fresh writable directory under `/tmp` was supplied as `TMPDIR` because the
+default `/var/tmp` is not writable in this environment. The exact
+[checkpoint-88 Term hand check][hand-check] also passed with
+`'("sealed" "sealed\r\n")`, using the installed `tui-term` package and supplied
+reader, without a live TTY or package installation. These are preservation
+results for the checkpoint-88 runtime, not acceptance of future syntax or
+family semantics.
+
+Documentation and preservation checks passed:
+
+- Walked the promotion map in both directions against the starting candidate
+  and old SPEC, including preserved forms, primitive operations, Point/Boids
+  observations, typed-host rules, U1 examples, diagnostics, exclusions, and
+  future validation obligations. No material contradiction or missing decision
+  remained. Current authority/status searches distinguish historical wording
+  from the normative target, unchanged runtime, and pending 89I review.
+- Compared candidate sections 1–22 byte-for-byte with their starting text.
+  All 25 detailed roadmap entries remain byte-for-byte unchanged; allocation
+  and ownership differ only in authority labels. The governing index contains
+  those entries once each in the accepted order, with preceding prerequisites
+  and links to their specific support. Historical index text and the 89G/89H
+  validation records are preserved.
+- Checked local links, anchors, section labels, fences, table structure, and
+  whitespace in all ten permitted documents. All original candidate Aloe
+  blocks are retained exactly in SPEC; its 29 Aloe blocks pass the s-expression
+  reader. That reader check establishes neither parser acceptance nor execution.
+- Inspected the staged and unstaged diffs, status, and changed-file list against
+  the starting state; `git diff --check` passed. Checksums confirm that every
+  existing file outside the ten permitted documents, including the supplied
+  untracked checkpoint, is unchanged. The index remains unchanged, and no new
+  repository artifact was created.
+
+Review remains pending. No staging, commit, next checkpoint, source migration,
+or runtime implementation is part of 89I. Acceptance completes checkpoint 89;
+90A still requires its own checkpoint document and authorization.
+
+[candidate]: unified-nominal-adts-spec-candidate.md#promotion-map
 [audit]: unified-nominal-adts-design-audit.md
 [u1]: unified-nominal-adts-reflection-resolution-proposal.md
 [roadmap]: unified-nominal-adts-implementation-roadmap.md
@@ -329,29 +388,33 @@ starting 90A.
 [decision10]: ../archive/unified-nominal-adts.md#decision-10-static-and-implementation-consequences
 [guardrails]: ../archive/unified-nominal-adts.md#cross-decision-guardrails
 [repository-evidence]: unified-nominal-adts-implementation-roadmap.md#repository-evidence-that-affects-ordering
-[expressions]: unified-nominal-adts-spec-candidate.md#1-preserved-expression-model
-[ontology]: unified-nominal-adts-spec-candidate.md#2-one-nominal-family-ontology
-[declarations]: unified-nominal-adts-spec-candidate.md#3-family-declarations-and-callable-surfaces
-[case]: unified-nominal-adts-spec-candidate.md#4-exhaustive-receiver-anchored-case
-[refinements]: unified-nominal-adts-spec-candidate.md#shallow-constructor-refinements
-[recursion]: unified-nominal-adts-spec-candidate.md#6-direct-regular-recursion
-[protocols]: unified-nominal-adts-spec-candidate.md#7-protocols-and-additive-extensions
-[checked]: unified-nominal-adts-spec-candidate.md#8-checked-programs-and-elaboration
-[closure]: unified-nominal-adts-spec-candidate.md#inference-closure-and-source-aliases
-[transactions]: unified-nominal-adts-spec-candidate.md#9-shared-descriptors-linking-and-transactions
-[equality]: unified-nominal-adts-spec-candidate.md#12-kernel-equality
-[display]: unified-nominal-adts-spec-candidate.md#13-raw-and-user-facing-display
-[reflection]: unified-nominal-adts-spec-candidate.md#14-family-aware-reflection
-[mirrored-invocation]: unified-nominal-adts-spec-candidate.md#invocation-with-mirrored-arguments-and-result
-[enumeration]: unified-nominal-adts-spec-candidate.md#argument-acceptance-and-enumeration
-[integration]: unified-nominal-adts-spec-candidate.md#15-specialized-built-ins-and-typed-host-integration
-[examples]: unified-nominal-adts-spec-candidate.md#16-candidate-examples
-[gel-examples]: unified-nominal-adts-spec-candidate.md#gel-invocation-through-mirrors
-[rejections]: unified-nominal-adts-spec-candidate.md#19-required-rejection-catalogue
-[exclusions]: unified-nominal-adts-spec-candidate.md#20-consolidated-exclusions-and-deferrals
+[expressions]: ../SPEC.md#1-preserved-expression-model
+[ontology]: ../SPEC.md#2-one-nominal-family-ontology
+[declarations]: ../SPEC.md#3-family-declarations-and-callable-surfaces
+[case]: ../SPEC.md#4-exhaustive-receiver-anchored-case
+[refinements]: ../SPEC.md#shallow-constructor-refinements
+[recursion]: ../SPEC.md#6-direct-regular-recursion
+[protocols]: ../SPEC.md#7-protocols-and-additive-extensions
+[checked]: ../SPEC.md#8-checked-programs-and-elaboration
+[closure]: ../SPEC.md#inference-closure-and-source-aliases
+[transactions]: ../SPEC.md#9-shared-descriptors-linking-and-transactions
+[equality]: ../SPEC.md#12-kernel-equality
+[display]: ../SPEC.md#13-raw-and-user-facing-display
+[reflection]: ../SPEC.md#14-family-aware-reflection
+[mirrored-invocation]: ../SPEC.md#invocation-with-mirrored-arguments-and-result
+[enumeration]: ../SPEC.md#argument-acceptance-and-enumeration
+[integration]: ../SPEC.md#15-specialized-built-ins-and-typed-host-integration
+[examples]: ../SPEC.md#16-target-examples
+[gel-examples]: ../SPEC.md#gel-invocation-through-mirrors
+[rejections]: ../SPEC.md#19-required-rejection-catalogue
+[exclusions]: ../SPEC.md#20-consolidated-exclusions-and-deferrals
 [sequence]: unified-nominal-adts-implementation-roadmap.md#proposed-sequence
 [allocation]: unified-nominal-adts-implementation-roadmap.md#allocation-changes-and-dependency-closure
 [ownership]: unified-nominal-adts-implementation-roadmap.md#validation-and-application-ownership
 [atomic-u1]: unified-nominal-adts-implementation-roadmap.md#the-atomic-u1-and-closure-transition
 [hand-check]: checkpoints/0088-seal-typed-host-boundary.md#hand-check
 [baseline-validation]: unified-nominal-adts-implementation-roadmap.md#validation-of-this-documentation-slice
+
+[spec]: ../SPEC.md
+[index]: ../CHECKPOINTS.md#future-family-implementation
+[checkpoint89i]: checkpoints/0089i-ratify-unified-family-design.md

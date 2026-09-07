@@ -3,6 +3,35 @@
 Spec is law: `SPEC.md`. This file is what we considered and rejected, so a
 new conversation does not replay them.
 
+## Unified family ratification (2026-09-07)
+
+The audited unified design, including approved U1, is promoted into
+[SPEC.md](../SPEC.md), with the accepted order in [CHECKPOINTS.md](../CHECKPOINTS.md),
+as the **89I ratification change submitted for review**. 89F's audit and the
+corrected 89G/89H roadmap and handoff are accepted. Acceptance of 89I completes
+the design/documentation arc; runtime behavior remains at checkpoint 88.
+
+One nominal family model covers products and closed variants with explicit
+constructors, exhaustive case, invariant arguments, uniform nominal protocols,
+checked transactions, and exact reflection. U1 adds the fixed mirrored-argument
+and mirrored-result operation, with fresh selected-row resolution only from
+fixed owner and sealed closed inputs before execution. Ordinary construction,
+`subject`, and ordinary-result `invoke` retain closure.
+
+The earlier class/generated-`new` model, positional single-protocol claims,
+and the Math experiment's exclusion of required rows and multiple conformances
+are superseded target restrictions. Their original rationale below remains
+historical. Math remains open, and domain `=`/`show` stay separate from kernel
+equality/raw display. The typed-host capability decision remains unchanged.
+
+The source bridge begins in 91A, all repository source migrates in 103A/103B,
+and 103C removes the bridge without a second nominal runtime. The corrected
+plan keeps MPL's checked contextual observations in 90B and U1/Gel helpers/
+closure migrations together in 91C. Specify before implementing: 90A needs
+its own checkpoint document and authorization after 89I acceptance. The
+[implementation handoff](unified-nominal-adts-implementation-handoff.md) retains
+the evidence and stopping rules.
+
 ## Evaluation (2026-09-02)
 
 Decided: send, not Scheme apply. Selector is a source symbol.

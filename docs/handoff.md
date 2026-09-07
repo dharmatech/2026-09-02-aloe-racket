@@ -5,6 +5,22 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
 do not replay rejected designs.
 
+## Normative target and current review boundary
+
+[SPEC.md](../SPEC.md) contains the unified family target in the **89I
+ratification change submitted for review**. The completed 89F audit with U1,
+corrected 89G roadmap, and 89H handoff are accepted with no findings.
+Acceptance of 89I completes checkpoint 89's design/documentation arc;
+executable behavior remains through checkpoint 88 as described below.
+
+For future work, read the [family implementation handoff](unified-nominal-adts-implementation-handoff.md)
+and governing [checkpoint order](../CHECKPOINTS.md#future-family-implementation).
+90A is the next planned slice and needs its own checkpoint document and
+authorization. Families, `case`, full send headers, retained checked types,
+strict closure, and `invoke-mirrored` remain implementation work. The current
+class-based examples are preserved until their assigned migration; the target
+ultimately has only explicit families and removes the temporary bridge in 103C.
+
 ## What Aloe is
 
 Aloe is an s-expression language implemented by a definitional interpreter and
@@ -75,7 +91,8 @@ application feature that consumes it.
   for it.
 - Do not weaken the type checker to make a golden pass.
 - Do not add a second meaning for a list or a second dispatch rule.
-- Protocols are types, not method tables. Runtime lookup remains on the class.
+- Protocols are types, not method tables. Runtime lookup remains on the
+  receiver's nominal surface: its class at checkpoint 88, its family in the target.
 - Preserve exact `Int`/`Float` separation and explicit `(n float)` conversion.
 - Keep host facts and effects in Racket; keep domain objects, policy, and
   composition in Aloe.
@@ -93,6 +110,10 @@ selectors, path representation, enumeration boundary, error policy, and Gel
 presentation remain deliberately undecided. In particular, directory
 enumeration must supply concrete pressure before admitting compound crossing
 values or opaque host handles.
+
+The family target requires a closed classification model with ordinary `Other`,
+local capabilities, and exhaustive consumers in 106A. That validation selects
+no OS API or expanded host crossing; the application/host decisions above remain open.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

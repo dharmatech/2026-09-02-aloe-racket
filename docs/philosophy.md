@@ -1,5 +1,10 @@
 # Aloe philosophy
 
+The kernel summary follows the unified target in [SPEC.md](../SPEC.md),
+promoted in the **89I ratification change submitted for review**. Runtime
+behavior remains at checkpoint 88; acceptance completes the design arc, and
+each future implementation slice requires separate authorization.
+
 Programming languages should be designed not by piling feature on top of
 feature, but by removing the weaknesses and restrictions that make additional
 features appear necessary.  — R4RS / R5RS
@@ -11,7 +16,7 @@ Aloe is a small diamond: Scheme’s growable core, with two facets changed.
 - The language is typed. Structure is declared; expressions are inferred.
 
 The kernel should stay small enough that new programs grow as *libraries and
-classes*, not as new host builtins. If a feature feels necessary, look for a
+families*, not as new host builtins. If a feature feels necessary, look for a
 restriction first and lift that.
 
 Grow the language from applications. Write a program in Aloe. Where it cannot
@@ -26,11 +31,13 @@ Send plus types exist so an editor can ask “what messages does this expression
 
 - send
 - `fn` + `call`
-- `define`, `define-class`, `self`, generated `new`
+- `define`, `define-family`, `self`, explicitly declared constructors
+- products and closed variants in one immutable nominal model
+- receiver-anchored exhaustive `case`; constructor refinements remain checker knowledge
 - `Bool` and `(b if then-fn else-fn)`; `(if …)` is sugar
-- `let` is sugar for `fn` + `call`
+- `let` retains parallel `fn` + `call` behavior, with source aliases preserved through checking
 - primitive objects: `Int`, `Float`, and a walkable list representation
-- types in annotation position; checker, not a second language
+- types in annotations and complete static send headers; checker, not a second language
 
 ## Not kernel (grow later)
 
@@ -48,5 +55,5 @@ value, never an ambient kernel power.
 
 ## Test of the diamond
 
-A new program that does not force a new Racket builtin — only new classes
+A new program that does not force a new Racket builtin — only new families
 and methods — means the core is still small enough.

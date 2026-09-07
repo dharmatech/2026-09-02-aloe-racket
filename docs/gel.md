@@ -13,6 +13,32 @@ This file is law for the Gel phase. Informal chat is how we amend it.
 Aloe language law remains `SPEC.md`. Rejected language ideas remain
 `docs/decisions.md`.
 
+## Unified target transition
+
+The application descriptions below retain the current checkpoint-88 keys,
+state, output, and runners. [SPEC.md](../SPEC.md) defines the unified target in
+the **89I ratification change submitted for review**; its acceptance completes
+checkpoint 89's design/documentation arc. The corrected roadmap and handoff
+are accepted. [CHECKPOINTS.md](../CHECKPOINTS.md#future-family-implementation)
+governs implementation order; a planned entry still requires its own checkpoint
+document and authorization.
+
+91C introduces `invoke-mirrored`, all three [approved helper replacements](../SPEC.md#gel-invocation-through-mirrors),
+and inference closure together. Existing valid calls, keys, stack results and
+output are preserved, with the intentional menu addition when explicitly
+browsing a Mirror object's own API. Ordinary subject menus acquire no row.
+103B separately migrates Gel's nominal declarations; 105 replaces the pending
+sentinel list with `(Option GelRow)` and its exhaustive consumers. Further
+state restructuring is optional when it makes the application clearer.
+
+These transitions preserve the existing host/application boundary and choose
+no new keys, UI, or host capabilities. For the 89I documentation slice, the
+full suite and in-memory [checkpoint-88 Term hand check](checkpoints/0088-seal-typed-host-boundary.md#hand-check)
+are required; supplied readers need no live TTY session. The installed
+`tui-term` package is used by Term integration. Later implementation checkpoints
+retain their required live interactions. See the [family handoff](unified-nominal-adts-implementation-handoff.md)
+for the current review boundary and validation evidence.
+
 ---
 
 ## 1. Job

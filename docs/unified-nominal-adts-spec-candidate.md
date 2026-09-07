@@ -1,36 +1,26 @@
 # Unified nominal algebraic families: specification candidate
 
-> **STATUS — INCOMPLETE AND NON-NORMATIVE**
+> **HISTORICAL CANDIDATE — NON-NORMATIVE — PROMOTED IN THE 89I REVIEW CHANGE**
 >
-> This document authorizes no language, checker, evaluator, runtime, library,
-> application, or compatibility change. `SPEC.md` remains law and is the
-> governing Aloe specification. Checkpoints 89A–89E cover only the proposed
-> language and static model, checked execution and runtime-value model,
-> family-aware reflection, specialized built-in and typed host integration,
-> and the diagnostic, exclusion, and validation catalogue. Completing that
-> catalogue is not final design approval or authorization to accept family syntax.
-> The [89F audit record](unified-nominal-adts-design-audit.md) records the
-> completed whole-candidate audit, including adoption and rechecking of the
-> [user-approved U1 reflection amendment](unified-nominal-adts-reflection-resolution-proposal.md).
-> That amendment adds `Mirror.invoke-mirrored` to the proposed contract.
-> The corrected [89G implementation roadmap](unified-nominal-adts-implementation-roadmap.md)
-> is reviewed and accepted as a plan with no remaining review finding, as
-> recorded by [checkpoint 89H](checkpoints/0089h-draft-family-implementation-handoff.md).
-> The [89H implementation handoff](unified-nominal-adts-implementation-handoff.md)
-> is drafted for review; future roadmap entries remain inactive.
-> After handoff review, later 89-series work must complete final reconciliation
-> and atomic ratification, including promotion into `SPEC.md` and of the
-> reviewed sequence into `CHECKPOINTS.md`. The proposed family
-> additions remain unimplemented and non-normative; runtime
-> behavior remains exactly as implemented through checkpoint 88.
+> [SPEC.md](../SPEC.md) now contains the complete normative target in the
+> ratification change submitted for review. This file preserves the accepted
+> pre-ratification design; it is not a second evolving specification. The
+> [promotion map](#promotion-map) records every section's normative home.
+> Runtime behavior remains complete through checkpoint 88.
 
-This candidate describes one proposed replacement for Aloe's user-defined
-nominal class model. It unifies one-constructor products and closed variants as
-nominal algebraic *families* while preserving Aloe's receiver-first expression
-model and its open, nominal protocols.
+The [89F audit](unified-nominal-adts-design-audit.md), including approved and
+rechecked [U1](unified-nominal-adts-reflection-resolution-proposal.md), is complete.
+The corrected [89G roadmap](unified-nominal-adts-implementation-roadmap.md) and
+[89H handoff](unified-nominal-adts-implementation-handoff.md) are accepted with
+no findings, as recorded by [89I](checkpoints/0089i-ratify-unified-family-design.md).
+Acceptance of 89I completes checkpoint 89's design/documentation arc; 90A
+requires its own checkpoint document and authorization.
 
-The words “must,” “may,” and “reject” below state rules of the candidate, not
-rules that the current implementation accepts.
+Sections 1–22 below are preserved verbatim from revision
+`616c0ceecd7d52d7f9c3e2c4df89e9037ed57aaa`, including examples and validation
+catalogues. Their “candidate,” “later ratification,” and review-stage wording
+is historical. Current language-law references belong to `SPEC.md`, and
+[CHECKPOINTS.md](../CHECKPOINTS.md) governs the promoted implementation order.
 
 ## 1. Preserved expression model
 
@@ -2503,42 +2493,67 @@ The completed whole-candidate audit is recorded in the
 
 ## Pending completion
 
-> **89F AUDIT COMPLETE; CORRECTED 89G ROADMAP ACCEPTED; 89H HANDOFF DRAFTED FOR REVIEW — CANDIDATE STILL INCOMPLETE AND NON-NORMATIVE**
+89F's audit and U1 resolution, the corrected 89G plan, and 89H's handoff are
+accepted inputs. The complete target and 25-entry sequence are promoted in
+the **89I ratification change submitted for review**. This is the remaining
+review boundary for checkpoint 89; no further unspecified 89-series artifact
+is needed to supply the same ratification. Implementation and its final
+documentation seal remain future work. A passing checkpoint-88 suite proves
+preservation, not implementation of the target.
 
-The [89F audit](unified-nominal-adts-design-audit.md) covers Decisions 1–10,
-cross-section interactions, examples, diagnostics, exclusions, and validation
-obligations. It preserves bounded corrections C1–C6 and records
-[U1's approved resolution](unified-nominal-adts-design-audit.md#u1-gel-reflection-and-inference-closure)
-through `invoke-mirrored`, including the three Gel helper rewrites, sealed
-input evidence, result adaptation, and failure boundaries. No material issue
-remains unresolved in that audit. This completes the documentation audit,
-not checkpoint 89 as a whole or implementation of the family model.
+### Promotion map
 
-The corrected [89G roadmap](unified-nominal-adts-implementation-roadmap.md)
-is reviewed and accepted as a plan with no remaining review finding.
-[Checkpoint 89H](checkpoints/0089h-draft-family-implementation-handoff.md)
-records that disposition, including 90B ownership of checkpoint 36's MPL
-observations through checked contextual reflection; the Gel helper rewrites
-and closure-sensitive reflection/empty-list migrations remain in 91C.
-The [89H implementation handoff](unified-nominal-adts-implementation-handoff.md)
-is drafted for review. Historical status prose in read-only documents remains
-scoped to its stage and does not reopen completed review or U1's approved
-decision. These documentation steps implement no semantic validation obligation
-and do not activate the roadmap.
+Section numbers remain aligned. The normative text uses the approved rules
+and replaces stage-specific candidate wording; the preserved text above stays
+available for comparison. Sources are this candidate and `SPEC.md` at
+`616c0ceecd7d52d7f9c3e2c4df89e9037ed57aaa`; no new semantic decision is introduced.
 
-After handoff review, remaining 89-series work is final reconciliation and
-atomic ratification into `SPEC.md`, including promotion of the reviewed
-sequence into `CHECKPOINTS.md`. That prerequisite is distinct from final
-documentation reconciliation after implementation.
+| Candidate section | Normative location and disposition |
+| --- | --- |
+| [1. Preserved expression model](#1-preserved-expression-model) | [SPEC §1](../SPEC.md#1-preserved-expression-model) — preserved expression rules plus existing form details |
+| [2. One nominal family ontology](#2-one-nominal-family-ontology) | [SPEC §2](../SPEC.md#2-one-nominal-family-ontology) — approved rules and obligations promoted |
+| [3. Family declarations and callable surfaces](#3-family-declarations-and-callable-surfaces) | [SPEC §3](../SPEC.md#3-family-declarations-and-callable-surfaces) — approved rules and obligations promoted |
+| [4. Exhaustive receiver-anchored `case`](#4-exhaustive-receiver-anchored-case) | [SPEC §4](../SPEC.md#4-exhaustive-receiver-anchored-case) — approved rules and obligations promoted |
+| [5. Types, generic inference, and constructor refinements](#5-types-generic-inference-and-constructor-refinements) | [SPEC §5](../SPEC.md#5-types-generic-inference-and-constructor-refinements) — approved rules and obligations promoted |
+| [6. Direct regular recursion](#6-direct-regular-recursion) | [SPEC §6](../SPEC.md#6-direct-regular-recursion) — approved rules and obligations promoted |
+| [7. Protocols and additive extensions](#7-protocols-and-additive-extensions) | [SPEC §7](../SPEC.md#7-protocols-and-additive-extensions) — conformance/extensions plus preserved protocol declaration signatures |
+| [8. Checked programs and elaboration](#8-checked-programs-and-elaboration) | [SPEC §8](../SPEC.md#8-checked-programs-and-elaboration) — approved rules and obligations promoted |
+| [9. Shared descriptors, linking, and transactions](#9-shared-descriptors-linking-and-transactions) | [SPEC §9](../SPEC.md#9-shared-descriptors-linking-and-transactions) — approved rules and obligations promoted |
+| [10. Runtime family values and dispatch](#10-runtime-family-values-and-dispatch) | [SPEC §10](../SPEC.md#10-runtime-family-values-and-dispatch) — approved rules and obligations promoted |
+| [11. Central runtime type relation and constructor integrity](#11-central-runtime-type-relation-and-constructor-integrity) | [SPEC §11](../SPEC.md#11-central-runtime-type-relation-and-constructor-integrity) — approved rules and obligations promoted |
+| [12. Kernel equality](#12-kernel-equality) | [SPEC §12](../SPEC.md#12-kernel-equality) — approved rules and obligations promoted |
+| [13. Raw and user-facing display](#13-raw-and-user-facing-display) | [SPEC §13](../SPEC.md#13-raw-and-user-facing-display) — approved rules and obligations promoted |
+| [14. Family-aware reflection](#14-family-aware-reflection) | [SPEC §14](../SPEC.md#14-family-aware-reflection) — approved rules and obligations promoted |
+| [15. Specialized built-ins and typed host integration](#15-specialized-built-ins-and-typed-host-integration) | [SPEC §15](../SPEC.md#15-specialized-built-ins-and-typed-host-integration) — integration plus explicit preserved numeric/List/Symbol operation details |
+| [16. Candidate examples](#16-candidate-examples) | [SPEC §16](../SPEC.md#16-target-examples) — all examples, including U1 before/after helpers; target and baseline labels clarified |
+| [17. Reconciliation and compatibility boundary](#17-reconciliation-and-compatibility-boundary) | [SPEC §17](../SPEC.md#17-reconciliation-and-compatibility-boundary) — completed-source boundary and the accepted temporary-bridge schedule |
+| [18. Diagnostics and detection boundaries](#18-diagnostics-and-detection-boundaries) | [SPEC §18](../SPEC.md#18-diagnostics-and-detection-boundaries) — approved rules and obligations promoted |
+| [19. Required rejection catalogue](#19-required-rejection-catalogue) | [SPEC §19](../SPEC.md#19-required-rejection-catalogue) — approved rules and obligations promoted |
+| [20. Consolidated exclusions and deferrals](#20-consolidated-exclusions-and-deferrals) | [SPEC §20](../SPEC.md#20-consolidated-exclusions-and-deferrals) — approved rules and obligations promoted |
+| [21. Semantic validation obligations](#21-semantic-validation-obligations) | [SPEC §21](../SPEC.md#21-semantic-validation-obligations) — approved rules and obligations promoted |
+| [22. Application validation and eventual completion evidence](#22-application-validation-and-eventual-completion-evidence) | [SPEC §22](../SPEC.md#22-application-validation-and-eventual-completion-evidence) — all application/completion obligations plus preserved Point/Boids observations |
 
-Sections 18–22 catalogue the proposed rules, including U1's future validation
-obligations. A passing unchanged checkpoint-88 suite is preservation evidence,
-not validation of unimplemented family semantics. Later substantive edits
-require review of affected audit conclusions before ratification. Optional
-algebraic rewrites of built-ins remain deferred and are not unfinished
-requirements of the family model.
+The preserved and superseded material from the pre-ratification `SPEC.md` is
+accounted for separately; historical bare section numbers retain that meaning.
 
-This section records the remaining boundary; it does not perform ratification.
-Nothing in this candidate authorizes the next 89-series checkpoint,
-implementation work, migration, parser acceptance, or changes to the behavior
-complete through checkpoint 88.
+| Old SPEC material | Disposition in the normative target |
+| --- | --- |
+| Introduction and §§1–2: reader, atoms, sends, literal selectors, `self`, capitalization | [§1](../SPEC.md#1-preserved-expression-model) and [§3 callable surfaces](../SPEC.md#local-and-whole-family-methods) retain the expression contracts; class-specific dispatch is replaced by the family surfaces in [§10](../SPEC.md#10-runtime-family-values-and-dispatch). Branch-specific/version-experiment authority is superseded by one target/status note. |
+| §§3.1–3.2, 4.5: classes, fields, construction | Replaced deliberately by [§§2–3](../SPEC.md#2-one-nominal-family-ontology) and [§17](../SPEC.md#17-reconciliation-and-compatibility-boundary): explicit constructors and constructor-owned fields, no generated `new` or permanent class syntax. |
+| §§3.3–3.4, 4.8: protocol signatures/markers and overloads | [§7](../SPEC.md#7-protocols-and-additive-extensions) retains declarations and receiver-anchored specificity; positional single claims are superseded by multiple uniform family `conforms`, full-domain/coherence checks, and exact identity. |
+| §§4.1–4.4, 4.7, 4.9: define, optional fn annotations, call, parallel let, lazy if, one-expression bodies, check | [§1 preserved forms](../SPEC.md#preserved-syntax-and-forms) retains the detailed contracts, with [§8](../SPEC.md#8-checked-programs-and-elaboration) closure/provenance and [§12](../SPEC.md#12-kernel-equality) trusted equality. The old `42-fn` anchor remains meaningful. |
+| §4.6 and §6: List extension route and operations | [§15](../SPEC.md#numeric-and-list-operation-reference) retains messages, callback `call`, library ownership and `T` scope; [closure](../SPEC.md#inference-closure-and-source-aliases) replaces permissive unresolved empties. |
+| §5: types, generics, checking | [§5](../SPEC.md#5-types-generic-inference-and-constructor-refinements) and [§8](../SPEC.md#8-checked-programs-and-elaboration) retain invariance, annotation/arrow checking, numeric separation and no constraint syntax; add approved complete headers, enclosing constraints, refinements and closure. Family construction receives checked arguments. |
+| §§7–7.2 and §11: numeric/Bool/String/Symbol and display contracts | [§15 operation reference](../SPEC.md#numeric-and-list-operation-reference), [§1 conditionals](../SPEC.md#if-and-cond), and [§13 display](../SPEC.md#13-raw-and-user-facing-display) retain explicit conversion, laziness, interned names and `show`/`:raw` separation. |
+| §§7.3–7.4 and §12: Mirror/Signature | [§14](../SPEC.md#14-family-aware-reflection) preserves the APIs with closed contextual obligations and exact rows, adds approved roles/generics and U1, and hides multi-constructor locals. All [Gel/generic examples](../SPEC.md#gel-invocation-through-mirrors) remain explicit. |
+| §8: exclusions | [§20](../SPEC.md#20-consolidated-exclusions-and-deferrals) preserves unaffected exclusions; required protocol signatures and multiple conformances are intentionally included. |
+| §9: Point/Boids goldens and five type errors | [§22 preserved observations](../SPEC.md#preserved-point-and-boids-observations) retains every observation under its stated complete definitions/type context; current sources remain checkpoint-88 programs until migration. |
+| §10: interpreter sketch and early let lowering | [§8](../SPEC.md#required-pipeline) retains the Racket interpreter/checker and prohibition on elaborating object sends into Racket evaluation; checked elaboration and alias provenance replace the raw sketch and early loss of `let`. |
+| §11: load and cond | [§1](../SPEC.md#preserved-syntax-and-forms) retains shared environment, relative path order and required final `else`; [§9](../SPEC.md#transactional-checking-and-evaluation) finalizes transitive loads atomically before evaluation. |
+| §13: complete typed-host boundary | [§15 host declarations](../SPEC.md#host-declarations-and-scalar-crossings) and [injection/sealing](../SPEC.md#injection-ownership-and-opaque-composition) retain the exact interface, paired preflight, limited crossings, immutable strings, causes, breaks, and sealed public/internal boundary. |
+
+The [index](../CHECKPOINTS.md#future-family-implementation) preserves 90B's
+checked contextual MPL observations, 91C's atomic U1/helpers/closure work,
+103C's bridge removal, and all later application owners. Review of 89I is
+pending; no runtime change, test migration, commit, or next checkpoint is part
+of this promotion.
