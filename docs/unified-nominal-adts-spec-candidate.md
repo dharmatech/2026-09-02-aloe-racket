@@ -4,10 +4,10 @@
 >
 > This document authorizes no language, checker, evaluator, runtime, library,
 > application, or compatibility change. `SPEC.md` remains law and is the
-> governing Aloe specification. Checkpoints 89A and 89B cover only the
-> proposed language and static model and the proposed checked execution and
-> runtime-value model. Later 89-series checkpoints must complete and audit the
-> remaining subjects, then atomically ratify the candidate or reject it. The
+> governing Aloe specification. Checkpoints 89A–89C cover only the proposed
+> language and static model, checked execution and runtime-value model, and
+> family-aware reflection. Later 89-series checkpoints must complete and audit
+> the remaining subjects, then atomically ratify the candidate or reject it. The
 > proposed family additions remain unimplemented and non-normative; runtime
 > behavior remains exactly as implemented through checkpoint 88.
 
@@ -720,7 +720,7 @@ section 1.
 ### One linked descriptor graph
 
 Checking, evaluation, conformance validation, dynamic type validation, kernel
-equality, structural printing, and later family-aware reflection share one
+equality, structural printing, and family-aware reflection share one
 linked program-image graph of nominal descriptors. Its significant opaque
 identities are:
 
@@ -922,10 +922,10 @@ specified family-to-protocol relation, never presentation data or structural
 coincidence.
 
 The same relation governs constructor payloads, factory results, dynamically
-selected overload arguments and results, and the later reflective-invocation
-and host-crossing boundaries. Those later specifications must use this
-relation rather than introduce parallel compatibility rules; family-aware
-reflection, specialized built-ins, and typed host integration remain pending.
+selected overload arguments and results, and the reflective boundaries in
+section 14. Specialized built-ins and typed host integration remain pending;
+their later specifications must use this relation at host crossings and other
+dynamic boundaries rather than introduce parallel compatibility rules.
 
 Trusted checked code may omit a redundant dynamic check only when its behavior
 is equivalent to applying this relation.
@@ -1019,10 +1019,304 @@ falls back to structural display. The raw path remains independently available
 and never invokes `show`, including when user display code fails, recurses, or
 deliberately hides structure.
 
-## 14. Candidate examples
+## 14. Family-aware reflection
 
-These examples illustrate the candidate syntax. They are not checkpoint-89A
-or checkpoint-89B goldens and are not accepted by the current implementation.
+### Mirror boundary and receiver view
+
+`Mirror` is the explicit, sealed boundary for describing a value's public
+callable surface. Reflection operations belong to `Mirror` and `Signature`,
+not to every ordinary value. The existing vocabulary retains these roles:
+
+| Operation | Result and role |
+| --- | --- |
+| `(Mirror of value)` | A `Mirror` of any Aloe value. |
+| `(mirror messages)` | The unique callable selectors as a `(List Symbol)`. |
+| `(mirror signatures)` | One opaque `Signature` per public overload row, as a `(List Signature)`. |
+| `(mirror invoke signature argument ...)` | The ordinary result of invoking that exact owned row, with the checks below. |
+| `(mirror subject)` | The original ordinary value, under contextual typing and runtime validation. |
+| `(mirror raw)` | A `String` from the structural renderer in section 13. |
+| `(signature selector)` | The row's literal selector description as a `Symbol`. |
+| `(signature params)` | A `List` of ordered parameter-type descriptions. |
+| `(signature return)` | The result-type description. |
+| `(signature accepts? candidate-mirror)` | A `Bool` answering the one-parameter compatibility question below. |
+
+A mirror describes the actual runtime nominal receiver. It does not retain
+the expression's original static view: a value seen through a protocol still
+reflects its concrete family's public surface. Protocol widening creates no
+wrapper for reflection to reveal. Nor does the mirror retain or manufacture a
+constructor-set refinement, including when it is made from direct
+construction or inside a singleton-refined branch.
+
+Asking an existing mirror for signatures describes its stored subject.
+`(Mirror of mirror)` explicitly reflects the `Mirror` value itself instead.
+Selector symbols and reified type descriptions describe operations; only the
+opaque signature grants authority to invoke its exact row.
+
+`subject` returns the value originally passed to `Mirror of`, not another
+mirror. Its checker result is the expected type when available and otherwise
+a fresh inference variable. Section 8's inference closure still applies: that
+variable must be resolved within the enclosing checking unit. The checked
+contextual obligation is enforced at the runtime boundary with section 11's
+relation, so an incompatible subject is rejected rather than treated as a
+successful cast.
+
+Unwrapping forgets earlier constructor refinement under section 5. An expected
+concrete family permits subsequent ordinary exhaustive case analysis; it does
+not recover a prior branch's singleton fact. Source annotations still cannot
+request a constructor refinement. A one-constructor family retains local
+access because its ordinary family type already has only one possible
+constructor.
+
+### Callable surfaces and closed instance representation
+
+The subject determines the entire public reflected surface:
+
+| Mirrored subject | Callable rows |
+| --- | --- |
+| Multi-constructor family instance | Whole-family rows only. |
+| One-constructor family instance | Whole-family rows, sole-constructor local rows, and payload accessors. |
+| Family type object | Representation constructors and factories. |
+| Primitive value or type object | Its existing public primitive rows. |
+| Host capability | Rows declared by its exact host interface. |
+| A `Mirror` value | The reflection API of `Mirror`. |
+
+For a multi-constructor instance, both `messages` and `signatures` exclude
+constructor-local rows and payload accessors when forming their results.
+They are not exposed and merely rejected at invocation time. Repeated local
+selectors on several constructors do not become reflective family rows.
+Creating the mirror inside a refined branch changes neither list and grants
+no escaping refinement certificate.
+
+A multi-constructor instance mirror supplies no reflective query for its
+current constructor identity or authoritative tag, constructor predicates,
+payload values or indexed payload access, constructor refinements, opaque
+nominal identity tokens, conformance lists, method bodies, dispatch tables,
+source locations, or closure representation. In particular, there is no
+`mirror constructor`, `mirror payload`, or `mirror is-constructor?`
+operation. A multi-constructor family's representation is consumed through
+ordinary exhaustive `case` or through explicitly declared whole-family
+operations and protocols. A whole-family operation may itself use exhaustive
+knowledge; its ordinary result is not reflective refinement authority.
+
+The family type object exposes the complete public construction schema. Each
+constructor row describes its selector, ordered payload types, family result,
+generics, and constructor role; each factory overload has its own row and
+factory role. Payload position names do not become separate reflective data.
+There is no first-class `Constructor` token: a constructor signature is an
+exact-row capability with descriptive metadata, not a new constructor value
+or source type.
+
+A whole-family overload with `per-constructor` bodies contributes one
+signature, irrespective of the number of implementation bodies. The `case`
+form is syntax and never appears in `messages` or `signatures`.
+
+### Signature metadata and descriptive types
+
+The candidate adds exactly these metadata queries:
+
+```text
+(signature role)        : Symbol
+(signature type-params) : (List Symbol)
+```
+
+`role` returns an interned symbol with one of these names:
+
+| Role | Meaning |
+| --- | --- |
+| `constructor` | A bodyless representation-constructor row on its family type object. |
+| `factory` | An ordinary factory row on its family type object, including an allowed extension. |
+| `family` | A whole-family overload, whether uniform or implemented with `per-constructor` bodies. |
+| `local` | A reflectable sole-constructor local method or payload accessor. |
+| `operation` | A primitive, reflection, or host row outside the algebraic family and type-object surfaces. |
+
+`type-params` describes the row's applicable generic parameters as ordered
+presentation symbols. A constructor has the family declaration's parameters
+and no additional constructor-local parameters. A type-object factory has
+family parameters followed by its fresh row-local parameters. This is the
+same family-then-row order used for instantiation in section 5, not a second
+type-argument syntax. A non-generic row returns an empty list.
+
+For an instance row, the receiver's fixed family arguments are substituted
+into its parameter and result descriptions. They are not fresh parameters of
+that row. Only fresh row-local method parameters remain in `type-params` and
+appear as variables in the descriptions. For example, the `map` row of an
+`(Option Int)` instance has parameter description `(-> Int U)`, result
+description `(Option U)`, and the one type-parameter symbol `U`.
+
+`selector`, `params`, and `return` retain their existing meanings. A simple
+type description is a `Symbol`; compound type grammar is nested `List` and
+`Symbol` data. Thus the description `(Option Int)` is a list containing the
+symbols named `Option` and `Int`, not an evaluated send. The outer list from
+`params` records parameter order and may contain both simple and compound
+descriptions. Constructor results describe the base family type without their
+internal singleton set; constructor-set refinements never appear in ordinary
+reflected type data.
+
+These descriptions are presentation data, not first-class types, cast tokens,
+source annotations, runtime type tokens, or proof of nominal identity.
+Unrelated same-spelled declarations may have identical descriptions. Matching
+those descriptions cannot establish ownership or compatibility. There is no
+general `mirror type` query, first-class type universe, or operation for
+comparing arbitrary runtime types.
+
+All metadata and hidden authority derive from the shared descriptors in
+section 9. This specifies their semantic contents, not public Racket
+structures, copied method tables, or a physical storage layout.
+
+### Exact ownership and row authority
+
+A signature is an unforgeable capability for one exact dispatch row. Its
+hidden ownership records the row identity together with the relevant owner:
+
+- the exact family instantiation for an instance row;
+- the exact family type object for a constructor or factory row;
+- the appropriate constructor identity as well for a reflectable local row;
+  or
+- the exact primitive or host-interface identity for those receiver kinds.
+
+A whole-family signature is usable on every constructor of its owning family
+at the same generic instantiation. It cannot transfer from `(Option Int)` to
+`(Option String)` or to an unrelated declaration also named `Option`. A
+constructor signature belongs to the owning family type object's mirror, not
+to a mirror of one of its instances. Fresh generic construction does not mint
+a new family type object or transfer the row to another owner.
+
+Host ownership follows the exact interface, not its diagnostic name or one
+receiver's allocation identity. A row may be used on another receiver of that
+same interface, with the target receiver supplying its state. A same-named but
+distinct interface is rejected.
+
+Signatures retain opaque row descriptors; a flattened menu index is not
+authority. Source code cannot construct a signature from a selector, role, or
+type description. Signatures may be stored and copied, but the candidate
+promises no user-visible signature equality, ordering, hashing, allocation
+identity, or stable serialization. Repeated reflection need not reveal
+whether equivalent capabilities share an allocation. This does not alter
+section 12's total internal kernel equality or add a signature comparison
+message.
+
+### Checked exact-row invocation and generics
+
+`Mirror.invoke` invokes the selected descriptor directly. It neither converts
+the selector description into `perform` nor repeats overload resolution. For
+a whole-family row with `per-constructor` bodies, choosing the body for the
+actual constructor is execution of that one row, not selection of another
+overload.
+
+The checker requires the first runtime argument to be `Signature` and checks
+the remaining argument expressions normally. Invocation must validate:
+
+1. the signature's exact owner and row authority against the target subject;
+2. the argument count against that row;
+3. each argument against the instantiated parameter type;
+4. complete resolution of applicable generic parameters before running the
+   row or constructing a value; and
+5. the ordinary result against the instantiated return type and any checked
+   contextual result obligation before returning it to Aloe.
+
+All compatibility checks use section 11's central relation. A wrong owner,
+wrong arity, incompatible argument, conflicting or insufficient generic
+information, or incompatible result is rejected. Rejection does not fall back
+to a similarly named row or a more convenient overload. Constructor integrity
+is enforced at the construction boundary under section 11. Static failures
+prevent evaluation under section 9; obligations that depend on an opaque
+signature are enforced by the guarded runtime invocation.
+
+An instance's family arguments are already fixed by its exact owner. Its
+row-local generic parameters are fresh for every invocation. A constructor
+or factory on a family type object is freshly instantiated on each invocation
+using the same constraints as a direct send: explicit static information,
+the expected result, argument types, and the enclosing expression. Applicable
+parameters follow the family-then-row order above. Reflection adds neither
+partial instantiation nor a second send form or signature-specialization API.
+
+When a signature variable hides the selected row from the checker, the
+invocation's result type remains its expected type, or a fresh inference
+variable when there is no expectation. The latter must be resolved under
+section 8's closure rule. The checked invocation carries its resolved static
+information and contextual result obligation; runtime validation checks them
+against the opaque selected descriptor. Bound generic variables in a stored
+row schema are not escaped source inference variables.
+
+Hiding the row does not permit unresolved construction semantics. The checked
+information must suffice, when validated against the selected descriptor, to
+determine all required instantiations before that row executes. If it does
+not, invocation is rejected. In particular, a contextual exact family may
+supply a generic constructor's result arguments; an expected protocol alone
+cannot determine them. The evaluator does not recover a constructed family's
+arguments from runtime payloads or infer them from the returned value. Result
+validation checks an already instantiated obligation; it cannot finish
+construction inference after the fact.
+
+Consequently, reflecting `Option` does not make a context-free nullary `None`
+constructible. Nor can a successful result check recover singleton refinement
+for the caller: the ordinary contextual result route observes section 5's
+refinement-erasure rules. No reflected spelling can replace the checked
+nominal information required by this boundary.
+
+### Argument acceptance and enumeration
+
+`(signature accepts? candidate-mirror)` requires a `Mirror` argument and
+returns `#f` for any row whose parameter count is not one. For a one-parameter
+row it checks the candidate mirror's subject against that parameter with the
+invocation type relation. It performs neither invocation nor overload search
+and supplies no constructor refinement.
+
+For a generic one-parameter row, input variables may be solved freshly from
+the candidate, while any receiver family arguments remain fixed. Success
+proves only parameter compatibility. It does not resolve unrelated
+result-only variables or guarantee that invocation can proceed without
+further context. The query does not specialize or change the stored
+signature. There is no arbitrary-arity argument-list version of `accepts?`.
+
+Enumeration is deterministic within a finalized program image:
+
+- constructor rows follow constructor declaration order;
+- declaration-owned method and factory rows follow textual order, with
+  generated payload accessors following payload declaration order;
+- additive extension rows follow finalized program-definition order; and
+- overloads remain separate signatures, while `messages` removes duplicate
+  selectors and preserves their first signature occurrence.
+
+Adding a constructor, factory, method, or overload may change later menu
+positions. Indices are presentation positions, not stable row identities;
+their ordering does not imply a user-visible ordering relation on signatures.
+
+### Presentation and existing clients
+
+`raw` uses exactly section 13's structural renderer, including
+`Family.Constructor` in multi-constructor diagnostics and the established
+one-constructor spelling. It does not invoke `show`. Diagnostic text grants
+no constructor identity, payload value, signature authority, refinement, or
+exhaustive-discrimination contract. Text depicting a payload is not access to
+the original Aloe payload value.
+
+Programs can inspect and compare strings. Parsing `raw` or branching on
+`show` is presentation-text processing, not semantic case analysis, and
+receives no missing-case diagnostics. This boundary does not claim textual
+discrimination is physically impossible or change the raw spelling to hide
+it. Ordinary exhaustive `case` remains the supported representation
+discriminator.
+
+Existing clients impose preservation obligations. Gel retains its `Mirror`
+stack, menus of exact overload rows, one-argument filtering through
+`accepts?`, exact `invoke`, contextual `subject`, and structural `raw`.
+Reflecting an existing mirror's subject and explicitly reflecting a mirror
+itself remain distinct. MPL retains reflection of the concrete family's
+public surface through a protocol view, subject to the multi-constructor
+local exclusion. Host reflection retains exact interface ownership and the
+ordinary guarded invocation boundary with the target receiver's state.
+
+Primitive and host rows here are preservation constraints only. Specialized
+built-in and typed host integration remain later work; this section specifies
+no adapter internals, new built-in schema, additional crossing types, or Gel
+redesign.
+
+## 15. Candidate examples
+
+These examples illustrate the candidate syntax and reflection contract. They
+are not checkpoint-89A, 89B, or 89C goldens and are not accepted by the current
+implementation.
 
 ### `Point`: a one-constructor product
 
@@ -1151,7 +1445,68 @@ to `Error`, so its local `error` accessor is available.
 The recursive payloads reuse `T` at full arity and in the same order. All
 method calls and construction sites remain receiver-first sends.
 
-## 15. Reconciliation and compatibility boundary
+### Reflection observations
+
+The following observations use the families above. Type descriptions in the
+tables are schematic spellings of `Symbol`/`List` data, not source expressions
+to evaluate or tokens to pass as types.
+
+For a `(Point Float)` instance such as `p`, its mirror exposes `x` and `y`
+as zero-argument `local` rows returning `Float`, together with the `family`
+row `+`. This is valid because `Point` has one constructor. Mirroring `Point`
+itself instead exposes its explicit `new` constructor row.
+
+For both `None` and `Some` instances at `(Option Int)`, the whole-family
+surface is the same:
+
+| Selector | Role | Type parameters | Parameter descriptions | Result description |
+| --- | --- | --- | --- | --- |
+| `present?` | `family` | none | none | `Bool` |
+| `map` | `family` | `U` | `(-> Int U)` | `(Option U)` |
+
+There is no `value` accessor, `None`/`Some` tag query, or constructor-local
+row in either instance menu, even for a mirror made inside the `Some` branch
+of an exhaustive case. `present?` is one declared family operation with two
+implementation bodies, so it contributes only one signature. Its Boolean
+result supplies no checker refinement.
+
+The `Option` type object's signatures instead describe construction:
+
+| Selector | Role | Type parameters | Parameter descriptions | Result description |
+| --- | --- | --- | --- | --- |
+| `None` | `constructor` | `T` | none | `(Option T)` |
+| `Some` | `constructor` | `T` | `T` | `(Option T)` |
+| `when` | `factory` | `T` | `Bool`, `T` | `(Option T)` |
+
+The constructors follow declaration order, followed by the declared factory.
+`Some` reports its payload's type, not the payload position name `value`.
+`None` remains generic even though it has no payload. A hidden `None`
+signature invoked in a checked `(Option Int)` result context can use that
+context to resolve `T`; absent sufficient checked information it is rejected.
+
+A `present?` signature obtained from a mirror of an `(Option Int)` `None`
+may be invoked on a mirror of an `(Option Int)` `Some`: it selects that same
+family row, whose actual-constructor body returns `#t`. The row is rejected
+on `(Option String)`, even though `present?` mentions no `T` in its parameter
+or result types. It is also rejected on an unrelated same-named family with
+identical descriptive metadata. Ownership is stronger than type spelling or
+coincidence of row shape.
+
+The `Result` type object's one-parameter `Ok` constructor row describes
+generic parameters `T`, `E`, input `T`, and result `(Result T E)`. Its
+`accepts?` query on a mirror of `1` returns `#t` by solving the input
+variable as `T = Int`. That does not determine result-only `E`. Invocation
+still needs sufficient checked context, such as an expected
+`(Result Int String)`, to resolve both parameters before construction.
+
+Finally, unwrapping a mirror of `Some` in an `(Option Int)` context yields
+the ordinary unrefined family view. A direct `value` send on that view is
+rejected. An exhaustive case covering `None` and `Some` can introduce a
+`Some` whole-value binder and use its local `value` accessor normally. The
+same rule holds if the mirror was originally made in a refined branch or
+from a protocol view; unwrapping does not recover that source history.
+
+## 16. Reconciliation and compatibility boundary
 
 This candidate deliberately changes only the proposed nominal family surface;
 the current language remains governed by `SPEC.md` until an atomic later
@@ -1179,7 +1534,7 @@ A later implementation sequence may temporarily lower a legacy
 constructor is `new`, solely to keep the historical suite green during
 migration. Such a bridge is implementation sequencing, not candidate source
 syntax or a compatibility promise, and it must have an explicit removal
-checkpoint. Checkpoint 89B adds and authorizes no bridge or implementation
+checkpoint. Checkpoints 89A–89C add and authorize no bridge or implementation
 scaffold.
 
 The candidate preserves all unaffected expression behavior, including literal
@@ -1192,13 +1547,12 @@ class layout.
 
 ## Pending completion
 
-> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89B**
+> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89C**
 
 The candidate is incomplete. Later linked 89-series work must specify, audit,
 and reconcile all of the following before the proposal can be ratified or
 implemented:
 
-- family-aware reflection and exact signature behavior;
 - specialized built-ins and typed host-capability integration;
 - the complete diagnostic, exclusion, and validation catalogue;
 - the final whole-candidate Decision 1–10 audit;
