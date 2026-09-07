@@ -67,7 +67,7 @@ retains the current shared-environment and relative-path behavior.
 declaration; this candidate changes how a family declares conformance, not how
 a protocol is introduced.
 
-Numeric classes remain separate. There is no implicit `Int`/`Float`
+Numeric types remain distinct. There is no implicit `Int`/`Float`
 conversion; `Int` to `Float` remains the ordinary message:
 
 ```aloe
