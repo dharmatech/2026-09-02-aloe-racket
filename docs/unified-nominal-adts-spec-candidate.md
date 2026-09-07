@@ -9,8 +9,12 @@
 > family-aware reflection, specialized built-in and typed host integration,
 > and the diagnostic, exclusion, and validation catalogue. Completing that
 > catalogue is not final design approval or authorization to accept family syntax.
-> Later 89-series checkpoints must complete and audit the remaining subjects,
-> then atomically ratify the candidate or reject it. The proposed family
+> The [89F audit record](unified-nominal-adts-design-audit.md) records the
+> completed whole-candidate audit, including adoption and rechecking of the
+> [user-approved U1 reflection amendment](unified-nominal-adts-reflection-resolution-proposal.md).
+> That amendment adds `Mirror.invoke-mirrored` to the proposed contract.
+> Later 89-series work must supply the implementation roadmap and durable
+> handoff, then atomically ratify the candidate or reject it. The proposed family
 > additions remain unimplemented and non-normative; runtime
 > behavior remains exactly as implemented through checkpoint 88.
 
@@ -101,10 +105,14 @@ The four new contextual markers have deliberately narrow scopes:
 - `per-constructor` is reserved only where the body of a whole-family method
   declaration selects its implementation mode. It is not a general
   expression or a case clause.
-- `type` is special only as the head of a list immediately following a send's
-  selector. That complete list is static metadata and cannot simultaneously be
-  the send's first runtime argument. `type` is not otherwise made a global
-  special form or a globally reserved selector.
+- In expressions, `type` is special only as the head of a list immediately
+  following a send's selector. That complete list is static metadata and
+  cannot simultaneously be the send's first runtime argument. `type` is not
+  otherwise made a global special form or a globally reserved selector.
+
+The existing method-declaration `(type U ...)` header remains a binder of
+row-local variables, as specified in section 3. It is distinct from a send
+header, which supplies types rather than declaring variables.
 
 Section labels such as `conforms`, `constructors`, `fields`, `factories`, and
 `methods` are special only in the declaration positions shown by their
@@ -133,7 +141,8 @@ Representation constructors are not source types, subtypes, global bindings,
 or first-class function values. A constructor selector is meaningful only on
 its owning family type object and as a literal label resolved within an
 exhaustive case. Code that needs constructor-like behavior as a value wraps the
-send explicitly:
+send explicitly. For example, under an expected `(-> Int (Option Int))`
+function type, using section 16's `Option` declaration:
 
 ```aloe
 (fn (value) (Option Some value))
@@ -156,6 +165,12 @@ nominal identity.
 ## 3. Family declarations and callable surfaces
 
 ### Declaration grammar
+
+`define-family` and `define-protocol` are top-level declaration forms, as
+their current nominal and protocol counterparts are. Method, factory,
+function, `let`, and case-clause bodies each contain one expression.
+Capitalization of family names and constructor selectors is conventional,
+not enforced.
 
 The complete section order is fixed:
 
@@ -288,7 +303,8 @@ familiar construction spelling:
 Factories are ordinary, typed, possibly overloaded methods on the family type
 object. A factory has a body and an explicit declared result. Within its body,
 `self` is the family type object, so constructor and factory sends retain the
-ordinary receiver-first shape:
+ordinary receiver-first shape. For example, in section 16's `Option.when`
+factory, `value` has the bound family parameter type `T`:
 
 ```aloe
 (self Some value)
@@ -348,7 +364,8 @@ constructor still writes the empty payload-binder list `()`. A default may
 bind the whole residual-refined value, but it never has payload binders and is
 always final.
 
-For example:
+For an unrefined `option` of type `(Option T)` and `fallback` of type `T`,
+with `T` bound by the enclosing declaration:
 
 ```aloe
 (option case
@@ -453,6 +470,10 @@ Family parameters are invariant. For example, `(Option Sym)` is not an
 `(Option Math)` may instead cause a new construction to choose `T = Math` from
 the outset.
 
+This design adds no generic-constraint syntax. Existing generic method
+checking remains the starting point; family invariance does not introduce
+conditional conformance or a new subtyping system.
+
 ### Explicit send type headers
 
 Every ordinary send may have one optional static header immediately after its
@@ -482,8 +503,13 @@ Examples include:
 (Option None (type Int))
 (Option Some (type Math) x)
 (Result Error (type Int String) "failed")
-(point map (type String) formatter)
+(option map (type String) formatter)
 ```
+
+These examples use section 16's families. For the `Some` send, assume `x`
+has a nominal type explicitly conforming to `Math`. For `map`, assume
+`option : (Option Int)` and `formatter : (-> Int String)`; its explicit
+header supplies row-local `U`, yielding `(Option String)`.
 
 ### Construction inference
 
@@ -547,8 +573,8 @@ constructor identities before resolving constructor payload types. This makes
 direct self-reference available while the payload declarations are checked.
 Previously declared families remain available normally.
 
-Every recursive occurrence of a generic family must use the current family's
-parameters at full arity, in the same order:
+In payload types, every recursive occurrence of the current generic family
+must use that family's parameters at full arity, in the same order:
 
 ```aloe
 (Tree T)
@@ -557,6 +583,9 @@ parameters at full arity, in the same order:
 The occurrence may appear beneath an ordinary container or function type, for
 example `(List (Tree T))` or `(-> (Tree T) (Tree T))`. A non-generic family
 refers to itself by its bare family type name.
+
+This restriction on recursive payloads does not prohibit ordinary generic
+method results such as the `(Option U)` result of `Option.map` in section 16.
 
 The checker rejects nonregular or polymorphic recursion such as
 `(Tree (List T))`, reordered parameters, missing or additional parameters,
@@ -568,6 +597,20 @@ inductive type theory. It specifies only direct regular recursion for nominal
 algebraic families.
 
 ## 7. Protocols and additive extensions
+
+### Ordinary overload selection
+
+An ordinary send considers rows on its receiver's available surface with the
+literal selector, matching argument arity, and compatible parameter types.
+Section 5's complete type header also filters applicable generic arity.
+Among applicable rows, Aloe retains its existing specificity rule: exact
+nominal matches beat matches through a declared protocol. A unique most
+specific row is selected. A send with no applicable row or an unresolved tie
+is rejected. Compatibility requires exact types or the declared nominal
+protocol relation; there is no implicit numeric conversion. This is
+receiver-anchored overloading, not an additional send rule. The
+result-coherence obligations below also constrain rows that concrete runtime
+dispatch may select.
 
 ### Family-wide protocol conformance
 
@@ -612,6 +655,14 @@ view.
 Protocols remain non-generic and have no inheritance, intersection types,
 default implementations, conditional or structural conformance,
 per-constructor conformance, or retroactive orphan claims.
+
+A family declaration fixes its closed representation. Adding a constructor
+means editing that declaration and rechecking exhaustive consumers,
+per-constructor bodies, and conformance; it is not an additive extension.
+Downstream code may declare a new family conforming to an existing protocol
+without changing that protocol. A protocol's required operation set is closed
+for that version: adding a requirement rechecks its conformers. The family
+declaration owns its conformance claims; no mechanism opens both axes at once.
 
 ### Additive `define-methods`
 
@@ -694,9 +745,13 @@ internal possible-constructor set.
 Only a successfully checked and globally finalized unit is evaluated.
 Production evaluation does not accept unresolved construction semantics,
 re-run nominal name resolution, or infer generic arguments from runtime
-payloads. In particular, the runtime type arguments of a parameterless
-constructor come from the checked send, where context or an explicit header
-resolved them.
+payloads. Ordinary constructor sends carry the type arguments resolved during
+checking, including parameterless constructions resolved by context or an
+explicit header. Section 14's `invoke-mirrored` is an explicit guarded
+reflection operation: it may instantiate its opaque selected row from fixed
+owner arguments and sealed, closed input type evidence before running that
+row. This does not allow ordinary construction to defer its static decisions
+or permit inference from payload contents or executed results.
 
 Public source-checking and source-evaluation helpers may retain their broad
 roles. A type-only caller may discard the elaborated program after successful
@@ -716,6 +771,15 @@ survives any of these boundaries:
 
 Declared family parameters and row-local parameters are bound variables, not
 unresolved inference variables.
+
+`invoke-mirrored` has a closed source signature over `Mirror`, `Signature`,
+and `(List Mirror)`, returning `Mirror`. Its selected row's bound schema
+parameters are instantiated inside the guarded boundary under section 14;
+they are not unknown intermediate source types escaping this closure rule.
+Checked execution must make the sealed type evidence for its mirrored inputs
+available without executing user behavior. Ordinary-result `invoke` and
+contextual `subject` still require their source result types to close, even
+when an enclosing operation would immediately mirror the result.
 
 Source `let`, or equivalent source provenance, remains visible through
 checking so an immutable direct alias can preserve an outer constructor
@@ -832,8 +896,10 @@ constructor belongs to the recorded family, and the resolved type arguments
 identify the exact invariant family instantiation.
 
 There is one family type object per declaration, not one type object for every
-generic instantiation. Generic arguments are resolved at checked send sites
-and stored in the constructed value. A `None` at `(Option Int)` and a `None` at
+generic instantiation. Generic arguments are resolved before construction and
+stored in the constructed value: ordinary sends carry checked arguments;
+`invoke-mirrored` may resolve its selected row under section 14's sealed input
+evidence rule. A `None` at `(Option Int)` and a `None` at
 `(Option String)` therefore share a family and constructor declaration but
 have different runtime family types.
 
@@ -1035,7 +1101,8 @@ deliberately hides structure.
 
 `Mirror` is the explicit, sealed boundary for describing a value's public
 callable surface. Reflection operations belong to `Mirror` and `Signature`,
-not to every ordinary value. The existing vocabulary retains these roles:
+not to every ordinary value. The vocabulary preserves existing operations and
+adds the fixed `invoke-mirrored` row:
 
 | Operation | Result and role |
 | --- | --- |
@@ -1045,6 +1112,7 @@ not to every ordinary value. The existing vocabulary retains these roles:
 | `(mirror invoke signature argument ...)` | The ordinary result of invoking that exact owned row, with the checks below. |
 | `(mirror subject)` | The original ordinary value, under contextual typing and runtime validation. |
 | `(mirror raw)` | A `String` from the structural renderer in section 13. |
+| `(mirror invoke-mirrored signature arguments)` | Invoke the exact owned row with a `(List Mirror)` of arguments and return a `Mirror`, under the guarded contract below. |
 | `(signature selector)` | The row's literal selector description as a `Symbol`. |
 | `(signature params)` | A `List` of ordered parameter-type descriptions. |
 | `(signature return)` | The result-type description. |
@@ -1264,6 +1332,99 @@ for the caller: the ordinary contextual result route observes section 5's
 refinement-erasure rules. No reflected spelling can replace the checked
 nominal information required by this boundary.
 
+### Invocation with mirrored arguments and result
+
+`invoke-mirrored` is an ordinary operation on `Mirror`:
+
+```aloe
+(receiver invoke-mirrored signature arguments)
+```
+
+The receiver has type `Mirror`. The operation has exactly two arguments,
+`Signature` and `(List Mirror)`, and result type `Mirror`. It has no
+operation-local type parameters. Its exact reflected metadata is:
+
+```text
+selector:    invoke-mirrored
+params:      (Signature (List Mirror))
+return:      Mirror
+type-params: ()
+role:        operation
+```
+
+The type spellings above describe the same `Symbol`/`List` data as other
+signature metadata. This fixed row needs no variadic description convention.
+The list length is the selected target row's arity, not the arity of
+`invoke-mirrored` itself. The operation has no special forwarding of a send
+type header to the selected row: its own generic arity is zero. An outer
+expected result of `Mirror` supplies no type argument or ordinary result
+expectation for that selected row.
+
+The receiver, signature argument, and argument-list expression are evaluated
+in ordinary receiver-first, left-to-right send order. Within the sealed
+boundary, each argument mirror is unwrapped exactly once. The signature
+retains exactly the owner and row authority specified above. Before the
+selected row runs, the boundary validates ownership, the number of argument
+mirrors, complete consistent instantiation, and each ordinary argument
+against the instantiated parameter type using section 11's relation. It
+invokes that exact row on the receiver mirror's subject without a selector
+search or another overload selection.
+
+The selected row may be instantiated from exactly these sources:
+
+- the receiver instantiation already fixed by its exact owner; and
+- sealed, closed type evidence associated with each mirrored input subject.
+
+Each invocation uses fresh bindings for any remaining row parameters and
+retains invariance and nominal compatibility. All required parameters must
+resolve before execution, including parameters used only in the row's
+result. Insufficient or conflicting evidence is a guarded failure; the row
+does not run. A successful one-argument `accepts?` query does not fill a
+result-only parameter or specialize the stored signature.
+
+Input evidence is trusted internal metadata about an already checked value,
+not the symbols returned by `params`, `return`, or `type-params`. A family
+subject already has its exact nominal instantiation. An empty list needs its
+already resolved invariant element type; a function needs its checked arrow
+type with bound arguments resolved. Reflection still describes the actual
+nominal subject rather than retaining an earlier protocol view. Collection
+and function types are not recomputed from contents or behavior.
+
+The representation of this evidence is internal, but it must be available
+without running a callback, factory, or other user behavior. No payload scan,
+descriptive name comparison, guessed protocol, or returned value can invent
+missing type information. Wrapping malformed foreign data in a mirror cannot
+validate it; the integrity obligations of section 11 still apply. There is
+no new source `Any`, existential type, cast token, or public type query.
+
+After executing the selected row, validate its ordinary result against the
+fully instantiated row result before adapting it for the caller:
+
+- If the result is already a `Mirror`, return that same mirror.
+- Otherwise return a mirror of the ordinary result under `Mirror of`'s
+  existing contract.
+
+This performs no recursive unwrapping or flattening. `Mirror of` itself is
+unchanged: `(Mirror of existing-mirror)` explicitly reflects the Mirror
+object. As an element of the argument list, `existing-mirror` supplies its
+subject; `(Mirror of existing-mirror)` supplies that Mirror object after the
+one permitted unwrap. Mirroring and result adaptation neither capture nor
+recover constructor refinement.
+
+Owner, arity, argument, and generic-resolution failures prevent the selected
+row from executing. A bad result is rejected after execution and its effects
+are not rolled back. Host targets use the same exact interface, target state,
+crossing restrictions, failure causes, and break behavior as other guarded
+invocation. Multi-constructor local rows remain absent from reflection.
+
+This permission to instantiate an opaque row from sealed input evidence is
+specific to `invoke-mirrored`. Ordinary constructor elaboration, contextual
+`subject`, and ordinary-result `invoke` retain their closure requirements.
+The new operation cannot construct a context-free `Option.None` or a
+`Result.Ok` whose `E` is unknown, but can use inputs that fully determine
+`Option.Some` or an instance's generic `map`. Cases needing more evidence use
+the existing contextual `invoke` or an ordinary explicit constructor send.
+
 ### Argument acceptance and enumeration
 
 `(signature accepts? candidate-mirror)` requires a `Mirror` argument and
@@ -1292,6 +1453,12 @@ Adding a constructor, factory, method, or overload may change later menu
 positions. Indices are presentation positions, not stable row identities;
 their ordering does not imply a user-visible ordering relation on signatures.
 
+For Mirror's own API, append `invoke-mirrored` after the existing instance
+rows `messages`, `signatures`, `invoke`, `subject`, and `raw`, preserving their
+relative order. Ordinary subjects acquire no new operation. Asking a mirror
+for its subject's rows is unchanged; explicitly reflecting a Mirror object
+exposes the additional row with the fixed metadata above.
+
 ### Presentation and existing clients
 
 `raw` uses exactly section 13's structural renderer, including
@@ -1310,10 +1477,17 @@ discriminator.
 
 Existing clients impose preservation obligations. Gel retains its `Mirror`
 stack, menus of exact overload rows, one-argument filtering through
-`accepts?`, exact `invoke`, contextual `subject`, and structural `raw`.
+`accepts?`, and structural `raw`. Its invocation helpers use `invoke-mirrored`
+to keep intermediate arguments and results behind the sealed boundary, as
+illustrated in section 16. Ordinary-result `invoke` and contextual `subject`
+remain available for source contexts that determine their types.
 Reflecting an existing mirror's subject and explicitly reflecting a mirror
-itself remain distinct. MPL retains reflection of the concrete family's
-public surface through a protocol view, subject to the multi-constructor
+itself remain distinct. Existing valid Gel flows, results, keys, and emitted
+text are preserved, except that explicitly browsing Mirror's extended API
+shows its additional operation. That intentional menu addition is not a
+promise of identical introspection text for the extended API.
+MPL retains reflection of the concrete family's public surface through a
+protocol view, subject to the multi-constructor
 local exclusion. Host reflection retains exact interface ownership and the
 ordinary guarded invocation boundary with the target receiver's state.
 
@@ -1434,9 +1608,13 @@ variance system. Descriptive symbols, equal layouts, and matching method names
 cannot establish nominal compatibility.
 
 Adapters retain the static information required by checked execution. They
-do not permit runtime reconstruction of missing family arguments, evaluation
-of unchecked parsed source, or a second elaboration path with weaker
-guarantees. Their algorithms and physical representation remain internal.
+make sealed, already closed collection, function, and nominal type evidence
+available for section 14's explicit `invoke-mirrored` boundary. That operation
+may instantiate its selected row from this evidence before execution.
+Adapters do not permit ordinary construction to reconstruct missing family
+arguments at runtime, inference by scanning values or executing behavior,
+evaluation of unchecked parsed source, or a second elaboration path with
+weaker guarantees. Their algorithms and physical representation remain internal.
 
 Reflection uses section 14's existing primitive and host surfaces, exact-row
 ownership, and guarded invocation. Rows outside algebraic family and
@@ -1749,6 +1927,142 @@ rejected. An exhaustive case covering `None` and `Some` can introduce a
 same rule holds if the mirror was originally made in a refined branch or
 from a protocol view; unwrapping does not recover that source history.
 
+### Gel invocation through mirrors
+
+The following current and proposed method fragments isolate the reflection
+change; their surrounding nominal declarations and the class-to-family
+migration are omitted. The proposed fragments are future examples only and
+do not change Gel source in this checkpoint.
+
+Current Gel helpers use ordinary results and contextual unwrapping:
+
+```aloe
+(invoke-zero
+  (row GelRow)
+  GelStack
+  (self push
+    ((self tos) invoke (row signature))))
+
+(invoke-one
+  (row GelRow)
+  (arg Mirror)
+  GelStack
+  (self push
+    ((self tos) invoke
+      (row signature)
+      (arg subject))))
+
+(invoke-one (type T)
+  (row GelRow)
+  (arg T)
+  GelStack
+  (self push
+    ((self tos) invoke
+      (row signature)
+      arg)))
+```
+
+The candidate's replacements keep intermediate values behind the guarded
+reflection operation:
+
+```aloe
+(invoke-zero
+  (row GelRow)
+  GelStack
+  (self push
+    ((self tos) invoke-mirrored
+      (row signature)
+      (List empty))))
+
+(invoke-one
+  (row GelRow)
+  (arg Mirror)
+  GelStack
+  (self push
+    ((self tos) invoke-mirrored
+      (row signature)
+      (List of arg))))
+
+(invoke-one (type T)
+  (row GelRow)
+  (arg T)
+  GelStack
+  (self invoke-one row (Mirror of arg)))
+```
+
+The new row supplies an expected `(List Mirror)` to `(List empty)`, so the
+empty argument list's element type closes normally. Its result is statically
+`Mirror`, selecting `push`'s exact Mirror overload. The mirrored-argument
+helper passes `(List of arg)` instead of introducing the unknown ordinary
+type of `(arg subject)`. The shorter ordinary-argument helper delegates to
+the exact Mirror overload; its `T` is a declared bound parameter. None of
+these bodies exposes an unknown intermediate subject or invocation-result
+type to source checking.
+
+Application call sites remain the same before and after:
+
+```aloe
+(stack invoke-zero row)
+(stack invoke-one row 2)
+(stack invoke-one row picked-mirror)
+```
+
+Here `stack : GelStack`, `row : GelRow`, and `picked-mirror : Mirror` are
+existing values, and the selected row must have the appropriate owner,
+arity, and argument types. No type picker, additional annotation, or wrapper
+is added at these call sites.
+
+For `receiver` mirroring `10`, `signature` its exact `Int.+` row, and
+`argument` mirroring `2`, the current expression is:
+
+```aloe
+((Mirror of (receiver invoke signature (argument subject))) raw)
+```
+
+Its candidate replacement is:
+
+```aloe
+((receiver invoke-mirrored signature (List of argument)) raw)
+```
+
+Both intend the String `"12"`. The current expression illustrates the old
+client path; it does not waive the candidate's closure rule for ordinary
+`subject` or `invoke`. The replacement uses a closed source signature and
+guards its hidden row.
+
+For a selected row returning a `Mirror`, `invoke-mirrored` returns that same
+mirror and the exact `push` overload stores it unchanged. An ordinary result
+is mirrored once. This preserves Gel's current adaptation for both kinds of
+result; an unconditional extra `Mirror of` would change which object Gel
+describes next. An explicitly double-mirrored argument still passes the
+Mirror object itself after one unwrap; no recursive flattening occurs.
+
+With the exact target/signature owners and already well-typed mirrored inputs,
+the generic consequences are:
+
+| Selected row and context | Required outcome |
+| --- | --- |
+| `Int.+` on mirrored `10`, with a mirror of `2` | Return a mirror of `12`. No generic parameter is missing. |
+| `(Option Int).map`, with a mirrored function of checked type `(-> Int String)` | Resolve fresh `U = String` before any callback executes, then mirror the resulting `(Option String)`. |
+| `Option.Some`, with a mirror of `1` | Resolve `T = Int` from sealed input evidence before construction; mirror the `(Option Int)` Some result. |
+| `Option.None`, with an empty mirror list | Reject before construction: no evidence determines `T`. The outer `Mirror` result supplies none. |
+| `Result.Ok`, with a mirror of `1` | Reject before construction: `T = Int` is known but `E` is not, even if `accepts?` returned `#t`. |
+| An `(Option Int)` instance's nongeneric family row | Retain the exact owner's fixed `Int`; do not infer another receiver instantiation. |
+| A factory with a parameter determined only by its result | Reject before running its body; its result cannot finish inference. |
+
+When an explicit construction is needed, the existing route remains:
+
+```aloe
+(Mirror of (Option None (type Int)))
+```
+
+The family argument is fixed at source checking before mirroring. The new
+operation supports input-determined generic rows without promising that
+every reflected row can run in Gel without further context. Explicitly
+browsing a Mirror object's own API includes the appended `invoke-mirrored`
+row; ordinary subject menus and existing valid Gel key flows retain their
+specified behavior, subject to that intentional API menu addition.
+
 ### Specialized-value and host observations
 
 The established numeric sends remain:
@@ -1884,9 +2198,14 @@ Static failure commits no partial live checker state and begins no evaluation
 under section 9. A hidden reflective row or host crossing may require runtime
 validation: owner, arity, argument, and required generic-resolution failures
 prevent the selected row from running. Result validation occurs after the
-row executes and does not undo its effects. These runtime obligations do not
-relax static inference closure. Atomic injection, checking transactions, and
-the absence of runtime effect rollback remain distinct guarantees.
+row executes and does not undo its effects. For `invoke-mirrored`, the selected
+row's generics must resolve from its exact owner and sealed closed input type
+evidence before execution. Its ordinary result must pass the fully instantiated
+result check before Mirror adaptation. This explicit guarded operation has
+closed source types; it does not relax closure for ordinary-result `invoke`,
+contextual `subject`, or ordinary construction. Atomic injection, checking
+transactions, and the absence of runtime effect rollback remain distinct
+guarantees.
 
 ## 19. Required rejection catalogue
 
@@ -1932,7 +2251,7 @@ section, not an invented minimum number of rows in that section.
 | Missing or incompatible protocol requirement; requirements supplied only by constructors, factories, accessors, locals, or reflection rows; insufficient parameter-domain coverage; incompatible result obligations at one parameter shape. | Static and whole-unit conformance finalization | Sections 7 and 9 |
 | Unsupported conformance form, including per-constructor or nonuniform generic claims; ambiguous overloads or narrower dynamic rows with results unusable as the broader promised result. | Static and combined overload/conformance finalization | Sections 7, 9, and 10 |
 | Invalid extension target, missing/misordered sections, exact row replacement, reserved-selector collision, or incoherent combined rows; attempted constructor/payload/local/per-constructor-table/conformance addition. | Static and atomic extension/whole-unit finalization | Sections 7, 9, and 15 |
-| Recursive self occurrence with wrong arity, changed or reordered arguments, nonregular/polymorphic recursion, mutual recursion, or unresolved forward family reference. | Static | Sections 6 and 9 |
+| Recursive payload self occurrence with wrong arity or changed/reordered arguments; nonregular/polymorphic recursive payloads, mutual recursion, or unresolved forward family reference. | Static | Sections 6 and 9 |
 
 An explicit header filters overload candidates by applicable generic arity.
 Rejecting one candidate on that basis does not reject the send when another
@@ -1954,8 +2273,11 @@ section 15.
 | --- | --- | --- |
 | A constructor owned by another family, malformed payload count, payload failing its substituted type, or unresolved construction arguments in a value being introduced. | Defensive construction or injection boundary; reject malformed foreign data rather than treating it as a case default | Sections 10 and 11 |
 | Exact family, invariant instantiation, protocol identity/conformance, or internally required constructor-membership mismatch at a dynamic boundary. | Guarded runtime validation | Section 11 |
-| Malformed reflection call: wrong API argument count/type, including an `invoke` without a `Signature` or an `accepts?` without a `Mirror`. | Static when known; guarded reflection boundary | Section 14 |
+| Malformed reflection call: wrong API argument count/type, including an `invoke` without a `Signature`, an `accepts?` without a `Mirror`, or an `invoke-mirrored` without exactly a `Signature` and a `(List Mirror)`. Its own generic arity is zero; a nonempty type header cannot supply selected-row parameters. | Static when known; guarded reflection boundary | Sections 5 and 14 |
 | Wrong signature owner or exact row authority, wrong invocation argument count/type, conflicting or insufficient generic information, incompatible returned result, or incompatible contextual `subject`. | Static obligations and guarded runtime validation; result checking follows execution | Sections 8, 11, and 14 |
+| For `invoke-mirrored`, wrong target-list length, a non-Mirror element, unavailable or inconsistent closed subject type evidence, or a once-unwrapped argument failing its instantiated parameter type. Malformed foreign subjects are not made valid by wrapping them. | Guarded boundary before the selected row executes; statically reject known API type mismatches | Sections 11, 14, and 15 |
+| Selected-row parameters still unresolved after fixed-owner and sealed-input constraints, including `Option.None` without input evidence, `Result.Ok` with only `T` known, or a result-only factory parameter. Neither an outer expected `Mirror`, a successful `accepts?`, nor the operation's type header supplies the missing evidence. | `invoke-mirrored` guarded generic resolution before execution, without probing a body or result | Section 14 |
+| Context-free ordinary-result `invoke` or contextual `subject` leaves source inference variables unresolved, including inside an enclosing `Mirror of`. | Static inference closure; the explicit `invoke-mirrored` rule does not rescue these ordinary operations | Sections 8 and 14 |
 | Attempted invocation through a selector/type description or forged signature authority, or use of a nonexistent representation-query API on a multi-constructor instance mirror. | Unsupported source/API use is rejected; forged authority is a defensive runtime scenario. Valid enumeration succeeds with excluded local/accessor rows absent. | Sections 14 and 15 |
 | `check` operands that cannot have the same type; unequal same-typed values. | Static for incompatible operands; evaluation for failed kernel equality | Sections 1, 12, and 18 |
 | Wrong numeric operand kind or arity, invalid function/conditional arguments, mixed or invariantly mismatched list elements, or unresolved empty-list element type. | Static and applicable runtime boundaries; inference closure remains static | Sections 1, 5, 8, and 15 |
@@ -1992,7 +2314,7 @@ today's unimplemented family features remain part of the proposed destination.
 | Small expression language | Inheritance/`super`, Aloe mutation/setters, macros, implicit numeric coercion, computed selector sends, Scheme application, a second send/evaluation rule, `begin`, labeled `make`, modules beyond `load`, and native compilation remain outside the preserved language. Receiver-anchored overloading does not add full unanchored multimethods. | Section 1 and the preserved language boundary in section 17 |
 | Family representation | Constructor types/subtypes, implicitly bound constructor functions, constructor-specific generics or result annotations, existential payloads, GADTs, visibility syntax, open constructor extension, and a permanent parallel class ontology. Constructors are not first-class values; an explicit `fn` wrapping a constructor send is allowed. | Sections 2, 3, 5, and 17 |
 | Refinement and elimination | Source-written or deep stored constructor refinements; refinement from arbitrary predicates, equality, user messages, or reflection; partial case; nested patterns, guards, alternatives, fallthrough, or wildcard payload patterns. Nested case expressions and ordinary lexical payload binders remain legal. | Sections 4, 5, and 14 |
-| Generic and recursive machinery | Partial type headers, constructor-specific `let` polymorphism, general subtyping expansion, mutual/forward declaration groups, nonregular recursion, positivity/termination checking, or claims of a full inductive type theory. Bound generic parameters are not escaped inference variables. | Sections 5, 6, 8, and 15 |
+| Generic and recursive machinery | Partial type headers, constructor-specific `let` polymorphism, generic-constraint syntax, general subtyping expansion, mutual/forward declaration groups, nonregular recursion, positivity/termination checking, or claims of a full inductive type theory. Bound generic parameters are not escaped inference variables. | Sections 5, 6, 8, and 15 |
 | Protocols and methods | Structural, conditional, per-constructor, or retroactive orphan conformance; generic protocols; protocol inheritance, intersections, or defaults; default-plus-override family bodies. Additive uniform family methods and ordinary factories remain allowed. | Sections 3, 7, and 9 |
 | Runtime and reflection surface | Observable allocation identity for ordinary family data, user-overridable kernel equality, multi-constructor instance representation queries, captured refinement certificates, user-created signatures, a first-class type universe, or selector-based `perform`. | Sections 10–14 |
 | Specialized values and host access | Invented built-in constructors or case eligibility, a general heterogeneous `List`, new primitive type-object bindings, generalized built-in extension rights, broader host crossings, source-written host types, opaque-handle/callback/family marshalling, ambient authority, arbitrary Racket access, or a general FFI. | Section 15 |
@@ -2001,9 +2323,15 @@ Some rejected choices are implementation strategies rather than source forms.
 Name-based identity or case dispatch, independent name-based compatibility
 relations, protocol wrappers, factory provenance in values, reference equality
 for ordinary family data, raw rendering through `show`, runtime reconstruction
-of missing family arguments, and unchecked production evaluation violate
-sections 8–15. Exposing multi-constructor local rows and rejecting their use
-only afterward also violates section 14. These are not alternative ways to
+of missing family arguments for ordinary construction, and unchecked production
+evaluation violate sections 8–15. The explicit `invoke-mirrored` boundary may
+instantiate a selected row from its fixed owner and sealed, already closed
+input type evidence before execution. This is not general runtime inference:
+payload/collection scans, execution to discover types, and result-based
+reconstruction remain excluded. No public type query, `Any`, existential,
+cast, type token, or heterogeneous list is added. Exposing multi-constructor
+local rows and rejecting their use only afterward also violates section 14.
+These are not alternative ways to
 implement the same observations. Permitted opaque stateful leaves do not
 introduce Aloe setters or deep mutation of family data.
 
@@ -2078,6 +2406,26 @@ regression suite are distinct from these unimplemented family obligations.
 | Keep a `None` constructor row hidden in a `Signature` variable and supply a checked `(Option Int)` result expectation; separately leave required generic evidence absent. | Context may resolve the nullary construction under the exact selected row. Missing evidence is rejected without runtime payload/result reconstruction. Contextual `subject` is checked and forgets earlier refinement. | Sections 8, 11, and 14 |
 | Ask the generic `Result` type object's `Ok` row to accept a mirror of `1`. Separately query an integer receiver's `+` row with a mirrored `String`, and a zero-argument row with a valid mirror. | The generic query returns `#t`, solving input `T = Int` but not result-only `E` or specializing the signature. Invocation still needs sufficient context. The incompatible and non-one-parameter queries return `#f`, without invocation or refinement. | Section 14 |
 
+### Mirrored invocation and Gel inference closure
+
+These obligations cover the user-approved U1 amendment in sections 8, 14–16.
+They describe future validation, not executable checkpoint-89F tests.
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Check all three proposed Gel helper bodies in section 16 and their unchanged zero-argument, plain-argument, and mirrored-argument call sites. | No source inference variable escapes. The fixed parameter supplies `(List Mirror)` context to `List empty`; both direct helpers return `Mirror` and select the Mirror `push` overload. The generic helper wraps its bound `T` argument and delegates to the Mirror overload. | Sections 8, 14, and 16 |
+| Invoke an ordinary-result row, then a row whose declared and actual result is already a Mirror. Separately return an invalid value for the fully instantiated result type. | Validate the ordinary result first. Wrap a valid non-Mirror result once; return an already-Mirror result unchanged. Invalid results fail after execution, before adaptation; prior effects are not rolled back. | Sections 11 and 14 |
+| Supply a list element that mirrors a subject; separately supply `(Mirror of existing-mirror)` to a row expecting a Mirror object. | Unwrap each list element exactly once. The first passes the subject; the second passes the existing Mirror object. No recursive unwrapping or flattening occurs. | Section 14 |
+| Evaluate receiver, signature, and argument-list expressions with permitted observable effects; supply lists of correct and incorrect target arity, including empty lists for nullary rows. | The three expressions evaluate once in ordinary send order. The API has two arguments regardless of the selected row's arity; the list length must equal that row's ordinary arity. Arity failure prevents selected-row execution. | Sections 1 and 14 |
+| Invoke a row on an exact `(Option Int)` owner and invoke its generic `map` with a mirrored, checked `(-> Int String)` function. Invoke `Option.Some` with a mirror of `1` in a separate call. | Owner `Int` remains fixed. `map` resolves fresh `U = String` before calling the function; `Some` resolves fresh `T = Int` before construction. Neither invocation mutates the signature or shares inference variables with later calls. | Sections 5, 11, 14, and 16 |
+| Pass a mirror of an already checked empty `(List Int)` to the `Option.Some` row. Separately use the checked function argument to `map` above. | Sealed evidence gives `T = (List Int)` even with no elements to inspect, and the arrow gives the map result type without executing the function. List element and function types are preserved, not reconstructed from contents or behavior. | Sections 14–16 |
+| Invoke `Option.None` with an empty mirror list, `Result.Ok` with a mirror of `1`, or a factory whose fresh parameter occurs only in its result. Separately construct `(Option None (type Int))` ordinarily and mirror it. | The first three fail before any selected body or constructor runs because `T`, `E`, or the result-only parameter remains unresolved. `Result.Ok accepts?` may still return `#t`. Expected `Mirror` adds no missing evidence; no type header is forwarded to the selected row. The explicit ordinary construction succeeds. | Sections 5, 8, 14, and 16 |
+| Use a value through a protocol view; separately pass invariantly incompatible family/list arguments to a fixed parameter, or use a row from another exact nominal owner. | Reflection uses the subject's actual permitted nominal surface. Existing invariant list elements and arrow types stay fixed; same names or descriptive metadata confer no compatibility. Owner and argument mismatches prevent execution. | Sections 11, 14, and 15 |
+| Introduce malformed foreign subjects, invalid sealed evidence, or forged row authority at existing internal defensive boundaries. | Mirrors cannot bless malformed values. Missing evidence, incompatible arguments, and wrong authority fail before the row runs, without public descriptor constructors, a type-query API, or a new testing hook. | Sections 11, 14, and 19 |
+| Leave an ordinary `subject` or ordinary-result `invoke` unconstrained, even inside `Mirror of`; contrast the closed `invoke-mirrored` helpers. | Ordinary source closure still rejects the unresolved intermediate. Only the explicit operation resolves its selected row inside the sealed boundary; no source-visible unknown type escapes. | Sections 8, 14, and 16 |
+| Inspect the Mirror instance API and an ordinary mirrored subject; inspect multi-constructor family values inside and outside refined branches. | The appended `invoke-mirrored` row has params `(Signature (List Mirror))`, return `Mirror`, type-params `()`, and role `operation`. Existing Mirror API rows keep their order. Ordinary subject menus gain no row; explicitly browsing Mirror objects shows the intentional addition. Multi-constructor locals remain absent. | Sections 14 and 16 |
+| Invoke typed host rows through `invoke-mirrored`, comparing direct and ordinary reflective calls with the same owner, state, scalar arguments, results, failures, and breaks. | All routes retain exact ownership, `Int`/`Bool`/`String` crossings, string immutability, target receiver state, failure causes, and break propagation. The Mirror result wrapper expands no host crossing or capability authority. | Sections 14 and 15 |
+
 ### Preserved expression and host behavior
 
 | Scenario and context | Required observation | Governing rules |
@@ -2094,13 +2442,14 @@ existing internal validation boundaries, not in invented Aloe construction
 syntax. Each future scenario must supply well-typed branch bodies and enough
 expected-type/refinement context to establish its intended observation.
 Coverage of these scenarios checks this catalogue; it is not the final
-whole-candidate Decision 1–10 consistency audit.
+whole-candidate Decision 1–10 consistency audit, which is recorded separately
+in the [89F design audit](unified-nominal-adts-design-audit.md).
 
 ## 22. Application validation and eventual completion evidence
 
 Future completion requires application evidence as well as isolated semantic
 scenarios. These obligations do not authorize building or migrating the
-applications in checkpoint 89E.
+applications in checkpoints 89E or 89F.
 
 | Application | Required future evidence | Governing rules |
 | --- | --- | --- |
@@ -2111,14 +2460,18 @@ applications in checkpoint 89E.
 | `Result` | Two independent parameters, constraints across alternatives, and insufficient-context rejection. | Sections 4, 5, 8, and 16 |
 | `Tree` | Regular recursion, recursive payloads and methods, equality, printing, and nested case expressions. | Sections 4, 6, 9–13, and 16 |
 | Filesystem model | Closed classification with ordinary `Other`, local capabilities, defaults, and exhaustive consumers. This supplies no OS capability API or expanded host crossing. | Sections 3, 4, 7, and 15 |
-| Gel | Useful exact reflection while pending/state representations use families where specified; existing keys and emitted text are preserved. | Sections 5, 14, and 15 |
+| Gel | Useful exact reflection through all three `invoke-mirrored` helper paths while pending/state representations use families where specified; existing valid flows, results, keys, and emitted text are preserved except for the intentional Mirror instance API menu addition. | Sections 5, 14–16, and 21 |
 | Term and host tests | Exact interface ownership, explicit injection, guarded direct/reflected invocation, unchanged Term output, and the sealed public boundary. | Sections 14 and 15 |
 
 During later implementation, Gel's pending sentinel list is to become
 `Option GelRow`. A further application state family is conditional on making
-the application clearer; no state schema is chosen here. Keys and emitted
-text remain unchanged unless separately approved. Filesystem coverage tests
-the closed/open semantic boundaries without selecting host selectors,
+the application clearer; no state schema is chosen here. Application call sites
+remain unchanged under the section 16 helper rewrites. Existing valid-flow keys
+and emitted text remain unchanged except that explicitly browsing a Mirror
+object shows its appended `invoke-mirrored` row. That approved API addition
+does not imply that extended introspection output is byte-for-byte identical
+or that every generic row can execute without sufficient sealed input evidence.
+Filesystem coverage tests the closed/open semantic boundaries without selecting host selectors,
 marshalling, or a new capability design.
 
 Eventual completion must establish that the migrated historical suite and
@@ -2135,25 +2488,34 @@ Future implementation slices must preserve the approved boundaries and reject
 unavailable behavior rather than approximate it with name-based identity,
 partial case, reflected locals, or unresolved construction. This records
 validation obligations, not the provisional checkpoint sequence, future test
-filenames, algorithms, roadmap, or handoff. Those artifacts and the final
-whole-candidate audit remain later work.
+filenames, algorithms, roadmap, or handoff. Those artifacts remain later work;
+the completed whole-candidate audit is recorded in the
+[89F report](unified-nominal-adts-design-audit.md).
 
 ## Pending completion
 
-> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89E**
+> **CHECKPOINT 89F AUDIT COMPLETE — CANDIDATE STILL INCOMPLETE AND NON-NORMATIVE**
 
-The candidate is incomplete. Later linked 89-series work must specify, audit,
-and reconcile all of the following before the proposal can be ratified or
-implemented:
+The [89F audit](unified-nominal-adts-design-audit.md) covers Decisions 1–10,
+cross-section interactions, examples, diagnostics, exclusions, and validation
+obligations. It preserves bounded corrections C1–C6 and records
+[U1's approved resolution](unified-nominal-adts-design-audit.md#u1-gel-reflection-and-inference-closure)
+through `invoke-mirrored`, including the three Gel helper rewrites, sealed
+input evidence, result adaptation, and failure boundaries. No material issue
+remains unresolved in that audit. This completes the documentation audit,
+not checkpoint 89 as a whole or implementation of the family model.
 
-- the final whole-candidate Decision 1–10 audit;
+Later work must specify and reconcile the remaining artifacts:
+
 - the implementation roadmap and durable handoff; and
 - atomic ratification into `SPEC.md`.
 
-Sections 18–22 complete the catalogue for the already proposed rules, without
-certifying the whole candidate. Section 15's integration contract remains
-complete for its slice. Optional algebraic rewrites of built-ins remain
-deferred and are not unfinished requirements of the family model.
+Sections 18–22 catalogue the proposed rules, including U1's future validation
+obligations. A passing unchanged checkpoint-88 suite is preservation evidence,
+not validation of unimplemented family semantics. Later substantive edits
+require review of affected audit conclusions before ratification. Optional
+algebraic rewrites of built-ins remain deferred and are not unfinished
+requirements of the family model.
 
 This section reserves the remaining subjects; it does not draft them. Nothing
 in this candidate authorizes the next 89-series checkpoint, implementation
