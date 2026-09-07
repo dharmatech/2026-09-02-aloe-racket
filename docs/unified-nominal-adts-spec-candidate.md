@@ -4,9 +4,11 @@
 >
 > This document authorizes no language, checker, evaluator, runtime, library,
 > application, or compatibility change. `SPEC.md` remains law and is the
-> governing Aloe specification. Checkpoints 89A–89D cover only the proposed
+> governing Aloe specification. Checkpoints 89A–89E cover only the proposed
 > language and static model, checked execution and runtime-value model,
-> family-aware reflection, and specialized built-in and typed host integration.
+> family-aware reflection, specialized built-in and typed host integration,
+> and the diagnostic, exclusion, and validation catalogue. Completing that
+> catalogue is not final design approval or authorization to accept family syntax.
 > Later 89-series checkpoints must complete and audit the remaining subjects,
 > then atomically ratify the candidate or reject it. The proposed family
 > additions remain unimplemented and non-normative; runtime
@@ -1555,7 +1557,7 @@ and migrates no Gel state.
 ## 16. Candidate examples
 
 These examples illustrate the candidate syntax, reflection, and integration
-contracts; they are not checkpoint-89A–89D goldens. Family declarations and
+contracts; they are not checkpoint-89A–89E goldens. Family declarations and
 family-aware reflection remain unimplemented. Observations about established
 built-in and host behavior are preservation examples.
 
@@ -1830,7 +1832,7 @@ A later implementation sequence may temporarily lower a legacy
 constructor is `new`, solely to keep the historical suite green during
 migration. Such a bridge is implementation sequencing, not candidate source
 syntax or a compatibility promise, and it must have an explicit removal
-checkpoint. Checkpoints 89A–89D add and authorize no bridge or implementation
+checkpoint. Checkpoints 89A–89E add and authorize no bridge or implementation
 scaffold.
 
 The candidate preserves all unaffected expression behavior, including literal
@@ -1841,22 +1843,317 @@ tables. It does not carry forward contradictory rules for generated `new`,
 class-level fields, one positional conformance, or constructors inferred from
 class layout.
 
+## 18. Diagnostics and detection boundaries
+
+The catalogue in sections 19–22 organizes the preceding semantic rules. It
+does not add language features or certify the complete design. A diagnostic
+must identify the invalid condition and the relevant evidence, such as the
+offending declaration, selector, type obligation, or missing constructor.
+The boundaries below describe when the language must enforce an obligation;
+they are not mandatory error-code names or public exception classes.
+
+| Detection boundary | Required distinction | Governing rules |
+| --- | --- | --- |
+| Source grammar, name resolution, and static checking | Reject invalid source and unsatisfied static obligations before evaluation. Where only that timing is specified, no particular parser, linker, or checker phase is mandated. | Sections 1–8 |
+| Combined declaration, extension, and whole-unit finalization | Validate the combined rows and conformance claims, including allowed extensions in the complete source unit and its transitive loads, before committing static state and evaluating. | Sections 7–9 |
+| Racket host declaration and driver injection | Validate host declarations and implementation call shape; preflight both driver environments before installing a capability binding. These are not Aloe source declaration forms. | Section 15 |
+| Guarded runtime validation and ordinary evaluation | Enforce obligations depending on actual values or hidden signatures, and report ordinary evaluation failures. A checked program does not remove its dynamic guards. | Sections 10–15 |
+
+The candidate specifies no numeric codes, exact diagnostic wording,
+source-span format, error aggregation, recovery behavior, or global precedence
+between independent errors. Existing specific information requirements remain:
+
+- Missing case constructors are reported in family declaration order
+  (section 4).
+- Ordinary type presentation uses the base family type, not a source-like
+  constructor-set annotation. When exact instantiation matters, especially
+  for a nullary constructor, type context is displayed separately from
+  concise raw value text (sections 8, 11, and 13).
+- Names and raw spellings are descriptions. A mismatch between same-named
+  nominal owners remains a mismatch; identical text does not establish
+  compatibility (sections 10, 11, 14, and 15).
+- `check` retains its left-to-right evaluation and same-type requirement.
+  When same-typed values are unequal, the failure reports both original
+  source datums and both resulting values. Success returns the right-hand
+  value. Trusted comparison is kernel equality, not a user `=` send
+  (sections 1 and 12).
+- Host implementation failures retain Aloe host-failure context and the
+  original Racket cause; breaks pass through unchanged (section 15).
+
+Static failure commits no partial live checker state and begins no evaluation
+under section 9. A hidden reflective row or host crossing may require runtime
+validation: owner, arity, argument, and required generic-resolution failures
+prevent the selected row from running. Result validation occurs after the
+row executes and does not undo its effects. These runtime obligations do not
+relax static inference closure. Atomic injection, checking transactions, and
+the absence of runtime effect rollback remain distinct guarantees.
+
+## 19. Required rejection catalogue
+
+Each entry names an invalid condition, its semantic detection boundary, and
+the rule it enforces. “Static” below includes source grammar, resolution, and
+checking without prescribing their internal allocation. “Finalization” includes
+the combined declaration and extension obligations of section 9. A condition
+listed at both static and runtime boundaries is checked statically when the
+relevant information is available and guarded dynamically where required.
+
+### Expressions, declarations, and source types
+
+| Invalid condition | Detection boundary | Governing rules |
+| --- | --- | --- |
+| Empty or one-element ordinary combination; invalid nonliteral selector; malformed preserved expression form, binding, or body; unbound expression name. A name available only in another new parallel `let` binding is not in scope on a binding's right-hand side. | Static | Section 1 |
+| Malformed or unresolved source type, unbound type variable, wrong nominal or container type arity, or arrow type lacking a result; a constructor, constructor set, host diagnostic label, or reflected type datum used as if it were an admitted source type. | Static | Sections 5 and 15 |
+| Unsupported source form, including the completed language's legacy declaration forms. A type-shaped list in expression position is still a send, not type application. | Static | Sections 1, 5, and 17 |
+| Missing required family or constructor section; wrong section order or cardinality; empty constructor set; present-but-empty `conforms`; unresolved conformance name. | Static, with combined declaration validation before commit | Sections 3, 7, and 9 |
+| Malformed method or protocol row, missing required parameter/result/body structure, or duplicate bound type-variable names within a family or row header. | Static | Sections 3, 5, and 7 |
+| Duplicate constructor selectors or payload names; constructor selector reused by a factory, accessor, local method, family method, or extension; family/local selector collision; payload/local collision within a constructor; duplicate exact overload. | Static and finalization | Sections 3, 7, and 9 |
+| Misuse of contextual markers: `case` as a declared callable selector, `else` as a constructor selector, malformed reserved clause/body-mode grammar, or an immediately post-selector `type` header treated as a runtime argument. | Static | Sections 1, 3–5 |
+
+The marker rules apply only in their specified scopes. `type` is not a
+globally forbidden selector, `per-constructor` is only a body-mode marker,
+and declaration labels are not global reserved words. Outside reserved
+positions, ordinary symbol/selector use remains legal where the other rules
+permit it. A nullary constructor requires an empty `(fields)` section; that is
+different from an invalid empty constructor set. Optional empty sections stay
+legal where section 3's grammar permits them. Section 7 requires an extension
+section, not an invented minimum number of rows in that section.
+
+### Construction, methods, case, and linked behavior
+
+| Invalid condition | Detection boundary | Governing rules |
+| --- | --- | --- |
+| Wrong constructor payload arity or substituted payload type; inconsistent invariant family arguments. | Static; defensive construction validation at runtime | Sections 3, 5, and 11 |
+| Malformed or partial explicit type header, unsupported placeholder, ill-formed type argument, or explicit evidence conflicting with parameter/result constraints; no applicable row after type-header and ordinary overload constraints are considered. | Static; checked reflective obligations at runtime when the row is hidden | Sections 5 and 14 |
+| Unresolved nullary or partially determined construction, or inference variables escaping a top-level expression/definition, method/factory body, explicitly typed function body, or complete program transaction. | Static closure; guarded generic resolution for hidden reflective rows | Sections 5, 8, and 14 |
+| Unknown message, wrong ordinary call arity/type, or local access without singleton knowledge; repeated local selectors treated as a family row; unavailable local access through a protocol or widened result/storage view. | Static; ordinary dispatch and dynamic boundary checks where applicable | Sections 2–5, 7, 10, and 11 |
+| Missing, duplicate, unknown, or malformed `per-constructor` entries; a default or extra binders in that table; a body violating its declared type or `self` view; `per-constructor` on a factory or local method; default-plus-override body mode. | Static and complete-table finalization | Sections 3 and 9 |
+| Case scrutinee with no eligible concrete family/constructor set, including a protocol-only view, unconstrained variable, type object, or mirror. A built-in adapter alone does not confer eligibility. | Static | Sections 4 and 15 |
+| Missing, duplicate, unknown, or currently impossible case constructor; malformed clause or whole/payload binders; wrong payload arity; misplaced or empty-residual `else`; incompatible branch results or an unsupported pattern form. | Static | Sections 4 and 5 |
+| Missing or incompatible protocol requirement; requirements supplied only by constructors, factories, accessors, locals, or reflection rows; insufficient parameter-domain coverage; incompatible result obligations at one parameter shape. | Static and whole-unit conformance finalization | Sections 7 and 9 |
+| Unsupported conformance form, including per-constructor or nonuniform generic claims; ambiguous overloads or narrower dynamic rows with results unusable as the broader promised result. | Static and combined overload/conformance finalization | Sections 7, 9, and 10 |
+| Invalid extension target, missing/misordered sections, exact row replacement, reserved-selector collision, or incoherent combined rows; attempted constructor/payload/local/per-constructor-table/conformance addition. | Static and atomic extension/whole-unit finalization | Sections 7, 9, and 15 |
+| Recursive self occurrence with wrong arity, changed or reordered arguments, nonregular/polymorphic recursion, mutual recursion, or unresolved forward family reference. | Static | Sections 6 and 9 |
+
+An explicit header filters overload candidates by applicable generic arity.
+Rejecting one candidate on that basis does not reject the send when another
+valid row applies; ambiguity still follows the ordinary rules. The family
+parameters precede row-local parameters on type-object sends, while an
+instance has already fixed its family arguments (section 5).
+
+An expected protocol alone cannot resolve a family instantiation. Ordinary
+declared results, annotations, function boundaries, generic storage, payloads,
+protocol conversion, and reflective unwrapping forget refinement as specified
+in section 5; they do not change the stored constructor or nominal type.
+One-constructor families remain inherently singleton-refined. The existing
+`define-methods List` route and its element parameter remain legal under
+section 15.
+
+### Dynamic integrity, reflection, comparison, and integration
+
+| Invalid condition | Detection boundary | Governing rules |
+| --- | --- | --- |
+| A constructor owned by another family, malformed payload count, payload failing its substituted type, or unresolved construction arguments in a value being introduced. | Defensive construction or injection boundary; reject malformed foreign data rather than treating it as a case default | Sections 10 and 11 |
+| Exact family, invariant instantiation, protocol identity/conformance, or internally required constructor-membership mismatch at a dynamic boundary. | Guarded runtime validation | Section 11 |
+| Malformed reflection call: wrong API argument count/type, including an `invoke` without a `Signature` or an `accepts?` without a `Mirror`. | Static when known; guarded reflection boundary | Section 14 |
+| Wrong signature owner or exact row authority, wrong invocation argument count/type, conflicting or insufficient generic information, incompatible returned result, or incompatible contextual `subject`. | Static obligations and guarded runtime validation; result checking follows execution | Sections 8, 11, and 14 |
+| Attempted invocation through a selector/type description or forged signature authority, or use of a nonexistent representation-query API on a multi-constructor instance mirror. | Unsupported source/API use is rejected; forged authority is a defensive runtime scenario. Valid enumeration succeeds with excluded local/accessor rows absent. | Sections 14 and 15 |
+| `check` operands that cannot have the same type; unequal same-typed values. | Static for incompatible operands; evaluation for failed kernel equality | Sections 1, 12, and 18 |
+| Wrong numeric operand kind or arity, invalid function/conditional arguments, mixed or invariantly mismatched list elements, or unresolved empty-list element type. | Static and applicable runtime boundaries; inference closure remains static | Sections 1, 5, 8, and 15 |
+| `first` or `rest` of an empty list, or an ordinary numeric/collection evaluation failure under the established operation's rules. | Ordinary evaluation | Section 15 |
+| Invalid host declaration: unsupported argument/result crossing type, duplicate/non-symbol selector, invalid descriptor inputs, or implementation not accepting exactly private state plus declared positional arguments without optional, variadic, or keyword shape. | Racket host declaration validation | Section 15 |
+| Invalid driver-injection inputs or a binding conflict in either environment; separately manufactured same-name descriptors substituted for one exact interface. | Driver preflight and exact nominal boundary checks | Section 15 |
+| Host argument/result failing the declared `Int`/`Bool`/`String` crossing, wrong host arity/selector, or reflected host row owned by a distinct same-named interface. | Static when known; guarded direct/reflected host invocation | Sections 14 and 15 |
+| Use of an optional capability absent from the environment, or a host diagnostic name as a source type or type-header argument. | Name resolution and static checking | Sections 5 and 15 |
+| Legacy `define-class`, positional conformance, family-level fields, an assumed generated `new`, or permanent dual nominal declaration syntax in the completed language. | Source acceptance and message checking in the completed language | Section 17 |
+
+Malformed nominal values and forged signatures above are defensive boundary
+validation scenarios, not constructible Aloe examples. They require no new
+source syntax, published descriptor constructor, or public testing hook.
+The completed-source exclusions do not deny section 17's possible later
+temporary migration bridge, and this catalogue does not authorize that bridge.
+
+Ordinary negative answers are not errors. With a valid mirror argument,
+`Signature.accepts?` returns `#f` for a non-one-parameter row or an incompatible
+candidate subject without invoking anything. Kernel inequality itself is a
+comparison result; `check` fails because it requires equality. A final
+nonempty-residual `else` is legal, and a constructor named `Other` is an
+ordinary explicit case, unrelated to that default (sections 4, 12, and 14).
+
+## 20. Consolidated exclusions and deferrals
+
+The following are absent from the proposed language, not claims that they
+can never be designed later. Required protocol signatures and multiple
+family conformances are included in this candidate; their historical absence
+from earlier Aloe versions is not a current design exclusion. Likewise,
+today's unimplemented family features remain part of the proposed destination.
+
+| Subject | Excluded proposed-language facilities | Governing rules |
+| --- | --- | --- |
+| Small expression language | Inheritance/`super`, Aloe mutation/setters, macros, implicit numeric coercion, computed selector sends, Scheme application, a second send/evaluation rule, `begin`, labeled `make`, modules beyond `load`, and native compilation remain outside the preserved language. Receiver-anchored overloading does not add full unanchored multimethods. | Section 1 and the preserved language boundary in section 17 |
+| Family representation | Constructor types/subtypes, implicitly bound constructor functions, constructor-specific generics or result annotations, existential payloads, GADTs, visibility syntax, open constructor extension, and a permanent parallel class ontology. Constructors are not first-class values; an explicit `fn` wrapping a constructor send is allowed. | Sections 2, 3, 5, and 17 |
+| Refinement and elimination | Source-written or deep stored constructor refinements; refinement from arbitrary predicates, equality, user messages, or reflection; partial case; nested patterns, guards, alternatives, fallthrough, or wildcard payload patterns. Nested case expressions and ordinary lexical payload binders remain legal. | Sections 4, 5, and 14 |
+| Generic and recursive machinery | Partial type headers, constructor-specific `let` polymorphism, general subtyping expansion, mutual/forward declaration groups, nonregular recursion, positivity/termination checking, or claims of a full inductive type theory. Bound generic parameters are not escaped inference variables. | Sections 5, 6, 8, and 15 |
+| Protocols and methods | Structural, conditional, per-constructor, or retroactive orphan conformance; generic protocols; protocol inheritance, intersections, or defaults; default-plus-override family bodies. Additive uniform family methods and ordinary factories remain allowed. | Sections 3, 7, and 9 |
+| Runtime and reflection surface | Observable allocation identity for ordinary family data, user-overridable kernel equality, multi-constructor instance representation queries, captured refinement certificates, user-created signatures, a first-class type universe, or selector-based `perform`. | Sections 10–14 |
+| Specialized values and host access | Invented built-in constructors or case eligibility, a general heterogeneous `List`, new primitive type-object bindings, generalized built-in extension rights, broader host crossings, source-written host types, opaque-handle/callback/family marshalling, ambient authority, arbitrary Racket access, or a general FFI. | Section 15 |
+
+Some rejected choices are implementation strategies rather than source forms.
+Name-based identity or case dispatch, independent name-based compatibility
+relations, protocol wrappers, factory provenance in values, reference equality
+for ordinary family data, raw rendering through `show`, runtime reconstruction
+of missing family arguments, and unchecked production evaluation violate
+sections 8–15. Exposing multi-constructor local rows and rejecting their use
+only afterward also violates section 14. These are not alternative ways to
+implement the same observations. Permitted opaque stateful leaves do not
+introduce Aloe setters or deep mutation of family data.
+
+Other properties are deliberately unpromised: stable nominal identities across
+executions, recompilation, serialization, or future reloading; source or
+serialization round-tripping of raw text; stable menu indices; and user-visible
+signature equality, ordering, hashing, allocation identity, or stable
+serialization (sections 10, 13, and 14). This does not weaken total internal
+kernel equality. Optional algebraic rewrites of built-ins remain future work,
+not a required implementation strategy or an unfinished prerequisite
+(section 15). No future syntax or mechanism for these subjects is specified
+here.
+
+## 21. Semantic validation obligations
+
+These are future candidate validation scenarios, not executable checkpoint-89E
+goldens or a test-harness design. They pair the rejection catalogue with
+permitted behavior. Unless a row supplies another context, family examples
+use section 16's `Point`, `Option`, `Result`, and `Tree` declarations. A
+scrutinee described as unrefined permits all constructors of its stated
+family. Existing runnable preservation examples in section 16 and the current
+regression suite are distinct from these unimplemented family obligations.
+
+### Construction and inference
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Construct `Point` with ordered same-typed coordinates; inspect its fields and type-object surface. | The explicit `new` row constructs the one-constructor product; `x`/`y` preserve payload order and are usable without further case analysis. There is no generated constructor on a family that did not declare one. | Sections 2, 3, 14, and 16 |
+| Construct both `Option` variants and call the declared `when` factory with each Boolean condition. | Public constructor sends work; factory `self` is the type object. The factory returns the chosen ordinary value under its declared unrefined result. Uniform methods and a complete `per-constructor` row execute their specified bodies; incomplete tables are rejected. | Sections 3, 5, 10, and 16 |
+| Invoke `Option None` with an explicit `Int` header, or under an exact expected `(Option Int)`; separately try it with no header or constraining context. | The first two fix the nullary value's stored argument to `Int`; the unconstrained occurrence is rejected at closure. A protocol expectation alone does not fix that argument. | Sections 5, 8, and 11 |
+| Use independent constructor sends at different fully resolved family arguments, and independent instance `map` sends whose callbacks determine different `U` types. | Family construction parameters and row-local method parameters are fresh per send. One invocation's substitution does not specialize the declaration or another invocation. | Sections 3 and 5 |
+| In a case on an unrefined `Option Int`, one branch constructs `Result Ok 1` and the other `Result Error "x"`, with no unrelated enclosing result constraint; reverse the clause order. | Both arrangements infer `(Result Int String)` by gathering constraints across alternatives. A separate isolated `Ok 1` with no evidence for `E` is rejected. Branch order cannot commit a partial instantiation. | Sections 4, 5, 8, and 16 |
+| Assume `Sym` explicitly conforms to `Math`. Construct `Some` from a `Sym` payload under expected `(Option Math)`; separately use an already constructed `(Option Sym)` where `(Option Math)` is expected. | The new construction may choose `T = Math`; the existing invariant instantiation does not convert covariantly and is rejected. | Sections 5, 7, and 11 |
+| A valid overload set contains rows with different applicable generic arities; supply a complete type header matching one row and its ordinary constraints. | Inapplicable rows are filtered without rejecting a valid selected row. Partial/conflicting evidence, no applicable row, and genuine ambiguity are rejected. | Sections 3, 5, and 7 |
+
+### Refinement and exhaustive control flow
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Directly construct `Some 1`, then take immutable direct `define` and source-`let` aliases. | The outer singleton fact is retained and permits the `value` accessor. Runtime `let` still has its parallel `fn`/`call` behavior. | Sections 1, 5, and 8 |
+| In an exhaustive case on an unrefined `(Option Int)`, bind the whole `Some` value and its payload; separately handle `None` explicitly and use a final residual whole-value binder. | Explicit whole-value binding is singleton-refined. The residual binder is refined to `Some`, so its local accessor is allowed. A broader residual set grants only the surface justified for that set. | Sections 4 and 5 |
+| Join branches returning `None` and `Some` at the same instantiation; reorder the branches. | Invariant arguments unify and only outer constructor sets are unioned, without order bias. Incompatible results fail; unrelated conforming families do not infer a protocol result unless context supplies it. | Sections 4 and 5 |
+| Pass a refined occurrence through each loss point: declared method result, factory result, source annotation, general function parameter/result, family-typed payload, generic container, protocol conversion, and reflective unwrapping. | The earlier singleton does not escape that boundary. Ordinary family views require case analysis for multi-constructor locals; protocol views expose only protocol rows. The actual value retains its family, arguments, constructor, and payload. | Sections 5, 7, 10, 14, and 15 |
+| Evaluate a case on an unrefined concrete family, with every branch well typed and effects or other distinguishing behavior available through permitted operations. | The scrutinee is evaluated once and exactly one branch executes; payload bindings follow declaration order. An ill-typed unselected branch is rejected statically and is not a valid laziness demonstration. | Sections 1, 4, 9, and 15 |
+| For a non-generic family `Choice` with nullary constructors `A`, `B`, `C` declared in that order and an unrefined scrutinee, write only a `C` clause. Separately case-analyze a singleton-known `Some` while also writing a `None` clause. | The first reports missing `A`, then `B`; the second rejects an impossible clause. Correct exhaustive clauses and a final nonempty-residual default remain valid. | Sections 3–5 |
+| Use a closed family with two nullary constructors, `Known` and `Other`, and an unrefined scrutinee. | Explicit clauses for both are exhaustive. A `Known` clause plus final `else` covers residual `Other`, but `Other` itself is never a default marker. Empty-residual or misplaced defaults are rejected. | Section 4 |
+| Edit an owning family declaration to add a constructor, then recheck consumers, body tables, and conformance. | Previously exhaustive consumers without `else` and complete per-constructor tables need the new case. Conformance is revalidated. Consumers with a still-valid residual `else` opt out of missing-case diagnostics. This is source declaration growth, not runtime constructor extension. | Sections 3, 4, 7, and 9 |
+
+### Open protocols, extensions, and transactions
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Declare a family conforming to multiple protocols with compatible requirements, including identical required signatures. | Whole-family rows cover the full required domains; one row may satisfy identical requirements. Narrow-only coverage or incompatible obligations at the same parameter shape fail. | Sections 7 and 9 |
+| Call through a broader protocol row while the concrete family has a narrower applicable overload. | Concrete dynamic specificity remains useful, and the selected result is usable as the statically promised result. An incoherent narrower result is rejected during combined validation. | Sections 7, 9, and 10 |
+| Let declaration bodies call other rows in the same declaration; let rows within one extension call one another. Supply a required conformance row by a later allowed extension in the same complete loaded unit. | Signatures are installed before their bodies are checked; the combined extension is coherent; conformance is finalized over the complete source unit. This does not permit replacement rows, local additions, or orphan claims. | Sections 7–9 |
+| Add a new nominal family explicitly conforming to an existing protocol; separately amend the protocol by adding a requirement. | The new family is permitted without modifying the protocol. The new requirement rechecks existing conformers, rejecting those without compatible coverage. | Section 7 |
+| Cause a static failure in a declaration, in one row of a combined extension, or in a transitive load; observe the live driver state and permitted effects. | No partial static state commits and no evaluation begins for the failed transaction. A loaded unit includes its transitive loads; a REPL datum is its own smaller transaction. | Sections 7–9 |
+| Successfully check a unit, execute a guarded host operation, then fail at a later runtime obligation or result check. Separately attempt an injection whose name is bound on either driver side. | Runtime effects are not rolled back. Injection preflight leaves existing bindings intact and installs no partial new pair. These observations test different guarantees. | Sections 9, 14, and 15 |
+
+### Recursive values, equality, display, and reflection
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Use regular `Tree T` payload references directly and beneath existing `List` or function types; build finite recursive data. | The current family is available at full arity with the same ordered parameters. Reordered, changed, mutual, or unresolved forward references fail; no positivity or termination proof is required. | Sections 6, 9, and 10 |
+| Compare separately allocated equal `Point` or `Some` data at one exact instantiation, then unequal same-typed family data. | Kernel equality follows exact nominal structure independently of allocation and user `=`. Source `check` returns the right-hand value for equality and reports both datums and values for unequal same-typed operands. | Sections 1, 12, and 18 |
+| Compare `None` at `(Option Int)` and `(Option String)` in trusted internal runtime comparison; separately submit differently typed operands to source `check`. | Kernel comparison returns unequal because the arguments differ. Source `check` rejects incompatible operand types before evaluation; the internal observation does not license that source comparison. | Sections 5, 11, and 12 |
+| Distinct nominal declarations have identical names/layouts, or a permitted payload contains an opaque function/capability. | Matching descriptions do not imply family equality or owner compatibility. Opaque leaves retain their specified identity semantics; host state is neither structurally compared nor exposed. These observations need no new module, serialization, or identity-token facility. | Sections 10–12 and 15 |
+| Render `(Point Int)` with coordinates `1`, `2`; `(Option Int)` values `None` and `Some 1`; and a `(Tree Int)` branch of leaves `1`, `2`. Separately use an applicable whole-family `show`, including one that fails or recurses at runtime. | Raw forms stay `#<Point 1 2>`, `#<Option.None>`, `#<Option.Some 1>`, and the specified nested `Tree` form. Exact type context can appear separately. Raw remains independent of `show`; text parsing produces no refinement or missing-case diagnostics. | Sections 13 and 14 |
+| Reflect one-constructor `Point`, both constructors of `(Option Int)`, the `Option` type object, and a family value viewed through a protocol. | `Point` locals/accessors remain visible; `Option` instance locals stay absent even inside a refined branch. The type object exposes constructors/factories with roles and generics. A protocol view reflects the actual family's permitted public surface; per-constructor bodies yield one row per overload. | Sections 14 and 16 |
+| Inspect instance `map` metadata and a type-object generic row; enumerate overloads and allowed extension rows in a finalized image. | Fixed family arguments are substituted, fresh row-local variables remain descriptive, and constructor/factory generic order is preserved. Enumeration follows declaration/textual/finalized-definition order; messages deduplicate first occurrences. New rows may move menu positions without changing exact row authority. | Sections 9 and 14 |
+| Use one `(Option Int)` family-row signature on another constructor at the same instantiation, then attempt a different instantiation or unrelated same-named owner. Invoke with mismatched arguments or result obligations as well. | The first use succeeds; owner, argument, and contextual-result mismatches are guarded as specified. Invocation executes the chosen descriptor without selector redispatch. Multi-constructor locals cannot be obtained as an escaping capability. | Sections 11 and 14 |
+| Keep a `None` constructor row hidden in a `Signature` variable and supply a checked `(Option Int)` result expectation; separately leave required generic evidence absent. | Context may resolve the nullary construction under the exact selected row. Missing evidence is rejected without runtime payload/result reconstruction. Contextual `subject` is checked and forgets earlier refinement. | Sections 8, 11, and 14 |
+| Ask the generic `Result` type object's `Ok` row to accept a mirror of `1`. Separately query an integer receiver's `+` row with a mirrored `String`, and a zero-argument row with a valid mirror. | The generic query returns `#t`, solving input `T = Int` but not result-only `E` or specializing the signature. Invocation still needs sufficient context. The incompatible and non-one-parameter queries return `#f`, without invocation or refinement. | Section 14 |
+
+### Preserved expression and host behavior
+
+| Scenario and context | Required observation | Governing rules |
+| --- | --- | --- |
+| Bind a source name matching a selector; use ordinary sends, `fn` through `call`, and parallel `let`. Exercise lazy `if`/`cond` with well-typed branches. | Selectors remain literal, functions run only through `call`, binding right-hand sides use the outer environment, and exactly the selected conditional branch executes. `(f x)` is a send of `x`, not function application. | Sections 1 and 15 |
+| Use same-kind numeric operands, explicit `(n float)`, invariant homogeneous lists, contextual empty lists, and the existing `List` methods/extension route. | Existing arithmetic and library results are preserved; mixed numeric/list types, invalid collection operations, and escaped inference variables fail. `map`/`fold` callbacks use `call`, and no stored constructor refinement or runtime type fallback is introduced. | Sections 1, 5, 8, and 15 |
+| Declare valid fixed-shape host methods; try duplicate selectors, unsupported crossing types, or optional/variadic/keyword implementation shapes. Explicitly inject a valid receiver into a fresh driver. | Invalid declarations are rejected. The valid binding installs matching runtime/checker identity once, while default environments still have no optional capability. | Section 15 |
+| Share a host signature between receivers of the same exact interface, then between distinct same-named interfaces; compare direct and reflective sends. | The shared-interface target uses its own state. The unrelated owner is rejected. Both invocation routes retain the same argument/result/failure guards and sealed public boundary. | Sections 14 and 15 |
+| Supply a bad crossing argument, return a bad crossing result, pass mutable strings across the boundary, raise an implementation failure, and propagate a break. | Bad arguments prevent execution; bad results are rejected after execution. Strings become immutable in both directions. Failures retain Aloe context and their original Racket cause; breaks pass through. No broader crossing type is admitted. | Section 15 |
+| Invoke the existing Term `write-line` through explicit checked injection. Carry an injected receiver in a family payload where ordinary typing permits. | Term emits the string and CRLF, flushes, and returns the string. The payload may bind an opaque leaf but grants no host-state inspection or new host method argument/result vocabulary. | Sections 10 and 15 |
+
+Defensive malformed-value and forged-authority coverage belongs at the
+existing internal validation boundaries, not in invented Aloe construction
+syntax. Each future scenario must supply well-typed branch bodies and enough
+expected-type/refinement context to establish its intended observation.
+Coverage of these scenarios checks this catalogue; it is not the final
+whole-candidate Decision 1–10 consistency audit.
+
+## 22. Application validation and eventual completion evidence
+
+Future completion requires application evidence as well as isolated semantic
+scenarios. These obligations do not authorize building or migrating the
+applications in checkpoint 89E.
+
+| Application | Required future evidence | Governing rules |
+| --- | --- | --- |
+| `Point` | Explicit product construction, fields, methods, equality, raw display, and sole-constructor local reflection. | Sections 3, 10–14, and 16 |
+| Boids | Nested generics, immutable products, lists, numeric sends, explicit conversion, and both `(demo step)` sends producing the expected `Sim` results. | Sections 1, 3, 5, 10, and 15 |
+| MPL | Open `Math`, additive operations, overload specificity and return coherence, ordinary domain equality, and `show` without changing trusted kernel comparison. | Sections 7, 9, and 12–15 |
+| `Option` | Nullary/unary generics, contextual and explicit construction, factories, exhaustive consumers, and reflection. | Sections 3–5, 8, 14, and 16 |
+| `Result` | Two independent parameters, constraints across alternatives, and insufficient-context rejection. | Sections 4, 5, 8, and 16 |
+| `Tree` | Regular recursion, recursive payloads and methods, equality, printing, and nested case expressions. | Sections 4, 6, 9–13, and 16 |
+| Filesystem model | Closed classification with ordinary `Other`, local capabilities, defaults, and exhaustive consumers. This supplies no OS capability API or expanded host crossing. | Sections 3, 4, 7, and 15 |
+| Gel | Useful exact reflection while pending/state representations use families where specified; existing keys and emitted text are preserved. | Sections 5, 14, and 15 |
+| Term and host tests | Exact interface ownership, explicit injection, guarded direct/reflected invocation, unchanged Term output, and the sealed public boundary. | Sections 14 and 15 |
+
+During later implementation, Gel's pending sentinel list is to become
+`Option GelRow`. A further application state family is conditional on making
+the application clearer; no state schema is chosen here. Keys and emitted
+text remain unchanged unless separately approved. Filesystem coverage tests
+the closed/open semantic boundaries without selecting host selectors,
+marshalling, or a new capability design.
+
+Eventual completion must establish that the migrated historical suite and
+these application scenarios pass; evaluation carries all required checked
+static information; exact nominal, reflective, and host guarantees hold; and
+the temporary legacy bridge and dual user nominal model are gone. The
+completed source language has only `define-family` for user nominal data and
+rejects legacy `define-class`. Built-in algebraic rewrites remain optional.
+Normative acceptance into `SPEC.md` still requires later atomic ratification.
+None of this evidence is claimed to have been achieved by this catalogue or
+by a passing regression suite for the unchanged checkpoint-88 implementation.
+
+Future implementation slices must preserve the approved boundaries and reject
+unavailable behavior rather than approximate it with name-based identity,
+partial case, reflected locals, or unresolved construction. This records
+validation obligations, not the provisional checkpoint sequence, future test
+filenames, algorithms, roadmap, or handoff. Those artifacts and the final
+whole-candidate audit remain later work.
+
 ## Pending completion
 
-> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89D**
+> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89E**
 
 The candidate is incomplete. Later linked 89-series work must specify, audit,
 and reconcile all of the following before the proposal can be ratified or
 implemented:
 
-- the complete diagnostic, exclusion, and validation catalogue;
 - the final whole-candidate Decision 1–10 audit;
 - the implementation roadmap and durable handoff; and
 - atomic ratification into `SPEC.md`.
 
-Section 15 completes the proposed built-in and typed host integration contract
-for this slice. Optional algebraic rewrites of built-ins remain deferred and
-are not prerequisites for completing that contract or the family model.
+Sections 18–22 complete the catalogue for the already proposed rules, without
+certifying the whole candidate. Section 15's integration contract remains
+complete for its slice. Optional algebraic rewrites of built-ins remain
+deferred and are not unfinished requirements of the family model.
 
 This section reserves the remaining subjects; it does not draft them. Nothing
 in this candidate authorizes the next 89-series checkpoint, implementation
