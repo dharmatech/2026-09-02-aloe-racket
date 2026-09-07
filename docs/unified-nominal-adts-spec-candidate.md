@@ -4,11 +4,12 @@
 >
 > This document authorizes no language, checker, evaluator, runtime, library,
 > application, or compatibility change. `SPEC.md` remains law and is the
-> governing Aloe specification. Checkpoint 89A covers only the proposed
-> language surface and
-> static semantics. Later 89-series checkpoints must complete and audit the
-> candidate, then atomically ratify it or reject it. Until that happens, none
-> of the syntax below is implemented or normative.
+> governing Aloe specification. Checkpoints 89A and 89B cover only the
+> proposed language and static model and the proposed checked execution and
+> runtime-value model. Later 89-series checkpoints must complete and audit the
+> remaining subjects, then atomically ratify the candidate or reject it. The
+> proposed family additions remain unimplemented and non-normative; runtime
+> behavior remains exactly as implemented through checkpoint 88.
 
 This candidate describes one proposed replacement for Aloe's user-defined
 nominal class model. It unifies one-constructor products and closed variants as
@@ -638,17 +639,390 @@ by the family's constructors or local/whole-family partition.
 All rows proposed by one extension are staged together. Their signatures and
 bodies are checked in a combined staging view, including calls among the new
 rows. Exact-row uniqueness, overload ambiguity, return coherence, selector
-classification, and affected protocol obligations are validated before any of
-the rows commit. A failed extension commits none of them.
+classification, and combined row coherence are validated before any of the
+rows commit. Declaration-owned protocol obligations are finalized over the
+complete source unit as specified in section 9. A failed extension commits
+none of its rows.
 
 An external whole-family method that needs constructor knowledge uses the
 ordinary exhaustive case expression on `self`; extensions cannot add
 constructor-indexed body tables.
 
-## 8. Candidate examples
+## 8. Checked programs and elaboration
+
+### Required pipeline
+
+The candidate requires checking to resolve every static decision needed by
+evaluation. The program pipeline is:
+
+```text
+source
+  -> parsed source AST
+  -> linked nominal declarations and opaque identities
+  -> type checking and elaboration
+  -> globally validated checked program
+  -> evaluation
+```
+
+The parsed source AST retains source constructs that affect checking,
+including family declarations, explicit send type headers, case clauses, and
+direct-alias provenance. Linking resolves names to one program image's opaque
+nominal identities. Type checking elaborates the linked source into a checked
+program, and global validation establishes whole-unit obligations before
+evaluation begins.
+
+The checked program carries every runtime-relevant static decision, including:
+
+- resolved family, constructor, protocol, and dispatch-row identities;
+- resolved type arguments for sends whose runtime behavior depends on them;
+- resolved constructor identities for explicit case clauses; and
+- checked row and result obligations required at dynamic boundaries.
+
+Constructor-set refinements that serve only static lookup, coverage, and flow
+checking need not become fields of runtime values or annotations retained for
+evaluation. Ordinary type presentation exposes the base family type, not its
+internal possible-constructor set.
+
+Only a successfully checked and globally finalized unit is evaluated.
+Production evaluation does not accept unresolved construction semantics,
+re-run nominal name resolution, or infer generic arguments from runtime
+payloads. In particular, the runtime type arguments of a parameterless
+constructor come from the checked send, where context or an explicit header
+resolved them.
+
+Public source-checking and source-evaluation helpers may retain their broad
+roles. A type-only caller may discard the elaborated program after successful
+checking. Evaluation helpers and drivers evaluate the checked result rather
+than an arbitrary unresolved parsed program.
+
+### Inference closure and source aliases
+
+Temporary inference variables may participate while an enclosing expression
+is checked, as described in section 5, but no unresolved inference variable
+survives any of these boundaries:
+
+- a top-level expression or definition;
+- a method or factory body;
+- an explicitly typed function body; or
+- a complete program transaction.
+
+Declared family parameters and row-local parameters are bound variables, not
+unresolved inference variables.
+
+Source `let`, or equivalent source provenance, remains visible through
+checking so an immutable direct alias can preserve an outer constructor
+refinement. This checker requirement does not create a new runtime form.
+Runtime `let` retains the existing parallel `fn`/`call` definition from
+section 1.
+
+## 9. Shared descriptors, linking, and transactions
+
+### One linked descriptor graph
+
+Checking, evaluation, conformance validation, dynamic type validation, kernel
+equality, structural printing, and later family-aware reflection share one
+linked program-image graph of nominal descriptors. Its significant opaque
+identities are:
+
+- protocol identity;
+- family identity;
+- constructor identity; and
+- dispatch-row identity.
+
+These descriptors are implementation metadata. They are not Aloe-visible
+objects, source types, identity tokens, or an additional reflection surface.
+
+A family descriptor owns its presentation name, ordered type parameters,
+declared protocol conformances, ordered constructor descriptors, factory rows,
+and whole-family rows. Its one family type object refers to that declaration,
+not to a particular generic instantiation.
+
+A constructor descriptor owns its exact family, selector label, ordered
+payload declarations, constructor-local rows, and declaration position. A
+constructor identity therefore determines exactly one owning family.
+
+A dispatch-row descriptor owns its selector, row-local generic parameters,
+parameter and result types, semantic role, body mode, and exact row identity.
+Constructor, factory, whole-family, and local rows use this shared identity
+model without becoming the same callable surface.
+
+This candidate specifies the descriptors' semantic contents and shared opaque
+identity, not public Racket structure names or physical memory layout. An
+implementation may combine, split, index, cache, or otherwise optimize these
+representations when no Aloe observation changes.
+
+### Three family-linking phases
+
+A family declaration is linked in three ordered phases.
+
+1. **Header and identities.** Bind the family name, mint its opaque family
+   identity and its family type object, bind its type parameters, and register
+   every constructor label and opaque constructor identity. This phase makes
+   the current family available for the direct regular self-reference allowed
+   by section 6.
+2. **Representation and signatures.** Resolve constructor payload types,
+   generated accessor rows, constructor-local signatures, factory signatures,
+   whole-family signatures, and conformance names. Enforce the declaration,
+   selector, and exact-row invariants from section 3 in this linked view.
+3. **Bodies.** Install all declaration signatures before checking any body, so
+   rows in one declaration may call one another. Then check local bodies with
+   singleton-refined `self`, uniform whole-family bodies with their specified
+   family view, each `per-constructor` body with its corresponding singleton
+   view, and factory bodies with the family type object as `self`.
+
+Previously declared families remain available in every phase. The first phase
+does not create forward declarations for unrelated later families or mutual
+recursion groups.
+
+### Whole-unit finalization
+
+After a complete source unit and its transitive loads have been linked and
+checked, finalization validates the combined program image. It verifies:
+
+- every declared protocol conformance;
+- every complete `per-constructor` table;
+- every overload set and ambiguity condition;
+- every dynamic-overload return-coherence obligation;
+- every constructor, local, and whole-family selector partition;
+- every additive extension owner and exact-row nonreplacement rule; and
+- the absence of escaped inference variables.
+
+Rows supplied by later allowed `define-methods` forms in the same complete
+source unit participate in this validation and may satisfy a declaration-owned
+conformance. The atomic per-extension staging rule in section 7 remains
+unchanged: this whole-unit phase neither duplicates nor weakens it.
+
+### Transactional checking and evaluation
+
+A loaded source unit and all of its transitive loads form one staging
+transaction:
+
+1. link declarations and extensions;
+2. check expressions and bodies and produce the elaborated program;
+3. run whole-unit finalization;
+4. commit the static descriptor graph; and
+5. evaluate the checked program into the corresponding runtime environment.
+
+A REPL datum is its own smaller transaction and must be coherent when that
+transaction commits. A static failure commits no partial declaration,
+extension row, conformance, or checker binding to the live environment, and it
+does not begin evaluation. Runtime effects that occur after successful
+checking and commit retain Aloe's ordinary behavior and are not rolled back.
+
+## 10. Runtime family values and dispatch
+
+### Semantic family value
+
+The semantic content of a family instance is:
+
+```text
+<family identity, resolved type arguments, constructor identity, payloads>
+```
+
+The payloads are immutable values in constructor declaration order. The
+constructor belongs to the recorded family, and the resolved type arguments
+identify the exact invariant family instantiation.
+
+There is one family type object per declaration, not one type object for every
+generic instantiation. Generic arguments are resolved at checked send sites
+and stored in the constructed value. A `None` at `(Option Int)` and a `None` at
+`(Option String)` therefore share a family and constructor declaration but
+have different runtime family types.
+
+The semantic tuple is not a required physical representation. Its components
+may be represented indirectly through the shared descriptors as long as all
+specified observations remain the same.
+
+### Data rather than behavior
+
+A family value contains its family data, not per-instance method tables,
+method closures, a protocol wrapper, or factory provenance. Callable behavior
+and explicit conformances belong to the declaration-level descriptor graph.
+
+Consequently:
+
+- protocol conversion and constructor-refinement widening do not wrap, copy,
+  or otherwise alter the value;
+- a factory leaves no construction-history marker beyond the family,
+  constructor, resolved arguments, and payload that it returned;
+- adding an allowed method row does not alter the stored representation of
+  existing values; and
+- one-constructor products and multi-constructor variants use the same value
+  model.
+
+Family identity, resolved type arguments, constructor identity, and each
+payload position are fixed at creation. There are no setters, constructor
+changes, or payload replacements.
+
+This immutability is shallow. A payload may contain a function or an
+identity-bearing host capability whose opaque external state changes. The
+family value cannot replace that leaf and does not claim to deep-freeze it.
+
+Ordinary family values expose no allocation identity. A runtime may share,
+copy, intern, or separately allocate equivalent family data. Constructor
+refinement is therefore stable for the lifetime of a value: a `Some` value
+cannot later become `None`.
+
+Ordinary immutable construction produces finite, acyclic family data because
+all payload values must already exist when a value is constructed. Opaque
+functions and capabilities are leaves for this structural purpose.
+
+### Scope of opaque identity
+
+Opaque nominal identity is guaranteed within one linked Aloe program image.
+The candidate promises no stable family, constructor, protocol, or row
+identity across separate executions, recompilation, serialization, or a future
+module-reloading system.
+
+Names remain source and presentation labels. Same-spelled families introduced
+by distinct declarations have distinct identities, and same-spelled
+constructors in different families are unrelated. No `Symbol`, `String`, raw
+text, or reified type spelling can forge or stand in for an opaque identity.
+
+### Dispatch surfaces
+
+After overload selection, evaluation follows the disjoint callable surfaces
+specified in sections 2 and 3:
+
+- a send to a family type object consults that family's constructor and
+  factory rows;
+- a whole-family send invokes the selected family row, then uses its one
+  uniform body or the body indexed by the receiver's actual constructor; and
+- a statically authorized local send consults the table belonging to the
+  receiver's actual constructor.
+
+The value itself supplies family and constructor identities for dispatch; it
+does not carry method closures. Because local and whole-family selector
+partitions are disjoint, evaluation needs no precedence rule between them.
+
+A send checked against a broader protocol signature may retain Aloe's existing
+concrete runtime overload selection on the actual family. Every narrower row
+that might be selected remains subject to the return-coherence rule in section
+7, so dynamic selection cannot invalidate the statically promised result.
+
+## 11. Central runtime type relation and constructor integrity
+
+### One dynamic relation
+
+Every dynamic boundary uses one consistent nominal runtime type relation.
+
+For an expected concrete family type `F A ...`, a value passes exactly when
+its family identity is `F` and its resolved generic arguments exactly match
+`A ...` invariantly. If the expected view also carries an internal
+constructor-set refinement, the actual constructor must belong to that set.
+
+For an expected protocol `P`, a family value passes exactly when its family
+descriptor explicitly conforms to the opaque identity of `P`. Its constructor
+is irrelevant because conformance belongs to the whole family.
+
+No runtime type check succeeds merely because family or constructor names,
+reified type data, printed output, payload layouts, or similarly named message
+surfaces match. Compatibility follows opaque nominal identity and the
+specified family-to-protocol relation, never presentation data or structural
+coincidence.
+
+The same relation governs constructor payloads, factory results, dynamically
+selected overload arguments and results, and the later reflective-invocation
+and host-crossing boundaries. Those later specifications must use this
+relation rather than introduce parallel compatibility rules; family-aware
+reflection, specialized built-ins, and typed host integration remain pending.
+
+Trusted checked code may omit a redundant dynamic check only when its behavior
+is equivalent to applying this relation.
+
+### Defensive constructor integrity
+
+Ordinary Aloe source cannot forge an opaque constructor identity. Every
+boundary that constructs or injects a family value nevertheless rejects:
+
+- a constructor that is not owned by the recorded family;
+- a payload count different from the constructor declaration;
+- a payload that fails its substituted declared type; or
+- an unresolved generic argument.
+
+The failure occurs at the boundary that attempted to introduce the malformed
+value. Such a value does not survive until a later send or case expression.
+Exhaustive case evaluation may therefore rely on the family's closed
+constructor set. If malformed foreign data somehow reaches that boundary, it
+is rejected rather than routed through an `else` clause.
+
+## 12. Kernel equality
+
+`check` and other trusted runtime machinery use a total, non-overridable kernel
+equality. Two family values are kernel-equal exactly when all of the following
+hold:
+
+1. their opaque family identities are the same;
+2. their resolved generic arguments are the same;
+3. their opaque constructor identities are the same; and
+4. their corresponding payload values are recursively kernel-equal.
+
+Thus separately allocated `Point` values with equal coordinates compare equal,
+as do separately allocated `Some` values with equal payloads. `Some` and
+`None` do not compare equal. Same-shaped values from distinct nominal family
+declarations do not compare equal. A `None` at `(Option Int)` and a `None` at
+`(Option String)` do not compare equal even though neither has a payload.
+
+At leaves, scalar and algebraic values retain their established value
+equality. Functions, type objects, host capabilities, and other explicitly
+identity-bearing opaque values use their established opaque identity unless
+that built-in kind already defines value semantics.
+
+Kernel equality does not invoke Aloe methods and does not inject a universal
+user-visible `=` message. A family or protocol row named `=` is an ordinary
+domain operation. It may define a different notion of equality, but it cannot
+replace the comparison used by `check` or other trusted runtime operations.
+
+## 13. Raw and user-facing display
+
+### Structural raw form
+
+The concise raw forms are exactly:
+
+```text
+#<Point 1 2>
+#<Option.None>
+#<Option.Some 1>
+#<Tree.Branch #<Tree.Leaf 1> #<Tree.Leaf 2>>
+```
+
+A one-constructor family prints its family label followed by its payloads and
+omits the redundant constructor label. A multi-constructor family prints
+`Family.Constructor` followed by payloads in declaration order. A nullary
+constructor ends after its label. Nested values use the same structural rule.
+
+Family and constructor names in this output are presentation labels only. Raw
+text grants no opaque identity, proves no type compatibility, and creates no
+constructor refinement.
+
+Raw rendering never invokes Aloe methods. It is diagnostic text, not parseable
+source, an equality definition, or a serialization format. Clearly marked
+depth or collection limits may elide interactive presentation only; they do
+not change equality or any program behavior.
+
+When the exact generic instantiation matters, especially for a parameterless
+constructor, a type-aware diagnostic presents it separately with ordinary
+source type grammar:
+
+```text
+value: #<Option.None>
+type:  (Option Int)
+```
+
+This additional diagnostic context does not alter the concise value form.
+
+### Normal display
+
+Normal interactive display may use an applicable whole-family,
+zero-argument `show` row returning `String`. If no such row is available, it
+falls back to structural display. The raw path remains independently available
+and never invokes `show`, including when user display code fails, recurses, or
+deliberately hides structure.
+
+## 14. Candidate examples
 
 These examples illustrate the candidate syntax. They are not checkpoint-89A
-goldens and are not accepted by the current implementation.
+or checkpoint-89B goldens and are not accepted by the current implementation.
 
 ### `Point`: a one-constructor product
 
@@ -777,7 +1151,7 @@ to `Error`, so its local `error` accessor is available.
 The recursive payloads reuse `T` at full arity and in the same order. All
 method calls and construction sites remain receiver-first sends.
 
-## 9. Reconciliation with the current specification
+## 15. Reconciliation and compatibility boundary
 
 This candidate deliberately changes only the proposed nominal family surface;
 the current language remains governed by `SPEC.md` until an atomic later
@@ -794,9 +1168,19 @@ The proposed reconciliation is:
 | generic `new` inference from fields | constraint-based constructor inference, with an optional complete send type header |
 | nominal class applications in type grammar | nominal family applications at declared arity |
 
-`define-class` is not a permanent alias in the candidate. Retaining both forms
-would retain two apparent nominal ontologies. No migration bridge is specified
-or authorized by checkpoint 89A.
+The completed candidate language rejects `define-class`, positional
+conformance after a family header, family-level `fields`, generated `new`, and
+permanent class/family aliases. All user-defined nominal source ultimately
+uses `define-family`. Retaining both declaration forms permanently would retain
+two apparent nominal ontologies.
+
+A later implementation sequence may temporarily lower a legacy
+`define-class` declaration to an internal one-constructor family whose explicit
+constructor is `new`, solely to keep the historical suite green during
+migration. Such a bridge is implementation sequencing, not candidate source
+syntax or a compatibility promise, and it must have an explicit removal
+checkpoint. Checkpoint 89B adds and authorizes no bridge or implementation
+scaffold.
 
 The candidate preserves all unaffected expression behavior, including literal
 selectors, `fn` through `call`, parallel `let`, lazy `if` and `cond`, `load`,
@@ -808,22 +1192,20 @@ class layout.
 
 ## Pending completion
 
-> **INTENTIONALLY UNSPECIFIED IN CHECKPOINT 89A**
+> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89B**
 
 The candidate is incomplete. Later linked 89-series work must specify, audit,
 and reconcile all of the following before the proposal can be ratified or
 implemented:
 
-- linked checking and checked elaboration;
-- runtime representation and dispatch;
-- kernel equality;
-- raw structural printing and user-facing display;
-- reflection and exact signature behavior;
-- the relationship of built-ins to the family model;
-- typed host-capability integration;
-- the complete diagnostic and exclusion catalogue; and
-- the final whole-specification reconciliation audit.
+- family-aware reflection and exact signature behavior;
+- specialized built-ins and typed host-capability integration;
+- the complete diagnostic, exclusion, and validation catalogue;
+- the final whole-candidate Decision 1–10 audit;
+- the implementation roadmap and durable handoff; and
+- atomic ratification into `SPEC.md`.
 
 This section reserves those subjects; it does not draft them. Nothing in this
-candidate authorizes checkpoint 89B, implementation work, migration, parser
-acceptance, or changes to the behavior complete through checkpoint 88.
+candidate authorizes the next 89-series checkpoint, implementation work,
+migration, parser acceptance, or changes to the behavior complete through
+checkpoint 88.
