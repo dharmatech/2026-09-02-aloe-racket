@@ -4,11 +4,12 @@
 >
 > This document authorizes no language, checker, evaluator, runtime, library,
 > application, or compatibility change. `SPEC.md` remains law and is the
-> governing Aloe specification. Checkpoints 89A–89C cover only the proposed
-> language and static model, checked execution and runtime-value model, and
-> family-aware reflection. Later 89-series checkpoints must complete and audit
-> the remaining subjects, then atomically ratify the candidate or reject it. The
-> proposed family additions remain unimplemented and non-normative; runtime
+> governing Aloe specification. Checkpoints 89A–89D cover only the proposed
+> language and static model, checked execution and runtime-value model,
+> family-aware reflection, and specialized built-in and typed host integration.
+> Later 89-series checkpoints must complete and audit the remaining subjects,
+> then atomically ratify the candidate or reject it. The proposed family
+> additions remain unimplemented and non-normative; runtime
 > behavior remains exactly as implemented through checkpoint 88.
 
 This candidate describes one proposed replacement for Aloe's user-defined
@@ -648,6 +649,11 @@ An external whole-family method that needs constructor knowledge uses the
 ordinary exhaustive case expression on `self`; extensions cannot add
 constructor-indexed body tables.
 
+This family extension grammar does not remove the established
+`(define-methods List (methods ...))` route. Section 15 specifies its preserved
+element-parameter scope and built-in boundary. The family grammar's extension
+rights do not automatically extend to specialized receivers.
+
 ## 8. Checked programs and elaboration
 
 ### Required pipeline
@@ -922,10 +928,12 @@ specified family-to-protocol relation, never presentation data or structural
 coincidence.
 
 The same relation governs constructor payloads, factory results, dynamically
-selected overload arguments and results, and the reflective boundaries in
-section 14. Specialized built-ins and typed host integration remain pending;
-their later specifications must use this relation at host crossings and other
-dynamic boundaries rather than introduce parallel compatibility rules.
+selected overload arguments and results, the reflective boundaries in section
+14, and the specialized-value and typed host integration in section 15. It
+covers primitives, functions, lists, exact family instantiations, protocols,
+and host-interface identities. Specialized cases within this one relation do
+not create parallel compatibility rules or enlarge the admitted host crossing
+vocabulary.
 
 Trusted checked code may omit a redundant dynamic check only when its behavior
 is equivalent to applying this relation.
@@ -1307,16 +1315,249 @@ public surface through a protocol view, subject to the multi-constructor
 local exclusion. Host reflection retains exact interface ownership and the
 ordinary guarded invocation boundary with the target receiver's state.
 
-Primitive and host rows here are preservation constraints only. Specialized
-built-in and typed host integration remain later work; this section specifies
-no adapter internals, new built-in schema, additional crossing types, or Gel
+Primitive and host rows here are preservation constraints only. Section 15
+specifies their integration with checked execution and the guarded host
+boundary. Neither section specifies adapter internals, a new built-in schema,
+additional crossing types, or a Gel redesign.
+
+## 15. Specialized built-ins and typed host integration
+
+### Specialized values in one language
+
+`define-family` is the one ontology for user-defined nominal data. Existing
+primitives, functions, collections, reflection values, and host capabilities
+may retain specialized implementations. Internal adapters connect those kinds
+to the common type and reflection relations where necessary. Specialization
+does not introduce a second meaning for a list, another send rule, or an
+alternative nominal declaration form.
+
+| Value kind | Preserved boundary |
+| --- | --- |
+| `Int`, `Float`, and `String` | Existing scalar values and messages; numeric types remain distinct. |
+| `Bool` | Existing Boolean values and lazy `if` behavior through function objects. |
+| Functions | Arrow types and execution through `call`; closure representation remains opaque. |
+| `List` | Homogeneous invariant element typing, immutable collection operations, and existing Aloe-defined methods. |
+| `Symbol` | Interned names with the existing `intern`, `name`, and `=` messages. |
+| `Mirror` and `Signature` | The explicit reflection boundary in section 14. |
+| Host capabilities | Explicitly injected opaque nominal receivers with guarded declared operations. |
+
+This integration assigns no representation constructors or payload schemas to
+these kinds. Possible future algebraic descriptions for `Bool` or `List`
+remain optional; they are not unfinished prerequisites of the family model.
+An adapter alone neither makes its value eligible for family `case` nor
+creates constructor refinement or publishes a constructor inventory. Case
+eligibility still follows section 4.
+
+Existing expression receivers such as `List`, `Symbol`, and `Mirror` remain
+available. Being a primitive type name in an annotation does not imply a bound
+type-object value in expression position. This candidate creates no new such
+bindings, generated built-in `new`, or user constructor for `Signature`.
+It adds no built-in protocol conformance claims and grants no general right
+to extend every specialized receiver. `Option` and `Result` remain ordinary
+user families, not privileged built-ins.
+
+### Operations and library composition
+
+Numeric sends retain their existing parameter and result types. Arithmetic
+requires the same numeric kind on both sides, comparisons retain `Bool`
+results, and `(n float)` remains the explicit `Int` to `Float` conversion.
+Existing string values and their public messages are preserved.
+
+`Bool.if` receives two zero-argument function objects with a common result
+type and invokes exactly one through `call`. Functions retain arrow typing,
+their established annotation and inference rules, and execution exclusively
+through `call`. The `if` and `cond` forms, including `cond`'s required final
+`else`, and parallel `let` retain the behavior in section 1. Specialized
+function representation creates no direct application form or closure
+inspection operation.
+
+`(List of ...)` retains variadic construction with homogeneous element typing.
+`(List empty)` constructs an empty list. The existing `empty?`, `first`,
+`rest`, `cons`, and `len` operations retain their meanings: `first` and
+`rest` reject an empty receiver, `cons` returns a new list with a same-typed
+element prepended, and `len` returns `Int`. These operations do not mutate
+the receiver.
+
+`fold`, `reverse`, and `map` remain Aloe methods in `lib/list.aloe`.
+`fold` is the existing left fold; `map` and `fold` execute their callbacks
+through `call`. The established declaration route remains:
+
+```text
+(define-methods List
+  (methods
+    ...))
+```
+
+Here `T` denotes the receiver's element type and remains in scope. Row-local
+parameters, such as the accumulator parameter `A` of `fold` and result
+parameter `U` of `map`, retain their ordinary method-local meaning and fresh
+instantiation. Keeping this route requires neither a source-defined `List`
+family nor new built-in factories, constructors, local tables, or conformance
+declarations. Section 7's family extension grammar does not grant those
+additional rights to `List` or to other specialized kinds.
+
+`List` remains homogeneous and invariant. A list of family values stores the
+base family element type, not nested constructor refinements. Removing that
+checker knowledge does not erase an element's actual family, resolved generic
+arguments, constructor, or payload. Reading an element recovers the declared
+base element type; constructor knowledge is obtained by the ordinary rules
+in sections 4 and 5.
+
+An empty list receives its element type from an expected `(List T)` when
+available. Otherwise its fresh element variable must be determined by
+constraints within the enclosing checking unit. Section 8's inference
+closure applies without an empty-list exception: no unresolved variable
+escapes a boundary, and missing generic arguments are not reconstructed from
+runtime elements. Checked execution retains the static information needed
+even when the collection has no elements.
+
+`(Symbol intern string)` preserves interned-name behavior, `(sym name)`
+returns the name string, and `(sym = other)` compares symbols. Interning
+changes neither lexical lookup of expression symbols nor literal selector
+syntax. A symbol does not confer dynamic invocation authority.
+
+The `Symbol`/`List` type-description data used by reflection remains the
+descriptive boundary in section 14. Its nested grammar does not introduce a
+general heterogeneous collection type or source-written `TypeData`, `Any`,
+or `Object` type.
+
+### Common checked and runtime obligations
+
+Specialized kinds participate in the checked-program and shared-descriptor
+model of sections 8 and 9. The checker, direct sends, reflected invocation,
+`accepts?`, and boundary validation must agree on the relevant types and exact
+owners under section 11's one relation. The existing function and collection
+typing rules are preserved; integration introduces no new subtyping or
+variance system. Descriptive symbols, equal layouts, and matching method names
+cannot establish nominal compatibility.
+
+Adapters retain the static information required by checked execution. They
+do not permit runtime reconstruction of missing family arguments, evaluation
+of unchecked parsed source, or a second elaboration path with weaker
+guarantees. Their algorithms and physical representation remain internal.
+
+Reflection uses section 14's existing primitive and host surfaces, exact-row
+ownership, and guarded invocation. Rows outside algebraic family and
+type-object surfaces have role `operation`. Participation does not require
+revealing a specialized value's physical representation or adding metadata
+queries.
+
+Kernel equality and display remain governed by sections 12 and 13. Scalars
+and algebraic values retain their established value semantics. Functions,
+type objects, host capabilities, and other identity-bearing opaque leaves
+follow the identity rules already specified there. Host state is not compared
+structurally or deep-frozen, no universal `=` message is added, and raw
+printing never invokes Aloe methods. An adapter changes none of those
+observations and does not expose private state through structural display.
+
+### Host declarations and scalar crossings
+
+A host capability is a Racket-created receiver holding an opaque nominal
+`host-interface` and private state. One interface descriptor owns an ordered
+list of `host-method` declarations with unique selectors. Each declaration
+supplies the selector, fixed parameter types, result type, and Racket
+implementation shared by checking, dispatch, and reflection.
+
+The implementation accepts exactly one private state argument followed by the
+declared positional arguments. Optional, variadic, or keyword call shapes are
+rejected. Private state is not an extra Aloe argument or an exposed payload.
+Host selectors remain unique; user-family overloading does not introduce host
+overloads. A send to an unknown selector or with the wrong declared arity is
+rejected through the existing boundary.
+
+The complete method-argument and method-result crossing vocabulary is
+`Int`, `Bool`, and `String`. All arguments are validated before the
+implementation runs, and the result is validated before it enters Aloe.
+Strings are normalized to immutable values in both directions. Invalid
+declarations or crossing values are rejected rather than coerced. An
+implementation failure receives consistent Aloe host-failure context while
+retaining its original Racket cause; breaks pass through unchanged.
+
+The common type relation can describe more types than this boundary admits.
+It does not add `Float`, collections, family values, functions or callbacks,
+reflection values, or opaque handles to host method arguments or results.
+Explicit injection of a capability is distinct from returning one as a host
+method result. There is no family marshalling or general FFI, arbitrary Racket
+call or evaluation, namespace access, dynamic library surface, or ambient
+capability.
+
+### Injection, ownership, and opaque composition
+
+An optional capability enters Aloe only through explicit driver injection.
+Injection preflights both runtime and checker environments, then installs the
+receiver and its nominal type as one logical operation. It never overwrites
+an existing binding on either side. The checker and runtime refer to the same
+exact interface identity, not independently manufactured descriptions with
+the same name. Default environments contain no optional capability.
+
+Interface names are diagnostic labels. They do not become source-written
+host types in annotations or explicit send type headers. Possession of an
+injected value permits its existing typed use; spelling its printed name
+grants no authority. Internal inferred host types do not enlarge the source
+type grammar in section 5.
+
+Host messages, signatures, type descriptions, and ownership derive from that
+same descriptor and use the ordinary guarded exact-row invocation boundary.
+As specified in section 14, a signature may target another receiver of the
+same exact interface and uses that receiver's private state. A same-named but
+distinct interface is incompatible. Reflected invocation does not bypass
+declaration, argument, result, or failure guards.
+
+Where ordinary typing permits a family payload to contain a capability or
+function, that leaf remains opaque. The family fixes the payload position;
+it neither freezes external state nor reveals the leaf's representation.
+Case analysis of the enclosing family can bind the leaf as an ordinary value,
+but cannot inspect host state or a closure. Neither a mirror nor containment
+in family data makes the leaf an algebraic constructor or enlarges the host
+crossing vocabulary.
+
+The guarded Racket-facing host declaration and driver-injection boundary
+sealed at checkpoint 88 is preserved. Validated constructors, predicates,
+safe declaration accessors, receiver sends, and retained-failure-cause
+inspection keep their existing roles. Raw constructors and receiver state
+access remain outside the ordinary public surface, as do the checker's
+host-type machinery and the narrow internal injection and exact-method
+invocation hooks. The implementation accessor remains Racket-facing
+declaration data; it is never exposed as an Aloe procedure value.
+
+Descriptors may be adapted internally to the linked program image without
+bypassing these guards or publishing private state or arbitrary Racket
+procedures to Aloe. This contract requires no new registry, loader,
+capability declaration form, ownership or lifetime system, or Racket API
 redesign.
 
-## 15. Candidate examples
+Atomic injection and checking transactions are distinct guarantees. Injection
+preflight prevents a binding conflict from installing only one side. Static
+failures obey section 9's transaction rules and prevent evaluation. Host
+effects after successful checking retain their ordinary behavior and are not
+rolled back, including when a later result check fails.
 
-These examples illustrate the candidate syntax and reflection contract. They
-are not checkpoint-89A, 89B, or 89C goldens and are not accepted by the current
-implementation.
+### Term and application composition
+
+Term is the existing production example with exactly these declared rows:
+
+```text
+read-key   : () -> String
+write-line : (String) -> String
+```
+
+`write-line` writes the supplied string followed by CRLF, flushes output,
+and returns the string. Both optional terminal runners explicitly inject
+Term into a checked driver. Ordinary Aloe startup, Boids, and MPL remain free
+of optional Term authority and terminal dependencies.
+
+Racket supplies host facts and effects; Aloe owns domain policy and
+composition, including Gel's key handling and state transitions. This is a
+preservation example, not a new terminal specification: it changes no key
+mapping, exposes no `tui-term` Aloe API, specifies no filesystem capability,
+and migrates no Gel state.
+
+## 16. Candidate examples
+
+These examples illustrate the candidate syntax, reflection, and integration
+contracts; they are not checkpoint-89A–89D goldens. Family declarations and
+family-aware reflection remain unimplemented. Observations about established
+built-in and host behavior are preservation examples.
 
 ### `Point`: a one-constructor product
 
@@ -1506,7 +1747,62 @@ rejected. An exhaustive case covering `None` and `Some` can introduce a
 same rule holds if the mirror was originally made in a refined branch or
 from a protocol view; unwrapping does not recover that source history.
 
-## 16. Reconciliation and compatibility boundary
+### Specialized-value and host observations
+
+The established numeric sends remain:
+
+```aloe
+(1 + 2)                 ; 3, an Int
+(1.0 + 2.0)             ; 3.0, a Float
+((1 float) + 2.0)       ; 3.0, after explicit conversion
+```
+
+`(1 + 2.0)` is rejected. Common runtime integration supplies no implicit
+conversion between the numeric kinds.
+
+In the proposed family model, a `(List (Option Int))` can hold both `None`
+and `Some` values. `reverse` preserves that element type; `map` with a
+callback sending `present?` produces a `(List Bool)`, with the callback run
+through `call`. Reading an element gives an unrefined `(Option Int)` even
+when that element originally came from a directly constructed `Some`.
+Ordinary exhaustive case analysis can recover the local surface. The stored
+value still has its exact family, `Int` argument, actual constructor, and
+payload; only the nested checker refinement was forgotten.
+
+An empty list can obtain its element type from its enclosing function call:
+
+```aloe
+((fn (xs) ((xs cons 1) len)) call (List empty))
+```
+
+The list argument and `cons 1` together determine `xs` as `(List Int)` within
+the call; the result is `1`. A parameter already expected as `(List Int)`
+supplies that type directly. Under the candidate's closure rule, an empty
+list whose element variable is still unresolved at its checking-unit boundary
+is rejected. Runtime inspection of later elements does not supply the missing
+static information, and the list head of the call above is still the function
+receiver.
+
+Two separately declared host interfaces can share a diagnostic name and
+identical row descriptions without sharing signature authority. A signature
+from one is rejected by a receiver of the other. Conversely, two receivers
+of the same exact interface may use the same signature; invocation supplies
+the target receiver's state, not the state of the receiver first reflected.
+No source-written host annotation is needed or introduced by that fact.
+
+For a declared host row accepting `String`, an `Int` argument is rejected
+before the Racket implementation can run. If a declared `String` result
+instead returns a Racket integer, the return boundary rejects it before it
+enters Aloe; any effects the implementation already performed are not undone.
+Direct and reflected invocations use the same guards.
+
+If ordinary typing permits an injected receiver or a function in a family
+payload, a case branch can bind that opaque value. It cannot decompose the
+receiver's private state or the function's closure. Carrying either leaf in
+Aloe data does not permit passing the enclosing family, a callback, or a
+capability as a host method argument or result.
+
+## 17. Reconciliation and compatibility boundary
 
 This candidate deliberately changes only the proposed nominal family surface;
 the current language remains governed by `SPEC.md` until an atomic later
@@ -1534,7 +1830,7 @@ A later implementation sequence may temporarily lower a legacy
 constructor is `new`, solely to keep the historical suite green during
 migration. Such a bridge is implementation sequencing, not candidate source
 syntax or a compatibility promise, and it must have an explicit removal
-checkpoint. Checkpoints 89A–89C add and authorize no bridge or implementation
+checkpoint. Checkpoints 89A–89D add and authorize no bridge or implementation
 scaffold.
 
 The candidate preserves all unaffected expression behavior, including literal
@@ -1547,19 +1843,22 @@ class layout.
 
 ## Pending completion
 
-> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89C**
+> **INTENTIONALLY UNSPECIFIED AFTER CHECKPOINT 89D**
 
 The candidate is incomplete. Later linked 89-series work must specify, audit,
 and reconcile all of the following before the proposal can be ratified or
 implemented:
 
-- specialized built-ins and typed host-capability integration;
 - the complete diagnostic, exclusion, and validation catalogue;
 - the final whole-candidate Decision 1–10 audit;
 - the implementation roadmap and durable handoff; and
 - atomic ratification into `SPEC.md`.
 
-This section reserves those subjects; it does not draft them. Nothing in this
-candidate authorizes the next 89-series checkpoint, implementation work,
-migration, parser acceptance, or changes to the behavior complete through
-checkpoint 88.
+Section 15 completes the proposed built-in and typed host integration contract
+for this slice. Optional algebraic rewrites of built-ins remain deferred and
+are not prerequisites for completing that contract or the family model.
+
+This section reserves the remaining subjects; it does not draft them. Nothing
+in this candidate authorizes the next 89-series checkpoint, implementation
+work, migration, parser acceptance, or changes to the behavior complete
+through checkpoint 88.
