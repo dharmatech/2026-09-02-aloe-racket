@@ -4,14 +4,6 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `AGENTS.md`, `CHECKPOINTS.md`, this file. Spec is law. Decisions are
 rejected ideas. Do not replay rejected designs.
 
-## `experiment/class-constructors`
-
-Read [Proposal B — class constructors](class-constructors.md) and
-[checkpoint 89](checkpoints/0089-class-constructors-docs.md). This checkpoint
-lands documents only. Proposal B is candidate design; `SPEC.md` remains law
-for running code. Proposal A on `codex/unified-nominal-adts` is not authority
-on this branch.
-
 ## What Aloe is
 
 S-expression language. A list is a **send**, not Scheme apply:

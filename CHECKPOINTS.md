@@ -237,5 +237,3 @@ success, and reports both source datums and displayed values on failure.
 - `GelText.menu` renders ordinary values, mirrors, and Gel state, while
   `GelText.tos` renders the stack top; the separate menu/TOS renderers and
   function-shaped rendering sends are removed.
-
-## 89. [Proposal B documents](docs/checkpoints/0089-class-constructors-docs.md) (documentation only)
