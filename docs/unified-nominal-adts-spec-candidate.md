@@ -13,8 +13,14 @@
 > completed whole-candidate audit, including adoption and rechecking of the
 > [user-approved U1 reflection amendment](unified-nominal-adts-reflection-resolution-proposal.md).
 > That amendment adds `Mirror.invoke-mirrored` to the proposed contract.
-> Later 89-series work must supply the implementation roadmap and durable
-> handoff, then atomically ratify the candidate or reject it. The proposed family
+> The corrected [89G implementation roadmap](unified-nominal-adts-implementation-roadmap.md)
+> is reviewed and accepted as a plan with no remaining review finding, as
+> recorded by [checkpoint 89H](checkpoints/0089h-draft-family-implementation-handoff.md).
+> The [89H implementation handoff](unified-nominal-adts-implementation-handoff.md)
+> is drafted for review; future roadmap entries remain inactive.
+> After handoff review, later 89-series work must complete final reconciliation
+> and atomic ratification, including promotion into `SPEC.md` and of the
+> reviewed sequence into `CHECKPOINTS.md`. The proposed family
 > additions remain unimplemented and non-normative; runtime
 > behavior remains exactly as implemented through checkpoint 88.
 
@@ -2487,14 +2493,17 @@ by a passing regression suite for the unchanged checkpoint-88 implementation.
 Future implementation slices must preserve the approved boundaries and reject
 unavailable behavior rather than approximate it with name-based identity,
 partial case, reflected locals, or unresolved construction. This records
-validation obligations, not the provisional checkpoint sequence, future test
-filenames, algorithms, roadmap, or handoff. Those artifacts remain later work;
-the completed whole-candidate audit is recorded in the
+validation obligations, not detailed checkpoint instructions, future test
+filenames, algorithms, or a handoff. The sequence is recorded separately in
+the [accepted corrected 89G roadmap](unified-nominal-adts-implementation-roadmap.md).
+The [89H handoff](unified-nominal-adts-implementation-handoff.md) is drafted
+for review; final reconciliation and atomic ratification remain later work.
+The completed whole-candidate audit is recorded in the
 [89F report](unified-nominal-adts-design-audit.md).
 
 ## Pending completion
 
-> **CHECKPOINT 89F AUDIT COMPLETE — CANDIDATE STILL INCOMPLETE AND NON-NORMATIVE**
+> **89F AUDIT COMPLETE; CORRECTED 89G ROADMAP ACCEPTED; 89H HANDOFF DRAFTED FOR REVIEW — CANDIDATE STILL INCOMPLETE AND NON-NORMATIVE**
 
 The [89F audit](unified-nominal-adts-design-audit.md) covers Decisions 1–10,
 cross-section interactions, examples, diagnostics, exclusions, and validation
@@ -2505,10 +2514,22 @@ input evidence, result adaptation, and failure boundaries. No material issue
 remains unresolved in that audit. This completes the documentation audit,
 not checkpoint 89 as a whole or implementation of the family model.
 
-Later work must specify and reconcile the remaining artifacts:
+The corrected [89G roadmap](unified-nominal-adts-implementation-roadmap.md)
+is reviewed and accepted as a plan with no remaining review finding.
+[Checkpoint 89H](checkpoints/0089h-draft-family-implementation-handoff.md)
+records that disposition, including 90B ownership of checkpoint 36's MPL
+observations through checked contextual reflection; the Gel helper rewrites
+and closure-sensitive reflection/empty-list migrations remain in 91C.
+The [89H implementation handoff](unified-nominal-adts-implementation-handoff.md)
+is drafted for review. Historical status prose in read-only documents remains
+scoped to its stage and does not reopen completed review or U1's approved
+decision. These documentation steps implement no semantic validation obligation
+and do not activate the roadmap.
 
-- the implementation roadmap and durable handoff; and
-- atomic ratification into `SPEC.md`.
+After handoff review, remaining 89-series work is final reconciliation and
+atomic ratification into `SPEC.md`, including promotion of the reviewed
+sequence into `CHECKPOINTS.md`. That prerequisite is distinct from final
+documentation reconciliation after implementation.
 
 Sections 18–22 catalogue the proposed rules, including U1's future validation
 obligations. A passing unchanged checkpoint-88 suite is preservation evidence,
@@ -2517,7 +2538,7 @@ require review of affected audit conclusions before ratification. Optional
 algebraic rewrites of built-ins remain deferred and are not unfinished
 requirements of the family model.
 
-This section reserves the remaining subjects; it does not draft them. Nothing
-in this candidate authorizes the next 89-series checkpoint, implementation
-work, migration, parser acceptance, or changes to the behavior complete
-through checkpoint 88.
+This section records the remaining boundary; it does not perform ratification.
+Nothing in this candidate authorizes the next 89-series checkpoint,
+implementation work, migration, parser acceptance, or changes to the behavior
+complete through checkpoint 88.
