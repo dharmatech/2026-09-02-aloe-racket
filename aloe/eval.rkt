@@ -13,12 +13,15 @@
 (provide eval-expr
          eval-exprs
          aloe-value->string
-         aloe-value->display-string)
+         aloe-value->display-string
+         instance-value?
+         instance-value-constructor)
 
 (struct class-value
   (name type-parameters protocol fields [methods #:mutable] environment)
   #:transparent)
-(struct instance-value (class type-arguments field-values) #:transparent)
+(struct instance-value (class type-arguments constructor field-values)
+  #:transparent)
 (struct function-value (parameters body environment) #:transparent)
 (struct list-value (class element-type elements) #:transparent)
 (struct runtime-class-type (class type-arguments) #:transparent)
@@ -671,6 +674,7 @@
            actual-arity))
   (instance-value class
                   (infer-class-type-arguments class arguments)
+                  'new
                   (apply vector-immutable arguments)))
 
 (define (infer-class-type-arguments class arguments)

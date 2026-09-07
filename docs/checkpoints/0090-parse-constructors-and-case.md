@@ -1,5 +1,3 @@
-Wrote `docs/checkpoints/0090-parse-constructors-and-case.md`.
-
 # Checkpoint 90 — parse constructors and case
 
 **Branch.** `experiment/class-constructors`
