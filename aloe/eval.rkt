@@ -70,7 +70,7 @@
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
     [(define-protocol-expr _ _) (void)]
-    [(define-class-expr name type-parameters protocol fields methods)
+    [(define-class-expr name type-parameters protocol fields _ methods)
      (env-define! environment
                   name
                   (class-value

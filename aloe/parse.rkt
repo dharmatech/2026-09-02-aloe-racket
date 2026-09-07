@@ -14,12 +14,15 @@
          (struct-out check-expr)
          (struct-out define-expr)
          (struct-out field-declaration)
+         (struct-out constructor-declaration)
          (struct-out parameter-declaration)
          (struct-out method-declaration)
          (struct-out define-protocol-expr)
          (struct-out define-class-expr)
          (struct-out define-methods-expr)
          (struct-out fn-expr)
+         (struct-out case-clause)
+         (struct-out case-expr)
          (struct-out send-expr)
          parse-datum
          parse-program
@@ -35,16 +38,19 @@
 (struct check-expr (left right left-datum right-datum) #:transparent)
 (struct define-expr (name value) #:transparent)
 (struct field-declaration (name type) #:transparent)
+(struct constructor-declaration (selector fields) #:transparent)
 (struct parameter-declaration (name type) #:transparent)
 (struct method-declaration
   (selector type-parameters parameters return-type body)
   #:transparent)
 (struct define-protocol-expr (name signatures) #:transparent)
 (struct define-class-expr
-  (name type-parameters protocol fields methods)
+  (name type-parameters protocol fields constructors methods)
   #:transparent)
 (struct define-methods-expr (target methods) #:transparent)
 (struct fn-expr (parameters body) #:transparent)
+(struct case-clause (selector payload-names body) #:transparent)
+(struct case-expr (scrutinee clauses else-body) #:transparent)
 (struct send-expr (receiver selector arguments) #:transparent)
 
 (define current-aloe-source-directory (make-parameter #f))
@@ -250,6 +256,93 @@
      "datum" datum))
   fields)
 
+(define (parse-constructor-declaration datum)
+  (match datum
+    [(list (? symbol? selector) (cons 'fields field-datums))
+     (unless (list? field-datums)
+       (raise-arguments-error
+        'parse-datum
+        "malformed constructor fields; expected (fields ...)"
+        "constructor" datum))
+     (constructor-declaration
+      selector
+      (ensure-distinct-fields
+       (map parse-field-declaration field-datums)
+       datum))]
+    [_
+     (raise-arguments-error
+      'parse-datum
+      "malformed constructor; expected (Name (fields ...))"
+      "constructor" datum)]))
+
+(define (parse-constructors constructor-datums datum)
+  (unless (and (list? constructor-datums)
+               (pair? constructor-datums))
+    (raise-arguments-error
+     'parse-datum
+     "constructors section must be nonempty"
+     "datum" datum))
+  (define constructors
+    (map parse-constructor-declaration constructor-datums))
+  (define duplicate
+    (check-duplicates
+     (map constructor-declaration-selector constructors)))
+  (when duplicate
+    (raise-arguments-error
+     'parse-datum
+     "constructor selectors must be unique"
+     "selector" duplicate
+     "datum" datum))
+  constructors)
+
+(define (parse-case scrutinee-datum clause-datums datum)
+  (unless (pair? clause-datums)
+    (raise-arguments-error
+     'parse-datum
+     "case requires at least one clause"
+     "datum" datum))
+  (define named-clauses '())
+  (define else-body #f)
+  (for ([clause-datum (in-list clause-datums)]
+        [index (in-naturals)])
+    (define final? (= index (sub1 (length clause-datums))))
+    (match clause-datum
+      [(list 'else body-datum)
+       (unless final?
+         (raise-arguments-error
+          'parse-datum
+          "else must be the final case clause"
+          "datum" datum))
+       (set! else-body (parse-datum body-datum))]
+      [(list (? symbol? selector) (? list? payload-names) body-datum)
+       (when (eq? selector 'else)
+         (raise-arguments-error
+          'parse-datum
+          "malformed else clause; expected (else body)"
+          "clause" clause-datum
+          "datum" datum))
+       (unless (andmap symbol? payload-names)
+         (raise-arguments-error
+          'parse-datum
+          "case payload names must be identifiers"
+          "clause" clause-datum
+          "datum" datum))
+       (set! named-clauses
+             (cons (case-clause
+                    selector
+                    payload-names
+                    (parse-datum body-datum))
+                   named-clauses))]
+      [_
+       (raise-arguments-error
+        'parse-datum
+        "malformed case clause; expected (Name (id ...) body) or (else body)"
+        "clause" clause-datum
+        "datum" datum)]))
+  (case-expr (parse-datum scrutinee-datum)
+             (reverse named-clauses)
+             else-body))
+
 (define (desugar-let binding-datums body datum)
   (unless (list? binding-datums)
     (raise-arguments-error
@@ -380,6 +473,7 @@
       (ensure-distinct-fields
        (map parse-field-declaration field-datums)
        datum)
+      #f
       (map parse-method-declaration method-datums))]
     [(list 'define-class
            header
@@ -394,11 +488,37 @@
       (ensure-distinct-fields
        (map parse-field-declaration field-datums)
        datum)
+      #f
+      (map parse-method-declaration method-datums))]
+    [(list 'define-class
+           header
+           (cons 'constructors constructor-datums)
+           (cons 'methods method-datums))
+     (define class-header (parse-class-header header datum))
+     (define-class-expr
+      (car class-header)
+      (cdr class-header)
+      #f
+      #f
+      (parse-constructors constructor-datums datum)
+      (map parse-method-declaration method-datums))]
+    [(list 'define-class
+           header
+           (? symbol? protocol)
+           (cons 'constructors constructor-datums)
+           (cons 'methods method-datums))
+     (define class-header (parse-class-header header datum))
+     (define-class-expr
+      (car class-header)
+      (cdr class-header)
+      protocol
+      #f
+      (parse-constructors constructor-datums datum)
       (map parse-method-declaration method-datums))]
     [(cons 'define-class _)
      (raise-arguments-error
       'parse-datum
-      "malformed define-class; expected a name, optional protocol, fields, and methods"
+      "malformed define-class; expected a name, optional protocol, fields or constructors, and methods"
       "datum" datum)]
     [(list 'define-methods
            (? symbol? target)
@@ -446,6 +566,8 @@
       'parse-datum
       "malformed if; expected (if test then else)"
       "datum" datum)]
+    [(list scrutinee 'case clause-datums ...)
+     (parse-case scrutinee clause-datums datum)]
     [(list _)
      (raise-arguments-error
       'parse-datum

@@ -355,7 +355,7 @@
        (for ([signature (in-list signatures)])
          (check-method-types! signature environment (make-hasheq)))
        VOID]
-      [(define-class-expr name type-parameters protocol fields methods)
+      [(define-class-expr name type-parameters protocol fields _ methods)
        (check-class-definition!
         name type-parameters protocol fields methods environment)
        VOID]
