@@ -53,7 +53,8 @@
 (struct method-match (method substitution specificity) #:transparent)
 
 (struct class-info
-  (name type-parameters parameter-types protocol fields
+  (name type-parameters parameter-types protocol fields constructors
+        explicit-constructors?
         [methods #:mutable])
   #:transparent)
 (struct type-environment (bindings parent) #:transparent)
@@ -355,15 +356,24 @@
        (for ([signature (in-list signatures)])
          (check-method-types! signature environment (make-hasheq)))
        VOID]
-      [(define-class-expr name type-parameters protocol fields _ methods)
+      [(define-class-expr
+        name type-parameters protocol fields constructors methods)
        (check-class-definition!
-        name type-parameters protocol fields methods environment)
+        name
+        type-parameters
+        protocol
+        fields
+        constructors
+        methods
+        environment)
        VOID]
       [(define-methods-expr target methods)
        (check-method-definitions! target methods environment)
        VOID]
       [(fn-expr parameters body)
        (infer-function parameters body environment expected)]
+      [(case-expr scrutinee clauses else-body)
+       (infer-case scrutinee clauses else-body environment expected)]
       [(send-expr receiver selector arguments)
        (infer-send receiver selector arguments environment expected)]))
   (when expected
@@ -397,8 +407,91 @@
     (infer-expression body local-environment result-expected))
   (function-type parameter-types result-type))
 
+(define (infer-case scrutinee-expression clauses else-body environment expected)
+  (define scrutinee-type
+    (resolve-type
+     (infer-expression scrutinee-expression environment #f)))
+  (unless (instance-type? scrutinee-type)
+    (raise-type-error
+     "case scrutinee must be a concrete class instance, got ~a"
+     (type->datum scrutinee-type)))
+  (define class (instance-type-class scrutinee-type))
+  (define constructors (class-info-constructors class))
+  (define constructor-selectors
+    (map constructor-declaration-selector constructors))
+  (define clause-selectors (map case-clause-selector clauses))
+  (define duplicate-clause (check-duplicates clause-selectors))
+  (when duplicate-clause
+    (raise-type-error
+     "duplicate case constructor ~a"
+     duplicate-clause))
+  (for ([selector (in-list clause-selectors)])
+    (unless (memq selector constructor-selectors)
+      (raise-type-error
+       "unknown constructor ~a for class ~a"
+       selector
+       (class-info-name class))))
+  (define missing-constructors
+    (filter (lambda (selector)
+              (not (memq selector clause-selectors)))
+            constructor-selectors))
+  (cond
+    [else-body
+     (when (null? clauses)
+       (raise-type-error
+        "case with else must name at least one constructor"))
+     (when (null? missing-constructors)
+       (raise-type-error
+        "case with else must leave at least one constructor unmatched"))]
+    [(pair? missing-constructors)
+     (raise-type-error
+      "non-exhaustive case; missing constructors: ~a"
+      missing-constructors)])
+  (define substitution (instance-substitution scrutinee-type))
+  (for ([clause (in-list clauses)])
+    (define constructor
+      (class-constructor class (case-clause-selector clause)))
+    (define fields (constructor-declaration-fields constructor))
+    (define payload-names (case-clause-payload-names clause))
+    (unless (= (length fields) (length payload-names))
+      (raise-type-error
+       "arity error for case constructor ~a: expected ~a payload name(s), got ~a"
+       (constructor-declaration-selector constructor)
+       (length fields)
+       (length payload-names))))
+  (define result-type (or expected (fresh-type-variable 'case-result)))
+  (for ([clause (in-list clauses)])
+    (define constructor
+      (class-constructor class (case-clause-selector clause)))
+    (define payload-types
+      (for/list
+          ([field (in-list (constructor-declaration-fields constructor))])
+        (type-from-sexpr
+         (field-declaration-type field)
+         environment
+         substitution)))
+    (define clause-environment
+      (make-local-type-environment
+       environment
+       (map cons (case-clause-payload-names clause) payload-types)))
+    (define body-type
+      (infer-expression
+       (case-clause-body clause) clause-environment result-type))
+    (unify-types! body-type result-type "case branch type mismatch"))
+  (when else-body
+    (define else-type
+      (infer-expression else-body environment result-type))
+    (unify-types! else-type result-type "case branch type mismatch"))
+  result-type)
+
 (define (check-class-definition!
-         name type-parameters protocol-name fields methods environment)
+         name
+         type-parameters
+         protocol-name
+         fields
+         constructors
+         methods
+         environment)
   (define protocol
     (and protocol-name
          (let ([candidate
@@ -409,13 +502,37 @@
   (define parameter-types
     (for/list ([parameter (in-list type-parameters)])
       (parameter-type (gensym parameter) parameter)))
+  (define normalized-fields (or fields '()))
+  (define normalized-constructors
+    (if fields
+        (list (constructor-declaration 'new fields))
+        constructors))
+  (unless (pair? normalized-constructors)
+    (raise-type-error "class ~a must have at least one constructor" name))
+  (define duplicate-constructor
+    (check-duplicates
+     (map constructor-declaration-selector normalized-constructors)))
+  (when duplicate-constructor
+    (raise-type-error
+     "duplicate constructor selector ~a in class ~a"
+     duplicate-constructor
+     name))
   (define class
     (class-info
-     name type-parameters parameter-types protocol fields methods))
+     name
+     type-parameters
+     parameter-types
+     protocol
+     normalized-fields
+     normalized-constructors
+     (and constructors #t)
+     methods))
   (type-environment-set! environment name (class-type class))
+  (check-constructor-method-collisions! class methods)
   (define substitution
     (make-hasheq (map cons type-parameters parameter-types)))
-  (for ([field (in-list fields)])
+  (for* ([constructor (in-list normalized-constructors)]
+         [field (in-list (constructor-declaration-fields constructor))])
     (type-from-sexpr
      (field-declaration-type field) environment substitution))
   (for ([method (in-list methods)])
@@ -424,7 +541,23 @@
      method
      environment
      substitution
-     (null? type-parameters))))
+     (or (class-info-explicit-constructors? class)
+         (null? type-parameters)))))
+
+(define (class-constructor class selector)
+  (for/first ([constructor (in-list (class-info-constructors class))]
+              #:when
+              (eq? selector (constructor-declaration-selector constructor)))
+    constructor))
+
+(define (check-constructor-method-collisions! class methods)
+  (for ([method (in-list methods)])
+    (define selector (method-declaration-selector method))
+    (when (class-constructor class selector)
+      (raise-type-error
+       "constructor selector ~a cannot also be an instance method on ~a"
+       selector
+       (class-info-name class)))))
 
 (define (check-method-definition!
          class method environment substitution check-body?)
@@ -488,6 +621,7 @@
     [(class-type? target-type)
      (define class (class-type-class target-type))
      (define existing-methods (class-info-methods class))
+     (check-constructor-method-collisions! class methods)
      (set-class-info-methods! class (append existing-methods methods))
      (define substitution
        (make-hasheq
@@ -500,7 +634,8 @@
         method
         environment
         substitution
-        (null? (class-info-type-parameters class))))]
+        (or (class-info-explicit-constructors? class)
+            (null? (class-info-type-parameters class)))))]
     [else
      (raise-type-error
       "define-methods target is not a class: ~a"
@@ -690,9 +825,11 @@
         (infer-expression receiver-expression environment #f)))
      (cond
        [(class-type? receiver-type)
-        (if (eq? selector 'new)
+        (define class (class-type-class receiver-type))
+        (define constructor (class-constructor class selector))
+        (if constructor
             (infer-construction
-             (class-type-class receiver-type) arguments environment)
+             class constructor arguments environment expected)
             (unknown-message selector))]
        [(list-class-type? receiver-type)
         (case selector
@@ -761,26 +898,39 @@
    environment
    (method-match-substitution selected)))
 
-(define (infer-construction class arguments environment)
-  (define fields (class-info-fields class))
+(define (infer-construction class constructor arguments environment expected)
+  (define selector (constructor-declaration-selector constructor))
+  (define fields (constructor-declaration-fields constructor))
   (unless (= (length fields) (length arguments))
     (raise-type-error
-     "arity error for new: expected ~a argument(s), got ~a"
+     "arity error for ~a: expected ~a argument(s), got ~a"
+     selector
      (length fields)
      (length arguments)))
+  (define resolved-expected (and expected (resolve-type expected)))
+  (define expected-instance
+    (and (instance-type? resolved-expected)
+         (eq? class (instance-type-class resolved-expected))
+         resolved-expected))
+  (define inferred (make-hasheq))
+  (for ([parameter (in-list (class-info-type-parameters class))]
+        [index (in-naturals)])
+    (hash-set!
+     inferred
+     parameter
+     (and expected-instance
+          (list-ref (instance-type-arguments expected-instance) index))))
   (define argument-types
     (for/list ([argument (in-list arguments)]
                [field (in-list fields)])
       (define expected-field-type
-        (and (null? (class-info-type-parameters class))
+        (and (or (null? (class-info-type-parameters class))
+                 expected-instance)
              (type-from-sexpr
               (field-declaration-type field)
               environment
-              (make-hasheq))))
+              inferred)))
       (infer-expression argument environment expected-field-type)))
-  (define inferred (make-hasheq))
-  (for ([parameter (in-list (class-info-type-parameters class))])
-    (hash-set! inferred parameter #f))
   (for ([field (in-list fields)]
         [argument-type (in-list argument-types)])
     (infer-field-type!
@@ -792,12 +942,15 @@
   (define type-arguments
     (for/list ([parameter (in-list (class-info-type-parameters class))])
       (define inferred-type (hash-ref inferred parameter))
-      (unless inferred-type
+      (define resolved-inferred
+        (and inferred-type (resolve-type inferred-type)))
+      (when (or (not resolved-inferred)
+                (type-variable? resolved-inferred))
         (raise-type-error
          "cannot infer type parameter ~a for ~a"
          parameter
          (class-info-name class)))
-      (resolve-type inferred-type)))
+      resolved-inferred))
   (instance-type class type-arguments))
 
 (define (infer-field-type!
@@ -825,6 +978,23 @@
       (list-type-element resolved-actual)
       environment
       inferred)]
+    [(and (list? declared-type)
+          (pair? declared-type)
+          (eq? (car declared-type) '->))
+     (define resolved-actual (resolve-type actual-type))
+     (unless (and (function-type? resolved-actual)
+                  (= (length (cdr declared-type))
+                     (add1
+                      (length
+                       (function-type-parameters resolved-actual)))))
+       (raise-type-error "constructor field type mismatch"))
+     (define actual-parts
+       (append (function-type-parameters resolved-actual)
+               (list (function-type-result resolved-actual))))
+     (for ([nested-declared (in-list (cdr declared-type))]
+           [nested-actual (in-list actual-parts)])
+       (infer-field-type!
+        class nested-declared nested-actual environment inferred))]
     [(and (list? declared-type)
           (pair? declared-type)
           (symbol? (car declared-type)))
@@ -885,7 +1055,8 @@
         (method-declaration-return-type method)
         environment
         substitution))
-     (unless (null? (class-info-type-parameters class))
+     (when (and (pair? (class-info-type-parameters class))
+                (not (class-info-explicit-constructors? class)))
        (check-method-body!
         instance method environment substitution))
      return-type]))

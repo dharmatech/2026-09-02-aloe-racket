@@ -250,3 +250,13 @@ success, and reports both source datums and displayed values on failure.
 
 - Every runtime instance records its constructor identity; existing
   `(fields ...)` classes and reflected construction record `new`.
+
+## 92. [Evaluate case](docs/checkpoints/0092-eval-case.md)
+
+- `case` switches on an instance's stored constructor identity, binds its
+  payload in field order, and evaluates only the matching clause or `else`.
+
+## 93. [Constructor sets and case checking](docs/checkpoints/0093-check-constructors-and-case.md)
+
+- The checker records constructor sets, validates exhaustive `case` clauses,
+  and infers generic constructor arguments from payloads and expected types.
