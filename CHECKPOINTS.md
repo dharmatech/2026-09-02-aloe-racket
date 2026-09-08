@@ -238,6 +238,41 @@ success, and reports both source datums and displayed values on failure.
   `GelText.tos` renders the stack top; the separate menu/TOS renderers and
   function-shaped rendering sends are removed.
 
+## 83. Validated host declarations
+
+- Opaque nominal host interfaces contain ordered, uniquely selected method
+  declarations over the fixed `Int`/`Bool`/`String` crossing vocabulary.
+
+## 83A. Exact host implementation call shape
+
+- Host implementations accept exactly one state argument plus their declared
+  positional arguments, with no optional, variadic, or keyword call shape.
+
+## 84. Guarded descriptor-driven host sends
+
+- Runtime host sends validate both crossing directions through one descriptor;
+  the production Term interface supplies `read-key` and `write-line`.
+
+## 85. Typed atomic host injection
+
+- A driver atomically injects a receiver and its nominal interface type, and
+  the checker derives host sends from that exact descriptor identity.
+
+## 86. Checked terminal runners
+
+- The optional Term and Gel runners inject Term into one checked driver used
+  for full-file checking and evaluation.
+
+## 87. Descriptor-driven host reflection
+
+- Host receivers use the existing Mirror and Signature protocol with nominal
+  interface ownership and guarded exact-row invocation.
+
+## 88. Seal the typed host boundary
+
+- Canonical documentation records the accepted host-capability design, and a
+  compact test seals its intended public and internal Racket surfaces.
+
 ## 89. [Proposal B documents](docs/checkpoints/0089-class-constructors-docs.md) (documentation only)
 
 ## 90. [Parse constructors and case](docs/checkpoints/0090-parse-constructors-and-case.md)
@@ -276,3 +311,9 @@ success, and reports both source datums and displayed values on failure.
 - Proposal B's constructor sets, named construction, `case`, and generic
   inference rules are normative in `SPEC.md`; Proposal A remains rejected on
   this branch.
+
+## 97. [Integrate typed host boundary](docs/checkpoints/0097-integrate-typed-host-boundary.md)
+
+- `experiment/host-boundary` merges sealed host checkpoints 83–88 from
+  `main` onto constructor checkpoints 89–96. Crossing remains
+  `Int`/`Bool`/`String`. No filesystem capability.

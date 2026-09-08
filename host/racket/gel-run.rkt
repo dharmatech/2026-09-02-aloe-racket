@@ -6,37 +6,29 @@
 ;; Optional prerequisite: raco pkg install tui-term
 
 (require racket/runtime-path
-         (only-in "../../aloe/env.rkt" env-define!)
-         (only-in "../../aloe/eval.rkt" eval-expr)
-         (only-in "../../aloe/main.rkt" make-top-level-env)
-         (only-in "../../aloe/parse.rkt" parse-datum read-program)
+         (only-in "../../aloe/driver.rkt"
+                  driver-eval!
+                  driver-inject-host!
+                  driver-load-file!
+                  make-driver)
          "term.rkt")
 
 (define-runtime-path gel-main-path "../../gel/main.aloe")
 (define-runtime-path point-path "../../examples/point.aloe")
 
-(define (load-runtime-file! path environment)
-  (define expressions
-    (call-with-input-file path
-      (lambda (input)
-        (read-program input #:source-path path))))
-  (for ([expression (in-list expressions)])
-    (eval-expr expression environment)))
-
 (define (run-gel)
-  (define environment (make-top-level-env))
   (call-with-tty-term-receiver
    (lambda (term)
-     (env-define! environment 'term term)
-     (load-runtime-file! gel-main-path environment)
-     (load-runtime-file! point-path environment)
-     (eval-expr
-      (parse-datum
-       '(gel-main call
-          ((gel-empty-stack push (Point new 1 2))
-           push
-           (Point new 10 20))))
-      environment))))
+     (define state (make-driver))
+     (driver-inject-host! state 'term term)
+     (driver-load-file! state gel-main-path)
+     (driver-load-file! state point-path)
+     (driver-eval!
+      state
+      '(gel-main call
+         ((gel-empty-stack push (Point new 1 2))
+          push
+          (Point new 10 20)))))))
 
 (module+ main
   (with-handlers ([exn:fail?

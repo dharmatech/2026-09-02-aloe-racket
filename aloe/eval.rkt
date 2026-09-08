@@ -5,6 +5,8 @@
          racket/string
          "env.rkt"
          "host.rkt"
+         (only-in (submod "host.rkt" evaluator-exact-host-method)
+                  host-receiver-invoke-method)
          "mirror.rkt"
          "parse.rkt"
          "signature.rkt"
@@ -237,6 +239,12 @@
   (for/list ([method (in-list methods)])
     (method->signature-spec method substitution)))
 
+(define (host-method->signature-spec method)
+  (signature-spec
+   (host-method-selector method)
+   (host-method-parameter-types method)
+   (host-method-return-type method)))
+
 (define (instance-signature-specs instance)
   (define class (instance-value-class instance))
   (define substitution
@@ -318,6 +326,10 @@
     [(symbol-value? value)
      (list (signature-spec 'name '() 'String)
            (signature-spec '= '(Symbol) 'Bool))]
+    [(host-receiver? value)
+     (map host-method->signature-spec
+          (host-interface-methods
+           (host-receiver-interface value)))]
     [(function-value? value)
      (list
       (signature-spec
@@ -399,6 +411,7 @@
     [(list-class-object? value) 'ListClass]
     [(symbol-class-object? value) 'SymbolClass]
     [(mirror-class-object? value) 'MirrorClass]
+    [(host-receiver? value) (host-receiver-interface value)]
     [else (runtime-type-of value)]))
 
 (define (same-runtime-owner-type? left right)
@@ -615,6 +628,12 @@
      (send-to-string subject selector arguments)]
     [(symbol-value? subject)
      (send-to-symbol subject selector arguments)]
+    [(host-receiver? subject)
+     (define method
+       (list-ref
+        (host-interface-methods (host-receiver-interface subject))
+        row-index))
+     (host-receiver-invoke-method subject method arguments)]
     [(mirror-value? subject)
      (send-to-mirror subject selector arguments)]
     [(signature-value? subject)
@@ -1291,12 +1310,7 @@
                  ""
                  (string-append " " (string-join parts " "))))]
     [(host-receiver? value)
-     (define state (host-receiver-state value))
-     (format "#<~a~a>"
-             (host-receiver-name value)
-             (if (string? state)
-                 (format " ~s" state)
-                 ""))]
+     (format "#<~a>" (host-receiver-name value))]
     [(list-class-object? value) "#<class List>"]
     [(void? value) "#<void>"]
     [else "#<object>"]))
@@ -1342,8 +1356,6 @@
           (value-vectors-equal? (list-value-elements left)
                                 (list-value-elements right)))]
     [(and (host-receiver? left) (host-receiver? right))
-     (and (eq? (host-receiver-name left) (host-receiver-name right))
-          (aloe-values-equal? (host-receiver-state left)
-                              (host-receiver-state right)))]
+     (eq? left right)]
     [(and (void? left) (void? right)) #t]
     [else (eq? left right)]))

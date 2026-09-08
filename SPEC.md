@@ -1,7 +1,9 @@
 # Aloe 0.4 spec
 
 Sections 1–10 describe the original 0.1 language and its ratified
-generalizations. Sections 11–13 summarize the 0.2–0.4 additions.
+generalizations. Sections 11–12 summarize the 0.2–0.3 additions, section 13
+summarizes the 0.4 constructor additions, and section 14 records the typed
+host boundary.
 
 Aloe is an s-expression language. Evaluation is message send, not Scheme apply.
 Prototype host: Racket (`2026-09-02-aloe-racket`).
@@ -362,6 +364,11 @@ Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Math
        | T
 ```
 
+`Term` and arbitrary host-interface names are deliberately absent from this
+source grammar. An explicitly injected host value has an internal nominal type
+for checking, but that diagnostic name cannot be written as an Aloe type
+annotation.
+
 Examples:
 
 ```
@@ -661,3 +668,33 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 - Generic construction may combine payload constraints with an expected type;
   every class parameter must be determined by the end of the expression
   (section 5.3).
+
+## 14. Typed host capabilities
+
+A host capability is a Racket-created receiver made available to Aloe only by
+explicit injection into a driver. Its opaque `host-interface` is a nominal
+identity containing an ordered list of uniquely selected `host-method`
+declarations. Each method declaration is the single source of its selector,
+fixed parameter types, return type, and Racket implementation.
+
+The complete crossing vocabulary is `Int`, `Bool`, and `String`. Arguments are
+validated before an implementation runs, and its result is validated before
+it enters Aloe. Strings are normalized to immutable values in both directions.
+Implementation failures receive consistent Aloe host-failure context while
+retaining the original Racket cause; breaks pass through unchanged.
+
+The checker derives host sends from the same exact interface identity used by
+runtime dispatch. Injection preflights both sides of a driver and installs the
+runtime receiver and checker type as one logical operation; it never
+overwrites an existing name. Interface names appear in diagnostics, but are
+not source-written Aloe types.
+
+`Mirror` derives a host receiver's messages, signatures, scalar type data,
+nominal signature ownership, and exact-row invocation from that same
+interface. Reflected invocation uses the ordinary guarded host invocation
+boundary, while the target receiver supplies the state. Default environments
+contain no optional capability.
+
+There is no arbitrary Racket call, Racket evaluation, namespace access,
+dynamic library surface, ambient capability, or second send or evaluation
+rule. Host access remains an explicit, typed value boundary.

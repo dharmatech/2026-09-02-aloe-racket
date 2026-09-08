@@ -7,6 +7,7 @@
          (struct-out list-class-object)
          make-top-level-env
          make-local-env
+         env-bound?
          env-lookup
          env-define!)
 
@@ -25,6 +26,13 @@
 
 (define (make-local-env parent bindings)
   (top-level-env (make-hasheq bindings) parent))
+
+(define (env-bound? environment name)
+  (cond
+    [(hash-has-key? (top-level-env-bindings environment) name) #t]
+    [(top-level-env-parent environment)
+     (env-bound? (top-level-env-parent environment) name)]
+    [else #f]))
 
 (define (env-lookup environment name)
   (define bindings (top-level-env-bindings environment))

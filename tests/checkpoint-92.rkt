@@ -60,17 +60,28 @@
 
 ;; The scrutinee expression is evaluated exactly once.
 (define scrutinee-evaluations 0)
-(define point (eval-raw '(Point new 7 8)))
-(define next-point
-  (host-message
-   0
-   (lambda (_receiver _arguments)
-     (set! scrutinee-evaluations (add1 scrutinee-evaluations))
-     point)))
 (env-define!
  environment
- 'probe
- (host-receiver 'CaseProbe (hasheq 'next next-point) #f))
+ 'counter
+ (make-host-receiver
+  (make-host-interface
+   'CaseCounter
+   (list
+    (make-host-method
+     'hit '() 'Int
+     (lambda (_state)
+       (set! scrutinee-evaluations (add1 scrutinee-evaluations))
+       scrutinee-evaluations))))
+  #f))
+(void
+ (eval-raw
+  '(define-class CaseProbe
+     (fields (target Point))
+     (methods
+       (next () Point
+         (let ((ignored (counter hit)))
+           (self target)))))))
+(void (eval-raw '(define probe (CaseProbe new (Point new 7 8)))))
 (check-equal?
  (eval-raw
   '((probe next) case

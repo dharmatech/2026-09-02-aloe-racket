@@ -46,15 +46,17 @@ Racket apply.
 ## Host terminal input (2026-09-04)
 
 Decided: host key input uses the `tui-term` package, not `#%terminal` directly
-and not a project C FFI. Aloe may later expose `(term read-key)`; this
-checkpoint does not add that send.
+and not a project C FFI. Term is Aloe's first optional typed host capability:
+`(term read-key)` returns a `String`, and `(term write-line string)` uses
+Racket `display`, writes `"\r\n"`, flushes, and returns the string.
 
-`raco pkg install tui-term` is required only for the optional host terminal
-spike and driver; ordinary `bin/aloe`, Boids, and MPL do not load it.
+Both terminal runners create a checked driver and explicitly inject the
+production Term receiver into its runtime and checker environments before
+loading Aloe source. `raco pkg install tui-term` is required only for these
+optional terminal paths; ordinary `bin/aloe`, Boids, and MPL do not load it.
 
-`(term write-line string)` is implemented by Racket `display` followed by
-`"\r\n"` and a flush, returning the string. It is a method on the injected
-`term` receiver, not a tui-term API or a new kernel printing primitive.
+Term is an injected receiver, not a `tui-term` API exposed to Aloe or a new
+kernel printing primitive.
 
 ## Collections (2026-09-02)
 
@@ -108,6 +110,28 @@ stored value directly; there is no `Object` cast syntax, and `List` remains
 homogeneous rather than becoming a heterogeneous container.
 
 Rejected for this slice: `#%` reflection sigils and `perform`.
+
+## Typed host capabilities (2026-09-06)
+
+Decided: one opaque nominal host-interface descriptor is the source of truth
+for checking, runtime dispatch, and reflection. This prevents handwritten
+checker facades or reflection tables from drifting away from the code that
+actually performs an effect.
+
+Capabilities are explicitly and atomically injected through a driver so the
+runtime binding and checker type agree, and so possessing a capability is a
+visible authority rather than ambient access. The initial crossing vocabulary
+is only `Int`, `Bool`, and `String`: they are sufficient for Term and keep the
+boundary concrete, validated, and free of premature object-marshalling rules.
+
+Reflected host signatures retain the exact interface identity as their owner
+and use the same guarded invocation core as direct sends. This permits a row
+to operate on another receiver of the same capability type without selector
+redispatch, while rejecting merely same-named interfaces.
+
+Deferred: source-written host types, opaque host handles, and a comprehensive
+FFI. Each would require concrete application pressure and additional authority
+and lifetime decisions that Term does not justify.
 
 ## Class constructors (2026-09-07)
 

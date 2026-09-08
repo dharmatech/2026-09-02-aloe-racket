@@ -2,6 +2,7 @@
 
 (require racket/list
          racket/match
+         "host.rkt"
          "parse.rkt")
 
 (provide (struct-out exn:fail:aloe-type)
@@ -21,6 +22,7 @@
          (struct-out mirror-class-type)
          (struct-out function-type)
          type-environment?
+         type-environment-bound?
          make-type-environment
          type-of
          typecheck-program
@@ -44,6 +46,7 @@
 (struct symbol-class-type () #:transparent)
 (struct mirror-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
+(struct host-receiver-type (interface))
 (struct parameter-type (id name) #:transparent)
 (struct type-variable
   (id label [binding #:mutable] [numeric? #:mutable])
@@ -100,6 +103,13 @@
 (define (make-local-type-environment parent bindings)
   (type-environment (make-hasheq bindings) parent))
 
+(define (type-environment-bound? environment name)
+  (cond
+    [(hash-has-key? (type-environment-bindings environment) name) #t]
+    [(type-environment-parent environment)
+     (type-environment-bound? (type-environment-parent environment) name)]
+    [else #f]))
+
 (define (type-environment-ref environment name)
   (define bindings (type-environment-bindings environment))
   (cond
@@ -112,6 +122,27 @@
 
 (define (type-environment-set! environment name type)
   (hash-set! (type-environment-bindings environment) name type))
+
+(define (type-environment-inject-host! environment name receiver)
+  (unless (type-environment? environment)
+    (raise-arguments-error
+     'type-environment-inject-host!
+     "environment must be a type environment"
+     "environment" environment))
+  (unless (symbol? name)
+    (raise-arguments-error
+     'type-environment-inject-host!
+     "name must be a symbol"
+     "name" name))
+  (unless (host-receiver? receiver)
+    (raise-arguments-error
+     'type-environment-inject-host!
+     "receiver must be a validated host receiver"
+     "receiver" receiver))
+  (type-environment-set!
+   environment
+   name
+   (host-receiver-type (host-receiver-interface receiver))))
 
 (define (resolve-type type)
   (cond
@@ -150,6 +181,8 @@
            (append
             (map type->datum (function-type-parameters resolved))
             (list (type->datum (function-type-result resolved)))))]
+    [(host-receiver-type? resolved)
+     (host-interface-name (host-receiver-type-interface resolved))]
     [(parameter-type? resolved) (parameter-type-name resolved)]
     [(type-variable? resolved)
      (or (type-variable-label resolved) '?)]
@@ -284,6 +317,11 @@
      (unify-types! (function-type-result resolved-left)
                    (function-type-result resolved-right)
                    message)
+     resolved-left]
+    [(and (host-receiver-type? resolved-left)
+          (host-receiver-type? resolved-right)
+          (eq? (host-receiver-type-interface resolved-left)
+               (host-receiver-type-interface resolved-right)))
      resolved-left]
     [(and (opaque-type? resolved-left) (opaque-type? resolved-right)
           (eq? (opaque-type-name resolved-left)
@@ -879,6 +917,8 @@
         (infer-mirror-send selector arguments environment expected)]
        [(signature-type? receiver-type)
         (infer-signature-send selector arguments environment)]
+       [(host-receiver-type? receiver-type)
+        (infer-host-send receiver-type selector arguments environment)]
        [(type-variable? receiver-type)
         (cond
           [(eq? selector 'call)
@@ -896,6 +936,42 @@
           [else (unknown-message selector)])]
        [else
         (unknown-message selector)])]))
+
+(define (host-crossing-type->type crossing-type)
+  (case crossing-type
+    [(Int) INT]
+    [(Bool) BOOL]
+    [(String) STRING]))
+
+(define (infer-host-send receiver-type selector arguments environment)
+  (define interface (host-receiver-type-interface receiver-type))
+  (define method
+    (for/first ([candidate (in-list (host-interface-methods interface))]
+                #:when (eq? selector (host-method-selector candidate)))
+      candidate))
+  (unless method (unknown-message selector))
+  (define parameter-types (host-method-parameter-types method))
+  (unless (= (length parameter-types) (length arguments))
+    (raise-type-error
+     "arity error for ~a method ~a: expected ~a argument(s), got ~a"
+     (host-interface-name interface)
+     selector
+     (length parameter-types)
+     (length arguments)))
+  (for ([crossing-type (in-list parameter-types)]
+        [argument (in-list arguments)]
+        [index (in-naturals 1)])
+    (define expected-type (host-crossing-type->type crossing-type))
+    (define actual-type (infer-expression argument environment #f))
+    (unify-types!
+     actual-type
+     expected-type
+     (format "~a method ~a argument ~a expects ~a"
+             (host-interface-name interface)
+             selector
+             index
+             crossing-type)))
+  (host-crossing-type->type (host-method-return-type method)))
 
 (define (infer-protocol-send protocol selector arguments environment)
   (define selected
@@ -1500,3 +1576,8 @@
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))
+
+;; The driver needs one narrow construction hook without making host types a
+;; normal part of the checker's public API.
+(module* driver-host-injection #f
+  (provide type-environment-inject-host!))

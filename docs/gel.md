@@ -21,8 +21,9 @@ Open Gel every day. Put an object on the stack. See what it offers. Press
 one key. Fill a send if it needs arguments. The result becomes the next
 object.
 
-The same machine later talks to the file system, processes, and git:
-those are more classes, not a second UI.
+The same machine may later explore file-system, process, and repository
+personalities without becoming a second UI. Their capability and object
+shapes remain undecided until an application forces them.
 
 Need-driven. Not Morphic-as-kit. Not a VS Code clone. Not a bash clone.
 
@@ -79,10 +80,12 @@ There is no global mode flag if the stack can say it.
 |---|---|
 | a class (`Point`) | construct |
 | a `Point` / `Sim` / `Sum` | Aloe image |
-| a `Dir` | shell listing, `cd`, `up` |
-| a `File` | name, size, copy, open-as-print |
-| a `Process` / process list | later |
-| a `GitRepo` | later; appears because this dir answers git, not because a minor mode was turned on |
+| a future filesystem-facing value | possible shell personality |
+| a future process-facing value | possible process personality |
+| a future repository-facing value | possible version-control personality |
+
+Those future rows are exploratory, not accepted type, selector, handle, or
+policy designs.
 
 Adding a capability means adding an Aloe class or method (plus host
 primitives when the OS must be touched). Gel itself does not grow a new
@@ -95,20 +98,23 @@ framework per personality.
 Keep them separate.
 
 1. **Aloe.** Classes, sends, types. Portable as far as the types go.
-2. **Host prelude.** Keys, later `list-dir`, `stat`, `kill-pid`. Racket
-   first, then a thin bridge so Aloe can send those messages. Not
-   `SPEC.md`.
+2. **Host capabilities.** Racket supplies irreducible facts and effects behind
+   explicitly injected, descriptor-defined receivers. Term is the first one;
+   later capabilities remain application-driven and unspecified.
 3. **Gel.** Stack, current menu, send builder, pager, printed history.
    Written in Aloe once the host messages exist.
 
-Racket owns FFI only. Bind a C library in Racket if needed, then expose
-a small Aloe receiver. After that, build in Aloe. That is the test of
-the language.
+Racket owns host integration only. Expose the smallest required effect through
+an explicit typed receiver, then build domain objects, policy, and composition
+in Aloe. That is the test of the language.
 
-`bin/aloe` stays term-free. A separate host runner binds `term` and
-loads Gel.
+`bin/aloe` stays term-free. The optional runners create a checked driver,
+explicitly inject `term`, and load their Aloe source through that driver.
 
 The reflection hatch is `Mirror`, not a `perform` message on every object.
+Injected host receivers participate in the same `Mirror` and `Signature`
+protocol as ordinary values. Their rows come directly from the capability
+descriptor and invoke through the ordinary guarded host boundary.
 
 Gel v0 menu rows now live in `gel/menu.aloe`. `(gel-rows of value)` builds
 ordered `GelRow` values from the subject's reflected signatures, including a
@@ -116,8 +122,8 @@ one-based index, selector, arity, and signature, while `(gel-rows select rows
 index)` returns a valid indexed row. An exact `Mirror` overload uses an
 existing mirror directly, while the generic overload reflects an ordinary
 value and delegates to it; both routes therefore share the same row
-construction and never reflect a mirror twice. The stack loop and key input
-come later.
+construction and never reflect a mirror twice. Those rows drive the current
+stack loop and key handling.
 
 The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
 holds the underlying `(List Mirror)`, `tos` reads the first item, and `push`
@@ -167,25 +173,28 @@ steps or ignores it, and recurses. Immediately after reading, it writes `key `
 followed by the key before handling it, so the transcript records digits,
 no-ops, `return`, and quit alike. TOS text uses the structural printer exposed
 through the TOS mirror; it does not select a subject's optional `show` method.
-The Racket runner is only the FFI skin that opens the TTY, injects `term`, loads
-Gel and `Point`, and starts `gel-main`. Its demo stack puts `(Point new 1 2)`
-under `(Point new 10 20)`, so selecting `+` produces `(Point new 11 22)`. A
-separate Gel `show` choice remains later work.
+The Racket runner is only the host lifecycle skin that opens the TTY, injects
+`term` into one checked driver, loads Gel and `Point`, and starts `gel-main`.
+Its demo stack puts `(Point new 1 2)` under `(Point new 10 20)`, so selecting
+`+` produces `(Point new 11 22)`. A separate Gel `show` choice remains later
+work.
 
 ---
 
-## 6. What already exists (2026-09-04)
+## 6. Current host boundary (2026-09-06)
 
-Not Gel. Only the key door.
-
-- Package: `tui-term` (`raco pkg install tui-term`). Not `#%terminal`,
-  not a project C FFI. See `docs/decisions.md`.
-- Spike: `host/racket/read-key-spike.rkt`
-- Optional runner: `host/racket/term-run.rkt`
-- Bridge: `host/racket/term.rkt`, `aloe/host.rkt`
-- Eval will send to an injected `host-receiver`
-- Tests: `tests/checkpoint-53.rkt`
-- Core Aloe, Boids, and MPL do not load `tui-term`
+- `tui-term` remains an optional dependency for physical terminal use. Core
+  Aloe, Boids, and MPL do not load it.
+- Term is the first optional typed capability. One ordered descriptor defines
+  `read-key : () -> String` and `write-line : (String) -> String` for both the
+  evaluator and checker.
+- `host/racket/term-run.rkt` and `host/racket/gel-run.rkt` each create one
+  checked driver, explicitly inject Term, and use that driver for loading and
+  evaluation.
+- `Mirror` exposes descriptor-derived messages and `Signature` rows for an
+  injected receiver. Owned rows invoke exactly through the guarded host
+  boundary; no dynamic selector send or host-specific reflection API exists.
+- `host/racket/read-key-spike.rkt` remains the original terminal-input spike.
 
 Key mapping, v0:
 
@@ -193,50 +202,47 @@ Key mapping, v0:
 - return, escape, and other named keys → Aloe `String` names
 - mouse and resize events are ignored
 
-`(term read-key)` is the intended Aloe spelling. The current runner
-injects the receiver; it is not a kernel special form.
-
-`read-key` has one runtime and checker shape: `String`.
+`(term read-key)` is the Aloe spelling. The checked runners inject the
+receiver explicitly; it is not a kernel special form or ambient capability.
 
 ---
 
 ## 7. Scope
 
-### v0 — the Gel machine
+### v0 — the current Gel machine
 
-Prove the loop on objects that already live in the Aloe image.
+The loop is implemented on objects that already live in the Aloe image.
 
-- Bind `term` in the host runner
+- Explicitly inject `term` in the checked host runner
 - Object stack, printed TOS, printed menu with keys
-- Menu from the checker / class method table (no kernel ask-API)
-- Send builder for a method that needs arguments
+- Menu rows from `Mirror` and `Signature`
+- Typed pending sends for one-argument methods
 - Push the result
 - Quit on a reserved key
-- One in-image vocabulary: `Point` (and the `Point` class) is enough
+- One in-image vocabulary: `Point`
 
 No files, no processes, no git, no mouse, no Listener REPL, no
 cursor-addressed full screen unless `read-key` plus line printing is
 genuinely unusable.
 
-### v1 — shell vocabulary
+### Possible next vocabulary — exploratory
 
-Host objects `Dir` and `File`. Listing is a `List`. Pager keys. `cd` /
-`up` push directories. A few file sends (`name`, `size`, open as print).
-This is the first daily-use personality.
-
-Strings already exist in Aloe. Paths are a host type, not a reason to
-add mutation to every object. `cwd` is an app handle.
+A future application may pressure Gel toward file-system or shell-like work.
+No capability split, selectors, crossing types, handles, object boundaries,
+navigation policy, or presentation policy has been accepted. Those decisions
+wait for concrete operations and tests.
 
 ### Later, same machine
 
-Processes, git, class picker over the whole image, nested field rebuild
-for Boids, presentations / mouse as a skin on the same command table,
-the reserved Listener / Inspector / Browser apps.
+Processes, repository work, a class picker over the whole image, nested field
+rebuild for Boids, presentations or mouse as a skin on the same command table,
+and the reserved Listener / Inspector / Browser apps are possible directions,
+not current designs.
 
 Do not add N-ary `+`, macros, `#lang aloe`, or graphics because Gel
-would like them. Gel pressures keys, host objects, and (only if a golden
-blocks) a reflective “messages of this value” API. v0 can use the
-checker table instead.
+would like them. Gel pressures keys and host boundaries; any new kernel work
+still requires a blocked golden. The current menu needs are already served by
+`Mirror` and `Signature`.
 
 ---
 
@@ -259,13 +265,12 @@ checker table instead.
 
 - Exact key assignment: digits, letters, reserved keys for quit / pop /
   page / search / submit.
-- How the builder picks an argument from the stack without fighting the
-  menu keys.
+- How non-`Int` literal holes should be filled.
 - Which named key strings Gel should eventually handle beyond digits and quit.
 - Whether a printed history line is only text, or a named value (`$1`)
   that can be pushed again. `$1` is Listener-shaped; Gel can wait.
-- Ask-API (`messages` on a value) when the checker table is no longer
-  enough. Not v0.
+- What concrete application, if any, should drive the next host capability;
+  its shape remains open.
 
 ---
 

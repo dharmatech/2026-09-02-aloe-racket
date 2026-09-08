@@ -7,14 +7,11 @@
 ;; normal return, errors, and breaks, which restores cooked mode.
 
 (require tui/term
-         "../../aloe/host.rkt"
-         (only-in "../../aloe/main.rkt"
-                  make-type-environment
-                  typecheck-source))
+         "../../aloe/host.rkt")
 
 (provide tkeymsg->aloe-key
+         term-interface
          make-term-receiver
-         make-term-type-environment
          call-with-tty-term-receiver)
 
 (define (return-key? key)
@@ -60,47 +57,29 @@
       [else
        (loop)])))
 
-(define read-key-message
-  (host-message
-   0
-   (lambda (_receiver _arguments)
-     (read-next-key))))
+(struct term-state (output reader))
 
-(define write-line-message
-  (host-message
-   1
-   (lambda (receiver arguments)
-     (define value (car arguments))
-     (unless (string? value)
-       (error 'term "Term write-line expects a String argument"))
-     (define output (host-receiver-state receiver))
-     (display value output)
-     (display "\r\n" output)
-     (flush-output output)
-     value)))
+(define (term-read-key state)
+  ((term-state-reader state)))
 
-(define (make-term-receiver [output (current-output-port)])
-  (host-receiver 'Term
-                 (hasheq 'read-key read-key-message
-                         'write-line write-line-message)
-                 output))
+(define (term-write-line state value)
+  (define output (term-state-output state))
+  (display value output)
+  (display "\r\n" output)
+  (flush-output output)
+  value)
 
-;; The optional terminal runner injects its runtime receiver separately. This
-;; private Aloe facade supplies the corresponding checked shape without
-;; binding term in Aloe's default environment.
-(define (make-term-type-environment)
-  (define environment (make-type-environment))
-  (typecheck-source
-   #<<ALOE
-(define-class HostTerm
-  (fields)
-  (methods
-    (read-key () String "")
-    (write-line (value String) String value)))
-(define term (HostTerm new))
-ALOE
-   environment)
-  environment)
+(define term-interface
+  (make-host-interface
+   'Term
+   (list
+    (make-host-method 'read-key '() 'String term-read-key)
+    (make-host-method
+     'write-line '(String) 'String term-write-line))))
+
+(define (make-term-receiver [output (current-output-port)]
+                            [reader read-next-key])
+  (make-host-receiver term-interface (term-state output reader)))
 
 (define (call-with-tty-term-receiver procedure)
   (with-term (make-tty-term)
