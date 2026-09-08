@@ -260,3 +260,13 @@ success, and reports both source datums and displayed values on failure.
 
 - The checker records constructor sets, validates exhaustive `case` clauses,
   and infers generic constructor arguments from payloads and expected types.
+
+## 94. [Named construction and Option goldens](docs/checkpoints/0094-option-goldens.md)
+
+- Class objects install their constructor sets, named construction records the
+  selected constructor and payload, and the Proposal B `Option` goldens run.
+
+## 95. [Tree golden](docs/checkpoints/0095-tree-golden.md)
+
+- Recursive constructor payloads preserve generic arguments, and exhaustive
+  `case` methods recurse over `Tree` instances through ordinary sends.
