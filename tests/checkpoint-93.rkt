@@ -219,14 +219,3 @@ ALOE
         (Some (value) #t)))))
 ALOE
   (make-type-environment))
-
-;; Named construction is checker-only in this slice; runtime class dispatch
-;; still recognizes only `new`.
-(define runtime-environment (make-top-level-env))
-(void (eval-source option-program runtime-environment))
-(check-exn
- #rx"unknown message: Some"
- (lambda ()
-   (eval-expr
-    (parse-datum '(Option Some "x"))
-    runtime-environment)))

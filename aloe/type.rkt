@@ -51,6 +51,7 @@
 (struct opaque-type (name) #:transparent)
 (struct void-type () #:transparent)
 (struct method-match (method substitution specificity) #:transparent)
+(struct construction-obligation (parameter class type) #:transparent)
 
 (struct class-info
   (name type-parameters parameter-types protocol fields constructors
@@ -71,6 +72,7 @@
 
 (define current-typecheck-load-paths (make-parameter '()))
 (define current-typecheck-program-depth (make-parameter 0))
+(define current-construction-obligations (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -292,7 +294,18 @@
      (type-mismatch message resolved-left resolved-right)]))
 
 (define (type-of expression [environment (make-type-environment)])
-  (resolve-type (infer-expression expression environment #f)))
+  (define obligations (box '()))
+  (define inferred
+    (parameterize ([current-construction-obligations obligations])
+      (infer-expression expression environment #f)))
+  (for ([obligation (in-list (unbox obligations))])
+    (when (type-variable?
+           (resolve-type (construction-obligation-type obligation)))
+      (raise-type-error
+       "cannot infer type parameter ~a for ~a"
+       (construction-obligation-parameter obligation)
+       (class-info-name (construction-obligation-class obligation)))))
+  (resolve-type inferred))
 
 (define (typecheck-program expressions
                            [environment (make-type-environment)])
@@ -909,9 +922,20 @@
      (length arguments)))
   (define resolved-expected (and expected (resolve-type expected)))
   (define expected-instance
-    (and (instance-type? resolved-expected)
-         (eq? class (instance-type-class resolved-expected))
-         resolved-expected))
+    (cond
+      [(and (instance-type? resolved-expected)
+            (eq? class (instance-type-class resolved-expected)))
+       resolved-expected]
+      [(type-variable? resolved-expected)
+       (define provisional
+         (instance-type
+          class
+          (for/list ([parameter
+                      (in-list (class-info-type-parameters class))])
+            (fresh-type-variable parameter))))
+       (unify-types! resolved-expected provisional)
+       provisional]
+      [else #f]))
   (define inferred (make-hasheq))
   (for ([parameter (in-list (class-info-type-parameters class))]
         [index (in-naturals)])
@@ -946,10 +970,16 @@
         (and inferred-type (resolve-type inferred-type)))
       (when (or (not resolved-inferred)
                 (type-variable? resolved-inferred))
-        (raise-type-error
-         "cannot infer type parameter ~a for ~a"
-         parameter
-         (class-info-name class)))
+        (if (and expected-instance resolved-inferred)
+            (set-box!
+             (current-construction-obligations)
+             (cons
+              (construction-obligation parameter class resolved-inferred)
+              (unbox (current-construction-obligations))))
+            (raise-type-error
+             "cannot infer type parameter ~a for ~a"
+             parameter
+             (class-info-name class))))
       resolved-inferred))
   (instance-type class type-arguments))
 

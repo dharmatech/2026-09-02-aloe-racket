@@ -18,7 +18,8 @@
          instance-value-constructor)
 
 (struct class-value
-  (name type-parameters protocol fields [methods #:mutable] environment)
+  (name type-parameters protocol fields constructors [methods #:mutable]
+        environment)
   #:transparent)
 (struct instance-value (class type-arguments constructor field-values)
   #:transparent)
@@ -73,14 +74,19 @@
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
     [(define-protocol-expr _ _) (void)]
-    [(define-class-expr name type-parameters protocol fields _ methods)
+    [(define-class-expr name type-parameters protocol fields constructors methods)
+     (define class-fields (or fields '()))
+     (define class-constructors
+       (or constructors
+           (list (constructor-declaration 'new class-fields))))
      (env-define! environment
                   name
                   (class-value
                    name
                    type-parameters
                    protocol
-                   fields
+                   class-fields
+                   class-constructors
                    methods
                    environment))]
     [(define-methods-expr target methods)
@@ -152,9 +158,7 @@
     [(mirror-class-object? receiver)
      (send-to-mirror-class receiver selector arguments)]
     [(class-value? receiver)
-     (if (eq? selector 'new)
-         (construct-instance receiver arguments)
-         (unknown-message selector))]
+     (construct-instance receiver selector arguments)]
     [(instance-value? receiver)
      (send-to-instance receiver selector arguments)]
     [(function-value? receiver)
@@ -592,7 +596,7 @@
            (list-class-object-methods (list-value-class subject))
            (- row-index 5))
           arguments))]
-    [(class-value? subject) (construct-instance subject arguments)]
+    [(class-value? subject) (construct-instance subject selector arguments)]
     [(list-class-object? subject)
      (send-to-list-class subject selector arguments)]
     [(symbol-class-object? subject)
@@ -699,37 +703,42 @@
     (error 'eval-aloe "List of elements must have one type"))
   (list-value class element-type (apply vector-immutable elements)))
 
-(define (construct-instance class arguments)
-  (define expected-arity (length (class-value-fields class)))
+(define (find-constructor class selector)
+  (for/first ([constructor (in-list (class-value-constructors class))]
+              #:when
+              (eq? selector
+                   (constructor-declaration-selector constructor)))
+    constructor))
+
+(define (construct-instance class selector arguments)
+  (define constructor (find-constructor class selector))
+  (unless constructor (unknown-message selector))
+  (define fields (constructor-declaration-fields constructor))
+  (define expected-arity (length fields))
   (define actual-arity (length arguments))
   (unless (= expected-arity actual-arity)
     (error 'eval-aloe
-           "arity error for new: expected ~a argument(s), got ~a"
+           "arity error for ~a: expected ~a argument(s), got ~a"
+           selector
            expected-arity
            actual-arity))
   (instance-value class
-                  (infer-class-type-arguments class arguments)
-                  'new
+                  (infer-class-type-arguments class fields arguments)
+                  selector
                   (apply vector-immutable arguments)))
 
-(define (infer-class-type-arguments class arguments)
+(define (infer-class-type-arguments class fields arguments)
   (define inferred (make-hasheq))
-  (for ([field (in-list (class-value-fields class))]
+  (for ([field (in-list fields)]
         [argument (in-list arguments)])
     (infer-type-expression! class
                             (field-declaration-type field)
                             (runtime-type-of argument)
                             inferred))
-  (for ([parameter (in-list (class-value-type-parameters class))])
-    (unless (hash-has-key? inferred parameter)
-      (error 'eval-aloe
-             "cannot infer type parameter ~a for ~a"
-             parameter
-             (class-value-name class))))
   (apply vector-immutable
          (for/list ([parameter
                      (in-list (class-value-type-parameters class))])
-           (hash-ref inferred parameter))))
+           (hash-ref inferred parameter #f))))
 
 (define (infer-type-expression! class declared-type actual-type inferred)
   (cond
@@ -1324,6 +1333,8 @@
     [(and (string? left) (string? right)) (string=? left right)]
     [(and (instance-value? left) (instance-value? right))
      (and (eq? (instance-value-class left) (instance-value-class right))
+          (eq? (instance-value-constructor left)
+               (instance-value-constructor right))
           (value-vectors-equal? (instance-value-field-values left)
                                 (instance-value-field-values right)))]
     [(and (list-value? left) (list-value? right))
