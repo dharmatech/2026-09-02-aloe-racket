@@ -108,3 +108,16 @@ stored value directly; there is no `Object` cast syntax, and `List` remains
 homogeneous rather than becoming a heterogeneous container.
 
 Rejected for this slice: `#%` reflection sigils and `perform`.
+
+## Class constructors (2026-09-07)
+
+Decided: Proposal B. A class has one nominal type and a finite constructor
+set. Construction remains a send to the class object, using the constructor
+selector; `(fields ...)` is the singleton `new` case. Methods belong to the
+whole class, and receiver-anchored `case` selects and binds one constructor's
+payload.
+
+Rejected on `experiment/class-constructors`: Proposal A's `define-family`,
+factories, constructor-local methods, `per-constructor` bodies, send-site
+`(type ...)` headers, constructor names as types, nested patterns, and an
+elaboration IR.

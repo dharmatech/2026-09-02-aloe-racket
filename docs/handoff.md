@@ -6,11 +6,12 @@ rejected ideas. Do not replay rejected designs.
 
 ## `experiment/class-constructors`
 
-Read [Proposal B — class constructors](class-constructors.md) and
-[checkpoint 89](checkpoints/0089-class-constructors-docs.md). This checkpoint
-lands documents only. Proposal B is candidate design; `SPEC.md` remains law
-for running code. Proposal A on `codex/unified-nominal-adts` is not authority
-on this branch.
+Proposal B is implemented through checkpoint 95 and ratified into `SPEC.md`
+by [checkpoint 96](checkpoints/0096-ratify-class-constructors.md). The
+[Proposal B document](class-constructors.md) remains as historical design and
+implementation context; `SPEC.md` is law. Proposal A on
+`codex/unified-nominal-adts` was rejected for this branch and is not
+authority.
 
 ## What Aloe is
 
@@ -26,10 +27,14 @@ Slogan / equation: Scheme + Smalltalk + Types. Grow the kernel only when
 an application forces it. Convenience that adds a second meaning of a
 list, or a second lookup rule, loses.
 
-## Current state (0.2 on main)
+## Current state (0.4 on `experiment/class-constructors`)
 
 - Interpreter + type checker in Racket. No compiler, no macros.
 - `define-class`, `fn`/`call`, `let`, `if`/`cond`, `load`.
+- Classes use either the singleton `(fields ...)` / `new` form or an explicit
+  declaration-ordered constructor set. Construction is a class-object send.
+- Receiver-anchored `case` checks constructor coverage and binds the selected
+  payload; generic construction uses payload constraints and expected types.
 - Generics, `define-methods`, `List` library in `lib/list.aloe`.
 - `String` primitive.
 - Boids in `examples/boids.aloe` + `examples/point.aloe`.
@@ -41,7 +46,7 @@ list, or a second lookup rule, loses.
   `Num 0`.
 - `Math.show` and default display through `show`; REPL `:raw` retains the
   structural `#<…>` printer.
-- Tests through checkpoint 51 are green on `main`.
+- Tests through checkpoint 95 are green on this branch.
 - Tag: `v0.1.0-boids` records the older 0.1 milestone.
 
 ## How to work

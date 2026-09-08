@@ -26,7 +26,9 @@ Send plus types exist so an editor can ask “what messages does this expression
 
 - send
 - `fn` + `call`
-- `define`, `define-class`, `self`, generated `new`
+- `define`, `define-class`, `self`; class-object construction sends use a
+  declared constructor selector (`new` for `(fields ...)` classes); `case`
+  selects an instance constructor
 - `Bool` and `(b if then-fn else-fn)`; `(if …)` is sugar
 - `let` is sugar for `fn` + `call`
 - primitive objects: `Int`, `Float`, and a walkable list representation

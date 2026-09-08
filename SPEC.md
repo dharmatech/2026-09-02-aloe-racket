@@ -1,6 +1,7 @@
-# Aloe 0.2 spec
+# Aloe 0.4 spec
 
-Sections 1–10 describe the 0.1 language. Section 11 lists 0.2 additions.
+Sections 1–10 describe the original 0.1 language and its ratified
+generalizations. Sections 11–13 summarize the 0.2–0.4 additions.
 
 Aloe is an s-expression language. Evaluation is message send, not Scheme apply.
 Prototype host: Racket (`2026-09-02-aloe-racket`).
@@ -70,16 +71,17 @@ Every method and field read runs with `self` bound to the receiver. Field access
 
 ## 3. Objects and classes
 
-An object has a class and a field vector. A class has:
+An instance records its class, generic arguments, constructor, and
+that constructor's ordered immutable payload. A class has:
 
 - name
 - type parameters (zero or more)
-- fields: ordered `(name Type)`
+- a finite, nonempty, declaration-ordered constructor set
 - methods: selector, parameters, return type, body (more than one method may share a selector; see 3.4)
-- generated class message `new`
 - optional protocol (zero or one in this experiment)
 
 Classes are first-class values. Evaluating the name `Point` yields the class object.
+Constructors are not types, subtypes, or top-level bindings.
 
 ### 3.1 `define-class`
 
@@ -103,29 +105,54 @@ Classes are first-class values. Evaluating the name `Point` yields the class obj
 (define-class Name Protocol
   (fields ...)
   (methods ...))
+
+(define-class (Option T)
+  (constructors
+    (None (fields))
+    (Some (fields (value T))))
+  (methods
+    (present? () Bool
+      (self case
+        (None () #f)
+        (Some (value) #t)))))
 ```
 
-- `fields` and `methods` are required labels. `methods` may be empty.
-- Field order is `new` argument order.
+- A class has exactly one data section: `(fields ...)` or
+  `(constructors ...)`. The `(methods ...)` section is required and may be
+  empty.
+- `(fields ...)` is the one-constructor case. Its constructor selector is
+  `new`, and field order is its payload order.
+- Each explicit constructor is `(Name (fields ...))`. Its selector is unique
+  within the class, and its ordered payload may be empty.
+- Constructor selectors cannot be overloaded or used as instance method
+  selectors on the same class.
 - Method parameter types and return type are required in 0.1.
 - `self` is implicit in every method body.
-- No inheritance. No setters. Fields do not change after `new`.
+- Methods belong to the whole class, not to individual constructors.
+- No inheritance. No setters. Payload values do not change after construction.
 - Overloading: a class may have more than one method with the same selector (section 3.4).
 - A method-local `(type A ...)` header introduces type parameters inferred independently at every send.
 - The optional `Protocol` after `Name` is section 3.3.
+- `define-methods` may add instance methods, but not constructors, and may not
+  add a method whose selector collides with a constructor.
 
 ### 3.2 Construction
 
 ```
-(ClassName new arg ...)
+(ClassName Constructor arg ...)
 ```
 
-- `new` is generated. Arity = number of fields.
-- Arguments bind to fields in declaration order.
+- The selector names a constructor in the class's constructor set.
+- Arguments bind to that constructor's payload in declaration order.
+- `(Point new 1 2)` is the `(fields ...)` class case; no constructor other
+  than `new` is generated for such a class.
 - The instance is immutable.
-- For a generic class, type parameters are inferred from the argument types.
+- For a generic class, type parameters are inferred from payload arguments
+  and/or an expected type.
 - Mismatched arity → error.
 - Argument types that do not determine a consistent parameter assignment → type error.
+- Constructor names are not callable without the class object: there is no
+  `(Some "x")` construction form.
 
 Labeled construction (`make`) is out of scope.
 
@@ -298,6 +325,24 @@ have the same type and equal values. On success it returns the right-hand
 value. On failure it raises an error that shows both original source datums and
 both resulting values.
 
+Instance equality includes the instance's class, constructor identity, and
+payload values.
+
+### 4.10 `case`
+
+```
+(scrutinee case
+  (Constructor (payload-name ...) body)
+  ...
+  (else body)?)
+```
+
+`case` is syntax, not a send; `case` in the second position is reserved. The
+scrutinee is evaluated once. Its constructor selects one clause, whose payload
+names bind the stored payload values in declaration order. Only the selected
+body is evaluated. An optional final `else` handles every constructor not
+named by an earlier clause.
+
 ---
 
 ## 5. Types
@@ -352,13 +397,26 @@ Generic classes follow the C# class shape: one definition, type parameters, inva
 Bidirectional:
 
 - Check a send: check the receiver, look up `selector` on its class using argument types (section 3.4), check each argument against the chosen method’s parameter types, result is the return type (or the field type).
-- `new`: check args against field types; infer class type parameters from those args.
+- Construction checks arguments against the selected constructor's payload
+  types; `new` is the selector for a `(fields ...)` class. Every generic class
+  parameter must be determined by payload arguments and/or an expected type.
+  A parameter still unknown at the end of the expression is a type error, as
+  in `(define n (Option None))`.
 - `define` / `let`: infer from the right-hand side.
 - Arrow-typed parameters push expected types into `fn` arguments.
 - Written annotations on `fn` are checked.
 - `Int` and `Float` do not mix.
 - A value whose class opted into protocol `P` may be used where `P` is expected.
 - A method annotated to return `P` is checked by requiring each returned class to have opted into `P`.
+- Constructor names are not source types.
+- `case` requires a concrete class instance, not a protocol-typed value.
+  Without `else`, clauses name every constructor exactly once. With `else`,
+  named clauses form a nonempty proper subset of the constructor set. Unknown,
+  duplicate, and impossible constructors are errors; missing constructors are
+  reported in declaration order. Payload binders have the selected
+  constructor's field types within that clause only.
+- There is no send-site `(type ...)` header. `List empty` retains its existing
+  expected-type behavior.
 
 The checker must accept `examples/boids.aloe` and reject the programs in section 9.
 
@@ -514,6 +572,40 @@ Must be type errors:
 4. `(List of 1 2.0)` — mixed element types
 5. `((Point new 1 2) + (Point new 3.0 4.0))` — `Point[Int]` vs `Point[Float]`
 
+The `Option` definition in section 3.1 must also run these expressions:
+
+1. `(Option Some "x")` → an `(Option String)`
+2. `((Option Some "x") present?)` → `#t`
+3. `((if #t (Option None) (Option Some "x")) present?)` → `#f`
+4. `((Option Some "x") case (None () "unknown") (Some (name) name))`
+   → `"x"`
+
+This recursive class must typecheck and evaluate:
+
+```aloe
+(define-class (Tree T)
+  (constructors
+    (Leaf (fields (value T)))
+    (Branch (fields (left (Tree T)) (right (Tree T)))))
+  (methods
+    (size () Int
+      (self case
+        (Leaf (value) 1)
+        (Branch (left right)
+          ((left size) + (right size)))))))
+```
+
+Tree goldens:
+
+1. `((Tree Leaf 1) size)` → `1`
+2. `((Tree Branch (Tree Leaf 1) (Tree Leaf 2)) size)` → `2`
+
+These Option programs must be rejected:
+
+1. `(define n (Option None))` — `T` remains unknown
+2. `(Some "x")` — a constructor is not a top-level binding
+3. `((Option Some "x") case (Some (name) name))` — missing `None`
+
 ---
 
 ## 10. Implementation note
@@ -558,3 +650,14 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 - `(mirror raw)` returns the subject's structural REPL display as a `String`.
 - A one-parameter signature answers `(signature accepts? mirror)` for Gel's
   typed stack-slot filtering.
+
+## 13. 0.4 additions
+
+- Classes have finite constructor sets; `(fields ...)` remains the singleton
+  `new` form, while `(constructors ...)` declares named payload alternatives
+  (sections 3.1–3.2).
+- Receiver-anchored `case` selects an instance constructor and checks exact or
+  `else`-completed coverage (sections 4.10 and 5.3).
+- Generic construction may combine payload constraints with an expected type;
+  every class parameter must be determined by the end of the expression
+  (section 5.3).

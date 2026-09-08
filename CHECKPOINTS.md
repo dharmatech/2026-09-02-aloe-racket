@@ -270,3 +270,9 @@ success, and reports both source datums and displayed values on failure.
 
 - Recursive constructor payloads preserve generic arguments, and exhaustive
   `case` methods recurse over `Tree` instances through ordinary sends.
+
+## 96. [Ratify class constructors into SPEC](docs/checkpoints/0096-ratify-class-constructors.md) (documentation only)
+
+- Proposal B's constructor sets, named construction, `case`, and generic
+  inference rules are normative in `SPEC.md`; Proposal A remains rejected on
+  this branch.

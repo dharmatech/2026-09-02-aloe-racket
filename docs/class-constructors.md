@@ -1,9 +1,8 @@
 # Proposal B — class constructors
 
-**Status.** Candidate for `experiment/class-constructors` only.
-`SPEC.md` on this branch remains law for the running language (checkpoint 88).
-This file is the design to implement next. It is not ratified until a later
-checkpoint copies the accepted rules into `SPEC.md`.
+**Status.** Ratified on `experiment/class-constructors` by checkpoint 96.
+`SPEC.md` on this branch is law for the running language. This file retains
+the historical proposal and implementation sequence.
 
 **Not law here.** Proposal A lives on `codex/unified-nominal-adts`
 (ratified family spec, `define-family`, factories, local methods,
