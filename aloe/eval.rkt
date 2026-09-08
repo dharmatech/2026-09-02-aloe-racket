@@ -101,12 +101,47 @@
                target)])]
     [(fn-expr parameters body)
      (function-value parameters body environment)]
+    [(case-expr scrutinee clauses else-body)
+     (eval-case scrutinee clauses else-body environment)]
     [(send-expr receiver-expression selector argument-expressions)
      (define receiver (eval-expr receiver-expression environment))
      (define arguments
        (for/list ([argument-expression (in-list argument-expressions)])
          (eval-expr argument-expression environment)))
      (lookup-message receiver selector arguments)]))
+
+(define (eval-case scrutinee-expression clauses else-body environment)
+  (define scrutinee (eval-expr scrutinee-expression environment))
+  (unless (instance-value? scrutinee)
+    (error 'eval-aloe "case scrutinee is not an instance"))
+  (define constructor (instance-value-constructor scrutinee))
+  (define matching-clause
+    (for/first ([clause (in-list clauses)]
+                #:when (eq? constructor (case-clause-selector clause)))
+      clause))
+  (cond
+    [matching-clause
+     (define payload-names
+       (case-clause-payload-names matching-clause))
+     (define payload (instance-value-field-values scrutinee))
+     (define expected-arity (vector-length payload))
+     (define actual-arity (length payload-names))
+     (unless (= expected-arity actual-arity)
+       (error 'eval-aloe
+              "arity error for case constructor ~a: expected ~a payload name(s), got ~a"
+              constructor
+              expected-arity
+              actual-arity))
+     (eval-expr
+      (case-clause-body matching-clause)
+      (make-local-env
+       environment
+       (map cons payload-names (vector->list payload))))]
+    [else-body (eval-expr else-body environment)]
+    [else
+     (error 'eval-aloe
+            "no matching case clause for constructor ~a"
+            constructor)]))
 
 (define (lookup-message receiver selector arguments)
   (cond
