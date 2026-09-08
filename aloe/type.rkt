@@ -938,10 +938,11 @@
         (unknown-message selector)])]))
 
 (define (host-crossing-type->type crossing-type)
-  (case crossing-type
-    [(Int) INT]
-    [(Bool) BOOL]
-    [(String) STRING]))
+  (cond
+    [(eq? crossing-type 'Int) INT]
+    [(eq? crossing-type 'Bool) BOOL]
+    [(eq? crossing-type 'String) STRING]
+    [(equal? crossing-type '(List String)) (list-type STRING)]))
 
 (define (infer-host-send receiver-type selector arguments environment)
   (define interface (host-receiver-type-interface receiver-type))

@@ -70,10 +70,11 @@ descriptor owns ordered, uniquely selected `host-method` declarations. Each
 declaration supplies its selector, fixed parameter types, return type, and
 Racket implementation.
 
-The current crossing vocabulary is deliberately limited to `Int`, `Bool`, and
-`String`. Arguments and results are validated; strings are normalized to
-immutable values. Host failures retain their Racket cause under consistent
-Aloe context, and breaks pass through.
+The current crossing vocabulary is deliberately limited to `Int`, `Bool`,
+`String`, and homogeneous `(List String)`. Nested lists and every other
+`(List T)` remain excluded. Arguments and results are validated; strings are
+normalized to immutable values. Host failures retain their Racket cause under
+consistent Aloe context, and breaks pass through.
 
 The same exact interface identity drives the checker, evaluator, and reflected
 signature ownership. Interface names appear in diagnostics but cannot be

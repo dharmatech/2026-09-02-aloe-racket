@@ -25,10 +25,10 @@
   (selector parameter-types return-type implementation))
 (struct host-interface (name methods))
 
-(define crossing-types '(Int Bool String))
+(define crossing-types '(Int Bool String (List String)))
 
 (define (crossing-type? value)
-  (and (memq value crossing-types) #t))
+  (and (member value crossing-types equal?) #t))
 
 (define (make-host-method selector
                           parameter-types
@@ -143,10 +143,13 @@
 
 (define (normalize-crossing-value receiver selector position type value)
   (define valid?
-    (case type
-      [(Int) (exact-integer? value)]
-      [(Bool) (boolean? value)]
-      [(String) (string? value)]))
+    (cond
+      [(eq? type 'Int) (exact-integer? value)]
+      [(eq? type 'Bool) (boolean? value)]
+      [(eq? type 'String) (string? value)]
+      [(equal? type '(List String))
+       (and (list? value) (andmap string? value))]
+      [else #f]))
   (unless valid?
     (error 'eval-aloe
            "host crossing error for ~a ~a ~a: expected ~a"
@@ -154,9 +157,12 @@
            selector
            position
            type))
-  (if (eq? type 'String)
-      (string->immutable-string value)
-      value))
+  (cond
+    [(eq? type 'String) (string->immutable-string value)]
+    [(equal? type '(List String))
+     (for/list ([element (in-list value)])
+       (string->immutable-string element))]
+    [else value]))
 
 (define (call-host-implementation receiver method arguments)
   (with-handlers

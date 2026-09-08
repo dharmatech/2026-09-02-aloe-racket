@@ -145,3 +145,12 @@ Rejected on `experiment/class-constructors`: Proposal A's `define-family`,
 factories, constructor-local methods, `per-constructor` bodies, send-site
 `(type ...)` headers, constructor names as types, nested patterns, and an
 elaboration IR.
+
+## `(List String)` host crossing (2026-09-08)
+
+Decided: admit homogeneous `(List String)` under concrete filesystem-listing
+pressure. Host implementations exchange proper Racket lists of frozen strings,
+while Aloe receives its ordinary homogeneous list values.
+
+This is not a general list FFI. Nested lists and every other `(List T)` remain
+outside the crossing vocabulary; opaque handles and `Result` remain deferred.

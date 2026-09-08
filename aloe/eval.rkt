@@ -116,7 +116,7 @@
      (define arguments
        (for/list ([argument-expression (in-list argument-expressions)])
          (eval-expr argument-expression environment)))
-     (lookup-message receiver selector arguments)]))
+     (lookup-message receiver selector arguments environment)]))
 
 (define (eval-case scrutinee-expression clauses else-body environment)
   (define scrutinee (eval-expr scrutinee-expression environment))
@@ -151,7 +151,21 @@
             "no matching case clause for constructor ~a"
             constructor)]))
 
-(define (lookup-message receiver selector arguments)
+(define (aloe-value->host-argument value)
+  (if (list-value? value)
+      (vector->list (list-value-elements value))
+      value))
+
+(define (host-result->aloe-value value environment)
+  (cond
+    [(list? value)
+     (unless environment
+       (error 'eval-aloe
+              "cannot construct a host List result outside evaluation"))
+     (make-list-value (env-lookup environment 'List) value 'String)]
+    [else value]))
+
+(define (lookup-message receiver selector arguments [environment #f])
   (cond
     [(list-class-object? receiver)
      (send-to-list-class receiver selector arguments)]
@@ -168,7 +182,10 @@
     [(list-value? receiver)
      (send-to-list receiver selector arguments)]
     [(host-receiver? receiver)
-     (host-receiver-send receiver selector arguments)]
+     (host-result->aloe-value
+      (host-receiver-send
+       receiver selector (map aloe-value->host-argument arguments))
+      environment)]
     [(exact-integer? receiver)
      (send-to-int receiver selector arguments)]
     [(flonum? receiver)
@@ -180,7 +197,7 @@
     [(symbol-value? receiver)
      (send-to-symbol receiver selector arguments)]
     [(mirror-value? receiver)
-     (send-to-mirror receiver selector arguments)]
+     (send-to-mirror receiver selector arguments environment)]
     [(signature-value? receiver)
      (send-to-signature receiver selector arguments)]
     [else
@@ -440,7 +457,7 @@
    (signature-spec-return spec)
    (signature-type-parameters subject row-index)))
 
-(define (send-to-mirror receiver selector arguments)
+(define (send-to-mirror receiver selector arguments [environment #f])
   (define class (mirror-value-list-class receiver))
   (case selector
     [(messages)
@@ -464,7 +481,7 @@
                  [row-index (in-naturals)])
         (signature-spec->value
          class (mirror-value-subject receiver) spec row-index)))]
-    [(invoke) (invoke-with-signature receiver arguments)]
+    [(invoke) (invoke-with-signature receiver arguments environment)]
     [(subject)
      (unless (null? arguments)
        (arity-error "Mirror subject" 0 (length arguments)))
@@ -536,7 +553,7 @@
        [else #f])]
     [else #f]))
 
-(define (invoke-with-signature mirror arguments)
+(define (invoke-with-signature mirror arguments environment)
   (unless (pair? arguments)
     (arity-error "Mirror invoke" "at least 1" (length arguments)))
   (define signature (car arguments))
@@ -573,7 +590,10 @@
              expected)))
   (define result
     (invoke-signature-row
-     subject (signature-value-row-index signature) invoke-arguments))
+     subject
+     (signature-value-row-index signature)
+     invoke-arguments
+     environment))
   (unless
       (runtime-type-matches-datum?
        (signature-value-return-data signature)
@@ -585,7 +605,7 @@
            (signature-value-return-data signature)))
   result)
 
-(define (invoke-signature-row subject row-index arguments)
+(define (invoke-signature-row subject row-index arguments environment)
   (define spec (list-ref (value-signature-specs subject) row-index))
   (define selector (signature-spec-selector spec))
   (cond
@@ -633,9 +653,12 @@
        (list-ref
         (host-interface-methods (host-receiver-interface subject))
         row-index))
-     (host-receiver-invoke-method subject method arguments)]
+     (host-result->aloe-value
+      (host-receiver-invoke-method
+       subject method (map aloe-value->host-argument arguments))
+      environment)]
     [(mirror-value? subject)
-     (send-to-mirror subject selector arguments)]
+     (send-to-mirror subject selector arguments environment)]
     [(signature-value? subject)
      (send-to-signature subject selector arguments)]
     [else (unknown-message selector)]))
@@ -698,11 +721,11 @@
      (make-list-value receiver '())]
     [else (unknown-message selector)]))
 
-(define (make-list-value class elements)
+(define (make-list-value class elements [empty-element-type #f])
   (define element-types (map runtime-type-of elements))
   (define element-type
     (cond
-      [(null? element-types) #f]
+      [(null? element-types) empty-element-type]
       [(andmap (lambda (type)
                  (same-runtime-type? (car element-types) type))
                (cdr element-types))
@@ -1107,7 +1130,8 @@
        (error 'eval-aloe "rest on empty List"))
      (make-list-value
       (list-value-class list-object)
-      (cdr (vector->list elements)))]
+      (cdr (vector->list elements))
+      (list-value-element-type list-object))]
     [(cons)
      (unless (= (length arguments) 1)
        (arity-error "List cons" 1 (length arguments)))

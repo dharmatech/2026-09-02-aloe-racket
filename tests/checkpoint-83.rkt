@@ -71,7 +71,7 @@
     'String
     (lambda (_state _value) "x"))))
 
-;; Each category outside the closed Int/Bool/String crossing vocabulary is
+;; Each category outside the closed crossing vocabulary is
 ;; rejected in both parameter and return positions.
 (define unsupported-types
   '(Float
@@ -79,7 +79,9 @@
     Mirror
     Signature
     List
-    (List String)
+    (List Int)
+    (List Entry)
+    (List (List String))
     (-> String String)
     T
     Point
@@ -113,6 +115,22 @@
    '(Int Bool String)
    'Bool
    (lambda (_state _integer _boolean _string) #t))))
+
+;; The one admitted compound crossing type is valid in either position.
+(check-true
+ (host-method?
+  (make-host-method
+   'names
+   '(String)
+   '(List String)
+   (lambda (_state _path) '()))))
+(check-true
+ (host-method?
+  (make-host-method
+   'count
+   '((List String))
+   'Int
+   (lambda (_state names) (length names)))))
 
 (check-contract-error
  #rx"implementation"

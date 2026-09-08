@@ -6,7 +6,7 @@
 **Depends on.** Checkpoints 89–96 on this line, and checkpoints 83–88 as
 already sealed on `main`.
 
-**Status.** Ready to implement (phase 1 merge only; approved 2026-09-08)
+**Status.** Complete (reviewed 2026-09-08 on `experiment/host-boundary` @ `0c3c5ed`)
 
 ## Goal
 

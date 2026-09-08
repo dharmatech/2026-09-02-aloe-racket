@@ -677,9 +677,11 @@ identity containing an ordered list of uniquely selected `host-method`
 declarations. Each method declaration is the single source of its selector,
 fixed parameter types, return type, and Racket implementation.
 
-The complete crossing vocabulary is `Int`, `Bool`, and `String`. Arguments are
-validated before an implementation runs, and its result is validated before
-it enters Aloe. Strings are normalized to immutable values in both directions.
+The complete crossing vocabulary is `Int`, `Bool`, `String`, and homogeneous
+`(List String)`. Nested lists and `(List T)` for every other `T` are excluded.
+Arguments are validated before an implementation runs, and its result is
+validated before it enters Aloe. Strings are normalized to immutable values in
+both directions.
 Implementation failures receive consistent Aloe host-failure context while
 retaining the original Racket cause; breaks pass through unchanged.
 

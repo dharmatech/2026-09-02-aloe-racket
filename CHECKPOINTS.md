@@ -317,3 +317,15 @@ success, and reports both source datums and displayed values on failure.
 - `experiment/host-boundary` merges sealed host checkpoints 83–88 from
   `main` onto constructor checkpoints 89–96. Crossing remains
   `Int`/`Bool`/`String`. No filesystem capability.
+
+## 98. [(List String) host crossing](docs/checkpoints/0098-list-string-crossing.md)
+
+- Homogeneous `(List String)` is a host crossing type. Host `names` can
+  return a list of strings. Nested lists and other `(List T)` forms are
+  not crossing types. No filesystem capability.
+
+## 99. [Generic host-type retention](docs/checkpoints/0099-generic-host-type-retention.md)
+
+- A generic field can retain an injected host-receiver type, so a
+  wrapper like `(Fs new fs-host)` typechecks without source-written
+  host names.
