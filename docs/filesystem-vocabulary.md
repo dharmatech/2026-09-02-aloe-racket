@@ -243,7 +243,8 @@ in passing.
 
 1. Integrate typed host boundary checkpoints 83–88 onto this
    class-constructors line (merge `main`, keep constructor 89–96 and
-   host 83–88 both normative).
+   host 83–88 both normative). The host-boundary designer brief is
+   [`docs/host-boundary-designer.md`](host-boundary-designer.md).
 2. Extend host crossing with homogeneous `(List String)` so `names` can
    return a list. Do not encode listings as a delimiter-separated
    `String`.
