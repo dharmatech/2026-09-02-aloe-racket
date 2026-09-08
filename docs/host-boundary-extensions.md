@@ -1,7 +1,7 @@
 # Host-boundary extensions
 
-**Status.** Checkpoint 98 implemented on `experiment/host-boundary`; working
-design for checkpoint 99 and later. Not law. `SPEC.md` remains law.
+**Status.** Checkpoints 98 and 99 implemented on `experiment/host-boundary`;
+notes for later work. Not law. `SPEC.md` remains law.
 
 **Not this file.** Filesystem vocabulary stays
 `docs/filesystem-vocabulary.md`. This pair still does not build `Path`,
@@ -25,7 +25,7 @@ unless a host test cannot be written without it. It cannot.
 
 ## Against the merged seam (checkpoint 97)
 
-Today in `aloe/host.rkt`:
+At checkpoint 97 in `aloe/host.rkt`:
 
 - Crossing types are the symbols `Int`, `Bool`, and `String`.
 - `crossing-type?` is `memq` on that flat list, so `'(List String)` is
@@ -36,7 +36,7 @@ Today in `aloe/host.rkt`:
   lists are `list-value` structs in `aloe/eval.rkt`, so `(List String)`
   is the first crossing type that must marshal.
 
-Today in the checker:
+At checkpoint 97 in the checker:
 
 - `host-crossing-type->type` maps only those three symbols.
 - `host-receiver-type` unifies by exact interface identity.
@@ -70,14 +70,15 @@ and reflected exact-row), not a second send rule. If building an Aloe
 list needs the `List` class object, obtain it from the evaluator; do
 not invent a second list representation.
 
-SPEC §14 currently says the complete crossing vocabulary is `Int`,
-`Bool`, and `String`. 98 must extend that sentence. Checkpoint 83's
-**document** stays historical; its **living tests** must stop treating
+Before checkpoint 98, SPEC §14 said the complete crossing vocabulary was
+`Int`, `Bool`, and `String`. Checkpoint 98 extended that sentence. Checkpoint
+83's **document** stays historical; its **living tests** no longer treat
 `(List String)` as unsupported.
 
 ## Slice 99 — generic host-type retention
 
-Separate from 98. Verify:
+**Done.** The existing checker accepts and evaluates this confirmation encoding
+without a checker or evaluator change:
 
 ```aloe
 (define-class (Holder T)
@@ -89,15 +90,13 @@ Separate from 98. Verify:
 (h names "dir")
 ```
 
-If that typechecks and evaluates after 98, 99 is a confirmation test
-and a handoff sentence. If it fails, prefer a small local checker or
-`runtime-type-of` fix. Do not add source-written host interface names
-unless that is the only honest way, and call that out as its own SPEC
-change.
+Construction retains the exact injected interface identity as `T`, field reads
+preserve it, and send-time method-body checking can dispatch through the generic
+field. Same-named but independently constructed interfaces remain distinct.
+Therefore `(define fs (Fs new fs-host))` is a viable encoding for the later
+filesystem wrapper without making a host interface name source-writable.
 
-Fallback if generics cannot hold the host: pass the host receiver as an
-argument to each public operation (filesystem-vocabulary §4). Do not
-flatten `Path` to `String`.
+The argument-passing fallback from filesystem-vocabulary §4 was not required.
 
 ## Explicitly later
 

@@ -326,6 +326,6 @@ success, and reports both source datums and displayed values on failure.
 
 ## 99. [Generic host-type retention](docs/checkpoints/0099-generic-host-type-retention.md)
 
-- A generic field can retain an injected host-receiver type, so a
-  wrapper like `(Fs new fs-host)` typechecks without source-written
-  host names.
+- Confirmed that a generic field retains an injected host-receiver type, so a
+  wrapper like `(Fs new fs-host)` typechecks without source-written host names;
+  no checker or evaluator change was required.

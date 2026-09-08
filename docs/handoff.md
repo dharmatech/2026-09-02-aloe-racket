@@ -59,7 +59,9 @@ only through explicit typed capabilities.
   integer entry, and a thin Racket terminal runner.
 - Typed host capabilities use descriptor-defined interfaces shared by runtime
   dispatch, static checking, driver injection, and reflection.
-- Tests through checkpoint 97 are green on this branch. Tag `v0.1.0-boids`
+- Generic fields retain exact injected host-interface types, allowing wrappers
+  around capabilities without source-written host type names.
+- Tests through checkpoint 99 are green on this branch. Tag `v0.1.0-boids`
   records the earlier 0.1 milestone.
 
 ## Typed host boundary
@@ -121,9 +123,10 @@ boundary.
 A later designer/implementer pair will implement the locked vocabulary in
 `docs/filesystem-vocabulary.md` after this host-boundary line is complete.
 `Path`, `Entry`, and `Fs` are not implemented yet, and the host crossing
-vocabulary remains only `Int`, `Bool`, and `String`. Any generic boundary
-extension required by the filesystem golden remains a separate reviewed
-checkpoint before that application feature.
+vocabulary is `Int`, `Bool`, `String`, and homogeneous `(List String)`.
+Generic host-type retention is confirmed, so `(define fs (Fs new fs-host))`
+is a viable wrapper encoding without source-written host names. This does not
+yet add the `Fs` class or a filesystem capability.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

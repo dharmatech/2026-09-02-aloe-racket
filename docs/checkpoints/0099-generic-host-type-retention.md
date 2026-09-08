@@ -4,7 +4,7 @@
 
 **Depends on.** Checkpoint 98 (`(List String)` crossing)
 
-**Status.** Ready to implement
+**Status.** Complete (reviewed 2026-09-08 on `experiment/host-boundary`; confirmation only)
 
 ## Goal
 
