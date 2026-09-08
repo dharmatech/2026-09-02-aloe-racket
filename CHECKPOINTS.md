@@ -239,3 +239,14 @@ success, and reports both source datums and displayed values on failure.
   function-shaped rendering sends are removed.
 
 ## 89. [Proposal B documents](docs/checkpoints/0089-class-constructors-docs.md) (documentation only)
+
+## 90. [Parse constructors and case](docs/checkpoints/0090-parse-constructors-and-case.md)
+
+- Explicit `(constructors ...)` class sections and receiver-anchored `case`
+  forms parse into dedicated AST nodes; runtime and type semantics remain
+  deferred.
+
+## 91. [Constructor id on instances](docs/checkpoints/0091-instance-constructor-id.md)
+
+- Every runtime instance records its constructor identity; existing
+  `(fields ...)` classes and reflected construction record `new`.
