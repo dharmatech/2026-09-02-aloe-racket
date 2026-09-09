@@ -1,13 +1,18 @@
 #lang racket/base
 
-(require racket/list
+(require racket/file
+         racket/list
          racket/string
          "../../aloe/host.rkt")
 
 (provide fs-interface
-         make-fs-double)
+         make-fs-double
+         make-fs-receiver)
 
 (struct fs-double-state (current nodes))
+(struct fs-production-state ())
+
+(define production-state (fs-production-state))
 
 (define (absolute-posix-path? path)
   (string-prefix? path "/"))
@@ -30,14 +35,28 @@
       "/"
       (string-append "/" (string-join (reverse components) "/"))))
 
+(define (production-current-path)
+  (define directory (current-directory))
+  (define complete-directory
+    (if (complete-path? directory)
+        directory
+        (path->complete-path directory)))
+  (normalize-absolute-posix-path (path->string complete-directory)))
+
+(define (state-current-path state)
+  (cond
+    [(fs-double-state? state) (fs-double-state-current state)]
+    [(fs-production-state? state) (production-current-path)]
+    [else (error 'fs "unknown filesystem receiver state")]))
+
 (define (resolve-path state path)
   (normalize-absolute-posix-path
    (if (absolute-posix-path? path)
        path
-       (string-append (fs-double-state-current state) "/" path))))
+       (string-append (state-current-path state) "/" path))))
 
 (define (fs-current state)
-  (fs-double-state-current state))
+  (state-current-path state))
 
 (define (fs-resolve state path)
   (resolve-path state path))
@@ -69,10 +88,10 @@
       ""
       (last (string-split normalized "/"))))
 
-(define (fs-kind state path)
+(define (double-kind state path)
   (define kind
     (hash-ref (fs-double-state-nodes state)
-              (resolve-path state path)
+              path
               #f))
   (cond
     [(eq? kind 'file) "file"]
@@ -80,6 +99,20 @@
     [(eq? kind 'symlink) "symlink"]
     [(string? kind) kind]
     [else "missing"]))
+
+(define (production-kind path)
+  (define kind (file-or-directory-type path #f))
+  (cond
+    [(not kind) "missing"]
+    [(eq? kind 'link) "symlink"]
+    [else (symbol->string kind)]))
+
+(define (fs-kind state path)
+  (define normalized (resolve-path state path))
+  (cond
+    [(fs-double-state? state) (double-kind state normalized)]
+    [(fs-production-state? state) (production-kind normalized)]
+    [else (error 'fs "unknown filesystem receiver state")]))
 
 (define (path-child-name parent candidate)
   (define prefix
@@ -96,8 +129,7 @@
               (not (string=? name ".."))
               name))))
 
-(define (fs-names state path)
-  (define normalized (resolve-path state path))
+(define (double-names state normalized)
   (define nodes (fs-double-state-nodes state))
   (unless (eq? (hash-ref nodes normalized #f) 'directory)
     (error 'fs "names requires a directory: ~a" normalized))
@@ -109,6 +141,24 @@
       name)
     string=?)
    string<?))
+
+(define (production-names state normalized)
+  (unless (string=? (fs-kind state normalized) "directory")
+    (error 'fs "names requires a directory: ~a" normalized))
+  (sort
+   (for/list ([candidate (in-list (directory-list normalized))]
+              #:do [(define name (path->string candidate))]
+              #:unless (or (string=? name ".")
+                           (string=? name "..")))
+     name)
+   string<?))
+
+(define (fs-names state path)
+  (define normalized (resolve-path state path))
+  (cond
+    [(fs-double-state? state) (double-names state normalized)]
+    [(fs-production-state? state) (production-names state normalized)]
+    [else (error 'fs "unknown filesystem receiver state")]))
 
 (define fs-interface
   (make-host-interface
@@ -149,3 +199,6 @@
               (if (string? kind)
                   (string->immutable-string kind)
                   kind))))))
+
+(define (make-fs-receiver)
+  (make-host-receiver fs-interface production-state))

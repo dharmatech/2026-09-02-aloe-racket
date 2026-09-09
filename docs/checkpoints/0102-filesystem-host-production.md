@@ -4,7 +4,7 @@
 
 **Depends on.** Checkpoint 101 (`FsHost` interface + test double)
 
-**Status.** Ready to implement
+**Status.** Complete (reviewed 2026-09-08 on `experiment/filesystem`)
 
 ## Goal
 

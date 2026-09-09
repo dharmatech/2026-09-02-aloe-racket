@@ -341,3 +341,9 @@ success, and reports both source datums and displayed values on failure.
 - Optional `fs-host` capability with one `FsHost` interface and a
   test double. Crossing values only. Default drivers do not get it.
   No production disk I/O. No `Path` / `Entry` / `Fs`.
+
+## 102. [Production filesystem host](docs/checkpoints/0102-filesystem-host-production.md)
+
+- Production `make-fs-receiver` shares the `FsHost` interface with
+  the test double. Isolated temp-directory goldens. Default drivers
+  still have no `fs-host`. No `Path` / `Entry` / `Fs`.

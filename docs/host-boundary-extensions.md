@@ -1,9 +1,9 @@
 # Host-boundary extensions
 
-**Status.** Checkpoints 98 and 99 are implemented, and checkpoint 101 has
-started a second optional capability on `experiment/filesystem` with an
-`fs-host` test double. Production filesystem I/O remains later work. Not law.
-`SPEC.md` remains law.
+**Status.** Checkpoints 98 and 99 are implemented, and checkpoints 101–102 add
+a second optional capability on `experiment/filesystem` with one shared
+`FsHost` interface, a controlled test double, and a production filesystem
+receiver. Not law. `SPEC.md` remains law.
 
 **Not this file.** Filesystem vocabulary stays
 `docs/filesystem-vocabulary.md`. There is still no `Path`, `Entry`, `Fs`, or
@@ -103,6 +103,6 @@ The argument-passing fallback from filesystem-vocabulary §4 was not required.
 ## Explicitly later
 
 - `(List Entry)` crossing, nested lists, opaque path handles, `Result`.
-- `lib/fs.aloe`, real directory goldens, Gel UI.
-- A production filesystem receiver injected beside Term; checkpoint 101 has
-  only the shared interface and controlled test double.
+- Aloe `Path`, `Entry`, and `Fs` wrappers over the production receiver; there
+  is still no `lib/fs.aloe`.
+- Gel filesystem UI.

@@ -171,3 +171,14 @@ drivers.
 The parent of the normalized POSIX root is `"/"`, and the kind of a missing
 path is `"missing"`. Asking `names` of a missing or non-directory path is a
 host failure.
+
+## Production filesystem host (2026-09-08)
+
+Decided: the production filesystem receiver uses the exact same nominal
+`FsHost` interface identity as the test double. Its opaque state observes the
+live process working directory and real POSIX/Linux filesystem facts without
+making the capability ambient or installing it in default drivers.
+
+Classification uses `file-or-directory-type` without following symbolic
+links. Directory names are immediate names sorted deterministically with
+`string<?`.

@@ -61,11 +61,11 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 101 are green on `experiment/filesystem`. `Option`
+- Tests through checkpoint 102 are green on `experiment/filesystem`. `Option`
   is loadable from `lib/option.aloe` and is not a default-driver binding. The
-  optional `fs-host` test double can be injected explicitly; default drivers
-  still receive neither filesystem nor terminal authority. Tag `v0.1.0-boids`
-  records the earlier 0.1 milestone.
+  optional production `fs-host` receiver and its test double can be injected
+  explicitly; default drivers still receive neither filesystem nor terminal
+  authority. Tag `v0.1.0-boids` records the earlier 0.1 milestone.
 
 ## Typed host boundary
 
@@ -124,13 +124,13 @@ reflection, exact signature invocation, terminal input, and the typed host
 boundary.
 
 The filesystem pair has started on `experiment/filesystem`: `Option` is a
-loadable Aloe library, and the optional `fs-host` capability exists as a
-controlled test double. Production filesystem I/O, `Path`, `Entry`, and `Fs`
-still do not exist. The host crossing vocabulary remains `Int`, `Bool`,
-`String`, and homogeneous `(List String)`. Generic host-type retention is
-confirmed, so `(define fs (Fs new fs-host))` remains a viable later wrapper
-encoding without source-written host names. Option remains loadable rather
-than bootstrapped. Constructors are not yet ready to merge to `main`.
+loadable Aloe library, and the optional production `fs-host` capability can be
+injected beside its controlled test double. `Path`, `Entry`, and `Fs` still do
+not exist. The host crossing vocabulary remains `Int`, `Bool`, `String`, and
+homogeneous `(List String)`. Generic host-type retention is confirmed, so
+`(define fs (Fs new fs-host))` remains a viable later wrapper encoding without
+source-written host names. Option remains loadable rather than bootstrapped.
+Constructors are not yet ready to merge to `main`.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository
