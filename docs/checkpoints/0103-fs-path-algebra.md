@@ -4,7 +4,7 @@
 
 **Depends on.** Checkpoint 102 (production `make-fs-receiver`)
 
-**Status.** Ready to implement
+**Status.** Complete (reviewed 2026-09-08 on `experiment/filesystem`)
 
 ## Goal
 

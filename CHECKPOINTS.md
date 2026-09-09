@@ -347,3 +347,9 @@ success, and reports both source datums and displayed values on failure.
 - Production `make-fs-receiver` shares the `FsHost` interface with
   the test double. Isolated temp-directory goldens. Default drivers
   still have no `fs-host`. No `Path` / `Entry` / `Fs`.
+
+## 103. [Path and Fs path algebra](docs/checkpoints/0103-fs-path-algebra.md)
+
+- `lib/fs.aloe` defines `Path` and generic `Fs`. Public `current`,
+  `path`, `child`, `parent`, and `name` wrap `fs-host`. Parent at
+  root is `None`. No `Entry`, `inspect`, or `entries`.

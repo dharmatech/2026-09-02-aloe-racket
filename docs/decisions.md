@@ -182,3 +182,10 @@ making the capability ambient or installing it in default drivers.
 Classification uses `file-or-directory-type` without following symbolic
 links. Directory names are immediate names sorted deterministically with
 `string<?`.
+
+## Path and Fs path algebra (2026-09-08)
+
+Decided: Aloe `Path` is a string-holding product without host authority. Path
+algebra is exposed as `Fs` messages over its generic injected host field, and
+`parent` returns `None` at a root after checking `root?` without sending host
+`parent`.
