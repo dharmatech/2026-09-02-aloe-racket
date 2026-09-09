@@ -1,7 +1,7 @@
 # Host-boundary designer brief
 
-**Status.** Working handoff for one Grok conversation. Not law. Not a
-checkpoint. `SPEC.md` remains law for the running language.
+**Status.** Pair complete on `experiment/host-boundary` through checkpoint
+99. Kept as the assignment that conversation followed. Not law.
 
 **Your job.** You are the **designer** for putting the typed host
 boundary onto `experiment/class-constructors` and then extending that

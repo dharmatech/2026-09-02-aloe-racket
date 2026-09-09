@@ -1,11 +1,12 @@
 # Filesystem vocabulary
 
-**Status.** Working design on `experiment/class-constructors`. Not law.
-`SPEC.md` remains law for the running language. This file is what later
-checkpoints implement; it is not itself a checkpoint.
+**Status.** Working design. Not law. `SPEC.md` remains law. Host-boundary
+prerequisites 97–99 are done on `experiment/host-boundary`. This file is
+what the filesystem pair implements; it is not itself a checkpoint.
 
 **Not this file.** Incoming sketch:
-`archive/design-sketches/filesystem-vocabulary.md`. Checkpoints will live
+`archive/design-sketches/filesystem-vocabulary.md`. Designer brief:
+[`docs/filesystem-designer.md`](filesystem-designer.md). Checkpoints live
 under `docs/checkpoints/` one slice at a time. Do not copy this into
 `SPEC.md` until a ratification checkpoint says so.
 
@@ -251,7 +252,8 @@ in passing.
 3. Confirm that an Aloe generic field can retain a host-receiver type,
    or take the explicit fallback in §4.
 4. Provide loadable `Option` if the filesystem library cannot share the
-   test-only definition.
+   test-only definition. The filesystem designer brief assigns this to
+   checkpoint 100.
 
 Term stays unchanged. Filesystem is a second optional injected
 capability.
@@ -288,4 +290,5 @@ wrapper.
 - `show` / raw / Mirror for `Entry` constructors. Not required to use
   the vocabulary; required before Gel depends on these values.
 - Whether `lib/option.aloe` is a filesystem prerequisite or a tiny
-  prior checkpoint of its own.
+  prior checkpoint of its own. (Designer brief: checkpoint 100, then
+  host, then Aloe `Path` / `Entry` / `Fs`.)
