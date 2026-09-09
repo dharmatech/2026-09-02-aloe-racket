@@ -195,3 +195,17 @@ algebra is exposed as `Fs` messages over its generic injected host field, and
 Decided: mixed directory listings are homogeneous `(List Entry)` values built
 in Aloe from crossing `(List String)` names. Absence is `None`; asking `entries`
 of a non-directory fails the host `names` send.
+
+## Disk and Location path algebra (2026-09-09)
+
+Decided: the second filesystem library keeps the injected host on each generic
+`Location`; `text` is its field accessor, and path `parent` returns `None` at
+root without sending host `parent`. `lib/disk.aloe` does not load the thin
+`lib/fs.aloe` library.
+
+## Inspect and live filesystem objects (2026-09-09)
+
+Decided: `Location.inspect` returns `(Option Item)` whose constructors carry
+nested live `File`, `Directory`, `SymbolicLink`, or `Other` objects. Live
+`parent` returns `(Option Directory)` and does not follow symbolic links;
+`text` remains a field on `Location`.

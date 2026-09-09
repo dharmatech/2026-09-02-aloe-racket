@@ -61,11 +61,15 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 104 are green on `experiment/filesystem`. `Option`
+- Tests through checkpoint 106 are green on `experiment/filesystem`. `Option`
   is loadable from `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
   with `current`, `path`, `child`, `parent`, `name`, `inspect`, and `entries`;
-  the optional production `fs-host` receiver and its test double remain
+  it remains unchanged. `lib/disk.aloe` defines generic `Disk`
+  and `Location`, `Location.inspect`, generic `Item`, and nested live `File`,
+  `Directory`, `SymbolicLink`, and `Other` classes. `Directory.entries` does
+  not exist yet.
+  The optional production `fs-host` receiver and its test double remain
   explicitly injected. Default drivers still receive neither filesystem nor
   terminal authority. Tag `v0.1.0-boids` records the earlier 0.1 milestone.
 
@@ -125,15 +129,19 @@ protocols, overloading, strings, symbols, and richer display. Gel drove
 reflection, exact signature invocation, terminal input, and the typed host
 boundary.
 
-The filesystem pair now provides loadable `Option`, `Path`, the closed
-four-constructor `Entry`, and the generic `Fs` wrapper on
-`experiment/filesystem`. Its public path algebra, `inspect`, and mixed
-`(List Entry)` listings compose over an explicitly injected production
-`fs-host` or controlled test double. The host crossing vocabulary remains
-`Int`, `Bool`, `String`, and homogeneous `(List String)`; `(List Entry)` is
-built in Aloe, not crossed. There is no file-text reading or Gel filesystem UI.
-Option remains loadable rather than bootstrapped. Constructors are not merged
-to `main`.
+The filesystem libraries now provide loadable `Option`, thin `Path`, the
+closed four-constructor `Entry`, generic `Fs`, and the second library's generic
+`Disk` and `Location` on `experiment/filesystem`. Thin `lib/fs.aloe` remains
+unchanged and provides path algebra, `inspect`, and mixed `(List Entry)`
+listings. `lib/disk.aloe` now provides `Location.inspect`, `Item`, and nested
+live `File`, `Directory`, `SymbolicLink`, and `Other` objects with live
+directory-only parents. `Directory.entries` does not exist yet.
+Both libraries compose over an explicitly injected production `fs-host` or
+controlled test double. The host crossing vocabulary remains `Int`, `Bool`,
+`String`, and homogeneous `(List String)`; `(List Entry)` is built in Aloe,
+not crossed. There is no file-text reading or Gel filesystem UI. Option remains
+loadable rather than bootstrapped, default drivers still have no `fs-host`, and
+constructors are not merged to `main`.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

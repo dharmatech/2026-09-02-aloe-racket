@@ -1,0 +1,127 @@
+;; Aloe filesystem worksheet
+;;
+;; From the repository root, start the filesystem-enabled REPL:
+;;
+;;   racket host/racket/fs-repl.rkt
+;;
+;; Then put the cursor immediately after any complete expression and press F8.
+;; Evaluate the two setup expressions first; the remaining cells can be sent
+;; independently in any order after their named values have been defined.
+
+(load "lib/fs.aloe")
+
+(define fs (Fs new fs-host))
+
+
+;; Paths
+
+(define cwd (fs current))
+
+(cwd text)
+
+(fs name cwd)
+
+((fs parent cwd) case
+  (None () "/")
+  (Some (path) (path text)))
+
+(define library-path (fs path "lib/fs.aloe"))
+
+(library-path text)
+
+(fs name library-path)
+
+((fs parent library-path) case
+  (None () "/")
+  (Some (path) (path text)))
+
+(define archive-path (fs child cwd "archive"))
+
+(archive-path text)
+
+
+;; Inspection returns Option: absence is data, not an Entry constructor.
+
+(define cwd-inspection (fs inspect cwd))
+
+(cwd-inspection present?)
+
+(cwd-inspection case
+  (None () "missing")
+  (Some (entry)
+    (entry case
+      (RegularFile (path) "file")
+      (Directory (path) "directory")
+      (SymbolicLink (path) "symlink")
+      (Other (path kind) kind))))
+
+(define library-inspection (fs inspect library-path))
+
+(library-inspection case
+  (None () "missing")
+  (Some (entry)
+    (entry case
+      (RegularFile (path) "file")
+      (Directory (path) "directory")
+      (SymbolicLink (path) "symlink")
+      (Other (path kind) kind))))
+
+(library-inspection case
+  (None () "missing")
+  (Some (entry) ((entry path) text)))
+
+(define missing-path (fs child cwd "__aloe_fs_worksheet_missing__"))
+
+((fs inspect missing-path) present?)
+
+((fs inspect missing-path) case
+  (None () "missing")
+  (Some (entry)
+    (entry case
+      (RegularFile (path) "file")
+      (Directory (path) "directory")
+      (SymbolicLink (path) "symlink")
+      (Other (path kind) kind))))
+
+
+;; Listings are homogeneous (List Entry) values built in Aloe.
+
+(define cwd-entries (fs entries cwd))
+
+(cwd-entries len)
+
+(cwd-entries map
+  (fn (entry)
+    (fs name (entry path))))
+
+(cwd-entries map
+  (fn (entry)
+    (entry case
+      (RegularFile (path) "file")
+      (Directory (path) "directory")
+      (SymbolicLink (path) "symlink")
+      (Other (path kind) kind))))
+
+(define archive-entries (fs entries archive-path))
+
+(archive-entries len)
+
+(archive-entries map
+  (fn (entry)
+    (fs name (entry path))))
+
+(archive-entries map
+  (fn (entry)
+    (entry case
+      (RegularFile (path) "file")
+      (Directory (path) "directory")
+      (SymbolicLink (path) "symlink")
+      (Other (path kind) kind))))
+
+
+;; Host-failure experiments: remove the leading semicolons and evaluate one
+;; expression at a time. A regular file, a symbolic link, or a missing path
+;; cannot receive entries because the host names operation requires a directory.
+;;
+;; (fs entries library-path)
+;; (fs entries missing-path)

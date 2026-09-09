@@ -359,3 +359,17 @@ success, and reports both source datums and displayed values on failure.
 - `lib/fs.aloe` adds `Entry` and `Fs` `inspect` / `entries`. Mixed
   listings are `(List Entry)` with exhaustive `case`. Absence is
   `None`. No file-text reading. No Gel UI.
+
+## 105. [Disk and Location algebra](docs/checkpoints/0105-disk-and-location.md)
+
+- `lib/disk.aloe` defines generic `Disk` and `Location`. Public
+  `current` / `at` wrap `fs-host`; `name` / `text` / `parent` /
+  `child` are location messages. Parent at root is `None`. No
+  `inspect`, `Item`, or live classes. Does not load `lib/fs.aloe`.
+
+## 106. [inspect and live Item](docs/checkpoints/0106-inspect-and-item.md)
+
+- `lib/disk.aloe` adds `Location.inspect` → `(Option Item)` and nested
+  live `File` / `Directory` / `SymbolicLink` / `Other`. Live `parent`
+  is `(Option Directory)` and does not follow symlinks. No
+  `Directory.entries`.

@@ -1,0 +1,178 @@
+(load "option.aloe")
+
+(define-class (Location H)
+  (fields
+    (host H)
+    (text String))
+  (methods
+    (name () String
+      ((self host) name (self text)))
+
+    (parent () (Option (Location H))
+      (if ((self host) root? (self text))
+          (Option None)
+          (Option Some
+            (Location new (self host) ((self host) parent (self text))))))
+
+    (child (name String) (Location H)
+      (Location new (self host) ((self host) child (self text) name)))))
+
+(define-class (Disk H)
+  (fields
+    (host H))
+  (methods
+    (current () (Location H)
+      (Location new (self host) ((self host) current)))
+
+    (at (string String) (Location H)
+      (Location new (self host) ((self host) resolve string)))))
+
+(define-class (Directory H)
+  (fields
+    (location (Location H)))
+  (methods
+    (name () String
+      ((self location) name))
+
+    (text () String
+      ((self location) text))
+
+    (child (name String) (Location H)
+      ((self location) child name))
+
+    (parent () (Option (Directory H))
+      (((self location) parent) case
+        (None () (Option None))
+        (Some (here)
+          ((here inspect) case
+            (None () (Option None))
+            (Some (item)
+              (item case
+                (File (file) (Option None))
+                (Directory (dir) (Option Some dir))
+                (SymbolicLink (link) (Option None))
+                (Other (thing) (Option None))))))))))
+
+(define-class (File H)
+  (fields
+    (location (Location H)))
+  (methods
+    (name () String
+      ((self location) name))
+
+    (text () String
+      ((self location) text))
+
+    (child (name String) (Location H)
+      ((self location) child name))
+
+    (parent () (Option (Directory H))
+      (((self location) parent) case
+        (None () (Option None))
+        (Some (here)
+          ((here inspect) case
+            (None () (Option None))
+            (Some (item)
+              (item case
+                (File (file) (Option None))
+                (Directory (dir) (Option Some dir))
+                (SymbolicLink (link) (Option None))
+                (Other (thing) (Option None))))))))))
+
+(define-class (SymbolicLink H)
+  (fields
+    (location (Location H)))
+  (methods
+    (name () String
+      ((self location) name))
+
+    (text () String
+      ((self location) text))
+
+    (child (name String) (Location H)
+      ((self location) child name))
+
+    (parent () (Option (Directory H))
+      (((self location) parent) case
+        (None () (Option None))
+        (Some (here)
+          ((here inspect) case
+            (None () (Option None))
+            (Some (item)
+              (item case
+                (File (file) (Option None))
+                (Directory (dir) (Option Some dir))
+                (SymbolicLink (link) (Option None))
+                (Other (thing) (Option None))))))))))
+
+(define-class (Other H)
+  (fields
+    (location (Location H))
+    (kind String))
+  (methods
+    (name () String
+      ((self location) name))
+
+    (text () String
+      ((self location) text))
+
+    (child (name String) (Location H)
+      ((self location) child name))
+
+    (parent () (Option (Directory H))
+      (((self location) parent) case
+        (None () (Option None))
+        (Some (here)
+          ((here inspect) case
+            (None () (Option None))
+            (Some (item)
+              (item case
+                (File (file) (Option None))
+                (Directory (dir) (Option Some dir))
+                (SymbolicLink (link) (Option None))
+                (Other (thing) (Option None))))))))))
+
+(define-class (Item H)
+  (constructors
+    (File (fields (file (File H))))
+    (Directory (fields (directory (Directory H))))
+    (SymbolicLink (fields (link (SymbolicLink H))))
+    (Other (fields (thing (Other H)))))
+  (methods
+    ))
+
+(define-methods Location
+  (methods
+    (inspect () (Option (Item H))
+      (let ((kind ((self host) kind (self text)))
+            (resolved (Location new (self host) ((self host) resolve (self text)))))
+        (cond
+          ((kind = "missing") (Option None))
+          ((kind = "file")
+           (Option Some (Item File (File new resolved))))
+          ((kind = "directory")
+           (Option Some (Item Directory (Directory new resolved))))
+          ((kind = "symlink")
+           (Option Some (Item SymbolicLink (SymbolicLink new resolved))))
+          (else
+           (Option Some (Item Other (Other new resolved kind)))))))))
+
+(define-methods File
+  (methods
+    (inspect () (Option (Item H))
+      ((self location) inspect))))
+
+(define-methods Directory
+  (methods
+    (inspect () (Option (Item H))
+      ((self location) inspect))))
+
+(define-methods SymbolicLink
+  (methods
+    (inspect () (Option (Item H))
+      ((self location) inspect))))
+
+(define-methods Other
+  (methods
+    (inspect () (Option (Item H))
+      ((self location) inspect))))
