@@ -69,11 +69,11 @@
   (define state (make-driver))
   (check-true (void? (load-fs! state)))
 
-  (for ([name (in-list '(Option Path Fs))])
+  (for ([name (in-list '(Option Path Entry Fs))])
     (check-true (env-bound? (driver-runtime-environment state) name))
     (check-true
      (type-environment-bound? (driver-type-environment state) name)))
-  (for ([name (in-list '(Some None Entry fs-host term))])
+  (for ([name (in-list '(Some None fs-host term))])
     (check-false (env-bound? (driver-runtime-environment state) name))
     (check-false
      (type-environment-bound? (driver-type-environment state) name)))
@@ -132,20 +132,12 @@
    (lambda ()
      (driver-eval! state '(fs child (fs current) "a/b")))))
 
-(test-case "checkpoint 103 exposes no entry operations or Path effects"
+(test-case "Path exposes no host effects"
   (define state (make-double-state))
-  (check-false (env-bound? (driver-runtime-environment state) 'Entry))
-  (check-false
-   (type-environment-bound? (driver-type-environment state) 'Entry))
-  (for ([datum+message
-         (in-list
-          '(((fs inspect (fs current)) "unknown message: inspect")
-            ((fs entries (fs current)) "unknown message: entries")
-            (((fs current) current) "unknown message: current")))])
-    (check-exn
-     (regexp (cadr datum+message))
-     (lambda ()
-       (driver-eval! state (car datum+message))))))
+  (check-exn
+   #rx"unknown message: current"
+   (lambda ()
+     (driver-eval! state '((fs current) current)))))
 
 (test-case "production Fs path algebra observes an isolated current directory"
   (call-with-temporary-directory

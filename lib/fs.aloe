@@ -6,6 +6,20 @@
   (methods
     ))
 
+(define-class Entry
+  (constructors
+    (RegularFile (fields (path Path)))
+    (Directory (fields (path Path)))
+    (SymbolicLink (fields (path Path)))
+    (Other (fields (path Path) (kind String))))
+  (methods
+    (path () Path
+      (self case
+        (RegularFile (path) path)
+        (Directory (path) path)
+        (SymbolicLink (path) path)
+        (Other (path kind) path)))))
+
 (define-class (Fs H)
   (fields
     (host H))
@@ -26,4 +40,28 @@
             (Path new ((self host) parent (path text))))))
 
     (name (path Path) String
-      ((self host) name (path text)))))
+      ((self host) name (path text)))
+
+    (inspect (path Path) (Option Entry)
+      (let ((kind ((self host) kind (path text)))
+            (resolved (self path (path text))))
+        (cond
+          ((kind = "missing") (Option None))
+          ((kind = "file")
+           (Option Some (Entry RegularFile resolved)))
+          ((kind = "directory")
+           (Option Some (Entry Directory resolved)))
+          ((kind = "symlink")
+           (Option Some (Entry SymbolicLink resolved)))
+          (else
+           (Option Some (Entry Other resolved kind))))))
+
+    (entries (path Path) (List Entry)
+      ((((self host) names (path text))
+        fold
+        (List empty)
+        (fn (acc name)
+          ((self inspect (self child path name)) case
+            (None () acc)
+            (Some (entry) (acc cons entry)))))
+       reverse))))

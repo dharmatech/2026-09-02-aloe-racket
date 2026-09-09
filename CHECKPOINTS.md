@@ -353,3 +353,9 @@ success, and reports both source datums and displayed values on failure.
 - `lib/fs.aloe` defines `Path` and generic `Fs`. Public `current`,
   `path`, `child`, `parent`, and `name` wrap `fs-host`. Parent at
   root is `None`. No `Entry`, `inspect`, or `entries`.
+
+## 104. [Entry, inspect, and entries](docs/checkpoints/0104-fs-entry-and-listing.md)
+
+- `lib/fs.aloe` adds `Entry` and `Fs` `inspect` / `entries`. Mixed
+  listings are `(List Entry)` with exhaustive `case`. Absence is
+  `None`. No file-text reading. No Gel UI.

@@ -1,8 +1,8 @@
 # Filesystem vocabulary
 
-**Status.** Working design. Not law. `SPEC.md` remains law. Host-boundary
-prerequisites 97–99 are done on `experiment/host-boundary`. This file is
-what the filesystem pair implements; it is not itself a checkpoint.
+**Status.** Implemented through checkpoint 104 on `experiment/filesystem` at
+`lib/fs.aloe`. Not law. `SPEC.md` remains law. This file records the locked
+filesystem vocabulary; it is not itself a checkpoint.
 
 **Not this file.** Incoming sketch:
 `archive/design-sketches/filesystem-vocabulary.md`. Designer brief:

@@ -4,7 +4,7 @@
 
 **Depends on.** Checkpoint 103 (`Path` and `Fs` path algebra)
 
-**Status.** Ready to implement
+**Status.** Complete (reviewed 2026-09-08 on `experiment/filesystem`)
 
 ## Goal
 
@@ -54,6 +54,8 @@ Facts after checkpoint 103 (do not redesign them):
 
 - `lib/fs.aloe` (add `Entry` and the two `Fs` methods)
 - `tests/checkpoint-104.rkt` (new)
+- `tests/checkpoint-103.rkt` **only** as specified in
+  “Living 103 tests” below
 - `CHECKPOINTS.md` (append 104 only)
 - `docs/handoff.md` (current-state / application pressures:
   `Path`, `Entry`, and `Fs` exist; no file-text reading, no Gel
@@ -73,7 +75,7 @@ Facts after checkpoint 103 (do not redesign them):
 - `lib/option.aloe`, `lib/list.aloe`
 - `bin/aloe`
 - `SPEC.md`
-- historical tests 100–103
+- historical tests 100–102; 103 only as the living-test edit below
 - `examples/`, `gel/`, MPL
 - no `Missing`, `exists?`, `directory?`, nested `File`/`Directory`
   classes, Path host-effect methods, or `show` on `Entry`
@@ -194,6 +196,39 @@ Public types:
 
 `(define fs (Fs new fs-host))` is unchanged.
 
+## Living 103 tests (designer addendum, 2026-09-08)
+
+Checkpoint 103 required living assertions that `Entry` / `inspect` /
+`entries` were absent after loading `lib/fs.aloe`. Checkpoint 104
+forbade editing that file. Those two rules cannot both hold once
+`lib/fs.aloe` defines `Entry`. That is a design defect, not an
+implementer miss. Same pattern as checkpoint 98 updating living
+checkpoint-83 declaration tests.
+
+**May edit `tests/checkpoint-103.rkt` as follows, and nothing else
+in that file:**
+
+1. After `(load lib/fs.aloe)`, stop asserting that `Entry` is
+   unbound. `Option` / `Path` / `Fs` stay bound; `Some` / `None` /
+   `fs-host` / `term` stay unbound until injected.
+2. Delete the assertions that `(fs inspect …)` and
+   `(fs entries …)` are unknown messages, and that `Entry` is
+   unbound after load. Those are 104’s feature, not 103’s forever
+   contract.
+3. **Keep** the assertion that sending `current` to a `Path` is
+   unknown message. Path still has no host-effect methods.
+4. **Keep** `Entry` unbound on a **fresh** `make-driver`. The
+   library is still not bootstrapped.
+
+Do not rewrite `docs/checkpoints/0103-fs-path-algebra.md`. Do not
+weaken 103’s path-algebra goldens.
+
+Also finish the 104 status-only edit of
+`docs/host-boundary-extensions.md`: the opening “Not this file”
+sentence and the “Explicitly later” list still say there is no
+`Path` / `Entry` / `Fs` / `lib/fs.aloe`. Strike those leftovers.
+Keep `(List Entry)` crossing and Gel UI as later.
+
 ## Tests and hand check
 
 Add `tests/checkpoint-104.rkt`. Do not repeat 103’s path-algebra
@@ -310,7 +345,8 @@ no `fs-host`. Constructors are not merged to `main`.
 ## Acceptance
 
 - Still on `experiment/filesystem`.
-- `raco test` green, including 94, 95, 101–103, and new 104.
+- `raco test` green, including 94, 95, 101–103 (after the living
+  103 edit), and new 104.
 - Hand checks hold.
 - `git diff --check` clean.
 - Default driver still has no `fs-host` / `term`.

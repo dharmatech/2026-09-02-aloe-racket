@@ -189,3 +189,9 @@ Decided: Aloe `Path` is a string-holding product without host authority. Path
 algebra is exposed as `Fs` messages over its generic injected host field, and
 `parent` returns `None` at a root after checking `root?` without sending host
 `parent`.
+
+## Filesystem Entry and listings (2026-09-08)
+
+Decided: mixed directory listings are homogeneous `(List Entry)` values built
+in Aloe from crossing `(List String)` names. Absence is `None`; asking `entries`
+of a non-directory fails the host `names` send.
