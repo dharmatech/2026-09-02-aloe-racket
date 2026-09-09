@@ -329,3 +329,15 @@ success, and reports both source datums and displayed values on failure.
 - Confirmed that a generic field retains an injected host-receiver type, so a
   wrapper like `(Fs new fs-host)` typechecks without source-written host names;
   no checker or evaluator change was required.
+
+## 100. [Option library](docs/checkpoints/0100-option-library.md)
+
+- `lib/option.aloe` is a loadable Option class (`None` / `Some`,
+  `present?`, exhaustive `case`). Tests load it. It is not bootstrapped by
+  `make-driver`. No filesystem capability.
+
+## 101. [Filesystem host interface and test double](docs/checkpoints/0101-filesystem-host-double.md)
+
+- Optional `fs-host` capability with one `FsHost` interface and a
+  test double. Crossing values only. Default drivers do not get it.
+  No production disk I/O. No `Path` / `Entry` / `Fs`.

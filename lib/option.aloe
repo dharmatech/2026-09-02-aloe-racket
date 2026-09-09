@@ -1,0 +1,9 @@
+(define-class (Option T)
+  (constructors
+    (None (fields))
+    (Some (fields (value T))))
+  (methods
+    (present? () Bool
+      (self case
+        (None () #f)
+        (Some (value) #t)))))

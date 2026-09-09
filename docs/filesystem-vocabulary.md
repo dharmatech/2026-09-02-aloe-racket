@@ -110,8 +110,8 @@ specified:
         (Some (value) #t)))))
 ```
 
-It is not a host crossing type. The library may `load` `lib/option.aloe`
-if Option is not already a loadable library.
+Programs `load` `lib/option.aloe`; Option is not bootstrapped by
+`make-driver`; it is not a host crossing type.
 
 ## 3. Public vocabulary
 
@@ -166,7 +166,7 @@ The host receiver is not the public `fs` object. Host methods take and
 return crossing values only. Aloe constructs `Path` / `Entry` after a
 successful host send.
 
-Suggested host messages (names may tighten in the host checkpoint):
+Locked host messages (checkpoint 101):
 
 | Host selector | Arguments | Result | Meaning |
 | --- | --- | --- | --- |
@@ -174,7 +174,7 @@ Suggested host messages (names may tighten in the host checkpoint):
 | `resolve` | `String` | `String` | absolutize / normalize |
 | `child` | `String`, `String` | `String` | join one component |
 | `root?` | `String` | `Bool` | no parent |
-| `parent` | `String` | `String` | parent; Aloe does not call this when `root?` is true |
+| `parent` | `String` | `String` | parent; at normalized root returns `"/"`; Aloe does not call this when `root?` is true |
 | `name` | `String` | `String` | last component |
 | `kind` | `String` | `String` | see below |
 | `names` | `String` | `(List String)` | immediate child names, no `.` or `..` |
@@ -251,9 +251,7 @@ in passing.
    `String`.
 3. Confirm that an Aloe generic field can retain a host-receiver type,
    or take the explicit fallback in §4.
-4. Provide loadable `Option` if the filesystem library cannot share the
-   test-only definition. The filesystem designer brief assigns this to
-   checkpoint 100.
+4. Done in checkpoint 100: `Option` is loadable from `lib/option.aloe`.
 
 Term stays unchanged. Filesystem is a second optional injected
 capability.

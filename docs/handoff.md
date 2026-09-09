@@ -5,7 +5,7 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
 do not replay rejected designs.
 
-## `experiment/host-boundary`
+## `experiment/filesystem`
 
 Proposal B is implemented through checkpoint 95 and ratified into `SPEC.md`
 by [checkpoint 96](checkpoints/0096-ratify-class-constructors.md). Checkpoint
@@ -31,7 +31,7 @@ Slogan: `Scheme + Smalltalk + Types`.
 Keep the kernel small. Grow the language from applications, and add host access
 only through explicit typed capabilities.
 
-## Current state (0.4 on `experiment/host-boundary`)
+## Current state (0.4 on `experiment/filesystem`)
 
 - Interpreter and type checker in Racket; no compiler or macros.
 - `define-class`, `define-methods`, `fn`/`call`, `let`, `if`/`cond`, `load`,
@@ -61,7 +61,10 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 99 are green on this branch. Tag `v0.1.0-boids`
+- Tests through checkpoint 101 are green on `experiment/filesystem`. `Option`
+  is loadable from `lib/option.aloe` and is not a default-driver binding. The
+  optional `fs-host` test double can be injected explicitly; default drivers
+  still receive neither filesystem nor terminal authority. Tag `v0.1.0-boids`
   records the earlier 0.1 milestone.
 
 ## Typed host boundary
@@ -120,13 +123,14 @@ protocols, overloading, strings, symbols, and richer display. Gel drove
 reflection, exact signature invocation, terminal input, and the typed host
 boundary.
 
-A later designer/implementer pair will implement the locked vocabulary in
-`docs/filesystem-vocabulary.md` after this host-boundary line is complete.
-`Path`, `Entry`, and `Fs` are not implemented yet, and the host crossing
-vocabulary is `Int`, `Bool`, `String`, and homogeneous `(List String)`.
-Generic host-type retention is confirmed, so `(define fs (Fs new fs-host))`
-is a viable wrapper encoding without source-written host names. This does not
-yet add the `Fs` class or a filesystem capability.
+The filesystem pair has started on `experiment/filesystem`: `Option` is a
+loadable Aloe library, and the optional `fs-host` capability exists as a
+controlled test double. Production filesystem I/O, `Path`, `Entry`, and `Fs`
+still do not exist. The host crossing vocabulary remains `Int`, `Bool`,
+`String`, and homogeneous `(List String)`. Generic host-type retention is
+confirmed, so `(define fs (Fs new fs-host))` remains a viable later wrapper
+encoding without source-written host names. Option remains loadable rather
+than bootstrapped. Constructors are not yet ready to merge to `main`.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

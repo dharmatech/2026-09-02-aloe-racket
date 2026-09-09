@@ -154,3 +154,20 @@ while Aloe receives its ordinary homogeneous list values.
 
 This is not a general list FFI. Nested lists and every other `(List T)` remain
 outside the crossing vocabulary; opaque handles and `Result` remain deferred.
+
+## Option library (2026-09-08)
+
+Decided: under filesystem pressure, `Option` is an ordinary loadable Aloe
+library at `lib/option.aloe`. Programs opt in with `load`; `make-driver` does
+not bootstrap it, and `Option` is not a host crossing type.
+
+## Filesystem host test double (2026-09-08)
+
+Decided: filesystem facts begin as a second optional host capability, using
+one nominal `FsHost` interface and a controlled test double before production
+disk I/O. The capability crosses values only and is not installed in default
+drivers.
+
+The parent of the normalized POSIX root is `"/"`, and the kind of a missing
+path is `"missing"`. Asking `names` of a missing or non-directory path is a
+host failure.
