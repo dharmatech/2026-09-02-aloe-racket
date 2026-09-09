@@ -1,13 +1,15 @@
 # Object-oriented filesystem vocabulary
 
-**Status.** Working design from the conversation that followed
-[`docs/filesystem-oo-surface.md`](filesystem-oo-surface.md). Not law. Not a
-checkpoint. `SPEC.md` remains law. Thin vocabulary in
+**Status.** Working design, reviewed by the program conversation. Not law.
+Not a checkpoint. `SPEC.md` remains law. Thin vocabulary in
 [`docs/filesystem-vocabulary.md`](filesystem-vocabulary.md) is unchanged.
 
+Checkpoint-manager brief:
+[`docs/filesystem-oo-designer.md`](filesystem-oo-designer.md).
+
 **Not this file.** Thin API: `lib/fs.aloe`. This surface is a **second**
-library beside it. A later program conversation reviews this sketch before
-any implementation pair starts.
+library beside it (`lib/disk.aloe`). Same injected `fs-host`. This
+library does **not** `load` `lib/fs.aloe`.
 
 ## 1. Aim
 
@@ -30,14 +32,15 @@ The first slice of this surface lets a program:
 - obtain cwd and any string path as a `Location` (absolute, host-resolved);
 - send `name`, `text`, `parent`, `child` on that location without promising
   existence;
-- `inspect` a location and get a live `Entry` if something is there;
-- list a live directory as `(List Entry)` of already-classified objects;
-- `case` those entries and send kind-specific messages to nested `File` /
+- `inspect` a location and get a live `Item` if something is there;
+- list a live directory as `(List Item)` of already-classified objects;
+- `case` those items and send kind-specific messages to nested `File` /
   `Directory` / `SymbolicLink` / `Other` objects.
 
-Thin `lib/fs.aloe` stays the FileManager-style foundation. This library
-layers on the same injected `fs-host`. No second host capability. No
-ambient `fs`. `bin/aloe` stays capability-free.
+Thin `lib/fs.aloe` stays the FileManager-style foundation for comparison.
+This library talks to the **same** `fs-host` and defines its own Aloe
+types. No second host capability. No ambient `fs`. `bin/aloe` stays
+capability-free.
 
 ## 2. Locked construction
 
@@ -83,8 +86,12 @@ field (checkpoint 99). It is not a second host type.
       …)))
 ```
 
-Internally it may hold thin `Fs` or talk to `H` directly. Programs see
-one injected `fs-host`.
+`Disk` sends to `H` directly (`current`, `resolve`, …). It does not
+store or construct thin `Fs`. It does not `load` `lib/fs.aloe`. Kind
+strings are mapped here the same way thin `Fs.inspect` maps them
+(`"missing"` / `"file"` / `"directory"` / `"symlink"` / else). That
+small table is duplicated on purpose so both libraries can load in one
+environment.
 
 ### Location
 
@@ -99,17 +106,18 @@ carries the host so later messages do not go back to a manager.
   (methods
     (name () String
       …)
-    (text () String
-      (self text))
     (parent () (Option Location)
       …)
     (child (name String) Location
       …)
-    (inspect () (Option Entry)
+    (inspect () (Option Item)
       …)))
 ```
 
-`text` is the resolved absolute spelling, same word as thin `Path`.
+There is **no** `text` method. `text` is the field accessor. `(here
+text)` is the resolved absolute spelling, same word as thin `Path`.
+Writing `(text () String (self text))` would recurse forever.
+
 `name` is the host last-component rule. `parent` is path algebra:
 `(Option Location)`, `None` at root, no disk look. `child` takes one
 component (`"lib"`), not a slash-separated string, and returns a
@@ -117,24 +125,26 @@ component (`"lib"`), not a slash-separated string, and returns a
 
 `inspect` looks at the disk. `None` if absent. No separate `exists?`.
 
-### Entry and nested live classes
+### Item and nested live classes
 
-`inspect` and directory listing return this library’s live `Entry`: one
-nominal class, four constructors. Constructors are not types. A mixed
-listing is still homogeneous `(List Entry)`.
+`inspect` and directory listing return `Item`: one nominal class, four
+constructors. The name is **`Item`**, not `Entry`, so a program may
+`load` both `lib/fs.aloe` and `lib/disk.aloe` without clashing on thin
+`Entry`. Constructors are not types. A mixed listing is still
+homogeneous `(List Item)`.
 
 Each constructor **carries a nested live object**. After `case`, kind-
-specific messages go to that object, not to `Entry`. Methods are
+specific messages go to that object, not to `Item`. Methods are
 whole-class; `File` and `Directory` need different messages, so they are
 separate classes.
 
 ```aloe
-(define-class Entry
+(define-class (Item H)
   (constructors
-    (File (fields (file File)))
-    (Directory (fields (directory Directory)))
-    (SymbolicLink (fields (link SymbolicLink)))
-    (Other (fields (thing Other))))
+    (File (fields (file (File H))))
+    (Directory (fields (directory (Directory H))))
+    (SymbolicLink (fields (link (SymbolicLink H))))
+    (Other (fields (thing (Other H)))))
   (methods
     ))
 ```
@@ -146,12 +156,17 @@ There is no `Missing` constructor. Absence is `Option`. A listing’s
 exhaustive `case` has four live branches.
 
 `File`, `Directory`, `SymbolicLink`, and `Other` each carry a `Location`
-and answer path questions. Kind-specific messages sit on top.
+in a field named `location`. Path questions forward to that location,
+except live `parent` (below). `inspect` on a live object forwards to
+`(self location)` so you can look again after the world changes.
 
-| Class | Path messages | Kind-specific in this slice | Later |
+Thread `H` through `Disk`, `Location`, the live classes, and `Item`.
+Infer `H` from `fs-host` at `(Disk new fs-host)`.
+
+| Class | Always | Kind-specific in this slice | Later |
 | --- | --- | --- | --- |
-| `File` | `name`, `text`, `child` → `Location`, `parent` → `(Option Directory)` | (none yet) | `size`, `read` |
-| `Directory` | same | `entries` → `(List Entry)` | `enter` |
+| `File` | `location`, `name`, `text`, `child` → `Location`, `inspect` → `(Option Item)`, `parent` → `(Option Directory)` | (none yet) | `size`, `read` |
+| `Directory` | same | `entries` → `(List Item)` | `enter` |
 | `SymbolicLink` | same | (none yet) | `target` |
 | `Other` | same | `kind` → `String` (host diagnostic) | |
 
@@ -165,7 +180,7 @@ inspect of the parent path is not a `Directory` (for example a symlink).
 This is the same kind of fact as `entries`.
 
 Classification does not follow symbolic links. A hard link is not an
-entry kind. `Other` is devices, sockets, FIFOs, and other platform
+item kind. `Other` is devices, sockets, FIFOs, and other platform
 objects; `kind` is a diagnostic string, not a second taxonomy.
 
 ## 4. Public vocabulary
@@ -179,10 +194,10 @@ Exact everyday sends:
 (fs at string)                   ; Location, host-resolved
 
 (here name)                      ; String
-(here text)                      ; String, absolute
+(here text)                      ; String, absolute (field)
 (here parent)                    ; (Option Location); None at root
 (here child "lib")               ; Location
-(here inspect)                   ; (Option Entry); None if missing
+(here inspect)                   ; (Option Item); None if missing
 
 ((here inspect) case
   (None () "missing")
@@ -193,9 +208,11 @@ Exact everyday sends:
       (SymbolicLink (link) (link name))
       (Other (thing) (thing kind)))))
 
-(dir entries)                    ; (List Entry); host failure if used
-                                 ; on a non-directory (cannot: only
-                                 ; Directory has this message)
+(file location)                  ; Location
+(file inspect)                   ; (Option Item); look again
+
+(dir entries)                    ; (List Item); only Directory
+                                 ; has this message
 
 (dir parent)                     ; (Option Directory)
 (file parent)                    ; (Option Directory)
@@ -226,7 +243,7 @@ Same host as the thin library. Same crossing types: `Int`, `Bool`,
 **Aloe owns:**
 
 - `Disk`, `Location`, live `File` / `Directory` / `SymbolicLink` /
-  `Other`, and this library’s `Entry`;
+  `Other`, and `Item`;
 - mapping host facts onto those objects;
 - which sends are public.
 
@@ -235,7 +252,8 @@ make `fs-host` ambient. Do not add a second host interface.
 
 Thin public sends stay on thin `Fs`: `(fs path string)`, `(fs inspect
 path)`, `(fs entries path)`, and so on. This surface does not redefine
-them.
+them. A program may load both libraries; they must not fight over
+bindings. That is why this library uses `Disk`, `Location`, and `Item`.
 
 ## 6. Listing
 
@@ -246,7 +264,7 @@ them.
 3. `None` (vanished between list and inspect) is omitted.
 4. A host failure inspecting a name fails the whole `entries` send.
 
-Every element of the result is a live `Entry`. Children are not
+Every element of the result is a live `Item`. Children are not
 locations you must inspect again. TOCTOU is accepted; the world is live.
 
 `names` on a non-directory remains a host failure. Programs reach
@@ -303,7 +321,7 @@ sugar). No `size` / `read` / symlink `target` yet (named as future).
 
 No `Missing` constructor. No `directory?` as the required API; goldens
 use `case`. No ambient `fs`. No second host. No rewrite of `lib/fs.aloe`
-or `host/racket/fs.rkt`. No `0105-…` checkpoints in this document.
+or `host/racket/fs.rkt`. No `load` of `lib/fs.aloe` from `lib/disk.aloe`.
 Proposal A / `define-family` is not authority.
 
 No inheritance. Nested live classes forward path messages; they do not
@@ -311,14 +329,6 @@ subclass `Location`.
 
 ## 10. Still open
 
-- Exact second-library filename (`lib/disk.aloe`, `lib/location.aloe`,
-  …).
-- Whether `Disk` stores `H` or a thin `Fs`. Programs must not care.
-- Name clash if a program loads thin `Entry` and this `Entry` in one
-  environment. Implementation pair picks a rename (`Item`) or a load
-  story that does not bind both.
-- Generic arguments on `File` / `Directory` / `Location` / `Entry`
-  (`H` threaded vs inferred from the carried `Location`).
 - `extension`, `stem`, components.
 - Sugar: `(here entries)`, `(dir enter name)`.
 - `File` `size` / `read`; `SymbolicLink` `target`.
@@ -326,11 +336,17 @@ subclass `Location`.
   `(dir entries)` are sends a menu could offer; Gel is not this slice.
 - How much live `parent` should treat a parent path that inspects as
   `SymbolicLink` to a directory (`None` vs follow). Foundation: do not
-  follow; `Some` only for constructor `Directory`.
+  follow; `Some` only when inspect yields constructor `Directory`.
 - Windows drives, trailing slashes, Unicode. Host-owned, same as thin.
+
+Locked (no longer open): library file is `lib/disk.aloe`; `Disk` stores
+`H` and talks to the host directly; listing type is `Item`; `text` is a
+field; live objects have `location` and forwarded `inspect`; `H` is
+threaded through `Disk`, `Location`, live classes, and `Item`.
 
 ## 11. Stop
 
-This file is the sketch to take back to the program conversation. Do not
-implement from this document until that pair reviews it and writes
-checkpoints one slice at a time.
+Checkpoints are written by the conversation that follows
+[`docs/filesystem-oo-designer.md`](filesystem-oo-designer.md), one slice
+at a time. Do not implement from this document in a brainstorm or
+checkpoint-manager chat.

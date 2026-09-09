@@ -1,7 +1,8 @@
 # Filesystem designer brief
 
-**Status.** Working handoff for one Grok conversation. Not law. Not a
-checkpoint. `SPEC.md` remains law for the running language.
+**Status.** Thin-library pair complete on `experiment/filesystem` through
+checkpoint 104. Kept as the assignment that conversation followed. Not
+law. OO surface checkpoints: [`docs/filesystem-oo-designer.md`](filesystem-oo-designer.md).
 
 **Your job.** You are the **designer** for the first read-only
 filesystem vocabulary on `experiment/host-boundary`. You write small
