@@ -11,6 +11,12 @@
       (self loop
         (GelStep new stack #f (List empty) 0 #f)))
 
+    (start (type T)
+      (value T)
+      GelStack
+      (self call
+        (gel-empty-stack push value)))
+
     (loop
       (state GelStep)
       GelStack

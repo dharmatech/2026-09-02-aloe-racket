@@ -109,7 +109,7 @@ ALOE
            (eval-source "(point-pending stack)" environment))
 (void
  (eval-source
-  "(define point-cancelled (point-pending handle-key \"q\"))"
+  "(define point-cancelled (point-pending handle-key \"escape\"))"
   environment))
 (check-false (eval-source "(point-cancelled quit)" environment))
 (check-equal? (eval-source "((point-cancelled pending) len)" environment) 0)

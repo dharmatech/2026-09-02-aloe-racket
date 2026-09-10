@@ -82,10 +82,10 @@
            (eval-source "empty-return" environment))
 (check-equal? (eval-source "((empty-return pending) len)" environment) 1)
 
-;; q cancels the pending row and discards the accumulated literal.
+;; Escape cancels the pending row and discards the accumulated literal.
 (void
  (eval-source
-  "(define cancelled (typed-two handle-key \"q\"))"
+  "(define cancelled (typed-two handle-key \"escape\"))"
   environment))
 (check-false (eval-source "(cancelled quit)" environment))
 (check-eq? (eval-source "stack" environment)

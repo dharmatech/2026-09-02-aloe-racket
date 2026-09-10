@@ -133,10 +133,10 @@
            (eval-source "(point-pending stack)" environment))
 (check-equal? (eval-source "((point-pending pending) len)" environment) 1)
 
-;; q cancels a pending row but does not request application exit.
+;; Escape cancels a pending row but does not request application exit.
 (void
  (eval-source
-  "(define cancelled (point-pending handle-key \"q\"))"
+  "(define cancelled (point-pending handle-key \"escape\"))"
   environment))
 (check-false (eval-source "(cancelled quit)" environment))
 (check-eq? (eval-source "point-stack" environment)

@@ -1,0 +1,6 @@
+(load "../lib/disk.aloe")
+(load "../gel/directory.aloe")
+
+(define gel-start-value
+  (Directory new
+    ((Disk new fs-host) current)))

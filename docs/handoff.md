@@ -11,10 +11,21 @@ Stacked on `experiment/filesystem`. Working design:
 [`docs/gel-directory-surface.md`](gel-directory-surface.md).
 
 First Gel experiment after the OO disk library: a focused directory
-browser on Gel's stack. Not a workspace, not a GelFS framework, not
-checkpoints yet. Do not implement from the design file. Do not grow
-`lib/disk.aloe` unless that surface blocks. Checkpoint 107 remains the
-last required OO-filesystem slice.
+browser on Gel's stack. Not a workspace and not a GelFS framework.
+Checkpoints 108–112 complete the first focused live Directory slice. The
+Term-only runner still launches ordinary Aloe applications. The separate
+filesystem-capable runner starts `examples/gel-directory.aloe` at the
+process's live current directory:
+
+```sh
+racket host/racket/gel-directory-run.rkt examples/gel-directory.aloe
+```
+
+A Directory TOS shows up to 24 immediate children with filesystem labels;
+selection pushes the nested live object, `u` pushes its live parent, and
+Escape pops history. `q` still quits, and pending input behavior is unchanged.
+The authored adapter lives under `gel/`; `lib/disk.aloe` remains Gel-ignorant.
+Do not implement later steps from the design file without another checkpoint.
 
 If the work is still filesystem vocabulary rather than Gel, stay on
 `experiment/filesystem` and ignore this section.
@@ -45,7 +56,7 @@ Slogan: `Scheme + Smalltalk + Types`.
 Keep the kernel small. Grow the language from applications, and add host access
 only through explicit typed capabilities.
 
-## Current state (0.4 on `experiment/filesystem`)
+## Current state (0.4 on `experiment/gel-directory-surface`)
 
 - Interpreter and type checker in Racket; no compiler or macros.
 - `define-class`, `define-methods`, `fn`/`call`, `let`, `if`/`cond`, `load`,
@@ -70,13 +81,31 @@ only through explicit typed capabilities.
   invocation without adding `perform` to ordinary objects.
 - Gel is an Aloe-written keystroke object environment with an immutable
   `GelStack`, reflected menus, typed one-argument pending sends,
-  integer entry, and a thin Racket terminal runner.
+  integer entry, and a thin Racket terminal runner. `GelMain.start` accepts
+  any ordinary Aloe value, pushes it once from `gel-empty-stack`, and enters
+  the existing loop. The runner loads one supplied Aloe application and
+  launches its `gel-start-value`; `examples/gel-point.aloe` now owns the
+  Point demo. A separate filesystem-capable runner injects `term` and
+  `fs-host`, then launches `examples/gel-directory.aloe` at the process's
+  current live `Directory`. `GelStack.pop` removes one history item above a
+  one-item floor;
+  idle Escape pops, pending Escape cancels without popping, and `q` quits from
+  either state. `GelMenus` gives built-in List a private Aloe-authored value
+  surface: the first 24 elements render with position-bound letters from `a`
+  through `z`, omitting `q` and `u`; selecting one pushes its exact mirror,
+  and Escape returns to the List. A Gel-owned Directory adapter supplies the
+  same value-row shape with `name`, `name/`, and `name@` labels, preserving
+  live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. `u` asks only
+  a Directory for its live parent and pushes it, so Escape and up are
+  observably different. Reflected menus and pending input retain their digit
+  behavior.
 - Typed host capabilities use descriptor-defined interfaces shared by runtime
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 107 are green on `experiment/filesystem`. `Option`
-  is loadable from `lib/option.aloe` and is not a default-driver binding.
+- Tests through checkpoint 112 are green on
+  `experiment/gel-directory-surface`. `Option` is loadable from
+  `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
   with `current`, `path`, `child`, `parent`, `name`, `inspect`, and `entries`;
   it remains unchanged. `lib/disk.aloe` defines generic `Disk`
@@ -158,6 +187,13 @@ not crossed, and `(List Item)` is likewise built in Aloe. There is no file-text
 reading or Gel filesystem UI. Option remains loadable rather than bootstrapped,
 default drivers still have no `fs-host`, and constructors are not merged to
 `main`.
+
+The first live Directory presentation is complete. The current screen observes
+the host when it constructs a menu and exposes only the first 24 children.
+Remaining pressure is overflow navigation or search, a persistent per-TOS
+listing snapshot with explicit refresh, and additional stack rendering that
+makes history visible. No paging, search, persistent snapshot, refresh key, or
+extra stack-level display has been added.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

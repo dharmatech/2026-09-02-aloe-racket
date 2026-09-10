@@ -379,3 +379,37 @@ success, and reports both source datums and displayed values on failure.
 - Live `Directory.entries` returns mixed `(List Item)` via host
   `names` then `child` + `inspect`. Vanished names are omitted.
   No `(here entries)`. Thin `lib/fs.aloe` unchanged.
+
+## 108. [Application-supplied Gel start value](docs/checkpoints/0108-gel-application-start.md)
+
+- `GelMain.start` creates a one-item stack from any ordinary Aloe value.
+  The Term-only Gel runner loads one supplied Aloe application and launches
+  its conventional `gel-start-value`; the Point demo now lives in
+  `examples/gel-point.aloe`.
+
+## 109. [Gel back / pop](docs/checkpoints/0109-gel-back-pop.md)
+
+- `GelStack.pop` preserves a one-item floor. Idle Escape pops, pending Escape
+  cancels first, and `q` quits from idle or pending state. No value-item rows
+  or filesystem-aware Gel behavior yet.
+
+## 110. [Gel List value rows](docs/checkpoints/0110-gel-list-value-rows.md)
+
+- A List TOS presents up to nine directly choosable value rows through a
+  Gel-local Aloe adapter; selection pushes the exact value mirror and Escape
+  returns to the list. Item-key policy and filesystem integration remain
+  deferred.
+
+## 111. [Collision-free Gel item keys](docs/checkpoints/0111-gel-item-keys.md)
+
+- Authored value rows use a fixed position-bound lowercase item-key pool with
+  `q`, Escape, and `u` excluded; reflected messages and pending input retain
+  digits. A List exposes at most the pool's 24 values. Directory behavior and
+  filesystem injection remain deferred.
+
+## 112. [Live Gel Directory surface](docs/checkpoints/0112-gel-live-directory.md)
+
+- A Gel-authored live `Directory` menu labels and selects immediate children
+  through the shared item-key pool; `u` pushes the live parent while Escape
+  remains stack back. A separate application runner injects `term` and
+  `fs-host`; the ordinary Gel runner and disk library remain unchanged.

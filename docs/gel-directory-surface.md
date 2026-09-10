@@ -1,8 +1,11 @@
 # Gel directory surface
 
-**Status.** Working design for `experiment/gel-directory-surface`.
-Not Aloe language law. Not a checkpoint. Do not implement from this
-file until a later conversation writes checkpoints, one at a time.
+**Status.** First live slice implemented through checkpoint 112 on
+`experiment/gel-directory-surface`. Not Aloe language law. Later work still
+requires checkpoints, one at a time. All five first-progression items are now
+implemented: application-supplied start values, stack back, authored value
+rows, the collision-free 24-letter item-key pool, and a filesystem-capable
+runner whose application starts on a live `Directory`.
 
 `SPEC.md` remains law. Disk objects remain
 [`docs/filesystem-oo-vocabulary.md`](filesystem-oo-vocabulary.md).
@@ -154,8 +157,10 @@ Spatial keys and mnemonic keys are different jobs:
 - **Command keys** want to be mnemonic and stable on QWERTY: `u`, `q`,
   Escape.
 
-Digits vs letters for item keys is still open (§8). Either way, the
-item pool is assigned in a fixed order from keys that are not reserved.
+Item keys use the fixed lowercase pool
+`a b c d e f g h i j k l m n o p r s t v w x y z`. The pool is assigned in
+that order to each listing and excludes active `q` and reserved `u`; reflected
+message rows and pending input keep digits.
 
 A few visible stack levels are closer to the 48 than printing TOS only.
 Recommended for the first slice if it stays cheap; not a lock. Stack
@@ -197,40 +202,50 @@ checkpoints off `fs-host`. Do not turn that harness into an MPL or
 Point project. As soon as value choice and pop work, put a real
 `Directory` on the stack.
 
-Suggested order, not yet checkpoints:
+Suggested order, one checkpoint at a time:
 
-1. Application-supplied start value. The runner does not hard-code
-   `Point`. A directory session starts from `(fs current)` inspected
-   into a `Directory`.
-2. Back / pop. Escape cancels a pending send first; if idle, it pops.
-3. Value-item rows. A list presents choosable values, not just
-   `first` / `rest`.
-4. Collision-free key policy. Reserved command keys never enter the
-   item pool. Item keys are rebound per listing / page.
-5. Inject `fs-host` in the directory-aware Gel runner only, and start
-   with a live `Directory`.
+1. **Implemented in checkpoint 108:** application-supplied start value. The
+   runner no longer hard-codes `Point`; an Aloe application owns its start
+   value. Constructing a live directory application remains deferred.
+2. **Implemented in checkpoint 109:** back / pop. Escape cancels a pending
+   send first; if idle, it pops while preserving a one-item floor.
+3. **Implemented in checkpoint 110:** value-item rows. A List presents
+   choosable values, not just `first` / `rest`.
+4. **Implemented in checkpoint 111:** collision-free key policy. The exact
+   24-letter pool omits `q` and `u`; item keys are rebound per listing and
+   reflected and pending surfaces retain digits.
+5. **Implemented in checkpoint 112:** the separate directory-aware runner
+   injects `fs-host` alongside `term`; `examples/gel-directory.aloe` starts at
+   the process's live current `Directory`. Gel-authored rows label and push
+   immediate live children, `u` pushes a live parent, and Escape remains stack
+   back.
 
 Hand check for the live slice: from the project directory, enter
 `lib/`, see `disk.aloe`, Escape back, `u` to the parent, `q` to leave.
 
 ## 8. Open on this slice
 
-- **Item-key alphabet.** Digits `1`–`9` then `0` are spatially nicer
-  for the first ten rows. Letters are nicer if digits stay tied to
-  derived method rows during a transition. The constraint is the lock
-  in §3, not a specific alphabet.
+- **Resolved item-key alphabet.** Authored rows use
+  `a b c d e f g h i j k l m n o p r s t v w x y z`; `q` and `u` are
+  excluded, and digits remain tied to derived and pending rows. If paging
+  later claims `n` or `p`, that key must first leave the item pool.
 - **How many stack levels to print.** TOS-only is the current sketch.
   A few levels would make Escape intelligible. Full stack manipulation
   is out.
 - **Snapshot vs live listing.** `(dir entries)` talks to the host.
-  Gel's key step is otherwise pure. Prefer capturing the listing into
-  Gel presentation state when a `Directory` becomes TOS, so redraws do
-  not re-enter the host. Refresh can be a later command.
-- **Exact files.** Authored Directory presentation lives under `gel/`,
-  not `lib/`. A separate runner vs a start-value argument to the
-  existing Gel runner is an implementation choice.
+  Checkpoint 112 captures immutable rows within each `GelMenus.of` call, but a
+  later redraw or key step may construct the menu again. Persistent per-TOS
+  snapshots and an explicit refresh command remain open.
+- **Resolved exact files.** Authored Directory presentation lives in
+  `gel/directory.aloe`, not `lib/`. The filesystem-capable application uses
+  the separate `host/racket/gel-directory-run.rkt`; the ordinary Term-only
+  runner remains unchanged.
 - **`File` surface.** Derived menu is enough. No edit, no pager, no
   text reading.
+
+Follow-up pressure now belongs to overflow/paging or search, persistent menu
+snapshots and refresh, and showing enough stack history to make back versus up
+visible. None is implemented by checkpoint 112.
 
 ## 9. Non-goals and deferred
 

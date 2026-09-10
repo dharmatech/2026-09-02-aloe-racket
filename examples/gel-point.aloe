@@ -1,0 +1,4 @@
+(load "point.aloe")
+
+(define gel-start-value
+  (Point new 10 20))

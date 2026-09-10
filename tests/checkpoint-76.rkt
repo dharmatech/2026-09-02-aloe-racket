@@ -153,7 +153,7 @@ ALOE
  10)
 (void
  (eval-source
-  "(define int-cancelled (int-pending handle-key \"q\"))"
+  "(define int-cancelled (int-pending handle-key \"escape\"))"
   environment))
 (check-false (eval-source "(int-cancelled quit)" environment))
 (check-equal? (eval-source "((int-cancelled pending) len)" environment) 0)

@@ -59,3 +59,215 @@
             ((List empty) first))))))
 
 (define gel-rows (GelRows new))
+
+(define-class GelMirrors
+  (fields)
+  (methods
+    (of (value Mirror) Mirror
+      value)
+
+    (of (type T)
+      (value T)
+      Mirror
+      (Mirror of value))))
+
+(define gel-mirrors (GelMirrors new))
+
+(define-class GelListValues
+  (fields
+    (items (List Mirror)))
+  (methods))
+
+(define-methods List
+  (methods
+    (gel-values () GelListValues
+      (GelListValues new
+        (self map
+          (fn (value)
+            (gel-mirrors of value)))))))
+
+(define-class GelItemKey
+  (fields
+    (index Int)
+    (text String))
+  (methods))
+
+(define-class GelItemKeys
+  (fields
+    (items (List GelItemKey)))
+  (methods
+    (len () Int
+      ((self items) len))
+
+    (select (index Int) GelItemKey
+      ((self items) fold
+        ((self items) first)
+        (fn (found candidate)
+          (if ((candidate index) = index)
+              candidate
+              found))))
+
+    (index (text String) Int
+      ((self items) fold
+        0
+        (fn (found candidate)
+          (if ((candidate text) = text)
+              (candidate index)
+              found))))))
+
+(define gel-item-keys
+  (GelItemKeys new
+    (List of
+      (GelItemKey new 1 "a")
+      (GelItemKey new 2 "b")
+      (GelItemKey new 3 "c")
+      (GelItemKey new 4 "d")
+      (GelItemKey new 5 "e")
+      (GelItemKey new 6 "f")
+      (GelItemKey new 7 "g")
+      (GelItemKey new 8 "h")
+      (GelItemKey new 9 "i")
+      (GelItemKey new 10 "j")
+      (GelItemKey new 11 "k")
+      (GelItemKey new 12 "l")
+      (GelItemKey new 13 "m")
+      (GelItemKey new 14 "n")
+      (GelItemKey new 15 "o")
+      (GelItemKey new 16 "p")
+      (GelItemKey new 17 "r")
+      (GelItemKey new 18 "s")
+      (GelItemKey new 19 "t")
+      (GelItemKey new 20 "v")
+      (GelItemKey new 21 "w")
+      (GelItemKey new 22 "x")
+      (GelItemKey new 23 "y")
+      (GelItemKey new 24 "z"))))
+
+(define-class GelValueRow
+  (fields
+    (index Int)
+    (value Mirror)
+    (label String))
+  (methods
+    (key () String
+      ((gel-item-keys select (self index)) text))))
+
+(define-class GelValueRows
+  (fields
+    (items (List GelValueRow)))
+  (methods
+    (len () Int
+      ((self items) len))
+
+    (select (index Int) GelValueRow
+      ((self items) fold
+        ((self items) first)
+        (fn (found candidate)
+          (if ((candidate index) = index)
+              candidate
+              found))))))
+
+(define-class GelMenu
+  (constructors
+    (Messages (fields (rows (List GelRow))))
+    (Values (fields (rows GelValueRows))))
+  (methods))
+
+(define-class GelMenus
+  (fields)
+  (methods
+    (value-rows
+      (values GelListValues)
+      GelValueRows
+      (GelValueRows new
+        (((values items) fold
+            (List empty)
+            (fn (rows value)
+              (if ((rows len) < (gel-item-keys len))
+                  (rows cons
+                    (GelValueRow new
+                      ((rows len) + 1)
+                      value
+                      (value raw)))
+                  rows)))
+          reverse)))
+
+    (directory-values
+      (mirror Mirror)
+      (signature Signature)
+      GelValueRows
+      (mirror inv|o|ke signature))
+
+    (of
+      (mirror Mirror)
+      GelMenu
+      (let ((directory-signatures
+             ((mirror signatures) fold
+               (List empty)
+               (fn (matches signature)
+                 (if (((signature selector) name) = "gel-directory-values")
+                     (if (((signature params) len) = 0)
+                         (matches cons signature)
+                         matches)
+                     matches)))))
+        (if (directory-signatures empty?)
+            (let ((value-signatures
+                   ((mirror signatures) fold
+                     (List empty)
+                     (fn (matches signature)
+                       (if (((signature selector) name) = "gel-values")
+                           (if (((signature params) len) = 0)
+                               (matches cons signature)
+                               matches)
+                           matches)))))
+              (if (value-signatures empty?)
+                  (GelMenu Messages (gel-rows of mirror))
+                  (GelMenu Values
+                    (self value-rows
+                      (mirror inv|o|ke
+                        ((value-signatures reverse) first))))))
+            (GelMenu Values
+              (self directory-values
+                mirror
+                ((directory-signatures reverse) first))))))))
+
+(define gel-menus (GelMenus new))
+
+(define-class GelUp
+  (constructors
+    (Unavailable (fields))
+    (NoParent (fields))
+    (Parent (fields (value Mirror))))
+  (methods))
+
+(define-class GelUps
+  (fields)
+  (methods
+    (signatures
+      (mirror Mirror)
+      (List Signature)
+      ((mirror signatures) fold
+        (List empty)
+        (fn (matches signature)
+          (if (((signature selector) name) = "gel-up")
+              (if (((signature params) len) = 0)
+                  (matches cons signature)
+                  matches)
+              matches))))
+
+    (available? (mirror Mirror) Bool
+      (if ((self signatures mirror) empty?) #f #t))
+
+    (result
+      (mirror Mirror)
+      (signature Signature)
+      GelUp
+      (mirror inv|o|ke signature))
+
+    (of (mirror Mirror) GelUp
+      (let ((matches (self signatures mirror)))
+        (if (matches empty?)
+            (GelUp Unavailable)
+            (self result mirror ((matches reverse) first)))))))
+
+(define gel-ups (GelUps new))

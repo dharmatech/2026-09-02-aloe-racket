@@ -10,6 +10,11 @@
     (tos () Mirror
       ((self items) first))
 
+    (pop () GelStack
+      (if (((self items) len) <= 1)
+          self
+          (GelStack new ((self items) rest))))
+
     (push (value Mirror) GelStack
       (GelStack new
         ((self items) cons value)))

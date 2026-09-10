@@ -1,0 +1,2 @@
+(define gel-start-value
+  (List of "alpha" "beta" "gamma"))
