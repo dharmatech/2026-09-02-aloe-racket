@@ -214,3 +214,23 @@ nested live `File`, `Directory`, `SymbolicLink`, or `Other` objects. Live
 
 Decided: OO listing is `(dir entries)` returning `(List Item)` on a live
 `Directory` only. `Location` does not gain an `entries` message.
+
+## Gel directory surface (2026-09-09)
+
+Decided: the next Gel experiment is a focused directory browser hosted
+by Gel, using `lib/disk.aloe` objects. Children sit on the main screen
+with single-key item labels; `q`, Escape, and `u` are reserved command
+keys and never become item keys. Working design:
+`docs/gel-directory-surface.md` on `experiment/gel-directory-surface`.
+
+Rejected:
+
+- a standalone Git Menu clone in Aloe
+- expanding Gel as a generic framework (hooks, plugins, panes, keymaps)
+  before a daily application
+- a GelFS / gel-disk package that welds filesystem objects to Gel
+- command-then-picker as the first home view
+- two-key item addressing, multi-column TUI, apps/git/process keys,
+  and overflow paging in the first slice
+- a Forth return stack or stack-editing mode as a prerequisite
+- stack-pattern dispatch that lights commands from value combinations

@@ -5,6 +5,20 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
 do not replay rejected designs.
 
+## `experiment/gel-directory-surface`
+
+Stacked on `experiment/filesystem`. Working design:
+[`docs/gel-directory-surface.md`](gel-directory-surface.md).
+
+First Gel experiment after the OO disk library: a focused directory
+browser on Gel's stack. Not a workspace, not a GelFS framework, not
+checkpoints yet. Do not implement from the design file. Do not grow
+`lib/disk.aloe` unless that surface blocks. Checkpoint 107 remains the
+last required OO-filesystem slice.
+
+If the work is still filesystem vocabulary rather than Gel, stay on
+`experiment/filesystem` and ignore this section.
+
 ## `experiment/filesystem`
 
 Proposal B is implemented through checkpoint 95 and ratified into `SPEC.md`

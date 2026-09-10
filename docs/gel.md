@@ -225,12 +225,17 @@ No files, no processes, no git, no mouse, no Listener REPL, no
 cursor-addressed full screen unless `read-key` plus line printing is
 genuinely unusable.
 
-### Possible next vocabulary — exploratory
+### Possible next vocabulary — directory surface
 
-A future application may pressure Gel toward file-system or shell-like work.
-No capability split, selectors, crossing types, handles, object boundaries,
-navigation policy, or presentation policy has been accepted. Those decisions
-wait for concrete operations and tests.
+The first application pressure past `Point` is a focused directory
+browser. Working design (not yet checkpoints, not yet this file's law):
+[`docs/gel-directory-surface.md`](gel-directory-surface.md) on
+`experiment/gel-directory-surface`.
+
+That experiment may amend this file once a live `Directory` on the
+stack exists. Until then, v0 above still describes the Point sketch.
+Do not treat `gel/*.aloe` as frozen. Do not grow Gel into a workspace
+framework in order to list a folder.
 
 ### Later, same machine
 
