@@ -43,6 +43,7 @@
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
 (struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
+(struct string-class-type ([methods #:mutable]) #:transparent)
 (struct symbol-class-type () #:transparent)
 (struct mirror-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
@@ -61,7 +62,7 @@
         explicit-constructors?
         [methods #:mutable])
   #:transparent)
-(struct type-environment (bindings parent) #:transparent)
+(struct type-environment (bindings parent string-class) #:transparent)
 
 (define INT (int-type))
 (define FLOAT (float-type))
@@ -91,17 +92,23 @@
 (define (make-type-environment)
   (define list-element-parameter
     (parameter-type (gensym 'T) 'T))
+  (define string-class (string-class-type '()))
   (type-environment
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
                 (list-class-type list-element-parameter '()))
+          (cons 'String string-class)
           (cons 'Symbol (symbol-class-type))
           (cons 'Mirror (mirror-class-type))))
-   #f))
+   #f
+   string-class))
 
 (define (make-local-type-environment parent bindings)
-  (type-environment (make-hasheq bindings) parent))
+  (type-environment
+   (make-hasheq bindings)
+   parent
+   (type-environment-string-class parent)))
 
 (define (type-environment-bound? environment name)
   (cond
@@ -174,6 +181,7 @@
     [(class-type? resolved)
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
+    [(string-class-type? resolved) '(Class String)]
     [(symbol-class-type? resolved) '(Class Symbol)]
     [(mirror-class-type? resolved) '(Class Mirror)]
     [(function-type? resolved)
@@ -299,6 +307,9 @@
      resolved-left]
     [(and (list-class-type? resolved-left)
           (list-class-type? resolved-right))
+     resolved-left]
+    [(and (string-class-type? resolved-left)
+          (string-class-type? resolved-right))
      resolved-left]
     [(and (symbol-class-type? resolved-left)
           (symbol-class-type? resolved-right))
@@ -669,6 +680,19 @@
         method
         environment
         method-substitution))]
+    [(and (eq? target 'String) (string-class-type? target-type))
+     (define existing-methods (string-class-type-methods target-type))
+     ;; Match List: install every declaration before checking bodies so
+     ;; methods in one extension form may recurse and call one another.
+     (set-string-class-type-methods!
+      target-type
+      (append existing-methods methods))
+     (for ([method (in-list methods)])
+       (define method-substitution
+         (extend-method-substitution (make-hasheq) method #t))
+       (check-method-types! method environment method-substitution)
+       (check-method-body!
+        STRING method environment method-substitution))]
     [(class-type? target-type)
      (define class (class-type-class target-type))
      (define existing-methods (class-info-methods class))
@@ -1450,19 +1474,54 @@
   result-type)
 
 (define (infer-string-send selector arguments environment)
-  (unless (memq selector '(= append)) (unknown-message selector))
-  (unless (= (length arguments) 1)
-    (raise-type-error
-     "arity error for String ~a: expected 1 argument, got ~a"
+  (case selector
+    [(= append)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for String ~a: expected 1 argument, got ~a"
+        selector
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment STRING))
+     (unify-types!
+      argument-type
+      STRING
+      (format "String ~a expects a String argument" selector))
+     (if (eq? selector '=) BOOL STRING)]
+    [(len)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for String len: expected 0 arguments, got ~a"
+        (length arguments)))
+     INT]
+    [(take)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for String take: expected 1 argument, got ~a"
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment INT))
+     (unify-types!
+      argument-type INT "String take expects an Int argument")
+     STRING]
+    [else
+     (infer-defined-string-method selector arguments environment)]))
+
+(define (infer-defined-string-method selector arguments environment)
+  (define string-class (type-environment-string-class environment))
+  (define selected
+    (select-method-overload
+     (string-class-type-methods string-class)
      selector
-     (length arguments)))
-  (define argument-type
-    (infer-expression (car arguments) environment STRING))
-  (unify-types!
-   argument-type
-   STRING
-   (format "String ~a expects a String argument" selector))
-  (if (eq? selector '=) BOOL STRING))
+     arguments
+     environment
+     (make-hasheq)
+     'String))
+  (define method (method-match-method selected))
+  (type-from-sexpr
+   (method-declaration-return-type method)
+   environment
+   (method-match-substitution selected)))
 
 (define (infer-symbol-class-send selector arguments environment)
   (unless (eq? selector 'intern) (unknown-message selector))

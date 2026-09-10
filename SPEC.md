@@ -296,13 +296,15 @@ See section 3.1. Top-level only in 0.1.
 ### 4.6 `define-methods`
 
 ```
-(define-methods List
+(define-methods Target
   (methods
     (selector (param Type) ... ReturnType body)
     ...))
 ```
 
-Adds Aloe method bodies to the existing built-in `List` class. `T` denotes the list element type in these declarations.
+Adds Aloe method bodies to the existing built-in `List` or `String` class.
+For `List` declarations, `T` denotes the list element type. `String` has no
+class type parameter, so `T` is not implicitly in scope there.
 
 ### 4.7 Method / `fn` / `let` bodies
 
@@ -542,6 +544,23 @@ returning the ordinary Aloe result. The checker requires the first argument to
 be `Signature` and infers the remaining arguments normally; because it cannot
 know a signature variable's row, its result is the expected type when present
 and otherwise a fresh type variable.
+
+### 7.5 `String`
+
+`String` is a primitive type with these kernel messages:
+
+| Send | Meaning | Type |
+|---|---|---|
+| `(s = other)` | string equality | `Bool`, with `other : String` |
+| `(s append other)` | concatenation | `String`, with `other : String` |
+| `(s len)` | character count | `Int` |
+| `(s take n)` | prefix clamped to the string bounds | `String`, with `n : Int` |
+
+`take` returns `""` when `n <= 0`, all of `s` when `n` is at least its
+length, and otherwise its first `n` characters. `starts-with?` is an Aloe
+method defined in `lib/string.aloe` and installed in default environments,
+parallel to List's Aloe-defined `fold`, `reverse`, and `map`. The four kernel
+messages above remain primitive and take precedence during ordinary dispatch.
 
 ---
 

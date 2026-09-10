@@ -253,10 +253,14 @@ a time, still not a workspace or GelFS framework:
    their structural text.
 2. **Hidden names.** A home directory spends the whole 24-key page on
    dotfiles; `journal/` never appears. Paging does not fix that until
-   the user pages through `.cache` and friends. Prefer hiding names
-   that start with `.` by default, with a toggle. Do not spend a
-   top-level letter on that toggle if a non-letter command or a pushed
-   options object can own it.
+   the user pages through `.cache` and friends. Hide names that start
+   with `.` by default; idle `.` toggles them. String support is three
+   checkpoints, not a kernel `starts-with?`:
+   `docs/string-len-take-brief.md` (114: `len`, `take`,
+   `define-methods String`),
+   `docs/string-starts-with-library-brief.md` (115: `lib/string.aloe`),
+   then `docs/gel-directory-hidden-brief.md` (116). Do not combine
+   language and Gel in one checkpoint.
 3. **Paging.** Needed for `/etc`, `/usr/bin`, and any listing that is
    still long after dots are hidden. If `n` / `p` become page keys they
    must leave the item pool first (see the alphabet note above). Dumb

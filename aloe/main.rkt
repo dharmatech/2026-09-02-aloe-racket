@@ -29,11 +29,13 @@
 (define (make-type-environment)
   (define environment (make-raw-type-environment))
   (typecheck-program (list-library-expressions) environment)
+  (typecheck-program (string-library-expressions) environment)
   environment)
 
 (define (make-top-level-env)
   (define environment (make-runtime-environment))
   (eval-exprs (list-library-expressions) environment)
+  (eval-exprs (string-library-expressions) environment)
   (hash-set! runtime-type-environments
              environment
              (make-type-environment))
@@ -45,6 +47,7 @@
     [else
      (define type-environment (make-type-environment))
      (eval-exprs (list-library-expressions) environment)
+     (eval-exprs (string-library-expressions) environment)
      (hash-set! runtime-type-environments environment type-environment)
      type-environment]))
 

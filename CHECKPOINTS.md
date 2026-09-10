@@ -419,3 +419,15 @@ success, and reports both source datums and displayed values on failure.
 - `GelText.tos` renders live `Directory`, `File`, `SymbolicLink`, and `Other`
   values with their class and existing path text; every other TOS and all Gel
   menus and controls remain unchanged.
+
+## 114. [String `len` / `take` / `define-methods`](docs/checkpoints/0114-string-len-take.md)
+
+- Primitive `String` adds kernel `len` and clamped-prefix `take`; further
+  String behavior may be installed as Aloe methods with `define-methods
+  String`. Other primitives remain closed.
+
+## 115. [String `starts-with?` library](docs/checkpoints/0115-string-starts-with.md)
+
+- `lib/string.aloe` derives `starts-with?` from String `len`, `take`, and `=`;
+  default checked environments bootstrap it alongside the List library. No
+  new kernel message.

@@ -407,6 +407,9 @@
    "TOS: \"two\"\r\n"
    "1  =  1\r\n"
    "2  append  1\r\n"
+   "3  len  0\r\n"
+   "4  take  1\r\n"
+   "5  starts-with?  1\r\n"
    "\r\n"))
 
 (define point-pending-screen

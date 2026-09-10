@@ -234,3 +234,9 @@ Rejected:
   and overflow paging in the first slice
 - a Forth return stack or stack-editing mode as a prerequisite
 - stack-pattern dispatch that lights commands from value combinations
+
+## String kernel and library boundary (2026-09-10)
+
+Decided: `len` and `take` are the irreducible String kernel facts. Derived
+String behavior belongs in Aloe through `define-methods String`; this lifts
+String only, not every primitive.

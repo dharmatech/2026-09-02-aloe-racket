@@ -99,6 +99,11 @@
          target-class
          (append (list-class-object-methods target-class) methods))
         (set-list-class-object-environment! target-class environment)]
+       [(string-class-object? target-class)
+        (set-string-class-object-methods!
+         target-class
+         (append (string-class-object-methods target-class) methods))
+        (set-string-class-object-environment! target-class environment)]
        [(class-value? target-class)
         (set-class-value-methods!
          target-class
@@ -193,7 +198,7 @@
     [(boolean? receiver)
      (send-to-bool receiver selector arguments)]
     [(string? receiver)
-     (send-to-string receiver selector arguments)]
+     (send-to-string receiver selector arguments environment)]
     [(symbol-value? receiver)
      (send-to-symbol receiver selector arguments)]
     [(mirror-value? receiver)
@@ -311,7 +316,10 @@
     (list-class-object-methods (list-value-class value))
     substitution)))
 
-(define (value-signature-specs value)
+(define (string-class-for environment)
+  (and environment (env-string-class environment)))
+
+(define (value-signature-specs value [environment #f])
   (cond
     [(exact-integer? value)
      (list (signature-spec '+ '(Int) 'Int)
@@ -338,8 +346,17 @@
     [(boolean? value)
      (list (signature-spec 'if '((-> T) (-> T)) 'T))]
     [(string? value)
-     (list (signature-spec '= '(String) 'Bool)
-           (signature-spec 'append '(String) 'String))]
+     (append
+      (list (signature-spec '= '(String) 'Bool)
+            (signature-spec 'append '(String) 'String)
+            (signature-spec 'len '() 'Int)
+            (signature-spec 'take '(Int) 'String))
+      (let ([class (string-class-for environment)])
+        (if class
+            (methods->signature-specs
+             (string-class-object-methods class)
+             (make-hasheq))
+            '())))]
     [(symbol-value? value)
      (list (signature-spec 'name '() 'String)
            (signature-spec '= '(Symbol) 'Bool))]
@@ -376,9 +393,10 @@
            (signature-spec 'accepts? '(Mirror) 'Bool))]
     [else '()]))
 
-(define (value-selector-names value)
+(define (value-selector-names value [environment #f])
   (remove-duplicates
-   (map signature-spec-selector (value-signature-specs value))
+   (map signature-spec-selector
+        (value-signature-specs value environment))
    eq?))
 
 (define (make-type-data-list class elements)
@@ -396,7 +414,7 @@
     [else
      (error 'eval-aloe "cannot reify type datum: ~a" datum)]))
 
-(define (signature-type-parameters subject row-index)
+(define (signature-type-parameters subject row-index [environment #f])
   (cond
     [(instance-value? subject)
      (define class (instance-value-class subject))
@@ -414,6 +432,13 @@
           (list-ref
            (list-class-object-methods (list-value-class subject))
            method-index)))]
+    [(string? subject)
+     (define method-index (- row-index 4))
+     (define class (string-class-for environment))
+     (if (or (negative? method-index) (not class))
+         '()
+         (method-declaration-type-parameters
+          (list-ref (string-class-object-methods class) method-index)))]
     [(class-value? subject) (class-value-type-parameters subject)]
     [(boolean? subject) '(T)]
     [(function-value? subject) '(T U)]
@@ -442,7 +467,7 @@
      #f]
     [else (same-runtime-type? left right)]))
 
-(define (signature-spec->value class subject spec row-index)
+(define (signature-spec->value class subject spec row-index environment)
   (signature-value
    (intern-symbol (symbol->string (signature-spec-selector spec)))
    (make-type-data-list
@@ -455,7 +480,7 @@
    row-index
    (signature-spec-parameters spec)
    (signature-spec-return spec)
-   (signature-type-parameters subject row-index)))
+   (signature-type-parameters subject row-index environment)))
 
 (define (send-to-mirror receiver selector arguments [environment #f])
   (define class (mirror-value-list-class receiver))
@@ -468,7 +493,8 @@
       (map intern-symbol
            (map symbol->string
                 (value-selector-names
-                 (mirror-value-subject receiver)))))]
+                 (mirror-value-subject receiver)
+                 environment))))]
     [(signatures)
      (unless (null? arguments)
        (arity-error "Mirror signatures" 0 (length arguments)))
@@ -477,10 +503,11 @@
       (for/list ([spec
                   (in-list
                    (value-signature-specs
-                    (mirror-value-subject receiver)))]
+                    (mirror-value-subject receiver)
+                    environment))]
                  [row-index (in-naturals)])
         (signature-spec->value
-         class (mirror-value-subject receiver) spec row-index)))]
+         class (mirror-value-subject receiver) spec row-index environment)))]
     [(invoke) (invoke-with-signature receiver arguments environment)]
     [(subject)
      (unless (null? arguments)
@@ -606,7 +633,8 @@
   result)
 
 (define (invoke-signature-row subject row-index arguments environment)
-  (define spec (list-ref (value-signature-specs subject) row-index))
+  (define spec
+    (list-ref (value-signature-specs subject environment) row-index))
   (define selector (signature-spec-selector spec))
   (cond
     [(instance-value? subject)
@@ -645,7 +673,17 @@
     [(boolean? subject)
      (send-to-bool subject selector arguments)]
     [(string? subject)
-     (send-to-string subject selector arguments)]
+     (if (< row-index 4)
+         (send-to-string subject selector arguments environment)
+         (let ([class (string-class-for environment)])
+           (unless class (unknown-message selector))
+           (apply-string-method
+            subject
+            class
+            (list-ref
+             (string-class-object-methods class)
+             (- row-index 4))
+            arguments)))]
     [(symbol-value? subject)
      (send-to-symbol subject selector arguments)]
     [(host-receiver? subject)
@@ -836,7 +874,10 @@
     [(list-value? value)
      (runtime-list-type (list-value-element-type value))]
     [(function-value? value) 'Fn]
-    [(or (class-value? value) (list-class-object? value)) 'Class]
+    [(or (class-value? value)
+         (list-class-object? value)
+         (string-class-object? value))
+     'Class]
     [else 'Object]))
 
 (define (same-runtime-type? left right)
@@ -1235,7 +1276,7 @@
                   'call
                   '()))
 
-(define (send-to-string receiver selector arguments)
+(define (send-to-string receiver selector arguments [environment #f])
   (case selector
     [(=)
      (unless (= (length arguments) 1)
@@ -1251,7 +1292,50 @@
      (unless (string? argument)
        (error 'eval-aloe "String append expects a String argument"))
      (string-append receiver argument)]
-    [else (unknown-message selector)]))
+    [(len)
+     (unless (null? arguments)
+       (arity-error "String len" 0 (length arguments)))
+     (string-length receiver)]
+    [(take)
+     (unless (= (length arguments) 1)
+       (arity-error "String take" 1 (length arguments)))
+     (define argument (car arguments))
+     (unless (exact-integer? argument)
+       (error 'eval-aloe "String take expects an Int argument"))
+     (substring receiver
+                0
+                (min (max argument 0) (string-length receiver)))]
+    [else (send-to-string-method receiver selector arguments environment)]))
+
+(define (send-to-string-method receiver selector arguments environment)
+  (define class (string-class-for environment))
+  (unless class (unknown-message selector))
+  (define selected
+    (select-runtime-method
+     (string-class-object-methods class)
+     selector
+     arguments
+     'String
+     (lambda (method)
+       (method-arguments-specificity method arguments (make-hasheq)))))
+  (apply-string-method
+   receiver class (runtime-method-match-method selected) arguments))
+
+(define (apply-string-method receiver class method arguments)
+  (define parameters (method-declaration-parameters method))
+  (unless (= (length parameters) (length arguments))
+    (arity-error
+     (format "String method ~a" (method-declaration-selector method))
+     (length parameters)
+     (length arguments)))
+  (define bindings
+    (cons (cons 'self receiver)
+          (for/list ([parameter (in-list parameters)]
+                     [argument (in-list arguments)])
+            (cons (parameter-declaration-name parameter) argument))))
+  (eval-expr
+   (method-declaration-body method)
+   (make-local-env (string-class-object-environment class) bindings)))
 
 (define (number-argument kind selector arguments expected-kind?)
   (unless (= (length arguments) 1)
@@ -1288,6 +1372,7 @@
     [(string? value) (format "~s" value)]
     [(symbol-value? value)
      (format "#<Symbol ~a>" (symbol-value-name value))]
+    [(string-class-object? value) "#<class String>"]
     [(symbol-class-object? value) "#<class Symbol>"]
     [(mirror-class-object? value) "#<class Mirror>"]
     [(mirror-value? value) "#<Mirror>"]
