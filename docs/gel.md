@@ -208,8 +208,13 @@ and invalid or out-of-range keys are no-ops.
 Menu and TOS text share the Aloe `GelText` service. `(gel-text menu value)`
 emits one indexed selector/arity line per reflected row, with overloads for
 ordinary values, exact mirrors, and `GelStep` state. `(gel-text tos stack)`
-emits `"TOS: "` plus the top mirror's raw subject text. From the project
-directory, launch the Point application through the thin TTY skin with
+emits `"TOS: "` plus the top mirror's raw subject text unless an exact private
+zero-argument `gel-tos-text` signature is present. The Directory adapter adds
+that signature to live `Directory`, `File`, `SymbolicLink`, and `Other`
+objects; `GelText` invokes the owned row through the same mirror with an exact
+`String` result, rendering the class and escaped existing path while keeping
+the selector out of the derived menu. From the project directory, launch the
+Point application through the thin TTY skin with
 `racket host/racket/gel-run.rkt examples/gel-point.aloe` (after installing the
 optional `tui-term` package). Press the displayed digit for `x` to push its
 value, and `q` to leave with the terminal restored.

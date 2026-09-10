@@ -12,7 +12,8 @@ Stacked on `experiment/filesystem`. Working design:
 
 First Gel experiment after the OO disk library: a focused directory
 browser on Gel's stack. Not a workspace and not a GelFS framework.
-Checkpoints 108–112 complete the first focused live Directory slice. The
+Checkpoints 108–113 complete the first focused live Directory slice and its
+path-focused TOS presentation. The
 Term-only runner still launches ordinary Aloe applications. The separate
 filesystem-capable runner starts `examples/gel-directory.aloe` at the
 process's live current directory:
@@ -24,6 +25,9 @@ racket host/racket/gel-directory-run.rkt examples/gel-directory.aloe
 A Directory TOS shows up to 24 immediate children with filesystem labels;
 selection pushes the nested live object, `u` pushes its live parent, and
 Escape pops history. `q` still quits, and pending input behavior is unchanged.
+Live `Directory`, `File`, `SymbolicLink`, and `Other` TOS lines show the class
+and escaped absolute path while their structural `Mirror.raw` values remain
+unchanged.
 The authored adapter lives under `gel/`; `lib/disk.aloe` remains Gel-ignorant.
 Do not implement later steps from the design file without another checkpoint.
 
@@ -97,13 +101,15 @@ only through explicit typed capabilities.
   same value-row shape with `name`, `name/`, and `name@` labels, preserving
   live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. `u` asks only
   a Directory for its live parent and pushes it, so Escape and up are
-  observably different. Reflected menus and pending input retain their digit
-  behavior.
+  observably different. Those four live disk classes render on TOS with their
+  class and existing escaped absolute path through a private Gel selector;
+  other values and `Mirror.raw` retain their structural text. Reflected menus
+  and pending input retain their digit behavior.
 - Typed host capabilities use descriptor-defined interfaces shared by runtime
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 112 are green on
+- Tests through checkpoint 113 are green on
   `experiment/gel-directory-surface`. `Option` is loadable from
   `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
@@ -188,8 +194,10 @@ reading or Gel filesystem UI. Option remains loadable rather than bootstrapped,
 default drivers still have no `fs-host`, and constructors are not merged to
 `main`.
 
-The first live Directory presentation is complete. The current screen observes
-the host when it constructs a menu and exposes only the first 24 children.
+The first live Directory presentation is complete. Its TOS line now shows the
+live object's class and escaped absolute path without changing structural
+reflection. The current screen observes the host when it constructs a menu
+and exposes only the first 24 children.
 Remaining pressure is overflow navigation or search, a persistent per-TOS
 listing snapshot with explicit refresh, and additional stack rendering that
 makes history visible. No paging, search, persistent snapshot, refresh key, or

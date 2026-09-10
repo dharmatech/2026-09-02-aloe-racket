@@ -243,9 +243,45 @@ Hand check for the live slice: from the project directory, enter
 - **`File` surface.** Derived menu is enough. No edit, no pager, no
   text reading.
 
-Follow-up pressure now belongs to overflow/paging or search, persistent menu
-snapshots and refresh, and showing enough stack history to make back versus up
-visible. None is implemented by checkpoint 112.
+Follow-up pressure is recorded from first live use (2026-09-10), not from
+the original five-item progression. Ranked next, still one checkpoint at
+a time, still not a workspace or GelFS framework:
+
+1. **Implemented in checkpoint 113: TOS path text.** The live screen now
+   prints `#<Directory "/home/dharmatech">` through a private Gel adapter;
+   no keys or public disk messages changed, and non-disk TOS values retain
+   their structural text.
+2. **Hidden names.** A home directory spends the whole 24-key page on
+   dotfiles; `journal/` never appears. Paging does not fix that until
+   the user pages through `.cache` and friends. Prefer hiding names
+   that start with `.` by default, with a toggle. Do not spend a
+   top-level letter on that toggle if a non-letter command or a pushed
+   options object can own it.
+3. **Paging.** Needed for `/etc`, `/usr/bin`, and any listing that is
+   still long after dots are hidden. If `n` / `p` become page keys they
+   must leave the item pool first (see the alphabet note above). Dumb
+   transcript paging, not the sliding armed window.
+4. **Search `/`.** Jump in a huge listing. `/` is not in the letter
+   pool, so it does not steal an item key. Do not implement before
+   paging unless use shows jump-to-name hurting more than next-page.
+
+Parked, still wanted:
+
+- **Home / root jumps.** Useful. `~` is not an item letter and can be
+  home without a submenu. Root must not fight `/` if `/` is search.
+  Infrequent jumps may instead live on a small object pushed by one
+  extra command key. That is TOS-as-mode, not a menu framework.
+- **Options object.** A pushed object with toggle-hidden, maybe home
+  and root, then Escape back. Allowed later. Do not build a general
+  bottom-chrome menu system, keymap, or plugin table to get a hidden
+  toggle.
+- **Armed window / multi-column.** Still a redrawing TUI skin after
+  paging exists.
+- **Color / AS400-style TUI.** A skin over Gel events. Do not put ANSI
+  in `Directory` or `lib/disk.aloe`. Pretty colors on the current TOS
+  printer and 24-dotfile wall would not make it feel finished.
+- **Visible stack levels.** Still wanted so Escape vs `u` is obvious.
+  TOS path text first.
 
 ## 9. Non-goals and deferred
 

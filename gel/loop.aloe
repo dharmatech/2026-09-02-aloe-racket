@@ -99,8 +99,24 @@
           append arity-text)
          append "\r\n")))
 
+    (message-rows
+      (rows (List GelRow))
+      (List GelRow)
+      ((rows fold
+          (List empty)
+          (fn (visible row)
+            (if (((row selector) name) = "gel-tos-text")
+                visible
+                (visible cons
+                  (GelRow new
+                    ((visible len) + 1)
+                    (row selector)
+                    (row arity)
+                    (row signature))))))
+        reverse))
+
     (rows-text (rows (List GelRow)) String
-      (rows fold ""
+      ((self message-rows rows) fold ""
         (fn (text row)
           (text append (self line row)))))
 
@@ -173,11 +189,33 @@
       String
       (self menu (Mirror of value)))
 
+    (tos-result
+      (top Mirror)
+      (signature Signature)
+      String
+      (top inv|o|ke signature))
+
+    (tos-mirror
+      (top Mirror)
+      String
+      (let ((matches
+             ((top signatures) fold
+               (List empty)
+               (fn (found signature)
+                 (if (((signature selector) name) = "gel-tos-text")
+                     (if (((signature params) len) = 0)
+                         (found cons signature)
+                         found)
+                     found)))))
+        (if (matches empty?)
+            (top raw)
+            (self tos-result top ((matches reverse) first)))))
+
     (tos
       (stack GelStack)
       String
       (let ((top (stack tos)))
-        ("TOS: " append (top raw))))))
+        ("TOS: " append (self tos-mirror top))))))
 
 (define gel-text (GelText new))
 
@@ -225,7 +263,7 @@
       GelStep
       (menu case
         (Messages (rows)
-          (self handle-messages rows key))
+          (self handle-messages (gel-text message-rows rows) key))
         (Values (rows)
           (self handle-values rows key))))
 

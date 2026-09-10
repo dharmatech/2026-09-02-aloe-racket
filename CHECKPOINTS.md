@@ -413,3 +413,9 @@ success, and reports both source datums and displayed values on failure.
   through the shared item-key pool; `u` pushes the live parent while Escape
   remains stack back. A separate application runner injects `term` and
   `fs-host`; the ordinary Gel runner and disk library remain unchanged.
+
+## 113. [Gel Directory TOS path text](docs/checkpoints/0113-gel-directory-tos.md)
+
+- `GelText.tos` renders live `Directory`, `File`, `SymbolicLink`, and `Other`
+  values with their class and existing path text; every other TOS and all Gel
+  menus and controls remain unchanged.

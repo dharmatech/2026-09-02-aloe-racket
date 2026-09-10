@@ -52,6 +52,9 @@
 
 (define-methods Directory
   (methods
+    (gel-tos-text () String
+      (("#<Directory " append ((Mirror of (self text)) raw)) append ">"))
+
     (gel-directory-values () GelValueRows
       (let ((items (self entries)))
         (gel-directory-rows of
@@ -72,3 +75,18 @@
         (None () (GelUp NoParent))
         (Some (parent)
           (GelUp Parent (Mirror of parent)))))))
+
+(define-methods File
+  (methods
+    (gel-tos-text () String
+      (("#<File " append ((Mirror of (self text)) raw)) append ">"))))
+
+(define-methods SymbolicLink
+  (methods
+    (gel-tos-text () String
+      (("#<SymbolicLink " append ((Mirror of (self text)) raw)) append ">"))))
+
+(define-methods Other
+  (methods
+    (gel-tos-text () String
+      (("#<Other " append ((Mirror of (self text)) raw)) append ">"))))
