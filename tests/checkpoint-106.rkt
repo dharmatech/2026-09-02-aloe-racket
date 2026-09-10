@@ -276,19 +276,6 @@
 (test-case "entries and manager inspect remain outside this checkpoint"
   (define state (make-double-state))
   (check-exn
-   #rx"unknown message: entries"
-   (lambda ()
-     (driver-eval!
-      state
-      '(((fs current) inspect) case
-         (None () "missing")
-         (Some (item)
-           (item case
-             (File (file) "file")
-             (Directory (directory) (directory entries))
-             (SymbolicLink (link) "symlink")
-             (Other (thing) "other")))))))
-  (check-exn
    #rx"unknown message: inspect"
    (lambda ()
      (driver-eval! state '(fs inspect)))))

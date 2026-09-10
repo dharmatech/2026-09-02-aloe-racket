@@ -4,7 +4,7 @@
 
 **Depends on.** Checkpoint 106 (`inspect` and live `Item`)
 
-**Status.** Ready to implement
+**Status.** Complete (reviewed 2026-09-09 on `experiment/filesystem`)
 
 ## Goal
 

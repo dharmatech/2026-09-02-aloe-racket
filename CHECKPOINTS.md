@@ -373,3 +373,9 @@ success, and reports both source datums and displayed values on failure.
   live `File` / `Directory` / `SymbolicLink` / `Other`. Live `parent`
   is `(Option Directory)` and does not follow symlinks. No
   `Directory.entries`.
+
+## 107. [Directory.entries](docs/checkpoints/0107-directory-entries.md)
+
+- Live `Directory.entries` returns mixed `(List Item)` via host
+  `names` then `child` + `inspect`. Vanished names are omitted.
+  No `(here entries)`. Thin `lib/fs.aloe` unchanged.

@@ -1,8 +1,9 @@
 # Object-oriented filesystem vocabulary
 
-**Status.** Locked vocabulary; `Disk`, `Location`, `inspect`, `Item`, and the
-live classes are implemented through checkpoint 106. `Directory.entries`
-remains unimplemented. `SPEC.md` remains law. Thin vocabulary in
+**Status.** Locked vocabulary; `Disk`, `Location`, `inspect`, `Item`, live
+classes, and `Directory.entries` are implemented through checkpoint 107.
+`Location.entries` / `(here entries)` and `enter` remain later work. `SPEC.md`
+remains law. Thin vocabulary in
 [`docs/filesystem-vocabulary.md`](filesystem-vocabulary.md) is unchanged.
 
 Checkpoint-manager brief:

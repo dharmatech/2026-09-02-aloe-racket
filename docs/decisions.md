@@ -209,3 +209,8 @@ Decided: `Location.inspect` returns `(Option Item)` whose constructors carry
 nested live `File`, `Directory`, `SymbolicLink`, or `Other` objects. Live
 `parent` returns `(Option Directory)` and does not follow symbolic links;
 `text` remains a field on `Location`.
+
+## Live directory listings (2026-09-09)
+
+Decided: OO listing is `(dir entries)` returning `(List Item)` on a live
+`Directory` only. `Location` does not gain an `entries` message.

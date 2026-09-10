@@ -9,6 +9,7 @@
 
 (define-runtime-path fs-library-path "../lib/fs.aloe")
 (define-runtime-path worksheet-path "../archive/fs-worksheet.aloe")
+(define-runtime-path disk-worksheet-path "../archive/disk-worksheet.aloe")
 (define-runtime-path project-path "..")
 
 (define (call-with-temporary-directory procedure)
@@ -21,8 +22,8 @@
      (when (directory-exists? directory)
        (delete-directory/files directory)))))
 
-(define (eval-worksheet-cells! state)
-  (call-with-input-file worksheet-path
+(define (eval-worksheet-cells! state path)
+  (call-with-input-file path
     (lambda (input)
       (let loop ()
         (define datum (read input))
@@ -59,7 +60,18 @@
   (parameterize ([current-directory project-path])
     (check-not-exn
      (lambda ()
-       (eval-worksheet-cells! state))))
+       (eval-worksheet-cells! state worksheet-path))))
   (check-true (driver-eval! state '(library-inspection present?)))
   (check-true (positive? (driver-eval! state '(cwd-entries len))))
   (check-true (positive? (driver-eval! state '(archive-entries len)))))
+
+(test-case "object-oriented disk worksheet evaluates cell by cell"
+  (define state (make-driver))
+  (driver-inject-host! state 'fs-host (make-fs-receiver))
+  (parameterize ([current-directory project-path])
+    (check-not-exn
+     (lambda ()
+       (eval-worksheet-cells! state disk-worksheet-path))))
+  (check-true (driver-eval! state '(cwd-inspection present?)))
+  (check-true (driver-eval! state '(library-inspection present?)))
+  (check-true (driver-eval! state '(archive-inspection present?))))

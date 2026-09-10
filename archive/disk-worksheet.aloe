@@ -1,0 +1,259 @@
+;; Aloe object-oriented filesystem worksheet
+;;
+;; From the repository root, start the filesystem-enabled REPL:
+;;
+;;   racket host/racket/fs-repl.rkt
+;;
+;; Then put the cursor immediately after any complete expression and press F8.
+;; Evaluate the two setup expressions first; the remaining cells can be sent
+;; independently in any order after their named values have been defined.
+
+(load "lib/disk.aloe")
+
+(define disk (Disk new fs-host))
+
+
+;; Locations carry their host and answer their own path questions.
+
+(define cwd (disk current))
+
+(cwd text)
+
+(cwd name)
+
+((cwd parent) case
+  (None () "/")
+  (Some (location) (location text)))
+
+(define library-location (disk at "lib/disk.aloe"))
+
+(library-location text)
+
+(library-location name)
+
+((library-location parent) case
+  (None () "/")
+  (Some (location) (location text)))
+
+(define archive-location (cwd child "archive"))
+
+(archive-location text)
+
+(archive-location name)
+
+
+;; A Location does not promise existence. Inspection returns Option Item.
+
+(define missing-location
+  (cwd child "__aloe_disk_worksheet_missing__"))
+
+(missing-location text)
+
+((missing-location inspect) present?)
+
+((missing-location inspect) case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) "file")
+      (Directory (directory) "directory")
+      (SymbolicLink (link) "symlink")
+      (Other (thing) (thing kind)))))
+
+
+;; Item is the closed classification. Each branch contains a live object.
+
+(define cwd-inspection (cwd inspect))
+
+(cwd-inspection present?)
+
+(cwd-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) "file")
+      (Directory (directory) "directory")
+      (SymbolicLink (link) "symlink")
+      (Other (thing) (thing kind)))))
+
+(define library-inspection (library-location inspect))
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) "file")
+      (Directory (directory) "directory")
+      (SymbolicLink (link) "symlink")
+      (Other (thing) (thing kind)))))
+
+;; Live objects forward name and text to their Location.
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) (file name))
+      (Directory (directory) (directory name))
+      (SymbolicLink (link) (link name))
+      (Other (thing) (thing name)))))
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) (file text))
+      (Directory (directory) (directory text))
+      (SymbolicLink (link) (link text))
+      (Other (thing) (thing text)))))
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) ((file location) text))
+      (Directory (directory) ((directory location) text))
+      (SymbolicLink (link) ((link location) text))
+      (Other (thing) ((thing location) text)))))
+
+;; A live object's child remains a Location, whether or not it exists.
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) ((file child "imaginary") text))
+      (Directory (directory) ((directory child "imaginary") text))
+      (SymbolicLink (link) ((link child "imaginary") text))
+      (Other (thing) ((thing child "imaginary") text)))))
+
+;; Reinspection asks the disk again through the carried Location.
+
+(library-inspection case
+  (None () #f)
+  (Some (item)
+    (item case
+      (File (file) ((file inspect) present?))
+      (Directory (directory) ((directory inspect) present?))
+      (SymbolicLink (link) ((link inspect) present?))
+      (Other (thing) ((thing inspect) present?)))))
+
+
+;; Location parent is path algebra. Live parent is Option Directory.
+
+(library-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file)
+        ((file parent) case
+          (None () "/")
+          (Some (directory) (directory text))))
+      (Directory (directory)
+        ((directory parent) case
+          (None () "/")
+          (Some (parent) (parent text))))
+      (SymbolicLink (link)
+        ((link parent) case
+          (None () "/")
+          (Some (directory) (directory text))))
+      (Other (thing)
+        ((thing parent) case
+          (None () "/")
+          (Some (directory) (directory text)))))))
+
+(define archive-inspection (archive-location inspect))
+
+(archive-inspection case
+  (None () "missing")
+  (Some (item)
+    (item case
+      (File (file) "file")
+      (Directory (directory)
+        ((directory parent) case
+          (None () "/")
+          (Some (parent) (parent text))))
+      (SymbolicLink (link) "symlink")
+      (Other (thing) (thing kind)))))
+
+
+;; Only a live Directory lists. The result is a homogeneous (List Item).
+
+(cwd-inspection case
+  (None () -1)
+  (Some (item)
+    (item case
+      (File (file) -1)
+      (Directory (directory) ((directory entries) len))
+      (SymbolicLink (link) -1)
+      (Other (thing) -1))))
+
+;; Map each Item to the name of its nested live object.
+
+(cwd-inspection case
+  (None () (List of "missing"))
+  (Some (item)
+    (item case
+      (File (file) (List of "not a directory"))
+      (Directory (directory)
+        ((directory entries) map
+          (fn (child)
+            (child case
+              (File (file) (file name))
+              (Directory (directory) (directory name))
+              (SymbolicLink (link) (link name))
+              (Other (thing) (thing name))))))
+      (SymbolicLink (link) (List of "not a directory"))
+      (Other (thing) (List of "not a directory")))))
+
+;; Or map each Item to its closed kind classification.
+
+(cwd-inspection case
+  (None () (List of "missing"))
+  (Some (item)
+    (item case
+      (File (file) (List of "not a directory"))
+      (Directory (directory)
+        ((directory entries) map
+          (fn (child)
+            (child case
+              (File (file) "file")
+              (Directory (directory) "directory")
+              (SymbolicLink (link) "symlink")
+              (Other (thing) (thing kind))))))
+      (SymbolicLink (link) (List of "not a directory"))
+      (Other (thing) (List of "not a directory")))))
+
+(archive-inspection case
+  (None () (List of "missing"))
+  (Some (item)
+    (item case
+      (File (file) (List of "not a directory"))
+      (Directory (directory)
+        ((directory entries) map
+          (fn (child)
+            (child case
+              (File (file) (file name))
+              (Directory (directory) (directory name))
+              (SymbolicLink (link) (link name))
+              (Other (thing) (thing name))))))
+      (SymbolicLink (link) (List of "not a directory"))
+      (Other (thing) (List of "not a directory")))))
+
+
+;; Boundary experiments: remove the leading semicolons and evaluate one at a
+;; time. Locations and live files do not list, and forging a Directory around
+;; a file Location reaches the host's directory check.
+;;
+;; (cwd entries)
+;;
+;; (library-inspection case
+;;   (None () "missing")
+;;   (Some (item)
+;;     (item case
+;;       (File (file) (file entries))
+;;       (Directory (directory) "directory")
+;;       (SymbolicLink (link) "symlink")
+;;       (Other (thing) "other"))))
+;;
+;; ((Directory new library-location) entries)

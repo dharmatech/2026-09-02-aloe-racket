@@ -165,7 +165,17 @@
 (define-methods Directory
   (methods
     (inspect () (Option (Item H))
-      ((self location) inspect))))
+      ((self location) inspect))
+
+    (entries () (List (Item H))
+      (((((self location) host) names ((self location) text))
+        fold
+        (List empty)
+        (fn (acc name)
+          (((self child name) inspect) case
+            (None () acc)
+            (Some (item) (acc cons item)))))
+       reverse))))
 
 (define-methods SymbolicLink
   (methods
