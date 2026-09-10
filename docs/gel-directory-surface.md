@@ -251,20 +251,20 @@ a time, still not a workspace or GelFS framework:
    prints `#<Directory "/home/dharmatech">` through a private Gel adapter;
    no keys or public disk messages changed, and non-disk TOS values retain
    their structural text.
-2. **Hidden names.** A home directory spends the whole 24-key page on
-   dotfiles; `journal/` never appears. Paging does not fix that until
-   the user pages through `.cache` and friends. Hide names that start
-   with `.` by default; idle `.` toggles them. String support is three
-   checkpoints, not a kernel `starts-with?`:
+2. **Implemented in checkpoint 116: hidden names.** A live Directory now hides
+   names that start with `.` before the 24-row cap by default; idle `.`
+   persistently toggles them and reports the next toggle in the menu. String
+   support arrived as three checkpoints, not a kernel `starts-with?`:
    `docs/string-len-take-brief.md` (114: `len`, `take`,
    `define-methods String`),
    `docs/string-starts-with-library-brief.md` (115: `lib/string.aloe`),
    then `docs/gel-directory-hidden-brief.md` (116). Do not combine
    language and Gel in one checkpoint.
 3. **Paging.** Needed for `/etc`, `/usr/bin`, and any listing that is
-   still long after dots are hidden. If `n` / `p` become page keys they
-   must leave the item pool first (see the alphabet note above). Dumb
-   transcript paging, not the sliding armed window.
+   still long after dots are hidden. Checkpoint-manager brief:
+   `docs/gel-directory-paging-brief.md` (117). `n` / `p` leave the item
+   pool; dumb transcript pages; reset page on push/pop/`u`/hidden
+   toggle. Not the sliding armed window. Not List paging. Not search.
 4. **Search `/`.** Jump in a huge listing. `/` is not in the letter
    pool, so it does not steal an item key. Do not implement before
    paging unless use shows jump-to-name hurting more than next-page.

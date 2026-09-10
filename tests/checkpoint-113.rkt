@@ -40,7 +40,8 @@
    "c  link@\r\n"
    "d  pipe\r\n"
    "\r\n"
-   "u  up\r\n"))
+   "u  up\r\n"
+   ".  show hidden\r\n"))
 
 (define (driver-type-datum state datum)
   (type->datum

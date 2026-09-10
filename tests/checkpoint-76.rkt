@@ -81,7 +81,7 @@
   (typecheck-source
    #<<ALOE
 (define state
-  (GelStep new (gel-empty-stack push 10) #f (List empty) 0 #f))
+  (GelStep new (gel-empty-stack push 10) #f (List empty) 0 #f #f))
 (state handle-key "q")
 ALOE
    checker-environment))
@@ -123,7 +123,7 @@ ALOE
 (void (eval-source "(define int-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
-  "(define int-state (GelStep new int-stack #f (List empty) 0 #f))"
+  "(define int-state (GelStep new int-stack #f (List empty) 0 #f #f))"
   environment))
 (void
  (eval-source
@@ -176,7 +176,7 @@ ALOE
    "(define point-state "
    "  (GelStep new "
    "    ((gel-empty-stack push (Point new 1 2)) push point) "
-   "    #f (List empty) 0 #f))")
+   "    #f (List empty) 0 #f #f))")
   environment))
 (void
  (eval-source

@@ -8,7 +8,8 @@
     (quit Bool)
     (pending (List GelRow))
     (int-input Int)
-    (has-digits Bool))
+    (has-digits Bool)
+    (show-hidden Bool))
   (methods))
 
 (define-class GelKey
@@ -43,6 +44,9 @@
 
     (u|p|? () Bool
       ((self text) = "u"))
+
+    (hidden? () Bool
+      ((self text) = "."))
 
     (return? () Bool
       ((self text) = "return"))))
@@ -172,16 +176,28 @@
     ;; A stack TOS is already a Mirror. Its rows describe the subject, not
     ;; the Mirror reflection API itself.
     (menu (value Mirror) String
-      (let ((text (self menu-text (gel-menus of value))))
+      (self menu value #f))
+
+    (menu
+      (value Mirror)
+      (show-hidden Bool)
+      String
+      (let ((text (self menu-text (gel-menus of value show-hidden))))
         (if (gel-ups available? value)
-            (if (text = "")
-                "u  up\r\n"
-                ((text append "\r\n") append "u  up\r\n"))
+            (let ((commands
+                   (if (gel-menus directory? value)
+                       (if show-hidden
+                           "u  up\r\n.  hide hidden\r\n"
+                           "u  up\r\n.  show hidden\r\n")
+                       "u  up\r\n")))
+              (if (text = "")
+                  commands
+                  ((text append "\r\n") append commands)))
             text)))
 
     (menu (state GelStep) String
       (if ((state pending) empty?)
-          (self menu ((state stack) tos))
+          (self menu ((state stack) tos) (state show-hidden))
           (self pending-text state)))
 
     (menu (type T)
@@ -227,7 +243,8 @@
       GelStep
       (let ((index (key menu-index)))
         (if (index = 0)
-            (GelStep new (self stack) #f (List empty) 0 #f)
+            (GelStep new
+              (self stack) #f (List empty) 0 #f (self show-hidden))
             (let ((row (gel-rows select rows index)))
               (if ((row arity) = 0)
                   (GelStep new
@@ -235,10 +252,15 @@
                     #f
                     (List empty)
                     0
-                    #f)
+                    #f
+                    (self show-hidden))
                   (if ((row arity) = 1)
-                      (GelStep new (self stack) #f (List of row) 0 #f)
-                      (GelStep new (self stack) #f (List empty) 0 #f)))))))
+                      (GelStep new
+                        (self stack) #f (List of row) 0 #f
+                        (self show-hidden))
+                      (GelStep new
+                        (self stack) #f (List empty) 0 #f
+                        (self show-hidden))))))))
 
     (handle-values
       (rows GelValueRows)
@@ -255,7 +277,8 @@
                     #f
                     (List empty)
                     0
-                    #f))))))
+                    #f
+                    (self show-hidden)))))))
 
     (handle-menu
       (menu GelMenu)
@@ -279,26 +302,41 @@
             #f
             (List empty)
             0
-            #f))))
+            #f
+            (self show-hidden)))))
 
     (handle-idle
       (key GelKey)
       GelStep
       (if (key quit?)
-          (GelStep new (self stack) #t (List empty) 0 #f)
+          (GelStep new
+            (self stack) #t (List empty) 0 #f (self show-hidden))
           (if (key escape?)
               (GelStep new
                 ((self stack) pop)
                 #f
                 (List empty)
                 0
-                #f)
+                #f
+                (self show-hidden))
               (if (key u|p|?)
                   (self handle-up
                     (gel-ups of ((self stack) tos)))
-                  (self handle-menu
-                    (gel-menus of ((self stack) tos))
-                    key)))))
+                  (if (key hidden?)
+                      (if (gel-menus directory? ((self stack) tos))
+                          (GelStep new
+                            (self stack)
+                            #f
+                            (List empty)
+                            0
+                            #f
+                            (if (self show-hidden) #f #t))
+                          self)
+                      (self handle-menu
+                        (gel-menus of
+                          ((self stack) tos)
+                          (self show-hidden))
+                        key))))))
 
     (handle-int
       (row GelRow)
@@ -313,7 +351,8 @@
                 #f
                 (List empty)
                 0
-                #f)
+                #f
+                (self show-hidden))
               self)
           (let ((digit (key digit-value)))
             (if (digit < 0)
@@ -323,7 +362,8 @@
                   #f
                   (self pending)
                   (((self int-input) * 10) + digit)
-                  #t)))))
+                  #t
+                  (self show-hidden))))))
 
     (handle-pick
       (row GelRow)
@@ -345,15 +385,18 @@
                       #f
                       (List empty)
                       0
-                      #f)))))))
+                      #f
+                      (self show-hidden))))))))
 
     (handle-pending
       (key GelKey)
       GelStep
       (if (key quit?)
-          (GelStep new (self stack) #t (List empty) 0 #f)
+          (GelStep new
+            (self stack) #t (List empty) 0 #f (self show-hidden))
           (if (key escape?)
-              (GelStep new (self stack) #f (List empty) 0 #f)
+              (GelStep new
+                (self stack) #f (List empty) 0 #f (self show-hidden))
               (let ((row ((self pending) first)))
                 (if (row int-hole?)
                     (self handle-int row key)

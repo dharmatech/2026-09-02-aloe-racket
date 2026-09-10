@@ -9,7 +9,7 @@
       (stack GelStack)
       GelStack
       (self loop
-        (GelStep new stack #f (List empty) 0 #f)))
+        (GelStep new stack #f (List empty) 0 #f #f)))
 
     (start (type T)
       (value T)

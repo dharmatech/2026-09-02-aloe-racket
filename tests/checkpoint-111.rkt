@@ -323,7 +323,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-select-state
-      (GelStep new checkpoint-111-select-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-111-select-stack #f (List empty) 0 #f #f)))
 
   (for ([key (in-list item-keys)]
         [mirror-name (in-list mirror-names)]
@@ -363,7 +363,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-short-state
-      (GelStep new checkpoint-111-floor-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-111-floor-stack #f (List empty) 0 #f #f)))
   (for ([key
          (in-list
           '("0" "1" "9" "u" "A" "B" "/" "return" "left" "aa"
@@ -393,7 +393,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-history-state
-      (GelStep new checkpoint-111-history-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-111-history-stack #f (List empty) 0 #f #f)))
   (check-equal?
    (driver-eval!
     state
@@ -411,7 +411,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-point-state
-      (GelStep new checkpoint-111-point-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-111-point-stack #f (List empty) 0 #f #f)))
   (driver-eval!
    state
    '(define checkpoint-111-point-digit
@@ -437,7 +437,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-int-state
-      (GelStep new checkpoint-111-int-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-111-int-stack #f (List empty) 0 #f #f)))
   (driver-eval!
    state
    '(define checkpoint-111-int-digit
@@ -485,6 +485,7 @@
         #f
         (List of checkpoint-111-point-plus)
         0
+        #f
         #f)))
   (check-eq?
    (driver-eval! state '(checkpoint-111-pick-pending handle-key "a"))
@@ -524,6 +525,7 @@
         #f
         (List of checkpoint-111-int-plus)
         0
+        #f
         #f)))
   (check-eq?
    (driver-eval! state '(checkpoint-111-int-pending handle-key "b"))
@@ -563,6 +565,7 @@
         #f
         (List empty)
         0
+        #f
         #f)))
   (driver-eval!
    state

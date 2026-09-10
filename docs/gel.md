@@ -63,10 +63,11 @@ One stack of values. Top of stack (TOS) is the active object.
    use a fixed position-bound lowercase letter pool with `q` and `u` omitted.
    Choosing a row pushes that exact value mirror; paging and search remain
    deferred.
-7. A live `Directory` presents its first 24 immediate children through the
-   same keys. Labels append `/` to directories and `@` to symbolic links;
-   choosing a row pushes the nested live object. `u` pushes the Directory's
-   live parent, while Escape pops the existing stack history.
+7. A live `Directory` omits leading-dot names by default, then presents its
+   first 24 remaining immediate children through the same keys. Labels append
+   `/` to directories and `@` to symbolic links; choosing a row pushes the
+   nested live object. `.` persistently toggles hidden-name visibility, `u`
+   pushes the Directory's live parent, and Escape pops existing stack history.
 
 Nested “edit” is rebuild. Aloe objects are immutable. Pushing
 `(boid position)` and building a new `Point` does not mutate the boid.
@@ -146,14 +147,17 @@ its immutable `label` captures presentation text when the row is built.
 Ordinary Lists use each mirror's raw text, retaining their existing bytes.
 
 `gel/directory.aloe` adds a deliberately narrow application adapter only after
-`lib/disk.aloe` has loaded. `GelMenus` first recognizes the exact reflected
-zero-argument `gel-directory-values` row, which returns `GelValueRows` carrying
-the nested live child mirrors rather than `Item` wrappers. The adapter labels
-files and other objects by name, directories with `/`, and symbolic links with
-`@`. It also supplies the exact reflected `gel-up` service used only by the
-`u` command. These selectors are private seams for this one built-in surface,
-not a general authored-surface protocol. Empty Directories render only
-`u  up`; unfamiliar objects retain their derived menu.
+`lib/disk.aloe` has loaded. `GelMenus` recognizes exact reflected
+zero-argument `gel-directory-values` and `gel-directory-all-values` rows. Both
+return `GelValueRows` carrying nested live child mirrors rather than `Item`
+wrappers; the default row filters raw names beginning with `.` before the
+24-row cap, while the second retains source order and caps the full listing.
+The shared builder labels files and other objects by name, directories with
+`/`, and symbolic links with `@`. The adapter also supplies the exact reflected
+`gel-up` service used only by the `u` command. These selectors are private
+seams for this one built-in surface, not a general authored-surface protocol.
+An empty filtered Directory renders `u  up` followed by `.  show hidden`;
+unfamiliar objects retain their derived menu.
 
 The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
 holds the underlying `(List Mirror)`, `tos` reads the first item, and `push`
@@ -175,10 +179,14 @@ The key step in `gel/loop.aloe` is Aloe application code on the immutable
 requests quit, and digit strings select reflected rows. Zero-argument rows
 invoke directly. The public transition still accepts terminal `String` text
 and constructs one immutable `GelKey`; its `menu-index`, `digit-value`,
-`item-index`, `quit?`, `escape?`, `up?`, and `return?` messages carry the
-meanings Gel assigns to that text. `item-index` looks up only the fixed authored-value
-letter pool. Idle `"escape"` pops one stack item when history exists and stops
-at the one-item floor.
+`item-index`, `quit?`, `escape?`, `up?`, `hidden?`, and `return?` messages
+carry the meanings Gel assigns to that text. `item-index` looks up only the
+fixed authored-value letter pool. Idle `"escape"` pops one stack item when
+history exists and stops at the one-item floor. `GelStep.show-hidden` starts
+false and is copied through every transition. On an idle Directory, `"."`
+alone negates it without changing the stack or TOS; the menu reports whether
+the next `.` will show or hide hidden names. Pending `.` and idle `.` on every
+other TOS are no-ops.
 Selecting an arity-one row stores it as an empty-or-singleton `(List GelRow)`
 in `GelStep.pending`; no send runs yet. The pending menu numbers only stack
 mirrors accepted by `(row accepts? candidate)`, in stack order, and the next
@@ -202,8 +210,8 @@ step. On an idle List, a valid visible item letter pushes the selected row's
 exact mirror immediately, leaves the List beneath it as history, and never
 enters the pending-send path. Digits remain reserved for reflected message
 rows, pending picks, and pending Int entry; they do not select List values.
-`q` and Escape retain command precedence before `u`,
-and invalid or out-of-range keys are no-ops.
+Idle precedence is `q`, Escape, `u`, `.`, then item or message keys. Invalid or
+out-of-range keys are no-ops.
 
 Menu and TOS text share the Aloe `GelText` service. `(gel-text menu value)`
 emits one indexed selector/arity line per reflected row, with overloads for
@@ -282,8 +290,9 @@ The loop is implemented on objects that already live in the Aloe image.
 - Object stack, printed TOS, printed menu with keys
 - Menu rows from `Mirror` and `Signature`
 - Up to 24 letter-keyed, directly choosable value rows when a List is TOS
-- A live Directory application with labeled immediate children and `u` parent
-  pushes through a separate filesystem-capable runner
+- A live Directory application with leading-dot names hidden by default,
+  persistent `.` visibility toggling, labeled immediate children, and `u`
+  parent pushes through a separate filesystem-capable runner
 - Typed pending sends for one-argument methods
 - Push the result
 - Back with idle Escape; cancel pending sends with Escape before popping
@@ -302,8 +311,10 @@ Directory, lists its immediate children, and distinguishes a computed parent
 push from stack back. [`docs/gel-directory-surface.md`](gel-directory-surface.md)
 records the completed first progression and deferred pressure. The current
 listing is immutable within one menu construction, but later redraws or key
-steps may observe the host again. Paging/search, persistent snapshots and
-refresh, file reading, and extra visible stack levels remain later work.
+steps may observe the host again. Leading-dot names are filtered before the
+24-row cap until idle `.` toggles their persistent visibility. Paging/search,
+persistent snapshots and refresh, file reading, and extra visible stack levels
+remain later work.
 
 ### Later, same machine
 
@@ -327,7 +338,8 @@ still requires a blocked golden. The current menu needs are already served by
   search remain later work.
 - Directory rows reuse the same Values menu and item-key pool. The adapter
   lives in Gel application code; reusable disk vocabulary remains unaware of
-  Gel.
+  Gel. Leading-dot names are hidden before the cap by default, and idle `.`
+  toggles their visibility without becoming an item key.
 - Escape means stack back. Directory `u` computes and pushes a live parent;
   it does not pop, replace TOS, or change process cwd.
 - TOS is the **receiver**. Arguments fill from the builder (typed

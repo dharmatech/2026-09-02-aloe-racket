@@ -176,6 +176,26 @@
 (define-class GelMenus
   (fields)
   (methods
+    (directory-signatures
+      (mirror Mirror)
+      (selector String)
+      (List Signature)
+      ((mirror signatures) fold
+        (List empty)
+        (fn (matches signature)
+          (if (((signature selector) name) = selector)
+              (if (((signature params) len) = 0)
+                  (matches cons signature)
+                  matches)
+              matches))))
+
+    (directory? (mirror Mirror) Bool
+      (if ((self directory-signatures
+             mirror
+             "gel-directory-values") empty?)
+          #f
+          #t))
+
     (value-rows
       (values GelListValues)
       GelValueRows
@@ -201,15 +221,18 @@
     (of
       (mirror Mirror)
       GelMenu
+      (self of mirror #f))
+
+    (of
+      (mirror Mirror)
+      (show-hidden Bool)
+      GelMenu
       (let ((directory-signatures
-             ((mirror signatures) fold
-               (List empty)
-               (fn (matches signature)
-                 (if (((signature selector) name) = "gel-directory-values")
-                     (if (((signature params) len) = 0)
-                         (matches cons signature)
-                         matches)
-                     matches)))))
+             (self directory-signatures
+               mirror
+               (if show-hidden
+                   "gel-directory-all-values"
+                   "gel-directory-values"))))
         (if (directory-signatures empty?)
             (let ((value-signatures
                    ((mirror signatures) fold

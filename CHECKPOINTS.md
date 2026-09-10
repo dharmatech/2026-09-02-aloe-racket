@@ -431,3 +431,9 @@ success, and reports both source datums and displayed values on failure.
 - `lib/string.aloe` derives `starts-with?` from String `len`, `take`, and `=`;
   default checked environments bootstrap it alongside the List library. No
   new kernel message.
+
+## 116. [Gel Directory hidden names](docs/checkpoints/0116-gel-directory-hidden.md)
+
+- Live Directory menus hide leading-dot names before the 24-row cap by
+  default; idle `.` persistently toggles visibility and its state-dependent
+  command line. Non-Directory and pending `.` remain no-ops.

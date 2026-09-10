@@ -145,7 +145,7 @@
  (eval-source
   (string-append
    "(define point-state "
-   "  (GelStep new point-stack #f (List empty) 0 #f))")
+   "  (GelStep new point-stack #f (List empty) 0 #f #f))")
   environment))
 (void
  (eval-source

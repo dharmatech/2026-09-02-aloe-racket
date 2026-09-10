@@ -122,7 +122,7 @@
   #<<ALOE
 (define int-state-78
   (GelStep new (gel-empty-stack push 10)
-    #f (List of int-plus-row-78) 0 #f))
+    #f (List of int-plus-row-78) 0 #f #f))
 ALOE
   environment))
 (check-equal? (eval-source "(gel-text menu int-state-78)" environment)

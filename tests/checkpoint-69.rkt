@@ -49,7 +49,7 @@
   environment))
 (void
  (eval-source
-  "(define int-state (GelStep new int-stack #f (List empty) 0 #f))"
+  "(define int-state (GelStep new int-stack #f (List empty) 0 #f #f))"
   environment))
 (void
  (eval-source
@@ -98,7 +98,7 @@
   environment))
 (void
  (eval-source
-  "(define mixed-state (GelStep new mixed-stack #f (List empty) 0 #f))"
+  "(define mixed-state (GelStep new mixed-stack #f (List empty) 0 #f #f))"
   environment))
 (void
  (eval-source
@@ -122,7 +122,7 @@
                    environment))
 (void
  (eval-source
-  "(define point-state (GelStep new point-stack #f (List empty) 0 #f))"
+  "(define point-state (GelStep new point-stack #f (List empty) 0 #f #f))"
   environment))
 (void
  (eval-source

@@ -273,10 +273,9 @@ ALOE
 
 (define-runtime-path gel-directory "../gel")
 
-(test-case "String starts-with remains outside Gel"
+(test-case "String method definitions remain outside Gel"
   (for ([path (in-list (find-files file-exists? gel-directory))])
     (when (file-exists? path)
       (define source (file->string path))
-      (check-false (regexp-match? #rx"starts-with\\?|define-methods String"
-                                  source)
+      (check-false (regexp-match? #rx"define-methods String" source)
                    (path->string path)))))

@@ -139,7 +139,7 @@ ALOE
   #<<ALOE
 (define pending-79
   (GelStep new matching-stack-79
-    #f (List of point-plus-row-79) 0 #f))
+    #f (List of point-plus-row-79) 0 #f #f))
 (define out-of-range-79 (pending-79 handle-key "3"))
 (define selected-79 (pending-79 handle-key "2"))
 ALOE

@@ -99,7 +99,7 @@ ALOE
   ((gel-empty-stack push (Point new 1 2)) push point-80))
 (define point-pending-80
   (GelStep new point-stack-80
-    #f (List of point-plus-row-80) 0 #f))
+    #f (List of point-plus-row-80) 0 #f #f))
 (define point-out-of-range-80 (point-pending-80 handle-key "3"))
 (define point-selected-80 (point-pending-80 handle-key "2"))
 ALOE

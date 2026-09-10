@@ -252,7 +252,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-many-state
-      (GelStep new checkpoint-110-many-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-110-many-stack #f (List empty) 0 #f #f)))
   (driver-eval!
    state
    '(define checkpoint-110-hidden-twenty-five
@@ -311,6 +311,7 @@
         #f
         (List empty)
         0
+        #f
         #f)))
 
   (define value-menu
@@ -335,7 +336,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-point-state
-      (GelStep new checkpoint-110-point-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-110-point-stack #f (List empty) 0 #f #f)))
   (driver-eval!
    state
    '(define checkpoint-110-point-rows
@@ -354,6 +355,7 @@
         #f
         (List of checkpoint-110-point-plus-row)
         0
+        #f
         #f)))
   (driver-eval!
    state
@@ -373,6 +375,7 @@
         #f
         (List of checkpoint-110-int-plus-row)
         0
+        #f
         #f)))
   (driver-eval!
    state
@@ -425,7 +428,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-list-state
-      (GelStep new checkpoint-110-list-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-110-list-stack #f (List empty) 0 #f #f)))
   (driver-eval!
    state
    '(define checkpoint-110-chosen
@@ -472,7 +475,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-short-state
-      (GelStep new checkpoint-110-floor-stack #f (List empty) 0 #f)))
+      (GelStep new checkpoint-110-floor-stack #f (List empty) 0 #f #f)))
 
   (for ([key (in-list '("0" "2" "u" "A" "return" "d"))]
         [name (in-list '(checkpoint-110-zero
@@ -517,6 +520,7 @@
         #f
         (List empty)
         0
+        #f
         #f)))
   (driver-eval!
    state

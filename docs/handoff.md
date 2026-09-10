@@ -12,8 +12,8 @@ Stacked on `experiment/filesystem`. Working design:
 
 First Gel experiment after the OO disk library: a focused directory
 browser on Gel's stack. Not a workspace and not a GelFS framework.
-Checkpoints 108–113 complete the first focused live Directory slice and its
-path-focused TOS presentation. The
+Checkpoints 108–116 complete the first focused live Directory slice, its
+path-focused TOS presentation, and hidden-name control. The
 Term-only runner still launches ordinary Aloe applications. The separate
 filesystem-capable runner starts `examples/gel-directory.aloe` at the
 process's live current directory:
@@ -22,9 +22,10 @@ process's live current directory:
 racket host/racket/gel-directory-run.rkt examples/gel-directory.aloe
 ```
 
-A Directory TOS shows up to 24 immediate children with filesystem labels;
-selection pushes the nested live object, `u` pushes its live parent, and
-Escape pops history. `q` still quits, and pending input behavior is unchanged.
+A Directory TOS hides leading-dot names before showing up to 24 immediate
+children with filesystem labels. Idle `.` persistently toggles their
+visibility; selection pushes the nested live object, `u` pushes its live
+parent, and Escape pops history. `q` still quits, and pending `.` is a no-op.
 Live `Directory`, `File`, `SymbolicLink`, and `Other` TOS lines show the class
 and escaped absolute path while their structural `Mirror.raw` values remain
 unchanged.
@@ -71,7 +72,8 @@ only through explicit typed capabilities.
   payload; generic construction uses payload constraints and expected types.
 - Generics, homogeneous `List`, protocols with required methods, and
   C#-style method overloading. Exact argument types beat protocol matches.
-- Primitive `Int`, `Float`, `Bool`, `String`, and interned `Symbol` values.
+- Primitive `Int`, `Float`, `Bool`, `String`, and interned `Symbol` values;
+  String supplies kernel `len`/`take` and an Aloe-derived `starts-with?`.
 - Boids in `examples/boids.aloe` and `examples/point.aloe`.
 - Cohen-style symbolic algebra in `examples/mpl/`, including `Math`, `Sym`,
   `Num`, `Sum`, `Prod`, and `Pow`. `Math` is a protocol supertype and primitive
@@ -99,8 +101,10 @@ only through explicit typed capabilities.
   through `z`, omitting `q` and `u`; selecting one pushes its exact mirror,
   and Escape returns to the List. A Gel-owned Directory adapter supplies the
   same value-row shape with `name`, `name/`, and `name@` labels, preserving
-  live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. `u` asks only
-  a Directory for its live parent and pushes it, so Escape and up are
+  live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. Leading-dot
+  names are omitted before the 24-row cap by default; idle `.` persistently
+  toggles them while leaving non-Directory and pending states unchanged. `u`
+  asks only a Directory for its live parent and pushes it, so Escape and up are
   observably different. Those four live disk classes render on TOS with their
   class and existing escaped absolute path through a private Gel selector;
   other values and `Mirror.raw` retain their structural text. Reflected menus
@@ -109,7 +113,7 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 113 are green on
+- Tests through checkpoint 116 are green on
   `experiment/gel-directory-surface`. `Option` is loadable from
   `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
@@ -197,7 +201,8 @@ default drivers still have no `fs-host`, and constructors are not merged to
 The first live Directory presentation is complete. Its TOS line now shows the
 live object's class and escaped absolute path without changing structural
 reflection. The current screen observes the host when it constructs a menu
-and exposes only the first 24 children.
+and exposes only the first 24 included children; leading-dot names are hidden
+before that cap unless the persistent idle `.` toggle is on.
 Remaining pressure is overflow navigation or search, a persistent per-TOS
 listing snapshot with explicit refresh, and additional stack rendering that
 makes history visible. No paging, search, persistent snapshot, refresh key, or

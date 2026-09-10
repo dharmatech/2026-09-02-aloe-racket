@@ -50,25 +50,54 @@
 
 (define gel-directory-rows (GelDirectoryRows new))
 
+(define-class (GelDirectoryListing H)
+  (fields
+    (items (List (Item H))))
+  (methods
+    (name (item (Item H)) String
+      (item case
+        (File (file) (file name))
+        (Directory (directory) (directory name))
+        (SymbolicLink (link) (link name))
+        (Other (thing) (thing name))))
+
+    (label (item (Item H)) String
+      (item case
+        (File (file) (file name))
+        (Directory (directory)
+          (let ((name (directory name)))
+            (if (name = "") "/" (name append "/"))))
+        (SymbolicLink (link)
+          ((link name) append "@"))
+        (Other (thing) (thing name))))
+
+    (values (show-hidden Bool) GelValueRows
+      (let ((visible-items
+             (((self items) fold
+                (List empty)
+                (fn (visible item)
+                  (if show-hidden
+                      (visible cons item)
+                      (if ((self name item) starts-with? ".")
+                          visible
+                          (visible cons item)))))
+              reverse)))
+        (gel-directory-rows of
+          visible-items
+          (visible-items map
+            (fn (item)
+              (self label item))))))))
+
 (define-methods Directory
   (methods
     (gel-tos-text () String
       (("#<Directory " append ((Mirror of (self text)) raw)) append ">"))
 
     (gel-directory-values () GelValueRows
-      (let ((items (self entries)))
-        (gel-directory-rows of
-          items
-          (items map
-            (fn (item)
-              (item case
-                (File (file) (file name))
-                (Directory (directory)
-                  (let ((name (directory name)))
-                    (if (name = "") "/" (name append "/"))))
-                (SymbolicLink (link)
-                  ((link name) append "@"))
-                (Other (thing) (thing name))))))))
+      ((GelDirectoryListing new (self entries)) values #f))
+
+    (gel-directory-all-values () GelValueRows
+      ((GelDirectoryListing new (self entries)) values #t))
 
     (gel-up () GelUp
       ((self parent) case

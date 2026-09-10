@@ -41,7 +41,7 @@
  (eval-source
   (string-append
    "(define st "
-   "  (GelStep new (gel-empty-stack push p) #f (List empty) 0 #f))")
+   "  (GelStep new (gel-empty-stack push p) #f (List empty) 0 #f #f))")
   environment))
 (check-equal? (eval-source "(((st stack) items) len)" environment) 1)
 (check-equal?
@@ -102,6 +102,6 @@
            (lambda ()
              (eval-source
               (string-append
-               "((GelStep new gel-empty-stack #f (List empty) 0 #f) "
+               "((GelStep new gel-empty-stack #f (List empty) 0 #f #f) "
                " handle-key \"1\")")
               environment)))
