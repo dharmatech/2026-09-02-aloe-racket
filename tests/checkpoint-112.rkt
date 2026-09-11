@@ -57,6 +57,7 @@
    "c  link@\r\n"
    "d  pipe\r\n"
    "\r\n"
+   "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
    "n  next\r\n"
@@ -288,8 +289,10 @@
   (driver-eval! state '(define cwd-mirror (Mirror of cwd)))
   (define rendered (driver-eval! state '(gel-text menu cwd-mirror)))
   (check-equal? rendered mixed-menu)
+  (check-false (regexp-match? #rx"(?m:^[0-9]+  entries  [0-9]+\r?$)"
+                              rendered))
   (for ([hidden
-         '("entries" "parent" "gel-directory-values"
+         '("parent" "gel-directory-values"
            "gel-directory-all-values" "gel-up"
            "File" "Directory" "SymbolicLink" "Other" "fifo")])
     (check-false
@@ -370,6 +373,7 @@
   (check-equal? (driver-eval! state '(gel-text menu directory-step))
                 (string-append
                  "a  disk.aloe\r\n\r\n"
+                 "1 entries\r\n"
                  "u  up\r\n"
                  ".  show hidden\r\n"
                  "n  next\r\n"
@@ -400,6 +404,7 @@
   (define-directory! state 'many-directory "/many")
   (check-equal? (driver-eval! state '(gel-text menu empty-directory))
                 (string-append
+                 "0 entries\r\n"
                  "u  up\r\n.  show hidden\r\n"
                  "n  next\r\np  prev\r\n"))
   (driver-eval! state '(define many-mirror (Mirror of many-directory)))
@@ -645,7 +650,7 @@
      (check-equal? (length (regexp-match* #rx"b  lib/\r\n" transcript)) 2)
      (check-equal? (length (regexp-match* #rx"c  link@\r\n" transcript)) 2)
      (check-regexp-match
-      #rx"a  disk.aloe\r\n\r\nu  up\r\n[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey a\r\n"
+      #rx"a  disk.aloe\r\n\r\n1 entries\r\nu  up\r\n[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey a\r\n"
       transcript)
      (check-regexp-match #rx"key a\r\nTOS: #<File " transcript)
      (check-regexp-match

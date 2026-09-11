@@ -49,6 +49,7 @@
    "c  charlie@\r\n"
    "d  pipe\r\n"
    "\r\n"
+   "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
    "n  next\r\n"
@@ -64,6 +65,7 @@
    "f  charlie@\r\n"
    "g  pipe\r\n"
    "\r\n"
+   "7 entries\r\n"
    "u  up\r\n"
    ".  hide hidden\r\n"
    "n  next\r\n"
@@ -246,12 +248,14 @@
                 '(define shown-state (hidden-state handle-key ".")))
   (check-equal? (driver-eval! empty-state '(gel-text menu hidden-state))
                 (string-append
+                 "0 entries\r\n"
                  "u  up\r\n.  show hidden\r\n"
                  "n  next\r\np  prev\r\n"))
   (check-equal?
    (driver-eval! empty-state '(gel-text menu shown-state))
    (string-append
     "a  .one\r\nb  .two\r\n\r\n"
+    "2 entries\r\n"
     "u  up\r\n.  hide hidden\r\n"
     "n  next\r\np  prev\r\n")))
 

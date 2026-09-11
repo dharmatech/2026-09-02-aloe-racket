@@ -130,6 +130,23 @@
         (fn (text row)
           (text append (self value-line row)))))
 
+    (directory-status
+      (count Int)
+      (page Int)
+      String
+      (let ((page-size (gel-item-keys len)))
+        (let ((page-count
+               ((count + (page-size - 1)) / page-size))
+              (count-text
+               (((count text) append " entries") append "\r\n")))
+          (if (page-count > 1)
+              (((((count-text append "page ") append
+                   ((page + 1) text))
+                  append " of ")
+                 append (page-count text))
+                append "\r\n")
+              count-text))))
+
     (menu-text (value GelMenu) String
       (value case
         (Messages (rows)
@@ -185,18 +202,31 @@
       (show-hidden Bool)
       (page Int)
       String
-      (let ((text (self menu-text (gel-menus of value show-hidden page))))
-        (if (gel-ups available? value)
-            (let ((commands
-                   (if (gel-menus directory? value)
-                       (if show-hidden
-                           "u  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"
-                           "u  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")
-                       "u  up\r\n")))
-              (if (text = "")
-                  commands
-                  ((text append "\r\n") append commands)))
-            text)))
+      (if (gel-menus directory? value)
+          (let ((rows (gel-menus directory-rows value show-hidden)))
+            (let ((text
+                   (self value-rows-text
+                     (gel-menus window rows page)))
+                  (status
+                   (self directory-status (rows len) page))
+                  (commands
+                   (if show-hidden
+                       "u  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"
+                       "u  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")))
+              (((if (text = "")
+                    text
+                    (text append "\r\n"))
+                append status)
+               append commands)))
+          (let ((text
+                 (self menu-text
+                   (gel-menus of value show-hidden page))))
+            (if (gel-ups available? value)
+                (let ((commands "u  up\r\n"))
+                  (if (text = "")
+                      commands
+                      ((text append "\r\n") append commands)))
+                text))))
 
     (menu (state GelStep) String
       (if ((state pending) empty?)

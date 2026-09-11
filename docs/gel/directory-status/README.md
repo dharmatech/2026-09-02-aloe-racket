@@ -14,7 +14,7 @@ Predecessor: global 112–117 (Directory UX) and gel-presentations
 
 | Number | File | Status |
 |---|---|---|
-| 000 | *(checkpoint manager writes)* | not issued |
+| 000 | [`checkpoints/000-status.md`](checkpoints/000-status.md) | issued |
 
 Spoken name: **gel-directory-status 000**. Tests:
-`tests/gel/directory-status/000-short-slug.rkt`.
+`tests/gel/directory-status/000-status.rkt`.

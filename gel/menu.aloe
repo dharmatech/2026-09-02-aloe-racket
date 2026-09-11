@@ -272,6 +272,20 @@
         signature
         (mirror subject)))
 
+    (directory-rows
+      (mirror Mirror)
+      (show-hidden Bool)
+      GelValueRows
+      (let ((signatures
+             (self directory-signatures
+               mirror
+               (if show-hidden
+                   "directory-all-values"
+                   "directory-values"))))
+        (self directory-values
+          mirror
+          ((signatures reverse) first))))
+
     (window
       (rows GelValueRows)
       (page Int)
@@ -308,27 +322,19 @@
       (show-hidden Bool)
       (page Int)
       GelMenu
-      (let ((directory-signatures
-             (self directory-signatures
-               mirror
-               (if show-hidden
-                   "directory-all-values"
-                   "directory-values"))))
-        (if (directory-signatures empty?)
-            (let ((list-signatures (self list-signatures mirror)))
-              (if (list-signatures empty?)
-                  (GelMenu Messages (gel-rows of mirror))
-                  (GelMenu Values
-                    (self value-rows
-                      (self list-values
-                        mirror
-                        ((list-signatures reverse) first))))))
-            (GelMenu Values
-              (self window
-                (self directory-values
-                  mirror
-                  ((directory-signatures reverse) first))
-                page)))))))
+      (if (self directory? mirror)
+          (GelMenu Values
+            (self window
+              (self directory-rows mirror show-hidden)
+              page))
+          (let ((list-signatures (self list-signatures mirror)))
+            (if (list-signatures empty?)
+                (GelMenu Messages (gel-rows of mirror))
+                (GelMenu Values
+                  (self value-rows
+                    (self list-values
+                      mirror
+                      ((list-signatures reverse) first))))))))))
 
 (define gel-menus (GelMenus new))
 

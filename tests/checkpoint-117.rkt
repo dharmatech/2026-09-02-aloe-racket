@@ -278,6 +278,7 @@
     "a  alpha\r\n"
     "b  bravo/\r\n"
     "\r\n"
+    "2 entries\r\n"
     "u  up\r\n"
     ".  show hidden\r\n"
     "n  next\r\n"
@@ -289,16 +290,17 @@
     "b  alpha\r\n"
     "c  bravo/\r\n"
     "\r\n"
+    "3 entries\r\n"
     "u  up\r\n"
     ".  hide hidden\r\n"
     "n  next\r\n"
     "p  prev\r\n"))
   (check-equal?
    (driver-eval! state '(gel-text menu cwd-mirror #f 1))
-   "u  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")
+   "2 entries\r\nu  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")
   (check-equal?
    (driver-eval! state '(gel-text menu cwd-mirror #t 1))
-   "u  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"))
+   "3 entries\r\nu  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"))
 
 (test-case "page resets on navigation and hidden toggles while visibility persists"
   (define nodes

@@ -40,6 +40,7 @@
    "c  link@\r\n"
    "d  pipe\r\n"
    "\r\n"
+   "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
    "n  next\r\n"
