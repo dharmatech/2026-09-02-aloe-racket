@@ -3,7 +3,7 @@
 **Status.** Handoff from a brainstorm conversation into a **design
 conversation**. Not Aloe law. Not Gel law. Not a checkpoint. Not an
 implementer assignment. Specification:
-[`docs/gel-presentations/spec.md`](spec.md).
+[`docs/gel/presentations/spec.md`](spec.md).
 
 **Your job.** Turn this charter into a specification for the first Gel
 presentations experiment. Then **stop**. Do not write checkpoints. Do
@@ -20,7 +20,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write a specification (this folder's `spec.md`). The spec is what
    a later checkpoint-manager conversation will slice into
    **gel-presentations 000**, `001`, … under
-   `docs/gel-presentations/checkpoints/` (not `docs/checkpoints/0118`).
+   `docs/gel/presentations/checkpoints/` (not `docs/checkpoints/0118`).
 4. Stop. The human reviews it. The spec conversation does not write
    those checkpoint files.
 
@@ -301,7 +301,7 @@ Do not start from `main`. Do not merge to `main` in this work.
 
 One specification document that a checkpoint-manager conversation can
 slice into small **gel-presentations 000**, `001`, … files under
-`docs/gel-presentations/checkpoints/` (not `docs/checkpoints/0118`).
+`docs/gel/presentations/checkpoints/` (not `docs/checkpoints/0118`).
 
 The spec must include:
 

@@ -13,7 +13,7 @@ Directory UX remains global 112–117.
 
 **Status.** Complete (implemented; current Gel law describes 000/002).
 
-**Authority.** `docs/gel-presentations/spec.md` §11, applied to the
+**Authority.** `docs/gel/presentations/spec.md` §11, applied to the
 shape that actually landed (§4.3 / §6.2 / 002). `SPEC.md` is Aloe
 language law. Frozen Directory UX is
 `docs/gel-directory-surface.md` and global 112–117; do not reopen
@@ -160,13 +160,13 @@ Implementation may edit only:
 - `docs/gel.md`
 - `docs/gel-directory-surface.md`
 - `docs/handoff.md`
-- `tests/gel-presentations/003-doc-law.rkt` (new)
-- `docs/gel-presentations/README.md` is updated by the checkpoint
+- `tests/gel/presentations/003-doc-law.rkt` (new)
+- `docs/gel/presentations/README.md` is updated by the checkpoint
   manager, not the implementer
 
 Do not edit `gel/`, `aloe/`, `lib/`, `host/`, `examples/`,
 `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, or
-`docs/gel-presentations/checkpoints/001-directory-family.md`. Do not
+`docs/gel/presentations/checkpoints/001-directory-family.md`. Do not
 add `tests/checkpoint-118.rkt`. Do not change tests that prove
 behavior; this slice is wording.
 
@@ -175,7 +175,7 @@ Tests sit one directory deeper than the global suite. Use one extra
 
 ## Tests and acceptance
 
-Add `tests/gel-presentations/003-doc-law.rkt`. Cover at least:
+Add `tests/gel/presentations/003-doc-law.rkt`. Cover at least:
 
 1. **`docs/gel.md` dropped the private seam.** Source no longer
    claims `List.gel-values` is installed on `List`, or that
@@ -208,7 +208,7 @@ Add `tests/gel-presentations/003-doc-law.rkt`. Cover at least:
 Run:
 
 ```sh
-raco test tests/gel-presentations/003-doc-law.rkt
+raco test tests/gel/presentations/003-doc-law.rkt
 raco test tests
 git diff --check
 ```

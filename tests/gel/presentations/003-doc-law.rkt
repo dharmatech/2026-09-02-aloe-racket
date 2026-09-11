@@ -5,20 +5,20 @@
          racket/runtime-path
          racket/string)
 
-(define-runtime-path gel-doc "../../docs/gel.md")
-(define-runtime-path directory-doc "../../docs/gel-directory-surface.md")
-(define-runtime-path handoff-doc "../../docs/handoff.md")
-(define-runtime-path presentations-spec "../../docs/gel-presentations/spec.md")
-(define-runtime-path checkpoints-dir "../../docs/checkpoints")
-(define-runtime-path tests-dir "..")
+(define-runtime-path gel-doc "../../../docs/gel.md")
+(define-runtime-path directory-doc "../../../docs/gel-directory-surface.md")
+(define-runtime-path handoff-doc "../../../docs/handoff.md")
+(define-runtime-path presentations-spec "../../../docs/gel/presentations/spec.md")
+(define-runtime-path checkpoints-dir "../../../docs/checkpoints")
+(define-runtime-path tests-dir "../..")
 (define-runtime-path checkpoint-110
-  "../../docs/checkpoints/0110-gel-list-value-rows.md")
+  "../../../docs/checkpoints/0110-gel-list-value-rows.md")
 (define-runtime-path checkpoint-112
-  "../../docs/checkpoints/0112-gel-live-directory.md")
+  "../../../docs/checkpoints/0112-gel-live-directory.md")
 (define-runtime-path checkpoint-113
-  "../../docs/checkpoints/0113-gel-directory-tos.md")
+  "../../../docs/checkpoints/0113-gel-directory-tos.md")
 (define-runtime-path checkpoint-117
-  "../../docs/checkpoints/0117-gel-directory-paging.md")
+  "../../../docs/checkpoints/0117-gel-directory-paging.md")
 
 (define (source path)
   (file->string path))

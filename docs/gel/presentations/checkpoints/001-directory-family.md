@@ -12,7 +12,7 @@ Frozen Directory UX remains global 112–117.
 
 **Status.** Blocked. Return to the spec conversation. Do not implement.
 
-**Authority.** `docs/gel-presentations/spec.md` is this experiment’s
+**Authority.** `docs/gel/presentations/spec.md` is this experiment’s
 law. `SPEC.md` is Aloe language law. Frozen Directory UX is
 `docs/gel-directory-surface.md` and global 112–117; do not reopen
 it. Current `docs/gel.md` adapter language stays until 002.
@@ -275,8 +275,8 @@ Implementation may edit only:
 - `gel/menu.aloe` (`GelMenus.of`, `directory?`, Directory invoke
   helper, `GelUps`)
 - `gel/loop.aloe` (`GelText.tos` and the `message-rows` filter only)
-- `tests/gel-presentations/001-directory-family.rkt` (new)
-- `tests/gel-presentations/000-substrate-list.rkt`, **only** the
+- `tests/gel/presentations/001-directory-family.rkt` (new)
+- `tests/gel/presentations/000-substrate-list.rkt`, **only** the
   Directory-hole case and the source assertions that require
   `define-methods Directory` / a specimen `"gel-directory-values"`
   seam. Keep the List proof.
@@ -295,12 +295,12 @@ Do not apply spec §11 to `docs/gel.md`,
 `docs/gel-directory-surface.md`, or `docs/handoff.md`.
 
 Tests sit one directory deeper than the global suite. Use one extra
-`../` in `require` and `define-runtime-path` (`../../aloe/…`, not
+`../` in `require` and `define-runtime-path` (`../../../aloe/…`, not
 `../aloe/…`).
 
 ## Tests and acceptance
 
-Add `tests/gel-presentations/001-directory-family.rkt`. Cover at
+Add `tests/gel/presentations/001-directory-family.rkt`. Cover at
 least:
 
 1. **Signatures did not grow.** Load `lib/disk.aloe`. Snapshot
@@ -359,7 +359,7 @@ and `list-values` proof.
 Run:
 
 ```sh
-raco test tests/gel-presentations/001-directory-family.rkt
+raco test tests/gel/presentations/001-directory-family.rkt
 raco test tests
 git diff --check
 ```

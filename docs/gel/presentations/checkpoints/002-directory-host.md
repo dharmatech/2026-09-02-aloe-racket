@@ -13,7 +13,7 @@ implement 001. Frozen Directory UX remains global 112–117.
 
 **Status.** Complete (implemented; live-image bar holds in code).
 
-**Authority.** `docs/gel-presentations/spec.md` §4.3 and §6.2 are
+**Authority.** `docs/gel/presentations/spec.md` §4.3 and §6.2 are
 this slice’s law. `SPEC.md` is Aloe language law. Frozen Directory
 UX is `docs/gel-directory-surface.md` and global 112–117. Current
 `docs/gel.md` adapter language stays until a later doc-law slice.
@@ -167,7 +167,7 @@ bodies are not checked at definition. They are checked at a send
 whose `H` is the injected host — the same delay that makes today’s
 adapters on `Directory` typecheck, but the methods live on a Gel
 class. Spec probe:
-`tests/gel-presentations/probe-directory-fshost.rkt`.
+`tests/gel/presentations/probe-directory-fshost.rkt`.
 
 Delete every `(define-methods Directory / File / SymbolicLink /
 Other)` block.
@@ -264,8 +264,8 @@ Implementation may edit only:
   via the index mirror, `GelUps`)
 - `gel/loop.aloe` (`GelText.tos` and the `message-rows` filter
   only)
-- `tests/gel-presentations/002-directory-host.rkt` (new)
-- `tests/gel-presentations/000-substrate-list.rkt`, **only** the
+- `tests/gel/presentations/002-directory-host.rkt` (new)
+- `tests/gel/presentations/000-substrate-list.rkt`, **only** the
   Directory-hole case and source assertions that require
   `define-methods Directory` / a specimen `"gel-directory-values"`
   seam. Keep the List proof.
@@ -275,12 +275,12 @@ Implementation may edit only:
   `define-methods Directory` in `gel/directory.aloe`: checkpoints
   112, 113, 116, and 117. Point those seams at
   `gel-directory-presentations`. Keep UX byte expectations.
-- `tests/gel-presentations/probe-directory-fshost.rkt` may be
+- `tests/gel/presentations/probe-directory-fshost.rkt` may be
   deleted once 002 covers the same measurements.
 
 Do not edit `gel/presentations.aloe`, `gel/main.aloe`, or
 `gel/stack.aloe`. Do not edit
-`docs/gel-presentations/checkpoints/001-directory-family.md`. Do
+`docs/gel/presentations/checkpoints/001-directory-family.md`. Do
 not edit anything under `aloe/`, `lib/`, or `host/`. Do not add
 `tests/checkpoint-118.rkt`. Do not write
 `docs/checkpoints/0118-….md`. Do not append root `CHECKPOINTS.md`.
@@ -288,12 +288,12 @@ Do not apply spec §11 to `docs/gel.md`,
 `docs/gel-directory-surface.md`, or `docs/handoff.md`.
 
 Tests sit one directory deeper than the global suite. Use one extra
-`../` in `require` and `define-runtime-path` (`../../aloe/…`, not
+`../` in `require` and `define-runtime-path` (`../../../aloe/…`, not
 `../aloe/…`).
 
 ## Tests and acceptance
 
-Add `tests/gel-presentations/002-directory-host.rkt`. Cover at
+Add `tests/gel/presentations/002-directory-host.rkt`. Cover at
 least:
 
 1. **Signatures did not grow.** Load `lib/disk.aloe` with `fs-host`
@@ -359,7 +359,7 @@ and `list-values` proof.
 Run:
 
 ```sh
-raco test tests/gel-presentations/002-directory-host.rkt
+raco test tests/gel/presentations/002-directory-host.rkt
 raco test tests
 git diff --check
 ```

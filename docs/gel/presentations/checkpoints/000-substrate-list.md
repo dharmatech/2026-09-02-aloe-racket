@@ -13,7 +13,7 @@ and `docs/gel-directory-surface.md`.
 
 **Status.** Complete (implemented; Directory hole left named).
 
-**Authority.** `docs/gel-presentations/spec.md` is this experiment’s
+**Authority.** `docs/gel/presentations/spec.md` is this experiment’s
 law. `SPEC.md` is Aloe language law. Current Gel behavior is
 `docs/gel.md` (Directory adapter language may remain until a later
 slice). Frozen Directory UX is `docs/gel-directory-surface.md`; do
@@ -208,7 +208,7 @@ Implementation may edit only:
 - `gel/menu.aloe` (load the service; `define-methods GelPresentations`
   for `list-values`; delete `define-methods List`; List recognition
   in `GelMenus.of`)
-- `tests/gel-presentations/000-substrate-list.rkt` (new)
+- `tests/gel/presentations/000-substrate-list.rkt` (new)
 - `tests/checkpoint-110.rkt` and `tests/checkpoint-111.rkt`, **only**
   where they send `gel-values` to a List, type that send, or assert
   `(define-methods List)` in `gel/menu.aloe`
@@ -227,12 +227,12 @@ slice). Do not change frozen Directory UX tests except that 110–111
 seam updates above.
 
 Tests sit one directory deeper than the global suite. Use one extra
-`../` in `require` and `define-runtime-path` (`../../aloe/…`, not
+`../` in `require` and `define-runtime-path` (`../../../aloe/…`, not
 `../aloe/…`).
 
 ## Tests and acceptance
 
-Add `tests/gel-presentations/000-substrate-list.rkt`. Cover at least:
+Add `tests/gel/presentations/000-substrate-list.rkt`. Cover at least:
 
 1. **List signatures did not grow.** On a fresh driver (List library
    already loaded), snapshot unique selector names from
@@ -268,7 +268,7 @@ loads.
 Run:
 
 ```sh
-raco test tests/gel-presentations/000-substrate-list.rkt
+raco test tests/gel/presentations/000-substrate-list.rkt
 raco test tests
 git diff --check
 ```

@@ -36,9 +36,9 @@ Gel-ignorant, and loading Gel does not change disk method tables.
 Do not implement later steps from the design file without another checkpoint.
 
 Gel presentations (TOS stays the specimen) is specified in
-[`docs/gel-presentations/`](gel-presentations/README.md). Its slices are a
+[`docs/gel/presentations/`](gel/presentations/README.md). Its slices are a
 **local** series (`gel-presentations 000`, tests under
-`tests/gel-presentations/`), not global checkpoint 118. Do not write
+`tests/gel/presentations/`), not global checkpoint 118. Do not write
 `docs/checkpoints/0118-….md` for that work.
 On `experiment/2026-09-11-gel-presentations`, the issued series is **done**:
 **000, 002, and 003 are green. 001 stays blocked; do not implement it.** Do

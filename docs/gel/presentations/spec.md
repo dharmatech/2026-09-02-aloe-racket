@@ -8,7 +8,7 @@ next local slice. Spec leftovers are later Gel-as-Genera work
 
 Not Aloe language law. Directory bodies are §4.3 (the generic
 `GelDirectoryPresentations` class holding `fs-host`), not 001 and
-not a written `FsHost` type. Current Gel law is [`docs/gel.md`](../gel.md).
+not a written `FsHost` type. Current Gel law is [`docs/gel.md`](../../gel.md).
 
 **Branch.** `experiment/2026-09-11-gel-presentations` after green
 gel-presentations 003. Do not start from `main`. Do not merge to
@@ -17,13 +17,13 @@ gel-presentations 003. Do not start from `main`. Do not merge to
 **Authority.** `SPEC.md` is language law. Directory UX (paging, hidden
 names, listing, keys, TOS path bytes) is frozen by **predecessor**
 global checkpoints 112–117 and
-[`docs/gel-directory-surface.md`](../gel-directory-surface.md). Those
+[`docs/gel-directory-surface.md`](../../gel-directory-surface.md). Those
 are another project, not “the previous integers” of this series. Disk
-messages remain [`docs/filesystem-oo-vocabulary.md`](../filesystem-oo-vocabulary.md).
-Current Gel behavior is [`docs/gel.md`](../gel.md); 003 applied the
+messages remain [`docs/filesystem-oo-vocabulary.md`](../../filesystem-oo-vocabulary.md).
+Current Gel behavior is [`docs/gel.md`](../../gel.md); 003 applied the
 doc amendments.
 
-Originating charter: [`docs/gel-presentations/charter.md`](charter.md).
+Originating charter: [`docs/gel/presentations/charter.md`](charter.md).
 The checkpoint manager will not have that charter. Every rule needed
 to implement is here, including where slice files live (§9).
 
@@ -191,7 +191,7 @@ Gel with existing types.
 
 ### 4.3 Chosen body shape (Directory family)
 
-Measured in `tests/gel-presentations/probe-directory-fshost.rkt`
+Measured in `tests/gel/presentations/probe-directory-fshost.rkt`
 (not a slice):
 
 | Body | Result |
@@ -541,7 +541,7 @@ implementing checkpoints. Do not rewrite 112–117 as new UX.
 This spec does not write checkpoint files. A later checkpoint-manager
 conversation writes **one local slice at a time**. After slicing, list
 the issued numbers in
-[`docs/gel-presentations/README.md`](README.md) (and optionally here)
+[`docs/gel/presentations/README.md`](README.md) (and optionally here)
 so it is obvious which slices came out of this spec.
 
 ### 9.1 Local series (this experiment only)
@@ -550,8 +550,8 @@ Identity is `(project, number)`, not the next global integer.
 
 | | Path |
 |---|---|
-| Checkpoint | `docs/gel-presentations/checkpoints/000-short-slug.md` |
-| Test | `tests/gel-presentations/000-short-slug.rkt` |
+| Checkpoint | `docs/gel/presentations/checkpoints/000-short-slug.md` |
+| Test | `tests/gel/presentations/000-short-slug.rkt` |
 
 Spoken name: **gel-presentations 000**. Not “checkpoint 118”. Not
 “gel 000” (Gel already has global checkpoints 72–82). Zero-pad to
@@ -569,16 +569,16 @@ Directory UX remains global checkpoints 112–117 and
 `docs/gel-directory-surface.md`. Predecessor project, not previous
 integers of this series.
 
-Tests sit one directory deeper than the global suite. Use one extra
-`../` in `require` and `define-runtime-path` (`../../aloe/…`, not
-`../aloe/…`). Do not also create a global `tests/checkpoint-118.rkt`
-for the same slice.
+Tests sit under `tests/gel/presentations/` (two directories deeper
+than the global suite). Use `../../../aloe/…` in `require` and
+`define-runtime-path`. Do not also create a global
+`tests/checkpoint-118.rkt` for the same slice.
 
 **How to run tests.** `raco test` walks directories recursively. The
 shell glob `tests/*.rkt` does not. Full suite and per-slice:
 
 ```sh
-raco test tests/gel-presentations/000-short-slug.rkt
+raco test tests/gel/presentations/000-short-slug.rkt
 raco test tests
 ```
 
@@ -588,7 +588,7 @@ would skip this folder.
 **Sibling projects.** If this experiment blocks on unrelated work (a
 string primitive, a kernel hole, etc.), that is a sibling under
 `docs/`, with its own charter/spec/checkpoints/tests. Do not nest it
-under `docs/gel-presentations/`. Link it: “gel-presentations 001
+under `docs/gel/presentations/`. Link it: “gel-presentations 001
 depends on \<other-project\> 000.”
 
 ### 9.2 Issued slices

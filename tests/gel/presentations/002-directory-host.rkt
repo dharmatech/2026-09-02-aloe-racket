@@ -7,22 +7,22 @@
          racket/runtime-path
          racket/string
          rackunit
-         "../../aloe/driver.rkt"
-         "../../aloe/parse.rkt"
-         (only-in "../../aloe/type.rkt"
+         "../../../aloe/driver.rkt"
+         "../../../aloe/parse.rkt"
+         (only-in "../../../aloe/type.rkt"
                   exn:fail:aloe-type?
                   type-of
                   type->datum)
-         "../../host/racket/fs.rkt")
+         "../../../host/racket/fs.rkt")
 
-(define-runtime-path disk-library-path "../../lib/disk.aloe")
-(define-runtime-path directory-source-path "../../gel/directory.aloe")
-(define-runtime-path gel-loop-path "../../gel/loop.aloe")
-(define-runtime-path gel-menu-path "../../gel/menu.aloe")
-(define-runtime-path gel-point-path "../../examples/point.aloe")
-(define-runtime-path aloe-directory "../../aloe")
-(define-runtime-path host-directory "../../host")
-(define-runtime-path library-directory "../../lib")
+(define-runtime-path disk-library-path "../../../lib/disk.aloe")
+(define-runtime-path directory-source-path "../../../gel/directory.aloe")
+(define-runtime-path gel-loop-path "../../../gel/loop.aloe")
+(define-runtime-path gel-menu-path "../../../gel/menu.aloe")
+(define-runtime-path gel-point-path "../../../examples/point.aloe")
+(define-runtime-path aloe-directory "../../../aloe")
+(define-runtime-path host-directory "../../../host")
+(define-runtime-path library-directory "../../../lib")
 
 (define item-keys
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"

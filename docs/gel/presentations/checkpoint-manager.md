@@ -44,7 +44,7 @@ If any of these happen, do not invent a new design here:
 - a sibling project (string primitive, kernel hole) is required
 
 Tell the human to take it back to the spec conversation. Do not nest
-unrelated work under `docs/gel-presentations/`.
+unrelated work under `docs/gel/presentations/`.
 
 ---
 
@@ -79,8 +79,8 @@ Identity is `(project, number)`, not the next global integer.
 
 | | Path |
 |---|---|
-| Checkpoint | `docs/gel-presentations/checkpoints/000-short-slug.md` |
-| Test (implementer writes) | `tests/gel-presentations/000-short-slug.rkt` |
+| Checkpoint | `docs/gel/presentations/checkpoints/000-short-slug.md` |
+| Test (implementer writes) | `tests/gel/presentations/000-short-slug.rkt` |
 
 Spoken name: **gel-presentations 000**. Not “checkpoint 118”. Not
 “gel 000” (Gel already has global checkpoints 72–82). Zero-pad to
@@ -98,14 +98,14 @@ Directory UX remains global checkpoints 112–117 and
 `docs/gel-directory-surface.md`. Predecessor project, not previous
 integers of this series.
 
-Tests sit one directory deeper than the global suite. The checkpoint
-must tell the implementer to use one extra `../` in `require` and
-`define-runtime-path` (`../../aloe/…`, not `../aloe/…`).
+Tests sit under `tests/gel/presentations/` (two directories deeper
+than the global suite). The checkpoint must tell the implementer to
+use `../../../aloe/…` in `require` and `define-runtime-path`.
 
 **How to run tests** (write these commands into the checkpoint):
 
 ```sh
-raco test tests/gel-presentations/000-short-slug.rkt
+raco test tests/gel/presentations/000-short-slug.rkt
 raco test tests
 ```
 
@@ -122,7 +122,7 @@ not append it to root `CHECKPOINTS.md`.
 Suggested slug: `substrate-list`. Write:
 
 ```text
-docs/gel-presentations/checkpoints/000-substrate-list.md
+docs/gel/presentations/checkpoints/000-substrate-list.md
 ```
 
 Job (from spec §9.2): add `gel/presentations.aloe` and

@@ -266,9 +266,15 @@ a time, still not a workspace or GelFS framework:
    `n` / `p` leave the item pool and move through bounded transcript pages;
    page resets on push/pop/`u`/hidden toggle. Lists remain unpaged. This is
    not the sliding armed window or search.
-4. **Search `/`.** Jump in a huge listing. `/` is not in the letter
-   pool, so it does not steal an item key. Do not implement before
-   paging unless use shows jump-to-name hurting more than next-page.
+4. **Listing status.** `/etc` after paging still does not say where
+   you are. Next product slice: count of names in this listing (after
+   the hidden filter) and `page N of M` when `M > 1`. Local project:
+   [`docs/gel/directory-status/`](gel/directory-status/). Spoken name
+   **gel-directory-status 000**, not global 118. Do not hide or dim
+   `n` / `p` in that slice. Do not add ANSI.
+5. **Search `/`.** Jump in a huge listing. `/` is not in the letter
+   pool, so it does not steal an item key. After status, if jump-to-name
+   hurts more than walking pages.
 
 Parked, still wanted:
 
