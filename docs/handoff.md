@@ -40,13 +40,15 @@ Gel presentations (TOS stays the specimen) is specified in
 **local** series (`gel-presentations 000`, tests under
 `tests/gel-presentations/`), not global checkpoint 118. Do not write
 `docs/checkpoints/0118-….md` for that work.
-On `experiment/2026-09-11-gel-presentations`, **gel-presentations 000 and 002
-are green**. **001 stays blocked; do not implement it.** List values come from
+On `experiment/2026-09-11-gel-presentations`, the issued series is **done**:
+**000, 002, and 003 are green. 001 stays blocked; do not implement it.** Do
+not issue 004. Do not write global checkpoint 118. List values come from
 `gel-presentations list-values`. Directory listing, `u`, and TOS path text come
 from `GelDirectoryPresentations`, which holds `fs-host`. Disk types and `List`
 carry no `gel-*` selectors. Frozen Directory UX from global checkpoints
-112–117 is unchanged. This work remains the local `gel-presentations N`
-series, not global checkpoint 118.
+112–117 is unchanged. Historical 110–117 files still describe the old seam.
+Current Gel law is [`docs/gel.md`](gel.md). Leftovers are later Gel-as-Genera
+work, not another local checkpoint.
 
 If the work is still filesystem vocabulary rather than Gel, stay on
 `experiment/filesystem` and ignore this section.

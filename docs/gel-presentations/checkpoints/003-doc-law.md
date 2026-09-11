@@ -11,7 +11,7 @@ merge to `main`.
 family on the host-holding class). **001 stays blocked.** Frozen
 Directory UX remains global 112–117.
 
-**Status.** Ready to implement.
+**Status.** Complete (implemented; current Gel law describes 000/002).
 
 **Authority.** `docs/gel-presentations/spec.md` §11, applied to the
 shape that actually landed (§4.3 / §6.2 / 002). `SPEC.md` is Aloe

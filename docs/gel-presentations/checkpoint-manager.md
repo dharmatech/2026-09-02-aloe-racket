@@ -5,10 +5,11 @@ Aloe law. Not Gel law. Not a checkpoint. Not an implementer
 assignment. Law for the experiment:
 [`spec.md`](spec.md). Index: [`README.md`](README.md).
 
-**Your job.** Slice the spec into **one** local checkpoint at a time.
-Write the checkpoint file. Put every rule the implementer needs in
-that file. Then **stop**. Do not implement. Do not reopen the design.
-Do not write global checkpoint 118.
+**Your job.** The issued series is **done** (000, 002, 003 green;
+001 blocked). Do **not** write another local checkpoint. Do **not**
+implement 001. Do **not** rewrite 001. Do **not** write global
+checkpoint 118. If the human returns only to verify 003, confirm
+and stop.
 
 If you have been told to read this file, this is the whole assignment.
 
@@ -20,14 +21,10 @@ If you have been told to read this file, this is the whole assignment.
 2. First visit (done): write **gel-presentations 000** only (see §5).
 3. Stop. The human reviews it, then hands that checkpoint to an
    implementer.
-4. Later visits: the human returns and says which local number was
-   implemented. Verify against that checkpoint. **Do not implement
-   001. Do not issue 002.** 001 is blocked in the spec (§4.3, §9.2).
-   If the human asks for a new Directory-family slice, write a **new
-   number** from spec §4.3 (generic Gel class holding `fs-host`), not
-   a rewrite of 001 and not a written `FsHost` type name. If the spec
-   is still wrong, **stop** and send the human back to the spec
-   conversation.
+4. Later visits after 003: verify if asked. **Do not implement 001.
+   Do not issue 004.** Leftovers are later Gel-as-Genera work, not
+   another gel-presentations slice. If the spec is wrong, **stop**
+   and send the human back to the spec conversation.
 
 The implementer will not have this file. Put every rule they need in
 the checkpoint itself.
@@ -160,12 +157,10 @@ The human will say which local number was implemented. Then:
 
 1. Read that checkpoint and the corresponding test if it exists.
 2. Verify the slice against its own file (not against 001’s ambitions).
-3. 000 is green. **001 is blocked** (abstract `H` disk bodies do not
-   typecheck). Do not implement it. Do not issue 002. Do not enlarge
-   a later slice to paper over 001.
-4. A new Directory-family checkpoint is allowed only when the human
-   asks for one **and** the spec’s §4.3 host-holding generic Gel
-   class is the one being sliced. New number, new slug. Not 001.
+3. 000, 002, and 003 are green. **001 is blocked.** Do not implement
+   it. Do not rewrite it. Do not issue 004.
+4. The issued series is done. Spec leftovers are later Gel-as-Genera
+   work, not another local checkpoint.
 
 One checkpoint per visit. Stop after writing it.
 
@@ -175,7 +170,8 @@ One checkpoint per visit. Stop after writing it.
 
 - Implement anything
 - Implement 001 or rewrite it
-- Issue 002 while 001 is blocked
+- Issue 004 or any further gel-presentations slice
+- Write global checkpoint 118
 - Open Listener, Genera, wrappers-as-TOS, or a presentation-type
   lattice
 - Change frozen Directory UX (global 112–117)

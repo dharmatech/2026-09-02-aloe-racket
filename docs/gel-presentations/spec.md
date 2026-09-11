@@ -1,18 +1,18 @@
 # Gel presentations — TOS stays the specimen
 
-**Status.** Experiment law after green gel-presentations 000 and 002.
-Not Aloe language law. Not a checkpoint. **001 stays blocked** and
-must not be implemented. **003 is the current doc-law slice.**
-Directory bodies are §4.3 (the generic `GelDirectoryPresentations`
-class holding `fs-host`), not 001 and not a written `FsHost` type.
+**Status.** Issued series **done**. 000, 002, and 003 are implemented.
+**001 stays blocked** and must not be implemented or rewritten. No
+next local slice. Spec leftovers are later Gel-as-Genera work
+(§13), not gel-presentations 004. Do not write global checkpoint
+118.
 
-Slices are a **local series** (`gel-presentations 000`, `001`, …),
-not the next global integer. A checkpoint-manager conversation
-writes those files; this conversation does not.
+Not Aloe language law. Directory bodies are §4.3 (the generic
+`GelDirectoryPresentations` class holding `fs-host`), not 001 and
+not a written `FsHost` type. Current Gel law is [`docs/gel.md`](../gel.md).
 
-**Branch.** Continue on `experiment/2026-09-11-gel-presentations`
-after green gel-presentations 002. Do not start from `main`. Do not
-merge to `main`.
+**Branch.** `experiment/2026-09-11-gel-presentations` after green
+gel-presentations 003. Do not start from `main`. Do not merge to
+`main` from this conversation.
 
 **Authority.** `SPEC.md` is language law. Directory UX (paging, hidden
 names, listing, keys, TOS path bytes) is frozen by **predecessor**
@@ -20,8 +20,8 @@ global checkpoints 112–117 and
 [`docs/gel-directory-surface.md`](../gel-directory-surface.md). Those
 are another project, not “the previous integers” of this series. Disk
 messages remain [`docs/filesystem-oo-vocabulary.md`](../filesystem-oo-vocabulary.md).
-Current Gel behavior is [`docs/gel.md`](../gel.md); this experiment proposes
-amendments, applied later by **this** experiment's checkpoints.
+Current Gel behavior is [`docs/gel.md`](../gel.md); 003 applied the
+doc amendments.
 
 Originating charter: [`docs/gel-presentations/charter.md`](charter.md).
 The checkpoint manager will not have that charter. Every rule needed
@@ -613,9 +613,11 @@ green. It followed §4.3 / §6.2: Directory-family behavior lives on
 `GelDirectoryPresentations`, a generic Gel class holding `fs-host`.
 Disk classes retain only disk vocabulary; 001 remains blocked history.
 
-**gel-presentations 003 — doc law** (`doc-law`) is this slice. It
-applies §11 to current Gel law without rewriting historical global
-checkpoint 110–117 files.
+**gel-presentations 003 — doc law** (`doc-law`) is implemented. It
+applied §11 to current Gel law. Historical global checkpoint 110–117
+files still describe the old seam; they were not rewritten.
+
+**No next slice.** Do not issue 004. Do not implement 001.
 
 ---
 
@@ -723,9 +725,10 @@ them.
 
 ---
 
-## 13. Ranked leftovers (not this spec)
+## 13. Ranked leftovers (not another local checkpoint)
 
-1. **This experiment** — Gel presentations, TOS stays the specimen.
+1. **This experiment (done)** — Gel presentations, TOS stays the
+   specimen. Issued series: 000, 002, 003 green; 001 blocked.
 2. **Filed** — browser as TOS (session object).
 3. **Later Gel-as-Genera** — cycle key, then command tables,
    translators, transcript-wide sensitivity, history as live
