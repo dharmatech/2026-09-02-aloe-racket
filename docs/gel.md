@@ -96,8 +96,13 @@ Those future rows are exploratory, not accepted type, selector, handle, or
 policy designs.
 
 Adding a capability means adding an Aloe class or method (plus host
-primitives when the OS must be touched). Gel itself does not grow a new
-framework per personality.
+primitives when the OS must be touched). Gel does not grow a plugin, hook,
+pane, or extension API per personality. A personality is a Gel-owned
+presentation: methods indexed by Aloe type through `Signature.accepts?`,
+taking the specimen as an argument. The List personality lives on
+`GelPresentations`; the Directory personality lives on the generic
+`GelDirectoryPresentations`, which holds `fs-host`. Domain classes keep their
+own vocabulary. After Gel loads, `Directory` still only answers disk.
 
 ---
 
@@ -137,32 +142,40 @@ derived-message path and remain available through the lower-level `gel-rows`
 service.
 
 The user-facing menu is a `GelMenu` with either reflected `Messages` rows or
-authored `Values` rows. Gel installs one private `List.gel-values` adapter in
-`gel/menu.aloe`; it maps list elements to mirrors entirely in Aloe and retains
-existing mirrors by identity. `GelMenus` recognizes that exact zero-argument
-owned signature through `Mirror`, invokes it with a `GelListValues` expected
-type, and builds at most 22 one-based `GelValueRow` values in source order.
-One immutable `GelItemKeys` pool binds those row positions to
+authored `Values` rows. `GelMenus`, `GelText`, and `u` consult Gel-owned
+presentation objects, never the TOS method table, for Gel behavior. List uses
+the arity-one `list-values` method on `gel-presentations`; that method maps list
+elements to mirrors entirely in Aloe and retains existing mirrors by identity.
+`GelMenus` selects it through `Signature.accepts?` and builds at most 22
+one-based `GelValueRow` values in source order. One immutable `GelItemKeys`
+pool binds those row positions to
 `a b c d e f g h i j k l m o r s t v w x y z`, with `n`, `p`, `q`, and `u`
-omitted; `GelValueRow.key` derives its key from that pool and
-its immutable `label` captures presentation text when the row is built.
-Ordinary Lists use each mirror's raw text, retaining their existing bytes.
+omitted; `GelValueRow.key` derives its key from that pool and its immutable
+`label` captures presentation text when the row is built. Ordinary Lists use
+each mirror's raw text, retaining their existing bytes, and remain unpaged.
 
-`gel/directory.aloe` adds a deliberately narrow application adapter only after
-`lib/disk.aloe` has loaded. `GelMenus` recognizes exact reflected
-zero-argument `gel-directory-values` and `gel-directory-all-values` rows. Both
-return `GelValueRows` carrying nested live child mirrors rather than `Item`
-wrappers; the default selector filters raw names beginning with `.`, while the
-second retains hidden names. Both selectors return the full labeled listing.
-`GelMenus.of` then applies the Directory-only 22-row window and rebuilds page
-indexes from one; List and reflected-message fallbacks ignore the page. The
-shared builder labels files and other objects by name, directories with `/`,
-and symbolic links with `@`. The adapter also supplies the exact reflected
-`gel-up` service used only by the `u` command. These selectors are private
-seams for this one built-in surface, not a general authored-surface protocol.
-An empty filtered Directory renders `u  up`, `.  show hidden`, `n  next`, and
-`p  prev` without an initial blank line; unfamiliar objects retain their
-derived menu.
+After `lib/disk.aloe` has loaded, `gel/directory.aloe` defines the generic
+`GelDirectoryPresentations` class, which holds `fs-host`, and constructs
+`gel-directory-presentations`. Its arity-one `directory-values`,
+`directory-all-values`, `up`, and `tos-text` methods take disk specimens as
+arguments. Ordinary Gel does not load `gel/directory.aloe`; that file installs
+an optional zero-argument `directory-presentations` index on `GelMenus`, and
+`GelMenus`, `GelText`, and `GelUps` discover the host-holding instance through
+that index. The directory application still loads `gel/directory.aloe` after
+`lib/disk.aloe`. That file extends Gel, not `Directory`: after both loads, the
+disk classes still have only the `lib/disk.aloe` vocabulary, and `List` still
+has only the list-library vocabulary for this concern.
+
+The two Directory listing methods return `GelValueRows` carrying nested live
+child mirrors rather than `Item` wrappers. The default method filters raw names
+beginning with `.`, while the other retains hidden names; both return the full
+labeled listing. `GelMenus.of` then applies the Directory-only 22-row window
+and rebuilds page indexes from one; List and reflected-message fallbacks ignore
+the page. The shared builder labels files and other objects by name,
+directories with `/`, and symbolic links with `@`. The `up` presentation
+method is used only by the `u` command. An empty filtered Directory renders
+`u  up`, `.  show hidden`, `n  next`, and `p  prev` without an initial blank
+line; unfamiliar objects retain their derived menu.
 
 The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
 holds the underlying `(List Mirror)`, `tos` reads the first item, and `push`
@@ -214,26 +227,27 @@ pending states without invoking or popping. An exact `Int` hole temporarily
 pauses stack-pick digits: `"0"` through `"9"` accumulate an integer with
 `acc * 10 + digit`, and `"return"` invokes only after at least one digit. The
 pending line shows the accumulator. Non-Int holes keep the typed stack-pick
-behavior. On an idle Directory, exact lowercase `"u"` invokes its private
-adapter and pushes a returned live parent; at root it is a no-op. On every
-other object and during pending input it remains a no-op. A TTY only supplies
-the key-shaped `String`; terminal handling remains a host skin around this pure
-step. On an idle List, a valid visible item letter pushes the selected row's
-exact mirror immediately, leaves the List beneath it as history, and never
-enters the pending-send path. Digits remain reserved for reflected message
-rows, pending picks, and pending Int entry; they do not select List values.
+behavior. On an idle Directory, exact lowercase `"u"` consults the Gel-owned
+Directory presentation and pushes a returned live parent; at root it is a
+no-op. On every other object and during pending input it remains a no-op. A TTY
+only supplies the key-shaped `String`; terminal handling remains a host skin
+around this pure step. On an idle List, a valid visible item letter pushes the
+selected row's exact mirror immediately, leaves the List beneath it as history,
+and never enters the pending-send path. Digits remain reserved for reflected
+message rows, pending picks, and pending Int entry; they do not select List values.
 Idle precedence is `q`, Escape, `u`, `.`, `n`, `p`, then item or message keys.
 Invalid or out-of-range keys are no-ops.
 
 Menu and TOS text share the Aloe `GelText` service. `(gel-text menu value)`
 emits one indexed selector/arity line per reflected row, with overloads for
 ordinary values, exact mirrors, and `GelStep` state. `(gel-text tos stack)`
-emits `"TOS: "` plus the top mirror's raw subject text unless an exact private
-zero-argument `gel-tos-text` signature is present. The Directory adapter adds
-that signature to live `Directory`, `File`, `SymbolicLink`, and `Other`
-objects; `GelText` invokes the owned row through the same mirror with an exact
-`String` result, rendering the class and escaped existing path while keeping
-the selector out of the derived menu. From the project directory, launch the
+asks the optional host-holding Directory presentation for an accepting
+arity-one `tos-text` signature. `GelText` invokes that row on the presentation
+mirror with the TOS specimen as its argument and an exact `String` result; if
+none accepts, it uses the top mirror's raw subject text. It prefixes `"TOS: "`
+in either case. The four disk overloads render the class and escaped existing
+path. Disk objects acquire no Gel selector, so a derived File menu has no
+Gel-private row to hide. From the project directory, launch the
 Point application through the thin TTY skin with
 `racket host/racket/gel-run.rkt examples/gel-point.aloe` (after installing the
 optional `tui-term` package). Press the displayed digit for `x` to push its
@@ -256,8 +270,9 @@ separate Gel `show` choice remains later work.
 Launch the live directory application from the project directory with
 `racket host/racket/gel-directory-run.rkt examples/gel-directory.aloe`. This
 separate runner injects both `term` and production `fs-host`; the application
-loads the disk vocabulary and Gel adapter, then supplies the process's current
-live Directory as `gel-start-value`. It does not change process cwd.
+loads the disk vocabulary and Gel-owned presentation, then supplies the
+process's current live Directory as `gel-start-value`. It does not change
+process cwd.
 
 ---
 
@@ -351,11 +366,11 @@ still requires a blocked golden. The current menu needs are already served by
 - One stack. Menus from the TOS type. Lists expose the first 22 values through
   a fixed position-bound letter pool that excludes `n`, `p`, `q`, and `u`;
   Lists remain unpaged.
-- Directory rows reuse the same Values menu and item-key pool. The adapter
-  lives in Gel application code; reusable disk vocabulary remains unaware of
-  Gel. Leading-dot names are hidden before the Directory-only page window by
-  default, idle `.` toggles their visibility, and idle `n` / `p` move between
-  bounded pages.
+- Directory rows reuse the same Values menu and item-key pool. The Gel-owned
+  presentation lives in Gel application code; reusable disk vocabulary remains
+  unaware of Gel. Leading-dot names are hidden before the Directory-only page
+  window by default, idle `.` toggles their visibility, and idle `n` / `p` move
+  between bounded pages.
 - Escape means stack back. Directory `u` computes and pushes a live parent;
   it does not pop, replace TOS, or change process cwd.
 - TOS is the **receiver**. Arguments fill from the builder (typed

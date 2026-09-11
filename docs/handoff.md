@@ -31,7 +31,8 @@ persists. `q` still quits, and pending `.` / `n` / `p` are no-ops.
 Live `Directory`, `File`, `SymbolicLink`, and `Other` TOS lines show the class
 and escaped absolute path while their structural `Mirror.raw` values remain
 unchanged.
-The authored adapter lives under `gel/`; `lib/disk.aloe` remains Gel-ignorant.
+The Gel-owned presentation lives under `gel/`; `lib/disk.aloe` remains
+Gel-ignorant, and loading Gel does not change disk method tables.
 Do not implement later steps from the design file without another checkpoint.
 
 Gel presentations (TOS stays the specimen) is specified in
@@ -39,11 +40,13 @@ Gel presentations (TOS stays the specimen) is specified in
 **local** series (`gel-presentations 000`, tests under
 `tests/gel-presentations/`), not global checkpoint 118. Do not write
 `docs/checkpoints/0118-….md` for that work.
-**000 is green. 001 is blocked** (a Gel method with abstract
-`(Directory H)` cannot send `entries` / `parent`; writing `FsHost` as
-a type is unbound). The type index still works. A probe shows a
-generic Gel class that holds `fs-host` can send those disk messages.
-Do not implement 001. Do not issue 002.
+On `experiment/2026-09-11-gel-presentations`, **gel-presentations 000 and 002
+are green**. **001 stays blocked; do not implement it.** List values come from
+`gel-presentations list-values`. Directory listing, `u`, and TOS path text come
+from `GelDirectoryPresentations`, which holds `fs-host`. Disk types and `List`
+carry no `gel-*` selectors. Frozen Directory UX from global checkpoints
+112–117 is unchanged. This work remains the local `gel-presentations N`
+series, not global checkpoint 118.
 
 If the work is still filesystem vocabulary rather than Gel, stay on
 `experiment/filesystem` and ignore this section.
@@ -109,21 +112,22 @@ only through explicit typed capabilities.
   current live `Directory`. `GelStack.pop` removes one history item above a
   one-item floor;
   idle Escape pops, pending Escape cancels without popping, and `q` quits from
-  either state. `GelMenus` gives built-in List a private Aloe-authored value
-  surface: the first 22 elements render with position-bound letters from `a`
-  through `z`, omitting `n`, `p`, `q`, and `u`; selecting one pushes its exact
-  mirror, and Escape returns to the List. Lists remain unpaged. A Gel-owned
-  Directory adapter supplies the same value-row shape with `name`, `name/`,
-  and `name@` labels, preserving
-  live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. Leading-dot
-  names are omitted before the Directory-only 22-row page window by default;
-  idle `.` persistently toggles them while idle `n` / `p` page the full
-  filtered listing. Non-Directory and pending `n` / `p` remain no-ops. `u`
-  asks only a Directory for its live parent and pushes it, so Escape and up are
-  observably different. Those four live disk classes render on TOS with their
-  class and existing escaped absolute path through a private Gel selector;
-  other values and `Mirror.raw` retain their structural text. Reflected menus
-  and pending input retain their digit behavior.
+  either state. `GelMenus` gives built-in List a Gel-owned value presentation
+  through `gel-presentations list-values`: the first 22 elements render with
+  position-bound letters from `a` through `z`, omitting `n`, `p`, `q`, and
+  `u`; selecting one pushes its exact mirror, and Escape returns to the List.
+  Lists remain unpaged. `GelDirectoryPresentations`, holding `fs-host`,
+  supplies the same value-row shape with `name`, `name/`, and `name@` labels,
+  preserving live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors.
+  Leading-dot names are omitted before the Directory-only 22-row page window
+  by default; idle `.` persistently toggles them while idle `n` / `p` page the
+  full filtered listing. Non-Directory and pending `n` / `p` remain no-ops.
+  `u` asks only a Directory for its live parent and pushes it, so Escape and up
+  are observably different. Those four live disk classes render on TOS with their
+  class and existing escaped absolute path through `tos-text` on that
+  Gel-owned presentation; other values and `Mirror.raw` retain their
+  structural text. Disk types and `List` carry no `gel-*` selectors. Reflected
+  menus and pending input retain their digit behavior.
 - Typed host capabilities use descriptor-defined interfaces shared by runtime
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers

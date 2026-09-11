@@ -1,21 +1,18 @@
 # Gel presentations — TOS stays the specimen
 
-**Status.** Specification for the first Gel presentations experiment.
-Not Aloe language law. Not yet Gel law. Not a checkpoint.
-
-**gel-presentations 000 is the last green slice.** The type index
-(`Signature.accepts?` on a Gel-owned one-argument method) works.
-**001 is blocked** and must not be implemented. Do not issue 002
-until the human asks. Directory bodies are §4.3 (generic Gel class
-holding `fs-host`), not 001 and not a written `FsHost` type.
+**Status.** Experiment law after green gel-presentations 000 and 002.
+Not Aloe language law. Not a checkpoint. **001 stays blocked** and
+must not be implemented. **003 is the current doc-law slice.**
+Directory bodies are §4.3 (the generic `GelDirectoryPresentations`
+class holding `fs-host`), not 001 and not a written `FsHost` type.
 
 Slices are a **local series** (`gel-presentations 000`, `001`, …),
 not the next global integer. A checkpoint-manager conversation
 writes those files; this conversation does not.
 
-**Branch.** Continue on `experiment/gel-directory-surface` after green
-global checkpoint 117. Do not start from `main`. Do not merge to
-`main`.
+**Branch.** Continue on `experiment/2026-09-11-gel-presentations`
+after green gel-presentations 002. Do not start from `main`. Do not
+merge to `main`.
 
 **Authority.** `SPEC.md` is language law. Directory UX (paging, hidden
 names, listing, keys, TOS path bytes) is frozen by **predecessor**
@@ -387,33 +384,45 @@ Absence is “no matching `accepts?`”, which is `GelUp Unavailable`,
 ### 6.4 How `GelMenus`, `GelText`, and `u` find a presentation
 
 They reflect **Gel-owned presentation objects**, never the TOS method
-table, for Gel behavior. List: `gel-presentations`. Directory family:
-the host-holding instance from `gel/directory.aloe` (§4.3), found
-without naming an unbound symbol in `menu.aloe`.
+table, for Gel behavior. List lives on `gel-presentations`. Directory
+lives on `gel-directory-presentations`, found through the
+`directory-presentations` index, not through `gel-presentations`.
+
+Ordinary Gel does not load `gel/directory.aloe`, so `gel/menu.aloe` and
+`gel/loop.aloe` cannot name the optional instance. `gel/directory.aloe`
+installs an arity-zero `directory-presentations` method on `GelMenus`.
+The generic Gel code reflects `gel-menus` (or `self` when already in
+`GelMenus`), selects that exact arity-zero signature, and invokes it
+with expected type `Mirror`. The returned mirror owns the Directory
+family methods. If the index is absent, there is no Directory
+personality.
 
 **`GelMenus.of(mirror, show-hidden, page)`**
 
-1. Collect arity-1 signatures of `gel-presentations` whose selector
-   name is `directory-all-values` or `directory-values` according to
-   `show-hidden`.
-2. If one `(signature accepts? mirror)`, invoke it on
-   `gel-presentations` with `(mirror subject)`, expected type
-   `GelValueRows`. Window the full listing with today's Directory
-   page window. Return `GelMenu Values`.
-3. Else collect `list-values` the same way. If one accepts, invoke,
+1. If the Directory index exists, collect arity-1 signatures of its
+   returned mirror whose selector is `directory-all-values` or
+   `directory-values` according to `show-hidden`.
+2. If one `(signature accepts? mirror)`, invoke it on that Directory
+   presentation mirror with `(mirror subject)`, expected type
+   `GelValueRows`. Window the full listing with today's Directory page
+   window. Return `GelMenu Values`.
+3. Else collect arity-1 `list-values` signatures from
+   `gel-presentations`. If one accepts, invoke it there,
    build at most 22 `GelValueRow`s from `GelListValues` as today,
    ignore `page`. Return `GelMenu Values`.
 4. Else `GelMenu Messages (gel-rows of mirror)`.
 
-**`GelMenus.directory?(mirror)`** is “a `directory-values` signature
-of `gel-presentations` accepts this mirror”, not a scan of the
-specimen. Paging, hidden toggle, and `n` / `p` keep using this
-predicate. Lists still do not page.
+**`GelMenus.directory?(mirror)`** is “the Directory index exists and a
+`directory-values` signature of its returned mirror accepts this
+mirror”, not a scan of the specimen. Paging, hidden toggle, and `n` /
+`p` keep using this predicate. Lists still do not page.
 
 **`GelText.tos`**
 
-1. Collect arity-1 `tos-text` signatures of `gel-presentations`.
-2. If one accepts the TOS mirror, invoke it, expected type `String`.
+1. If the Directory index exists, collect arity-1 `tos-text`
+   signatures of its returned mirror.
+2. If one accepts the TOS mirror, invoke it on that mirror with
+   `(top subject)`, expected type `String`.
 3. Else `(top raw)`.
 4. Prefix `"TOS: "` as today.
 
@@ -425,8 +434,8 @@ row, because none exists.
 
 **`GelUps`**
 
-1. `available?` / `of`: arity-1 `up` on `gel-presentations` that
-   `accepts?` the mirror.
+1. `available?` / `of`: if the Directory index exists, find an
+   arity-1 `up` on its returned mirror that `accepts?` the TOS mirror.
 2. If none, `GelUp Unavailable` (no invoke).
 3. If one, invoke with `(mirror subject)`, expected type `GelUp`.
 
@@ -446,7 +455,8 @@ from checkpoint 117.
 ### 6.5 `u` and parent
 
 Who sends `(directory parent)`: the `up` method on
-`GelPresentations`, where `directory` is a typed parameter.
+`GelDirectoryPresentations`, where `directory` is a typed parameter
+and the class's `H` is pinned by its `fs-host` field.
 
 Who pushes: `GelStep.handle-up`, unchanged. `GelUp Parent` still
 carries a `Mirror` of the live parent `Directory`. Root /
@@ -581,39 +591,31 @@ string primitive, a kernel hole, etc.), that is a sibling under
 under `docs/gel-presentations/`. Link it: “gel-presentations 001
 depends on \<other-project\> 000.”
 
-### 9.2 First slices (suggestion, not checkpoint files)
+### 9.2 Issued slices
 
-Do not write these files in the conversation that only has this spec.
-
-**gel-presentations 000 — substrate + List** (suggested slug
-`substrate-list`). Add `gel/presentations.aloe` and
-`GelPresentations`. Move `List.gel-values` onto
+**gel-presentations 000 — substrate + List** (`substrate-list`) is
+green. It added `gel/presentations.aloe` and `GelPresentations`, moving
+`List.gel-values` onto
 `(gel-presentations list-values items)`. `GelMenus` recognizes List
 by `accepts?` on that Gel-owned row, not by scanning the specimen
 for `"gel-values"`. Delete `define-methods List` from `gel/menu.aloe`.
 Point, Int, and derived menus stay byte-for-byte. Proof: after Gel
 loads, `List` has no `gel-values`; global checkpoint 110–111 List
-behavior still holds. Directory may still be patched in this slice;
-if so, the live-image bar is **not** claimed done.
+behavior still holds.
 
 **gel-presentations 001 — Directory family** (slug `directory-family`).
 **Blocked. Do not implement. Do not rewrite this file into a new
 design.** The issued checkpoint required `(type H)` / `(Directory H)`
-bodies. Those do not typecheck (§4.2–4.3). 000 stays the last green
-slice.
+bodies. Those do not typecheck (§4.2–4.3).
 
-**gel-presentations 002 — doc law** (suggested slug `doc-law`).
-**Not issued.** Do not write it while 001 is blocked. When Directory
-is actually on `GelPresentations` (a later slice, new number, concrete
-`FsHost` bodies), apply §11 wording to `docs/gel.md`,
-`docs/gel-directory-surface.md`, and `docs/handoff.md`. Historical
-global checkpoint 110–117 files stay as history.
+**gel-presentations 002 — Directory host** (`directory-host`) is
+green. It followed §4.3 / §6.2: Directory-family behavior lives on
+`GelDirectoryPresentations`, a generic Gel class holding `fs-host`.
+Disk classes retain only disk vocabulary; 001 remains blocked history.
 
-A later Directory-family slice, if the human asks the checkpoint
-manager to write one, must follow §4.3 / §6.2 (generic Gel class
-holding `fs-host`), not 001’s abstract-`H` bodies and not a written
-`FsHost` type name. Do not call it 001. Do not call it 002 until
-doc-law is really next.
+**gel-presentations 003 — doc law** (`doc-law`) is this slice. It
+applies §11 to current Gel law without rewriting historical global
+checkpoint 110–117 files.
 
 ---
 
@@ -640,7 +642,7 @@ Do not specify or implement as this experiment:
 
 ---
 
-## 11. Proposed doc amendments (applied later, by checkpoints)
+## 11. Doc amendments (applied by gel-presentations 003)
 
 ### `docs/gel.md` §4
 
@@ -655,20 +657,26 @@ with:
 > Adding a capability means adding an Aloe class or method (plus host
 > primitives when the OS must be touched). Gel does not grow a
 > plugin, hook, pane, or extension API per personality. A personality
-> is a Gel-owned presentation: methods on `GelPresentations`, indexed
-> by Aloe type via `Signature.accepts?`, taking the specimen as an
-> argument. Domain classes keep their own vocabulary. After Gel
-> loads, `Directory` still only answers disk.
+> is a Gel-owned presentation: methods indexed by Aloe type via
+> `Signature.accepts?`, taking the specimen as an argument. The List
+> personality lives on `GelPresentations`; the Directory personality
+> lives on generic `GelDirectoryPresentations`, which holds `fs-host`.
+> Domain classes keep their own vocabulary. After Gel loads,
+> `Directory` still only answers disk.
 
 ### `docs/gel.md` §5 (current adapter paragraphs)
 
 Replace the private-seam story (`List.gel-values` on `List`,
 `gel-directory-values` / `gel-up` / `gel-tos-text` on disk types,
 string-matching those names on the specimen) with: `GelMenus`,
-`GelText`, and `u` consult `gel-presentations`. List and Directory
-are two overloads of that one service. The directory application
+`GelText`, and `u` consult Gel-owned presentation objects, never the
+TOS method table. List uses `list-values` on `gel-presentations`.
+Directory uses `directory-values`, `directory-all-values`, `up`, and
+`tos-text` on `gel-directory-presentations`, found through the
+optional `directory-presentations` index. The directory application
 still loads `gel/directory.aloe` after `lib/disk.aloe`; that file
-extends `GelPresentations`, not `Directory`.
+defines and installs the host-holding Gel presentation without
+extending a disk class.
 
 Keep the frozen UX sentences (22-row page, `.`, `n` / `p`, `u`,
 labels, TOS path form). Keep the reserved-name table: Listener,
@@ -701,10 +709,13 @@ them.
   not store “the” presentation on `GelStep` in a way that implies
   there can be only one forever. Lookup-from-type leaves a second
   overload or an ordered list as a later design.
-- **A second personality.** A process browser should
-  `define-methods GelPresentations` the same way `gel/directory.aloe`
-  does, not install `gel-values` on a process object. The service is
-  the one substrate.
+- **A second personality.** A process browser should use Gel-owned
+  one-argument presentation methods indexed by the process type, not
+  install `gel-values` on a process object. If its bodies require an
+  optional host capability, a host-holding Gel presentation plus an
+  optional index is the Directory precedent. Directory itself lives
+  on `GelDirectoryPresentations`; `gel/directory.aloe` does not extend
+  `GelPresentations`.
 - **History as live presentations.** Stack items stay specimens
   (`Mirror` of the value). A later Listener-shaped history line can
   re-present the same object. Do not snapshot presentation objects

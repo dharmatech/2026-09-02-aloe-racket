@@ -94,8 +94,9 @@ Also locked:
 - Everyday objects come from `lib/disk.aloe` (`Disk`, `Location`,
   `Directory`, `File`, `Item`). Thin `lib/fs.aloe` stays as the other
   library. Gel must not speak both.
-- `lib/disk.aloe` stays Gel-ignorant. Authored keys live in Gel, not in
-  the disk vocabulary.
+- `lib/disk.aloe` stays Gel-ignorant. The authored behavior is a Gel-owned
+  presentation; after Gel loads, disk method tables are unchanged. Authored
+  keys live in Gel, not in the disk vocabulary.
 - Default `bin/aloe` stays capability-free. A Gel directory runner may
   inject `term` and `fs-host`. Ordinary Gel may keep injecting only
   `term`.
@@ -236,7 +237,7 @@ Hand check for the live slice: from the project directory, enter
   Checkpoint 112 captures immutable rows within each `GelMenus.of` call, but a
   later redraw or key step may construct the menu again. Persistent per-TOS
   snapshots and an explicit refresh command remain open.
-- **Resolved exact files.** Authored Directory presentation lives in
+- **Resolved exact files.** The Gel-owned Directory presentation lives in
   `gel/directory.aloe`, not `lib/`. The filesystem-capable application uses
   the separate `host/racket/gel-directory-run.rkt`; the ordinary Term-only
   runner remains unchanged.
@@ -248,9 +249,9 @@ the original five-item progression. Ranked next, still one checkpoint at
 a time, still not a workspace or GelFS framework:
 
 1. **Implemented in checkpoint 113: TOS path text.** The live screen now
-   prints `#<Directory "/home/dharmatech">` through a private Gel adapter;
-   no keys or public disk messages changed, and non-disk TOS values retain
-   their structural text.
+   prints `#<Directory "/home/dharmatech">`; that text comes from a Gel-owned
+   presentation. No keys or public disk messages changed, and non-disk TOS
+   values retain their structural text.
 2. **Implemented in checkpoint 116: hidden names.** A live Directory now hides
    names that start with `.` before the 24-row cap by default; idle `.`
    persistently toggles them and reports the next toggle in the menu. String
