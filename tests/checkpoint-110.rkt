@@ -103,7 +103,7 @@
 
 (define value-item-keys
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
-    "m" "n" "o" "p" "r" "s" "t" "v" "w" "x" "y" "z"))
+    "m" "o" "r" "s" "t" "v" "w" "x" "y" "z"))
 
 (test-case "Gel value-menu names and types appear only after Gel loads"
   (define fresh (make-driver))
@@ -231,7 +231,7 @@
     '(gel-text menu (Mirror of checkpoint-110-empty)))
    ""))
 
-(test-case "value rows expose only the first 24 list elements"
+(test-case "value rows expose only the first 22 list elements"
   (define state (make-loop-driver))
   (driver-eval!
    state
@@ -252,7 +252,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-many-state
-      (GelStep new checkpoint-110-many-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-110-many-stack #f (List empty) 0 #f #f 0)))
   (driver-eval!
    state
    '(define checkpoint-110-hidden-twenty-five
@@ -261,17 +261,17 @@
   (define expected
     (apply string-append
            (for/list ([key (in-list value-item-keys)]
-                      [value (in-range 1 25)])
+                      [value (in-range 1 23)])
              (format "~a  ~a\r\n" key value))))
   (define rendered
     (driver-eval! state '(gel-text menu checkpoint-110-many)))
-  (check-equal? (driver-eval! state '(checkpoint-110-many-rows len)) 24)
+  (check-equal? (driver-eval! state '(checkpoint-110-many-rows len)) 22)
   (check-equal? rendered expected)
   (check-equal?
    (driver-eval!
     state
-    '(((checkpoint-110-many-rows select 24) value) subject))
-   24)
+    '(((checkpoint-110-many-rows select 22) value) subject))
+   22)
   (check-false (regexp-match? #rx"25" rendered))
   (check-false (regexp-match? #rx"overflow|next|search" rendered))
   (check-eq? (driver-eval! state 'checkpoint-110-hidden-twenty-five)
@@ -312,7 +312,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
 
   (define value-menu
     (driver-eval! state '(gel-text menu checkpoint-110-route-list)))
@@ -336,7 +337,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-point-state
-      (GelStep new checkpoint-110-point-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-110-point-stack #f (List empty) 0 #f #f 0)))
   (driver-eval!
    state
    '(define checkpoint-110-point-rows
@@ -356,7 +357,8 @@
         (List of checkpoint-110-point-plus-row)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-110-int-rows
@@ -376,7 +378,8 @@
         (List of checkpoint-110-int-plus-row)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-110-int-typed
@@ -428,7 +431,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-list-state
-      (GelStep new checkpoint-110-list-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-110-list-stack #f (List empty) 0 #f #f 0)))
   (driver-eval!
    state
    '(define checkpoint-110-chosen
@@ -475,7 +478,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-short-state
-      (GelStep new checkpoint-110-floor-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-110-floor-stack #f (List empty) 0 #f #f 0)))
 
   (for ([key (in-list '("0" "2" "u" "A" "return" "d"))]
         [name (in-list '(checkpoint-110-zero
@@ -521,7 +524,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-110-nested-chosen

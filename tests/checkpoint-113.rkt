@@ -41,7 +41,9 @@
    "d  pipe\r\n"
    "\r\n"
    "u  up\r\n"
-   ".  show hidden\r\n"))
+   ".  show hidden\r\n"
+   "n  next\r\n"
+   "p  prev\r\n"))
 
 (define (driver-type-datum state datum)
   (type->datum

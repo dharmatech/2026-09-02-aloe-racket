@@ -260,11 +260,11 @@ a time, still not a workspace or GelFS framework:
    `docs/string-starts-with-library-brief.md` (115: `lib/string.aloe`),
    then `docs/gel-directory-hidden-brief.md` (116). Do not combine
    language and Gel in one checkpoint.
-3. **Paging.** Needed for `/etc`, `/usr/bin`, and any listing that is
-   still long after dots are hidden. Checkpoint-manager brief:
-   `docs/gel-directory-paging-brief.md` (117). `n` / `p` leave the item
-   pool; dumb transcript pages; reset page on push/pop/`u`/hidden
-   toggle. Not the sliding armed window. Not List paging. Not search.
+3. **Implemented in checkpoint 117: paging.** Live Directory listings now
+   window the full filtered child rows into 22-item pages. Exact lowercase
+   `n` / `p` leave the item pool and move through bounded transcript pages;
+   page resets on push/pop/`u`/hidden toggle. Lists remain unpaged. This is
+   not the sliding armed window or search.
 4. **Search `/`.** Jump in a huge listing. `/` is not in the letter
    pool, so it does not steal an item key. Do not implement before
    paging unless use shows jump-to-name hurting more than next-page.

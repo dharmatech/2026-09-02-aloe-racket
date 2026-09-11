@@ -38,7 +38,7 @@
 
 (define item-keys
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
-    "m" "n" "o" "p" "r" "s" "t" "v" "w" "x" "y" "z"))
+    "m" "o" "r" "s" "t" "v" "w" "x" "y" "z"))
 
 (define mixed-nodes
   (hash
@@ -58,7 +58,9 @@
    "d  pipe\r\n"
    "\r\n"
    "u  up\r\n"
-   ".  show hidden\r\n"))
+   ".  show hidden\r\n"
+   "n  next\r\n"
+   "p  prev\r\n"))
 
 (define point-menu
   (string-append
@@ -323,7 +325,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
 
   (for ([index (in-range 1 5)]
         [key (in-list '("a" "b" "c" "d"))])
@@ -355,7 +358,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (for ([key '("a" "b" "c" "d")]
         [name '(file-step directory-step link-step other-step)])
     (driver-eval! state `(define ,name (cwd-state handle-key ,key))))
@@ -364,7 +368,9 @@
                 (string-append
                  "a  disk.aloe\r\n\r\n"
                  "u  up\r\n"
-                 ".  show hidden\r\n"))
+                 ".  show hidden\r\n"
+                 "n  next\r\n"
+                 "p  prev\r\n"))
   (for ([name '(file-step link-step other-step)])
     (define text (driver-eval! state `(gel-text menu ,name)))
     (check-not-equal? text "")
@@ -390,18 +396,20 @@
   (define-directory! state 'empty-directory "/cwd/empty")
   (define-directory! state 'many-directory "/many")
   (check-equal? (driver-eval! state '(gel-text menu empty-directory))
-                "u  up\r\n.  show hidden\r\n")
+                (string-append
+                 "u  up\r\n.  show hidden\r\n"
+                 "n  next\r\np  prev\r\n"))
   (driver-eval! state '(define many-mirror (Mirror of many-directory)))
   (define-value-rows! state 'many-rows 'many-mirror)
   (define rendered (driver-eval! state '(gel-text menu many-mirror)))
-  (check-equal? (driver-eval! state '(many-rows len)) 24)
-  (for ([index (in-range 1 25)]
+  (check-equal? (driver-eval! state '(many-rows len)) 22)
+  (for ([index (in-range 1 23)]
         [key (in-list item-keys)])
     (check-equal? (driver-eval! state `((many-rows select ,index) key)) key)
     (check-equal?
      (driver-eval! state `((many-rows select ,index) label))
      (format "file~a" (~r index #:min-width 2 #:pad-string "0"))))
-  (check-false (regexp-match? #rx"file25|file26|overflow|paging|search"
+  (check-false (regexp-match? #rx"file23|file24|file25|file26|overflow|search"
                               rendered))
   (check-false (regexp-match? #rx"(?m:^[qu]  file)" rendered))
   (check-equal? (length (regexp-match* #rx"u  up\r\n" rendered)) 1))
@@ -430,7 +438,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval! state '(define lib-step (cwd-state handle-key "b")))
   (define child-mirror (driver-eval! state '((lib-step stack) tos)))
   (driver-eval!
@@ -476,7 +485,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (check-eq? (driver-eval! state '(root-state handle-key "u"))
              (driver-eval! state 'root-state))
 
@@ -492,7 +502,8 @@
           (List empty)
           0
           #f
-          #f)))
+          #f
+           0)))
     (check-eq? (driver-eval! state `(,name handle-key "u"))
                (driver-eval! state name)))
 
@@ -506,7 +517,8 @@
          (List empty)
          0
          #f
-         #f)
+         #f
+          0)
        handle-key
        "a")))
   (check-eq? (driver-eval! state '(file-state handle-key "u"))
@@ -523,7 +535,8 @@
         (List of int-plus)
         0
         #f
-        #f)))
+        #f
+         0)))
   (check-eq? (driver-eval! state '(int-pending handle-key "u"))
              (driver-eval! state 'int-pending))
 
@@ -538,7 +551,8 @@
         (List of point-plus)
         0
         #f
-        #f)))
+        #f
+         0)))
   (check-eq? (driver-eval! state '(point-pending handle-key "u"))
              (driver-eval! state 'point-pending)))
 
@@ -554,7 +568,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval! state '(define quit-step (history-state handle-key "q")))
   (driver-eval! state '(define back-step (history-state handle-key "escape")))
   (check-true (driver-eval! state '(quit-step quit)))
@@ -627,7 +642,7 @@
      (check-equal? (length (regexp-match* #rx"b  lib/\r\n" transcript)) 2)
      (check-equal? (length (regexp-match* #rx"c  link@\r\n" transcript)) 2)
      (check-regexp-match
-      #rx"a  disk.aloe\r\n\r\nu  up\r\n[.]  show hidden\r\n\r\nkey a\r\n"
+      #rx"a  disk.aloe\r\n\r\nu  up\r\n[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey a\r\n"
       transcript)
      (check-regexp-match #rx"key a\r\nTOS: #<File " transcript)
      (check-regexp-match

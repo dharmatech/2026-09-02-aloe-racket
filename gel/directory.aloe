@@ -10,6 +10,21 @@
 (define-class GelDirectoryRows
   (fields)
   (methods
+    (row (type H)
+      (item (Item H))
+      (index Int)
+      (label String)
+      GelValueRow
+      (item case
+        (File (file)
+          (GelValueRow new index (Mirror of file) label))
+        (Directory (directory)
+          (GelValueRow new index (Mirror of directory) label))
+        (SymbolicLink (link)
+          (GelValueRow new index (Mirror of link) label))
+        (Other (thing)
+          (GelValueRow new index (Mirror of thing) label))))
+
     (of (type H)
       (items (List (Item H)))
       (labels (List String))
@@ -18,34 +33,13 @@
              (items fold
                (GelDirectoryBuild new labels (List empty))
                (fn (build item)
-                 (if (((build rows) len) < (gel-item-keys len))
-                     (GelDirectoryBuild new
-                       ((build labels) rest)
-                       ((build rows) cons
-                         (let ((index (((build rows) len) + 1))
-                               (label ((build labels) first)))
-                           (item case
-                             (File (file)
-                               (GelValueRow new
-                                 index
-                                 (Mirror of file)
-                                 label))
-                             (Directory (directory)
-                               (GelValueRow new
-                                 index
-                                 (Mirror of directory)
-                                 label))
-                             (SymbolicLink (link)
-                               (GelValueRow new
-                                 index
-                                 (Mirror of link)
-                                 label))
-                             (Other (thing)
-                               (GelValueRow new
-                                 index
-                                 (Mirror of thing)
-                                 label))))))
-                     build)))))
+                 (GelDirectoryBuild new
+                   ((build labels) rest)
+                   ((build rows) cons
+                     (self row
+                       item
+                       (((build rows) len) + 1)
+                       ((build labels) first))))))))
         (GelValueRows new ((built rows) reverse))))))
 
 (define gel-directory-rows (GelDirectoryRows new))

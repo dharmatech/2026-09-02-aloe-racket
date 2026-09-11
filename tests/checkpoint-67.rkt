@@ -56,7 +56,7 @@ ALOE
  (eval-source
   (string-append
    "(define int-state "
-   "  (GelStep new int-stack #f (List empty) 0 #f #f))")
+   "  (GelStep new int-stack #f (List empty) 0 #f #f 0))")
   environment))
 (void (eval-source "(define int-rows (gel-rows of 10))" environment))
 (void (bind-row! "int-plus-row" "int-rows" "+" 1))
@@ -100,7 +100,7 @@ ALOE
  (eval-source
   (string-append
    "(define point-state "
-   "  (GelStep new point-stack #f (List empty) 0 #f #f))")
+   "  (GelStep new point-stack #f (List empty) 0 #f #f 0))")
   environment))
 (void
  (eval-source
@@ -139,7 +139,7 @@ ALOE
 (void (eval-source "(define one-stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
-  "(define one-state (GelStep new one-stack #f (List empty) 0 #f #f))"
+  "(define one-state (GelStep new one-stack #f (List empty) 0 #f #f 0))"
   environment))
 (void
  (eval-source

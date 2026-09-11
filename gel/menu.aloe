@@ -131,17 +131,15 @@
       (GelItemKey new 11 "k")
       (GelItemKey new 12 "l")
       (GelItemKey new 13 "m")
-      (GelItemKey new 14 "n")
-      (GelItemKey new 15 "o")
-      (GelItemKey new 16 "p")
-      (GelItemKey new 17 "r")
-      (GelItemKey new 18 "s")
-      (GelItemKey new 19 "t")
-      (GelItemKey new 20 "v")
-      (GelItemKey new 21 "w")
-      (GelItemKey new 22 "x")
-      (GelItemKey new 23 "y")
-      (GelItemKey new 24 "z"))))
+      (GelItemKey new 14 "o")
+      (GelItemKey new 15 "r")
+      (GelItemKey new 16 "s")
+      (GelItemKey new 17 "t")
+      (GelItemKey new 18 "v")
+      (GelItemKey new 19 "w")
+      (GelItemKey new 20 "x")
+      (GelItemKey new 21 "y")
+      (GelItemKey new 22 "z"))))
 
 (define-class GelValueRow
   (fields
@@ -218,14 +216,41 @@
       GelValueRows
       (mirror inv|o|ke signature))
 
+    (window
+      (rows GelValueRows)
+      (page Int)
+      GelValueRows
+      (let ((start (page * (gel-item-keys len))))
+        (GelValueRows new
+          (((rows items) fold
+              (List empty)
+              (fn (visible row)
+                (if ((row index) > start)
+                    (if ((visible len) < (gel-item-keys len))
+                        (visible cons
+                          (GelValueRow new
+                            ((visible len) + 1)
+                            (row value)
+                            (row label)))
+                        visible)
+                    visible)))
+            reverse))))
+
     (of
       (mirror Mirror)
       GelMenu
-      (self of mirror #f))
+      (self of mirror #f 0))
 
     (of
       (mirror Mirror)
       (show-hidden Bool)
+      GelMenu
+      (self of mirror show-hidden 0))
+
+    (of
+      (mirror Mirror)
+      (show-hidden Bool)
+      (page Int)
       GelMenu
       (let ((directory-signatures
              (self directory-signatures
@@ -250,9 +275,11 @@
                       (mirror inv|o|ke
                         ((value-signatures reverse) first))))))
             (GelMenu Values
-              (self directory-values
-                mirror
-                ((directory-signatures reverse) first))))))))
+              (self window
+                (self directory-values
+                  mirror
+                  ((directory-signatures reverse) first))
+                page)))))))
 
 (define gel-menus (GelMenus new))
 

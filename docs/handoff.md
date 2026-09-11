@@ -12,8 +12,8 @@ Stacked on `experiment/filesystem`. Working design:
 
 First Gel experiment after the OO disk library: a focused directory
 browser on Gel's stack. Not a workspace and not a GelFS framework.
-Checkpoints 108–116 complete the first focused live Directory slice, its
-path-focused TOS presentation, and hidden-name control. The
+Checkpoints 108–117 complete the first focused live Directory slice, its
+path-focused TOS presentation, hidden-name control, and bounded paging. The
 Term-only runner still launches ordinary Aloe applications. The separate
 filesystem-capable runner starts `examples/gel-directory.aloe` at the
 process's live current directory:
@@ -22,10 +22,12 @@ process's live current directory:
 racket host/racket/gel-directory-run.rkt examples/gel-directory.aloe
 ```
 
-A Directory TOS hides leading-dot names before showing up to 24 immediate
-children with filesystem labels. Idle `.` persistently toggles their
-visibility; selection pushes the nested live object, `u` pushes its live
-parent, and Escape pops history. `q` still quits, and pending `.` is a no-op.
+A Directory TOS hides leading-dot names before showing one 22-item page of
+immediate children with filesystem labels. Idle `n` / `p` move through
+bounded pages; idle `.` persistently toggles visibility. Selection pushes the
+nested live object, `u` pushes its live parent, and Escape pops history. Page
+resets on those navigation and visibility changes, while hidden visibility
+persists. `q` still quits, and pending `.` / `n` / `p` are no-ops.
 Live `Directory`, `File`, `SymbolicLink`, and `Other` TOS lines show the class
 and escaped absolute path while their structural `Mirror.raw` values remain
 unchanged.
@@ -97,13 +99,15 @@ only through explicit typed capabilities.
   one-item floor;
   idle Escape pops, pending Escape cancels without popping, and `q` quits from
   either state. `GelMenus` gives built-in List a private Aloe-authored value
-  surface: the first 24 elements render with position-bound letters from `a`
-  through `z`, omitting `q` and `u`; selecting one pushes its exact mirror,
-  and Escape returns to the List. A Gel-owned Directory adapter supplies the
-  same value-row shape with `name`, `name/`, and `name@` labels, preserving
+  surface: the first 22 elements render with position-bound letters from `a`
+  through `z`, omitting `n`, `p`, `q`, and `u`; selecting one pushes its exact
+  mirror, and Escape returns to the List. Lists remain unpaged. A Gel-owned
+  Directory adapter supplies the same value-row shape with `name`, `name/`,
+  and `name@` labels, preserving
   live `File`, `Directory`, `SymbolicLink`, and `Other` mirrors. Leading-dot
-  names are omitted before the 24-row cap by default; idle `.` persistently
-  toggles them while leaving non-Directory and pending states unchanged. `u`
+  names are omitted before the Directory-only 22-row page window by default;
+  idle `.` persistently toggles them while idle `n` / `p` page the full
+  filtered listing. Non-Directory and pending `n` / `p` remain no-ops. `u`
   asks only a Directory for its live parent and pushes it, so Escape and up are
   observably different. Those four live disk classes render on TOS with their
   class and existing escaped absolute path through a private Gel selector;
@@ -113,7 +117,7 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 116 are green on
+- Tests through checkpoint 117 are green on
   `experiment/gel-directory-surface`. `Option` is loadable from
   `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
@@ -200,13 +204,13 @@ default drivers still have no `fs-host`, and constructors are not merged to
 
 The first live Directory presentation is complete. Its TOS line now shows the
 live object's class and escaped absolute path without changing structural
-reflection. The current screen observes the host when it constructs a menu
-and exposes only the first 24 included children; leading-dot names are hidden
-before that cap unless the persistent idle `.` toggle is on.
-Remaining pressure is overflow navigation or search, a persistent per-TOS
+reflection. The current screen observes the host when it constructs a menu,
+filters hidden names according to the persistent idle `.` toggle, and windows
+the resulting full listing into 22-child pages. Idle `n` / `p` move between
+pages without wrapping. Remaining pressure is search, a persistent per-TOS
 listing snapshot with explicit refresh, and additional stack rendering that
-makes history visible. No paging, search, persistent snapshot, refresh key, or
-extra stack-level display has been added.
+makes history visible. No search, persistent snapshot, refresh key, or extra
+stack-level display has been added.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

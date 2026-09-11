@@ -437,3 +437,9 @@ success, and reports both source datums and displayed values on failure.
 - Live Directory menus hide leading-dot names before the 24-row cap by
   default; idle `.` persistently toggles visibility and its state-dependent
   command line. Non-Directory and pending `.` remain no-ops.
+
+## 117. [Gel Directory paging](docs/checkpoints/0117-gel-directory-paging.md)
+
+- Live Directory menus page through children with idle `n` / `p` after those
+  keys leave the 22-letter item pool. List menus stay unpaged. Pending and
+  non-Directory `n` / `p` remain no-ops.

@@ -128,7 +128,7 @@ ALOE
       (if (((candidate selector) name) = "x") candidate found))))
 (define point-state-81
   (GelStep new (gel-empty-stack push point-81)
-    #f (List empty) 0 #f #f))
+    #f (List empty) 0 #f #f 0))
 (define x-step-81
   (point-state-81 handle-key ((x-row-81 index) text)))
 ALOE

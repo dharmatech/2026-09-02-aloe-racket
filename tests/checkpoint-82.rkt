@@ -29,7 +29,7 @@
 (define idle-menu-82
   (gel-text menu
     (GelStep new (gel-empty-stack push 10)
-      #f (List empty) 0 #f #f)))
+      #f (List empty) 0 #f #f 0)))
 (gel-text tos (gel-empty-stack push 10))
 ALOE
    checker-environment))
@@ -75,7 +75,7 @@ ALOE
 (define point-stack-82
   ((gel-empty-stack push (Point new 1 2)) push point-82))
 (define idle-state-82
-  (GelStep new point-stack-82 #f (List empty) 0 #f #f))
+  (GelStep new point-stack-82 #f (List empty) 0 #f #f 0))
 ALOE
   environment))
 
@@ -115,7 +115,7 @@ ALOE
   #<<ALOE
 (define point-pending-82
   (GelStep new point-stack-82
-    #f (List of point-plus-row-82) 0 #f #f))
+    #f (List of point-plus-row-82) 0 #f #f 0))
 ALOE
   environment))
 (check-equal?
@@ -133,7 +133,7 @@ ALOE
   #<<ALOE
 (define int-pending-82
   (GelStep new (gel-empty-stack push 10)
-    #f (List of int-plus-row-82) 0 #f #f))
+    #f (List of int-plus-row-82) 0 #f #f 0))
 (define int-typed-82 (int-pending-82 handle-key "2"))
 ALOE
   environment))

@@ -27,7 +27,7 @@
 
 (define item-keys
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
-    "m" "n" "o" "p" "r" "s" "t" "v" "w" "x" "y" "z"))
+    "m" "o" "r" "s" "t" "v" "w" "x" "y" "z"))
 
 (define mixed-hidden-nodes
   (hash
@@ -50,7 +50,9 @@
    "d  pipe\r\n"
    "\r\n"
    "u  up\r\n"
-   ".  show hidden\r\n"))
+   ".  show hidden\r\n"
+   "n  next\r\n"
+   "p  prev\r\n"))
 
 (define all-menu
   (string-append
@@ -63,7 +65,9 @@
    "g  pipe\r\n"
    "\r\n"
    "u  up\r\n"
-   ".  hide hidden\r\n"))
+   ".  hide hidden\r\n"
+   "n  next\r\n"
+   "p  prev\r\n"))
 
 (define (driver-type-datum state datum)
   (type->datum
@@ -103,7 +107,8 @@
         (List empty)
         0
         #f
-        ,show-hidden))))
+        ,show-hidden
+        0))))
 
 (define (define-value-rows! state rows-name mirror-name show-hidden)
   (define menu-name
@@ -179,7 +184,7 @@
     (check-equal? (driver-eval! state `((filtered-rows select ,index) key))
                   key)))
 
-(test-case "more than 24 hidden names are removed before the cap"
+(test-case "more than 22 hidden names are removed before the window"
   (define nodes
     (for/fold ([nodes (hash "/" 'directory
                                   "/cwd" 'directory
@@ -200,10 +205,10 @@
   (check-equal? (driver-eval! state '(filtered-rows len)) 3)
   (check-equal? (row-labels state 'filtered-rows 3)
                 '("alpha" "bravo/" "charlie@"))
-  (check-equal? (driver-eval! state '(all-rows len)) 24)
-  (check-equal? (car (row-labels state 'all-rows 24)) ".hidden01")
-  (check-equal? (last (row-labels state 'all-rows 24)) ".hidden24")
-  (for ([index (in-range 1 25)]
+  (check-equal? (driver-eval! state '(all-rows len)) 22)
+  (check-equal? (car (row-labels state 'all-rows 22)) ".hidden01")
+  (check-equal? (last (row-labels state 'all-rows 22)) ".hidden22")
+  (for ([index (in-range 1 23)]
         [key (in-list item-keys)])
     (check-equal? (driver-eval! state `((all-rows select ,index) key)) key))
   (check-false
@@ -240,12 +245,15 @@
   (driver-eval! empty-state
                 '(define shown-state (hidden-state handle-key ".")))
   (check-equal? (driver-eval! empty-state '(gel-text menu hidden-state))
-                "u  up\r\n.  show hidden\r\n")
+                (string-append
+                 "u  up\r\n.  show hidden\r\n"
+                 "n  next\r\np  prev\r\n"))
   (check-equal?
    (driver-eval! empty-state '(gel-text menu shown-state))
    (string-append
     "a  .one\r\nb  .two\r\n\r\n"
-    "u  up\r\n.  hide hidden\r\n")))
+    "u  up\r\n.  hide hidden\r\n"
+    "n  next\r\np  prev\r\n")))
 
 (test-case "visibility persists through Directory navigation and sends"
   (define state (make-directory-driver))
@@ -288,7 +296,8 @@
         (List of int-plus)
         0
         #f
-        #t)))
+        #t
+        0)))
   (driver-eval! state '(define int-typed (int-pending handle-key "2")))
   (check-eq? (driver-eval! state '(int-pending handle-key "."))
              (driver-eval! state 'int-pending))
@@ -306,7 +315,8 @@
         (List of point-plus)
         0
         #f
-        #t)))
+        #t
+        0)))
   (check-eq? (driver-eval! state '(point-pending handle-key "."))
              (driver-eval! state 'point-pending))
   (driver-eval! state '(define invoked (point-pending handle-key "2")))
@@ -392,7 +402,7 @@
    state
    '(define file-state
       (GelStep new (gel-empty-stack push (((state handle-key "d") stack) tos))
-        #f (List empty) 0 #f #t)))
+        #f (List empty) 0 #f #t 0)))
   (check-false
    (string-contains? (driver-eval! state '(gel-text menu file-state))
                      "hidden"))
@@ -430,7 +440,7 @@
   (check-equal? (length (regexp-match* #rx"a  alpha\r\n" transcript)) 1)
   (check-equal? (length (regexp-match* #rx"a  [.]config/\r\n" transcript)) 1)
   (check-regexp-match
-   #rx"[.]  show hidden\r\n\r\nkey [.]\r\nTOS: #<Directory"
+   #rx"[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey [.]\r\nTOS: #<Directory"
    transcript)
   (check-true (string-contains? transcript ".  hide hidden\r\n"))
   (check-true (string-suffix? transcript "key q\r\n"))

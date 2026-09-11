@@ -25,7 +25,7 @@
 
 (define item-keys
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
-    "m" "n" "o" "p" "r" "s" "t" "v" "w" "x" "y" "z"))
+    "m" "o" "r" "s" "t" "v" "w" "x" "y" "z"))
 
 (define point-menu
   (string-append
@@ -125,9 +125,9 @@
      (driver-type-datum state (car datum+type))
      (cadr datum+type))))
 
-(test-case "the item-key pool has the exact ordered 24 entries"
+(test-case "the item-key pool has the exact ordered 22 entries"
   (define state (make-loop-driver))
-  (check-equal? (driver-eval! state '(gel-item-keys len)) 24)
+  (check-equal? (driver-eval! state '(gel-item-keys len)) 22)
   (define actual-texts
     (for/list ([expected (in-list item-keys)]
                [index (in-naturals 1)])
@@ -144,7 +144,9 @@
       (check-equal? actual expected)
       actual))
   (check-equal? actual-texts item-keys)
-  (check-equal? (length (remove-duplicates actual-texts)) 24)
+  (check-equal? (length (remove-duplicates actual-texts)) 22)
+  (check-false (member "n" actual-texts))
+  (check-false (member "p" actual-texts))
   (check-false (member "q" actual-texts))
   (check-false (member "u" actual-texts)))
 
@@ -158,14 +160,14 @@
      index))
   (for ([text
          (in-list
-          '("q" "u" "escape" "0" "1" "9" "A" "Q" "U" "/"
+          '("n" "p" "q" "u" "escape" "0" "1" "9" "A" "Q" "U" "/"
             "return" "left" "aa" "!" ""))])
     (check-equal? (driver-eval! state `(gel-item-keys index ,text)) 0)
     (check-equal?
      (driver-eval! state `((GelKey new ,text) item-index))
      0)))
 
-(test-case "value-row capacity follows all 24 item keys"
+(test-case "value-row capacity follows all 22 item keys"
   (define state (make-loop-driver))
   (driver-eval! state '(define checkpoint-111-empty ((List of 1) rest)))
   (driver-eval! state '(define checkpoint-111-one (List of 1)))
@@ -191,7 +193,7 @@
                     checkpoint-111-one-rows
                     checkpoint-111-twenty-four-rows
                     checkpoint-111-overflow-rows))]
-        [expected-len (in-list '(0 1 24 24))])
+        [expected-len (in-list '(0 1 22 22))])
     (define-value-rows! state rows-name list-name)
     (check-equal?
      (driver-eval! state `(,rows-name len))
@@ -218,8 +220,8 @@
    '(define checkpoint-111-mirror-rows
       (gel-menus value-rows checkpoint-111-mirror-carrier)))
 
-  (check-equal? (driver-eval! state '(checkpoint-111-mirror-rows len)) 24)
-  (for ([name (in-list (take mirror-names 24))]
+  (check-equal? (driver-eval! state '(checkpoint-111-mirror-rows len)) 22)
+  (for ([name (in-list (take mirror-names 22))]
         [index (in-naturals 1)]
         [key (in-list item-keys)])
     (check-eq?
@@ -235,8 +237,8 @@
     (check-equal?
      (driver-eval! state `((checkpoint-111-mirror-rows select ,index) key))
      key))
-  (for ([index (in-list '(16 17 19 20))]
-        [key (in-list '("p" "r" "t" "v"))])
+  (for ([index (in-list '(14 15 17 18))]
+        [key (in-list '("o" "r" "t" "v"))])
     (check-equal?
      (driver-eval! state `((checkpoint-111-mirror-rows select ,index) key))
      key))
@@ -323,7 +325,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-select-state
-      (GelStep new checkpoint-111-select-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-111-select-stack #f (List empty) 0 #f #f 0)))
 
   (for ([key (in-list item-keys)]
         [mirror-name (in-list mirror-names)]
@@ -363,7 +365,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-short-state
-      (GelStep new checkpoint-111-floor-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-111-floor-stack #f (List empty) 0 #f #f 0)))
   (for ([key
          (in-list
           '("0" "1" "9" "u" "A" "B" "/" "return" "left" "aa"
@@ -393,7 +395,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-history-state
-      (GelStep new checkpoint-111-history-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-111-history-stack #f (List empty) 0 #f #f 0)))
   (check-equal?
    (driver-eval!
     state
@@ -411,7 +413,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-point-state
-      (GelStep new checkpoint-111-point-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-111-point-stack #f (List empty) 0 #f #f 0)))
   (driver-eval!
    state
    '(define checkpoint-111-point-digit
@@ -437,7 +439,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-int-state
-      (GelStep new checkpoint-111-int-stack #f (List empty) 0 #f #f)))
+      (GelStep new checkpoint-111-int-stack #f (List empty) 0 #f #f 0)))
   (driver-eval!
    state
    '(define checkpoint-111-int-digit
@@ -486,7 +488,8 @@
         (List of checkpoint-111-point-plus)
         0
         #f
-        #f)))
+        #f
+         0)))
   (check-eq?
    (driver-eval! state '(checkpoint-111-pick-pending handle-key "a"))
    (driver-eval! state 'checkpoint-111-pick-pending))
@@ -526,7 +529,8 @@
         (List of checkpoint-111-int-plus)
         0
         #f
-        #f)))
+        #f
+         0)))
   (check-eq?
    (driver-eval! state '(checkpoint-111-int-pending handle-key "b"))
    (driver-eval! state 'checkpoint-111-int-pending))
@@ -566,7 +570,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-111-nested-chosen
@@ -648,7 +653,7 @@
    1)
   (check-equal?
    (length (regexp-match* #rx"\\(GelItemKey new" menu-source))
-   24)
+   22)
   (check-false (regexp-match? #rx"fs-host|Directory|paging|search|perform"
                               menu-source))
   (check-false (regexp-match? #rx"GelItemKey new|fs-host|Directory|up\\?"

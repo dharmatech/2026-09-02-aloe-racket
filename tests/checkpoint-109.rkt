@@ -59,7 +59,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-109-point-rows
@@ -90,7 +91,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-109-int-rows
@@ -221,7 +223,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-109-back-one
@@ -271,7 +274,8 @@
         (List empty)
         0
         #f
-        #f)))
+        #f
+         0)))
   (driver-eval!
    state
    '(define checkpoint-109-idle-quit

@@ -37,7 +37,7 @@
 (void (eval-source "(define stack (gel-empty-stack push 10))" environment))
 (void
  (eval-source
-  "(define state (GelStep new stack #f (List empty) 0 #f #f))"
+  "(define state (GelStep new stack #f (List empty) 0 #f #f 0))"
   environment))
 (void
  (eval-source
