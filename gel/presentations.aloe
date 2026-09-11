@@ -1,0 +1,7 @@
+;; Gel-owned presentation methods are indexed by their specimen parameter type.
+
+(define-class GelPresentations
+  (fields)
+  (methods))
+
+(define gel-presentations (GelPresentations new))

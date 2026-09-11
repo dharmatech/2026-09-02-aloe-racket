@@ -34,6 +34,12 @@ unchanged.
 The authored adapter lives under `gel/`; `lib/disk.aloe` remains Gel-ignorant.
 Do not implement later steps from the design file without another checkpoint.
 
+Gel presentations (TOS stays the specimen) is specified in
+[`docs/gel-presentations/`](gel-presentations/README.md). Its slices are a
+**local** series (`gel-presentations 000`, tests under
+`tests/gel-presentations/`), not global checkpoint 118. Do not write
+`docs/checkpoints/0118-….md` for that work.
+
 If the work is still filesystem vocabulary rather than Gel, stay on
 `experiment/filesystem` and ignore this section.
 

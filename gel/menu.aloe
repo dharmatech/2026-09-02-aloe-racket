@@ -78,11 +78,15 @@
     (items (List Mirror)))
   (methods))
 
-(define-methods List
+(load "presentations.aloe")
+
+(define-methods GelPresentations
   (methods
-    (gel-values () GelListValues
+    (list-values (type T)
+      (items (List T))
+      GelListValues
       (GelListValues new
-        (self map
+        (items map
           (fn (value)
             (gel-mirrors of value)))))))
 
@@ -210,6 +214,28 @@
                   rows)))
           reverse)))
 
+    (list-signatures
+      (mirror Mirror)
+      (List Signature)
+      (((Mirror of gel-presentations) signatures) fold
+        (List empty)
+        (fn (matches signature)
+          (if (((signature selector) name) = "list-values")
+              (if (((signature params) len) = 1)
+                  (if (signature accepts? mirror)
+                      (matches cons signature)
+                      matches)
+                  matches)
+              matches))))
+
+    (list-values
+      (mirror Mirror)
+      (signature Signature)
+      GelListValues
+      ((Mirror of gel-presentations) inv|o|ke
+        signature
+        (mirror subject)))
+
     (directory-values
       (mirror Mirror)
       (signature Signature)
@@ -259,21 +285,14 @@
                    "gel-directory-all-values"
                    "gel-directory-values"))))
         (if (directory-signatures empty?)
-            (let ((value-signatures
-                   ((mirror signatures) fold
-                     (List empty)
-                     (fn (matches signature)
-                       (if (((signature selector) name) = "gel-values")
-                           (if (((signature params) len) = 0)
-                               (matches cons signature)
-                               matches)
-                           matches)))))
-              (if (value-signatures empty?)
+            (let ((list-signatures (self list-signatures mirror)))
+              (if (list-signatures empty?)
                   (GelMenu Messages (gel-rows of mirror))
                   (GelMenu Values
                     (self value-rows
-                      (mirror inv|o|ke
-                        ((value-signatures reverse) first))))))
+                      (self list-values
+                        mirror
+                        ((list-signatures reverse) first))))))
             (GelMenu Values
               (self window
                 (self directory-values

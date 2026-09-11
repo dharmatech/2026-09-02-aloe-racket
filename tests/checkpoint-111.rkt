@@ -214,7 +214,7 @@
   (driver-eval!
    state
    '(define checkpoint-111-mirror-carrier
-      (checkpoint-111-mirror-list gel-values)))
+      (gel-presentations list-values checkpoint-111-mirror-list)))
   (driver-eval!
    state
    '(define checkpoint-111-mirror-rows

@@ -124,7 +124,7 @@
          (in-list
           '(((gel-mirrors of 10) Mirror)
             ((gel-mirrors of (Mirror of 10)) Mirror)
-            (((List of 10 20) gel-values) GelListValues)
+            ((gel-presentations list-values (List of 10 20)) GelListValues)
             ((GelValueRow new 1 (Mirror of 10) "10") GelValueRow)
             ((GelValueRows new
                (List of (GelValueRow new 1 (Mirror of 10) "10")))
@@ -145,7 +145,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-carrier
-      (checkpoint-110-values gel-values)))
+      (gel-presentations list-values checkpoint-110-values)))
   (driver-eval!
    state
    '(define checkpoint-110-rows
@@ -177,7 +177,7 @@
   (driver-eval!
    state
    '(define checkpoint-110-mirror-carrier
-      (checkpoint-110-mirrors gel-values)))
+      (gel-presentations list-values checkpoint-110-mirrors)))
   (driver-eval!
    state
    '(define checkpoint-110-mirror-rows
@@ -657,7 +657,7 @@
   (define menu-source (file->string gel-menu-path))
   (check-equal?
    (length (regexp-match* #rx"\\(define-methods List" menu-source))
-   1)
+   0)
 
   (define state (make-driver))
   (for ([name (in-list '(term
