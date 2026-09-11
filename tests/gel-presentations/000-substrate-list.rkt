@@ -228,7 +228,7 @@
   (check-equal? (driver-eval! state '(gel-text menu gel-start-value))
                 point-menu))
 
-(test-case "Directory remains on the predecessor adapter seam"
+(test-case "Directory stays unpatched while the optional service is discoverable"
   (define state (make-driver))
   (driver-inject-host!
    state
@@ -248,10 +248,20 @@
 
   (check-equal?
    (signature-count state 'live-directory "gel-directory-values" 0)
+   0)
+  (check-exn
+   exn:fail:aloe-type?
+   (lambda ()
+     (driver-type-datum state '(live-directory gel-directory-values))))
+  (check-equal?
+   (signature-count state 'gel-menus "directory-presentations" 0)
    1)
   (check-equal?
-   (driver-type-datum state '(live-directory gel-directory-values))
-   'GelValueRows)
+   (signature-count state
+                    'gel-directory-presentations
+                    "directory-values"
+                    1)
+   1)
   (check-true
    (driver-eval!
     state
@@ -278,16 +288,19 @@
   (check-false
    (regexp-match? #rx"Directory|File|SymbolicLink|Other"
                   presentations-source))
-  (check-false
-   (regexp-match? #rx"\\(define-methods GelPresentations"
-                  directory-source))
+  (check-regexp-match
+   #rx"\\(define-class \\(GelDirectoryPresentations H\\)"
+   directory-source)
+  (check-equal?
+   (length (regexp-match* #rx"\\(define-methods GelMenus" directory-source))
+   1)
   (for ([class '(Directory File SymbolicLink Other)])
     (check-equal?
      (length
       (regexp-match*
        (regexp (format "\\(define-methods ~a" class))
        directory-source))
-     1))
+     0))
   (for ([source (in-list (list menu-source presentations-source))])
     (check-false
      (regexp-match? #px"\\s(?:take|drop)(?:\\s|[)])" source)))

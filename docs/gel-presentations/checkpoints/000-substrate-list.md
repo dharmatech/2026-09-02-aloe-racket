@@ -11,7 +11,7 @@
 Directory paging). Predecessor Directory UX remains global 112–117
 and `docs/gel-directory-surface.md`.
 
-**Status.** Ready to implement.
+**Status.** Complete (implemented; Directory hole left named).
 
 **Authority.** `docs/gel-presentations/spec.md` is this experiment’s
 law. `SPEC.md` is Aloe language law. Current Gel behavior is

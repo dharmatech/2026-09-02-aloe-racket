@@ -113,18 +113,7 @@
     (message-rows
       (rows (List GelRow))
       (List GelRow)
-      ((rows fold
-          (List empty)
-          (fn (visible row)
-            (if (((row selector) name) = "gel-tos-text")
-                visible
-                (visible cons
-                  (GelRow new
-                    ((visible len) + 1)
-                    (row selector)
-                    (row arity)
-                    (row signature))))))
-        reverse))
+      rows)
 
     (rows-text (rows (List GelRow)) String
       ((self message-rows rows) fold ""
@@ -223,26 +212,23 @@
       (self menu (Mirror of value)))
 
     (tos-result
+      (presentations Mirror)
       (top Mirror)
       (signature Signature)
       String
-      (top inv|o|ke signature))
+      (presentations inv|o|ke signature (top subject)))
 
     (tos-mirror
       (top Mirror)
       String
       (let ((matches
-             ((top signatures) fold
-               (List empty)
-               (fn (found signature)
-                 (if (((signature selector) name) = "gel-tos-text")
-                     (if (((signature params) len) = 0)
-                         (found cons signature)
-                         found)
-                     found)))))
+             (gel-menus directory-signatures top "tos-text")))
         (if (matches empty?)
             (top raw)
-            (self tos-result top ((matches reverse) first)))))
+            (self tos-result
+              (gel-menus directory-index)
+              top
+              ((matches reverse) first)))))
 
     (tos
       (stack GelStack)

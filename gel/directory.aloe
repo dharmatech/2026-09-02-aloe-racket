@@ -82,34 +82,54 @@
             (fn (item)
               (self label item))))))))
 
-(define-methods Directory
+(define-class (GelDirectoryPresentations H)
+  (fields
+    (host H))
   (methods
-    (gel-tos-text () String
-      (("#<Directory " append ((Mirror of (self text)) raw)) append ">"))
+    (directory-values
+      (directory (Directory H))
+      GelValueRows
+      ((GelDirectoryListing new (directory entries)) values #f))
 
-    (gel-directory-values () GelValueRows
-      ((GelDirectoryListing new (self entries)) values #f))
+    (directory-all-values
+      (directory (Directory H))
+      GelValueRows
+      ((GelDirectoryListing new (directory entries)) values #t))
 
-    (gel-directory-all-values () GelValueRows
-      ((GelDirectoryListing new (self entries)) values #t))
-
-    (gel-up () GelUp
-      ((self parent) case
+    (up
+      (directory (Directory H))
+      GelUp
+      ((directory parent) case
         (None () (GelUp NoParent))
         (Some (parent)
-          (GelUp Parent (Mirror of parent)))))))
+          (GelUp Parent (Mirror of parent)))))
 
-(define-methods File
-  (methods
-    (gel-tos-text () String
-      (("#<File " append ((Mirror of (self text)) raw)) append ">"))))
+    (tos-text
+      (directory (Directory H))
+      String
+      (("#<Directory " append ((Mirror of (directory text)) raw))
+       append ">"))
 
-(define-methods SymbolicLink
-  (methods
-    (gel-tos-text () String
-      (("#<SymbolicLink " append ((Mirror of (self text)) raw)) append ">"))))
+    (tos-text
+      (file (File H))
+      String
+      (("#<File " append ((Mirror of (file text)) raw)) append ">"))
 
-(define-methods Other
+    (tos-text
+      (link (SymbolicLink H))
+      String
+      (("#<SymbolicLink " append ((Mirror of (link text)) raw))
+       append ">"))
+
+    (tos-text
+      (thing (Other H))
+      String
+      (("#<Other " append ((Mirror of (thing text)) raw)) append ">"))))
+
+(define gel-directory-presentations
+  (GelDirectoryPresentations new fs-host))
+
+(define-methods GelMenus
   (methods
-    (gel-tos-text () String
-      (("#<Other " append ((Mirror of (self text)) raw)) append ">"))))
+    (directory-presentations () Mirror
+      (Mirror of gel-directory-presentations))))

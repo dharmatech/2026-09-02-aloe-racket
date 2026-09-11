@@ -198,8 +198,14 @@
   (define state (make-directory-driver (mixed-overflow-nodes)))
   (define-directory! state 'cwd)
   (driver-eval! state '(define cwd-mirror (Mirror of cwd)))
-  (driver-eval! state '(define filtered-full (cwd gel-directory-values)))
-  (driver-eval! state '(define all-full (cwd gel-directory-all-values)))
+  (driver-eval!
+   state
+   '(define filtered-full
+      (gel-directory-presentations directory-values cwd)))
+  (driver-eval!
+   state
+   '(define all-full
+      (gel-directory-presentations directory-all-values cwd)))
   (check-equal? (driver-eval! state '(filtered-full len)) 25)
   (check-equal? (driver-eval! state '(all-full len)) 48)
   (check-equal? (car (row-labels state 'filtered-full 25)) "ordinary01")
@@ -462,7 +468,7 @@
     (string-append directory-source menu-source loop-source main-source))
   (check-false (string-contains? implementation-source "(take"))
   (check-false (string-contains? implementation-source "(drop"))
-  (check-false (regexp-match? #rx"gel-directory-values \\(page|gel-directory-all-values \\(page"
+  (check-false (regexp-match? #rx"directory-values \\(directory \\(Directory H\\)\\) \\(page|directory-all-values \\(directory \\(Directory H\\)\\) \\(page"
                               directory-source))
   (check-equal? (length (regexp-match* #rx"\\(GelItemKey new" menu-source)) 22)
   (check-true (string-contains? menu-source "(self window"))

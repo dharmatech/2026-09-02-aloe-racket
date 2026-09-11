@@ -17,14 +17,17 @@ If you have been told to read this file, this is the whole assignment.
 ## 1. How this conversation works
 
 1. Read this file and the authority in §3.
-2. This visit: write **gel-presentations 000** only (see §5).
+2. First visit (done): write **gel-presentations 000** only (see §5).
 3. Stop. The human reviews it, then hands that checkpoint to an
    implementer.
-4. Later visits: the human returns and says 000 (or 001, …) was
-   implemented. Verify against the checkpoint. If it matches, write
-   the next number. If it does not, say what is missing; do not
-   silently enlarge the next slice to paper over it. If the spec is
-   wrong, **stop** and send the human back to the spec conversation.
+4. Later visits: the human returns and says which local number was
+   implemented. Verify against that checkpoint. **Do not implement
+   001. Do not issue 002.** 001 is blocked in the spec (§4.3, §9.2).
+   If the human asks for a new Directory-family slice, write a **new
+   number** from spec §4.3 (generic Gel class holding `fs-host`), not
+   a rewrite of 001 and not a written `FsHost` type name. If the spec
+   is still wrong, **stop** and send the human back to the spec
+   conversation.
 
 The implementer will not have this file. Put every rule they need in
 the checkpoint itself.
@@ -157,12 +160,12 @@ The human will say which local number was implemented. Then:
 
 1. Read that checkpoint and the corresponding test if it exists.
 2. Verify the slice against its own file (not against 001’s ambitions).
-3. If green, write the next number from spec §9.2 (001 Directory
-   family, then 002 doc law) unless the spec or the human has
-   changed that order.
-4. If 000 still left `List.gel-values` on `List` because Directory
-   went first, do not claim live-image bar item 4 until List is
-   moved.
+3. 000 is green. **001 is blocked** (abstract `H` disk bodies do not
+   typecheck). Do not implement it. Do not issue 002. Do not enlarge
+   a later slice to paper over 001.
+4. A new Directory-family checkpoint is allowed only when the human
+   asks for one **and** the spec’s §4.3 host-holding generic Gel
+   class is the one being sliced. New number, new slug. Not 001.
 
 One checkpoint per visit. Stop after writing it.
 
@@ -171,7 +174,8 @@ One checkpoint per visit. Stop after writing it.
 ## 7. Do not
 
 - Implement anything
-- Write 001 or 002 in the first visit
+- Implement 001 or rewrite it
+- Issue 002 while 001 is blocked
 - Open Listener, Genera, wrappers-as-TOS, or a presentation-type
   lattice
 - Change frozen Directory UX (global 112–117)

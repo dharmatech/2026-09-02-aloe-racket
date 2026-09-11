@@ -178,23 +178,51 @@
 (define-class GelMenus
   (fields)
   (methods
-    (directory-signatures
-      (mirror Mirror)
-      (selector String)
+    (directory-indexes
+      ()
       (List Signature)
-      ((mirror signatures) fold
+      (((Mirror of self) signatures) fold
         (List empty)
         (fn (matches signature)
-          (if (((signature selector) name) = selector)
+          (if (((signature selector) name) = "directory-presentations")
               (if (((signature params) len) = 0)
                   (matches cons signature)
                   matches)
               matches))))
 
+    (directory-index-result
+      (signature Signature)
+      Mirror
+      ((Mirror of self) inv|o|ke signature))
+
+    (directory-index
+      ()
+      Mirror
+      (let ((indexes (self directory-indexes)))
+        (self directory-index-result ((indexes reverse) first))))
+
+    (directory-signatures
+      (mirror Mirror)
+      (selector String)
+      (List Signature)
+      (let ((indexes (self directory-indexes)))
+        (if (indexes empty?)
+            (List empty)
+            (((self directory-index) signatures) fold
+              (List empty)
+              (fn (matches signature)
+                (if (((signature selector) name) = selector)
+                    (if (((signature params) len) = 1)
+                        (if (signature accepts? mirror)
+                            (matches cons signature)
+                            matches)
+                        matches)
+                    matches))))))
+
     (directory? (mirror Mirror) Bool
       (if ((self directory-signatures
              mirror
-             "gel-directory-values") empty?)
+             "directory-values") empty?)
           #f
           #t))
 
@@ -240,7 +268,9 @@
       (mirror Mirror)
       (signature Signature)
       GelValueRows
-      (mirror inv|o|ke signature))
+      ((self directory-index) inv|o|ke
+        signature
+        (mirror subject)))
 
     (window
       (rows GelValueRows)
@@ -282,8 +312,8 @@
              (self directory-signatures
                mirror
                (if show-hidden
-                   "gel-directory-all-values"
-                   "gel-directory-values"))))
+                   "directory-all-values"
+                   "directory-values"))))
         (if (directory-signatures empty?)
             (let ((list-signatures (self list-signatures mirror)))
               (if (list-signatures empty?)
@@ -315,14 +345,7 @@
     (signatures
       (mirror Mirror)
       (List Signature)
-      ((mirror signatures) fold
-        (List empty)
-        (fn (matches signature)
-          (if (((signature selector) name) = "gel-up")
-              (if (((signature params) len) = 0)
-                  (matches cons signature)
-                  matches)
-              matches))))
+      (gel-menus directory-signatures mirror "up"))
 
     (available? (mirror Mirror) Bool
       (if ((self signatures mirror) empty?) #f #t))
@@ -331,7 +354,9 @@
       (mirror Mirror)
       (signature Signature)
       GelUp
-      (mirror inv|o|ke signature))
+      ((gel-menus directory-index) inv|o|ke
+        signature
+        (mirror subject)))
 
     (of (mirror Mirror) GelUp
       (let ((matches (self signatures mirror)))

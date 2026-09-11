@@ -138,7 +138,7 @@
               (if ((row arity) = ,arity) row found)
               found))))))
 
-(define (bind-signature! state name mirror-name selector)
+(define (bind-signature! state name mirror-name selector [arity 0])
   (driver-eval!
    state
    `(define ,name
@@ -146,7 +146,7 @@
         ((,mirror-name signatures) first)
         (fn (found signature)
           (if (((signature selector) name) = ,selector)
-              (if (((signature params) len) = 0) signature found)
+              (if (((signature params) len) = ,arity) signature found)
               found))))))
 
 (define (make-scripted-term keys)
@@ -339,7 +339,7 @@
    (string-contains? (driver-eval! state '(gel-text menu point-pending))
                      "hidden")))
 
-(test-case "Directory command precedence and private exact signatures remain"
+(test-case "Directory command precedence and service signatures remain"
   (define state (make-directory-driver))
   (define-directory! state 'cwd)
   (driver-eval! state '(define cwd-mirror (Mirror of cwd)))
@@ -366,25 +366,31 @@
   (check-equal? (driver-eval! state '((GelKey new ".") item-index)) 0)
   (check-true (driver-eval! state '((GelKey new ".") hidden?)))
 
-  (bind-signature! state 'filtered-signature 'cwd-mirror
-                   "gel-directory-values")
-  (bind-signature! state 'all-signature 'cwd-mirror
-                   "gel-directory-all-values")
+  (driver-eval!
+   state
+   '(define directory-presentations-mirror
+      (Mirror of gel-directory-presentations)))
+  (bind-signature! state 'filtered-signature
+                   'directory-presentations-mirror "directory-values" 1)
+  (bind-signature! state 'all-signature
+                   'directory-presentations-mirror "directory-all-values" 1)
   (for ([name '(filtered-signature all-signature)])
-    (check-equal? (driver-eval! state `((,name params) len)) 0)
+    (check-equal? (driver-eval! state `((,name params) len)) 1)
     (check-equal?
      (driver-eval! state `((Mirror of (,name return)) raw))
      "#<Symbol GelValueRows>"))
   (driver-eval!
    state
    '(define direct-filtered
-      ((GelMenu Values (cwd-mirror inv|o|ke filtered-signature)) case
+      ((GelMenu Values
+         (directory-presentations-mirror inv|o|ke filtered-signature cwd)) case
         (Messages (rows) (GelValueRows new (List empty)))
         (Values (rows) rows))))
   (driver-eval!
    state
    '(define direct-all
-      ((GelMenu Values (cwd-mirror inv|o|ke all-signature)) case
+      ((GelMenu Values
+         (directory-presentations-mirror inv|o|ke all-signature cwd)) case
         (Messages (rows) (GelValueRows new (List empty)))
         (Values (rows) rows))))
   (check-equal? (row-labels state 'direct-filtered 4)

@@ -1,10 +1,17 @@
 # Gel presentations — TOS stays the specimen
 
 **Status.** Specification for the first Gel presentations experiment.
-Not Aloe language law. Not yet Gel law. Not a checkpoint. A later
-checkpoint-manager conversation slices this file; this conversation
-does not. Slices are a **local series** (`gel-presentations 000`,
-`001`, …), not the next global integer.
+Not Aloe language law. Not yet Gel law. Not a checkpoint.
+
+**gel-presentations 000 is the last green slice.** The type index
+(`Signature.accepts?` on a Gel-owned one-argument method) works.
+**001 is blocked** and must not be implemented. Do not issue 002
+until the human asks. Directory bodies are §4.3 (generic Gel class
+holding `fs-host`), not 001 and not a written `FsHost` type.
+
+Slices are a **local series** (`gel-presentations 000`, `001`, …),
+not the next global integer. A checkpoint-manager conversation
+writes those files; this conversation does not.
 
 **Branch.** Continue on `experiment/gel-directory-surface` after green
 global checkpoint 117. Do not start from `main`. Do not merge to
@@ -147,9 +154,7 @@ index.
 ```
 
 The specimen's method table is never consulted for Gel selector
-names. Disk methods (`entries`, `parent`, `text`, `name`) are sent
-only from inside a presentation body that already has a typed
-`Directory`.
+names.
 
 `accepts?` is arity one. That is why the presentation operations that
 need a type probe are one-argument methods taking the specimen.
@@ -158,13 +163,77 @@ listings (`directory-values` vs `directory-all-values`), as
 checkpoints 116–117 already split those selectors. Do not make
 `directory-values` take a `Bool` if that would lose the probe.
 
-Generic parameters work. `(directory-values (type H) (directory
-(Directory H)) …)` binds `H` the same way `(Point +)` binds `T` in
-today's pick filter. `(List T)` matches any list, including empty.
+**The probe is not the body.** `(signature accepts? mirror)` against
+a method whose parameter is `(Directory H)` does bind like
+`(Point +)` in today's pick filter. gel-presentations 000 and an
+implementer probe on 001 proved that. No `Mirror.class`. No `aloe/`
+change for type recognition. List 000 is green because `list-values`
+only sends `List.map`, which does not talk to a host.
 
-No `aloe/` change. No `Mirror.class`. If an implementer believes this
-probe is impossible, stop and return the checkpoint for revision
-before writing a kernel hatch.
+**Disk sends are a different fact.** A Gel method whose parameter is
+`(Directory H)` cannot send `(directory entries)` or
+`(directory parent)`. For a generic `(fields …)` class, the checker
+revalidates the callee’s body at each send (`aloe/type.rkt`,
+`infer-instance-send`). Those bodies send host `names` and `root?`,
+which exist only on a concrete host interface, not on a type
+parameter. An implementer probe of 001 failed with
+`unknown message: names` and `unknown message: root?`.
+
+That is why today's adapters live on `Directory`: generic `Directory`
+method bodies are **not** checked at `define-methods` time; they are
+checked later at a send whose `H` is the injected host. Moving the
+same body onto non-generic `GelPresentations` checks it immediately
+with abstract `H`. The spec’s original “generic `H` works like
+`(Point +)`” sentence was true for the probe and false for these
+sends. It is withdrawn.
+
+Do not edit `aloe/` to make abstract `H` accept host messages. That
+would be a sibling language project, not this experiment. Type
+recognition was never blocked. Default remains: solve the body in
+Gel with existing types.
+
+### 4.3 Chosen body shape (Directory family)
+
+Measured in `tests/gel-presentations/probe-directory-fshost.rkt`
+(not a slice):
+
+| Body | Result |
+|---|---|
+| `define-methods GelPresentations` with `(type H)` / `(Directory H)` sending `entries` | `unknown message: names` |
+| The same methods with parameter `(Directory FsHost)` | `unbound symbol: FsHost` — injection binds `fs-host`, not the type name (checkpoint 101) |
+| Generic Gel class with a host field, constructed with `fs-host`, methods taking `(Directory H)` / `(File H)` | Typechecks and runs `directory-values`, `up`, `tos-text`; `accepts?` still distinguishes Directory from File and Int |
+
+The earlier “write `(Directory FsHost)`” pick is **withdrawn**. Aloe
+source cannot name `FsHost`.
+
+**Pick:** a Gel-owned generic class (name in §6; probe used
+`GelDirectoryOps`) that **holds the host**, never the specimen, and
+is never TOS. Construct it in `gel/directory.aloe` with `fs-host`.
+Its methods take `(Directory H)` and send `entries` / `parent` /
+`text`. Because the class is generic and has no explicit
+constructors, those bodies are not checked at definition; they are
+checked at a send whose `H` is the injected host — the same delay
+that makes today’s adapters on `Directory` typecheck, but the
+methods live on a Gel class.
+
+List stays on non-generic `GelPresentations`. It does not hold a
+host.
+
+Rejected for this experiment:
+
+| Shape | Why not |
+|---|---|
+| Keep `gel-*` methods on `Directory` | Fails the live-image bar |
+| Checker change so abstract `H` can send `names` / `root?` | Language project; type recognition did not need it |
+| Write `(Directory FsHost)` in Aloe | `FsHost` is not a bound type name |
+| Methods on non-generic `GelPresentations` with `(type H)` | 001’s failure; checked immediately with abstract `H` |
+| Generic holder of a `Directory` as `Mirror.invoke` result | Checkpoint 113’s generic-result hole |
+| String-match specimen selector `entries` | Already rejected in §4.1 |
+
+001’s written bodies used abstract `H` on `GelPresentations`. That
+file stays **blocked history**. Do not implement it. Do not rewrite
+it. The next issued Directory-family slice (only when the human
+asks) must use this host-holding generic Gel class.
 
 ---
 
@@ -202,13 +271,15 @@ index.
 
 ```text
 gel/presentations.aloe   GelPresentations, gel-presentations
-                         (new; loaded by gel/menu.aloe)
+                         (List personality; loaded by gel/menu.aloe)
 gel/menu.aloe            GelRow, GelMenu, GelMenus, GelUp, GelUps,
                          item keys; loads presentations.aloe
-gel/directory.aloe       filesystem personality: define-methods
-                         GelPresentations, plus listing helpers
-gel/loop.aloe            GelText, GelStep; asks GelPresentations
-                         instead of scanning the specimen
+gel/directory.aloe       filesystem personality: generic host-holding
+                         Gel class constructed with fs-host, plus
+                         listing helpers. Must not define-methods
+                         disk types.
+gel/loop.aloe            GelText, GelStep; asks Gel-owned presentation
+                         objects instead of scanning the specimen
 ```
 
 Ordinary Gel (`gel/main.aloe` → `loop` → `stack` → `menu` →
@@ -220,11 +291,16 @@ The directory application keeps:
 (load "../gel/directory.aloe")
 ```
 
-`gel/directory.aloe` still assumes disk and generic Gel are already
-loaded. It **must not** `define-methods` on `Directory`, `File`,
-`SymbolicLink`, or `Other`. It **may** `define-methods GelPresentations`.
-That is Gel extending Gel after `Directory` exists in the image. It
-is not a patch on disk.
+`gel/directory.aloe` still assumes disk, generic Gel, and injected
+`fs-host` are already present. It **must not** `define-methods` on
+`Directory`, `File`, `SymbolicLink`, or `Other`. It defines and
+constructs the host-holding generic Gel class (§4.3). Ordinary Gel
+does not load this file, so `menu.aloe` must not mention that
+binding as a source symbol. `GelMenus` / `GelText` / `GelUps` find
+it without an unbound name (for example by an optional
+zero-argument index installed onto `GelMenus` from
+`gel/directory.aloe`, then discovered via `Mirror` of `self`). Do
+not scan the specimen.
 
 `lib/disk.aloe` and `lib/list.aloe` gain no Gel methods. `lib/` is
 not in the edit set for this experiment.
@@ -245,32 +321,40 @@ personality in the same file or in `gel/menu.aloe` via
   …)    ; today's List.gel-values body, moved
 ```
 
-**Filesystem personality** (`define-methods GelPresentations` in
-`gel/directory.aloe`):
+**Filesystem personality** (generic Gel class in `gel/directory.aloe`,
+§4.3). The host field exists to pin `H`; it is not TOS. Probe name
+`GelDirectoryOps` is fine to keep or rename.
 
 ```aloe
-(directory-values (type H)
-  (directory (Directory H))
-  GelValueRows
-  ((GelDirectoryListing new (directory entries)) values #f))
+(define-class (GelDirectoryPresentations H)
+  (fields
+    (host H))
+  (methods
+    (directory-values
+      (directory (Directory H))
+      GelValueRows
+      ((GelDirectoryListing new (directory entries)) values #f))
 
-(directory-all-values (type H)
-  (directory (Directory H))
-  GelValueRows
-  ((GelDirectoryListing new (directory entries)) values #t))
+    (directory-all-values
+      (directory (Directory H))
+      GelValueRows
+      ((GelDirectoryListing new (directory entries)) values #t))
 
-(up (type H)
-  (directory (Directory H))
-  GelUp
-  ((directory parent) case
-    (None () (GelUp NoParent))
-    (Some (parent)
-      (GelUp Parent (Mirror of parent)))))
+    (up
+      (directory (Directory H))
+      GelUp
+      ((directory parent) case
+        (None () (GelUp NoParent))
+        (Some (parent)
+          (GelUp Parent (Mirror of parent)))))
 
-(tos-text (type H) (directory (Directory H)) String …)
-(tos-text (type H) (file (File H)) String …)
-(tos-text (type H) (link (SymbolicLink H)) String …)
-(tos-text (type H) (thing (Other H)) String …)
+    (tos-text (directory (Directory H)) String …)
+    (tos-text (file (File H)) String …)
+    (tos-text (link (SymbolicLink H)) String …)
+    (tos-text (thing (Other H)) String …)))
+
+(define gel-directory-presentations
+  (GelDirectoryPresentations new fs-host))
 ```
 
 TOS-text bodies stay the checkpoint-113 bytes: class name plus
@@ -302,8 +386,10 @@ Absence is “no matching `accepts?`”, which is `GelUp Unavailable`,
 
 ### 6.4 How `GelMenus`, `GelText`, and `u` find a presentation
 
-They reflect **`gel-presentations`**, never the TOS method table, for
-Gel behavior.
+They reflect **Gel-owned presentation objects**, never the TOS method
+table, for Gel behavior. List: `gel-presentations`. Directory family:
+the host-holding instance from `gel/directory.aloe` (§4.3), found
+without naming an unbound symbol in `menu.aloe`.
 
 **`GelMenus.of(mirror, show-hidden, page)`**
 
@@ -510,25 +596,24 @@ loads, `List` has no `gel-values`; global checkpoint 110–111 List
 behavior still holds. Directory may still be patched in this slice;
 if so, the live-image bar is **not** claimed done.
 
-**gel-presentations 001 — Directory family** (suggested slug
-`directory-family`). `define-methods GelPresentations` in
-`gel/directory.aloe` for the four disk types. Delete every disk
-`define-methods` in that file. Point `GelMenus`, `GelText.tos`, and
-`GelUps` at `gel-presentations`. Drop specimen scans for
-`"gel-directory-values"`, `"gel-directory-all-values"`, `"gel-up"`,
-`"gel-tos-text"`. Proof: §8.1 snapshots plus §8.2 runner behavior.
-Paging/hidden/TOS bytes unchanged.
+**gel-presentations 001 — Directory family** (slug `directory-family`).
+**Blocked. Do not implement. Do not rewrite this file into a new
+design.** The issued checkpoint required `(type H)` / `(Directory H)`
+bodies. Those do not typecheck (§4.2–4.3). 000 stays the last green
+slice.
 
-**gel-presentations 002 — doc law** (suggested slug `doc-law`). Apply
-§11 wording to `docs/gel.md`, `docs/gel-directory-surface.md`, and
-`docs/handoff.md`. Historical global checkpoint 110–117 files stay as
-history; do not rewrite them to pretend they were presentations.
+**gel-presentations 002 — doc law** (suggested slug `doc-law`).
+**Not issued.** Do not write it while 001 is blocked. When Directory
+is actually on `GelPresentations` (a later slice, new number, concrete
+`FsHost` bodies), apply §11 wording to `docs/gel.md`,
+`docs/gel-directory-surface.md`, and `docs/handoff.md`. Historical
+global checkpoint 110–117 files stay as history.
 
-If a checkpoint manager wants Directory before List, that is allowed
-only if 000 then still names the `List.gel-values` hole and does not
-claim item 4 of the live-image bar. Prefer List first: it is the
-smaller proof of the typed-language mechanism, and it does not touch
-the frozen pager.
+A later Directory-family slice, if the human asks the checkpoint
+manager to write one, must follow §4.3 / §6.2 (generic Gel class
+holding `fs-host`), not 001’s abstract-`H` bodies and not a written
+`FsHost` type name. Do not call it 001. Do not call it 002 until
+doc-law is really next.
 
 ---
 
@@ -540,7 +625,8 @@ Do not specify or implement as this experiment:
 - Wrapper-as-TOS, forwarding, inheritance
 - Asterisk-proxy (“TOS looks like a Directory but is a wrapper”)
 - Kernel type classes, generic functions, protocol-owned method tables
-- `Mirror.class` or any `aloe/` / `host/` edit
+- `Mirror.class` or any `aloe/` / `host/` edit (including a checker
+  change so abstract `H` can send host `names` / `root?`)
 - Fuller Genera: command tables, presentation translators, input
   context, transcript-wide mouse/keyboard sensitivity, history as
   live presentations, cycling views

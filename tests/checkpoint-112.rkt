@@ -127,7 +127,7 @@
         (Messages (rows) (GelValueRows new (List empty)))
         (Values (rows) rows)))))
 
-(define (bind-signature! state name mirror-name selector)
+(define (bind-signature! state name mirror-name selector [arity 0])
   (driver-eval!
    state
    `(define ,name
@@ -135,7 +135,7 @@
         ((,mirror-name signatures) first)
         (fn (found signature)
           (if (((signature selector) name) = ,selector)
-              (if (((signature params) len) = 0)
+              (if (((signature params) len) = ,arity)
                   signature
                   found)
               found))))))
@@ -221,15 +221,7 @@
    "a  \"alpha\"\r\nb  \"beta\"\r\n")
   (check-false
    (driver-eval! state '(gel-ups available? (Mirror of generic-list))))
-  (check-false
-   (driver-eval!
-    state
-    '(((Mirror of generic-list) signatures) fold
-       #f
-       (fn (found signature)
-         (if (((signature selector) name) = "gel-directory-values")
-             #t
-             found)))))
+  (check-true (driver-eval! state '((gel-menus directory-indexes) empty?)))
   (for ([name '(Disk Directory GelDirectoryRows gel-directory-rows)])
     (check-false (env-bound? (driver-runtime-environment state) name)))
 
@@ -239,23 +231,34 @@
   (check-false
    (driver-eval! state '(gel-ups available? (Mirror of gel-start-value)))))
 
-(test-case "Directory adapter adds the exact reflected zero-argument rows"
+(test-case "Directory service adds the exact reflected one-argument rows"
   (define state (make-directory-driver))
   (define-current-directory! state 'cwd)
   (driver-eval! state '(define cwd-mirror (Mirror of cwd)))
+  (driver-eval!
+   state
+   '(define directory-presentations-mirror
+      (Mirror of gel-directory-presentations)))
   (bind-signature!
-   state 'directory-values-signature 'cwd-mirror "gel-directory-values")
+   state 'directory-values-signature 'directory-presentations-mirror
+   "directory-values" 1)
   (bind-signature!
-   state 'directory-all-values-signature 'cwd-mirror
-   "gel-directory-all-values")
-  (bind-signature! state 'up-signature 'cwd-mirror "gel-up")
+   state 'directory-all-values-signature 'directory-presentations-mirror
+   "directory-all-values" 1)
+  (bind-signature!
+   state 'up-signature 'directory-presentations-mirror "up" 1)
 
-  (check-equal? (driver-type-datum state '(cwd gel-directory-values))
+  (check-equal?
+   (driver-type-datum
+    state
+    '(gel-directory-presentations directory-values cwd))
                 'GelValueRows)
-  (check-equal? (driver-type-datum state '(cwd gel-up)) 'GelUp)
+  (check-equal?
+   (driver-type-datum state '(gel-directory-presentations up cwd))
+   'GelUp)
   (check-equal?
    (driver-eval! state '((directory-values-signature params) len))
-   0)
+   1)
   (check-equal?
    (driver-eval!
     state
@@ -263,13 +266,13 @@
    "#<Symbol GelValueRows>")
   (check-equal?
    (driver-eval! state '((directory-all-values-signature params) len))
-   0)
+   1)
   (check-equal?
    (driver-eval!
     state
     '((Mirror of (directory-all-values-signature return)) raw))
    "#<Symbol GelValueRows>")
-  (check-equal? (driver-eval! state '((up-signature params) len)) 0)
+  (check-equal? (driver-eval! state '((up-signature params) len)) 1)
   (check-equal?
    (driver-eval! state '((Mirror of (up-signature return)) raw))
    "#<Symbol GelUp>")
@@ -307,7 +310,7 @@
      (regexp raw-pattern)
      (driver-eval! state `(((cwd-rows select ,index) value) raw))))
   (check-equal?
-   (length (regexp-match* #rx"\\(self entries\\)"
+   (length (regexp-match* #rx"\\(directory entries\\)"
                           (file->string gel-directory-path)))
    2))
 

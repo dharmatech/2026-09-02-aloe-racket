@@ -151,8 +151,14 @@
             "#<File \"/etc/passwd\">"
             "#<SymbolicLink \"/bin\">"
             "#<Other \"/dev/null\">"))])
-    (check-equal? (driver-type-datum state `(,name gel-tos-text)) 'String)
-    (check-equal? (driver-eval! state `(,name gel-tos-text)) direct)
+    (check-equal?
+     (driver-type-datum
+      state
+      `(gel-directory-presentations tos-text ,name))
+     'String)
+    (check-equal?
+     (driver-eval! state `(gel-directory-presentations tos-text ,name))
+     direct)
     (check-equal?
      (driver-eval! state (tos-expression name))
      (string-append "TOS: " direct)))
@@ -283,16 +289,18 @@
 (test-case "implementation stays inside the checkpoint seam and file scope"
   (define loop-source (file->string gel-loop-path))
   (define directory-source (file->string gel-directory-path))
-  (check-false (regexp-match? #rx"tos-value|top subject" loop-source))
+  (check-false (regexp-match? #rx"tos-value" loop-source))
   (check-false (regexp-match? #rx"tos-value" directory-source))
   (check-equal?
-   (length (regexp-match* #rx"\\(gel-tos-text \\(\\) String"
+   (length (regexp-match* #rx"\\(tos-text"
                           directory-source))
    4)
   (check-regexp-match
-   #px"\\(tos-result\\s+\\(top Mirror\\)\\s+\\(signature Signature\\)\\s+String\\s+\\(top inv\\|o\\|ke signature\\)\\)"
+   #px"\\(tos-result\\s+\\(presentations Mirror\\)\\s+\\(top Mirror\\)\\s+\\(signature Signature\\)\\s+String\\s+\\(presentations inv\\|o\\|ke signature \\(top subject\\)\\)\\)"
    loop-source)
-  (check-regexp-match #rx"top signatures" loop-source)
+  (check-regexp-match
+   #rx"gel-menus directory-signatures top \"tos-text\""
+   loop-source)
   (check-regexp-match #rx"top raw" loop-source)
   (check-regexp-match
    #px"handle-messages\\s+\\(gel-text message-rows rows\\)"

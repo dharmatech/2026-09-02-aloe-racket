@@ -39,6 +39,11 @@ Gel presentations (TOS stays the specimen) is specified in
 **local** series (`gel-presentations 000`, tests under
 `tests/gel-presentations/`), not global checkpoint 118. Do not write
 `docs/checkpoints/0118-….md` for that work.
+**000 is green. 001 is blocked** (a Gel method with abstract
+`(Directory H)` cannot send `entries` / `parent`; writing `FsHost` as
+a type is unbound). The type index still works. A probe shows a
+generic Gel class that holds `fs-host` can send those disk messages.
+Do not implement 001. Do not issue 002.
 
 If the work is still filesystem vocabulary rather than Gel, stay on
 `experiment/filesystem` and ignore this section.
