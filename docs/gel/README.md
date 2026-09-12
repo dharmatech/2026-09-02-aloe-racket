@@ -8,7 +8,8 @@ Identity is `(project, number)`. Spoken name is **project 000**.
 
 | Project | Path | Role |
 |---|---|---|
-| Presentations | [`presentations/`](presentations/) | Gel-owned presentations |
+| Presentations | [`presentations/`](presentations/) | Gel-owned presentations (series closed) |
+| Catalog | [`catalog/`](catalog/) | Application-supplied presentation catalog |
 | Directory status | [`directory-status/`](directory-status/) | Listing count and `page N of M` |
 | Directory dim | [`directory-dim/`](directory-dim/) | Faint `n` / `p` when that page move is a no-op |
 
