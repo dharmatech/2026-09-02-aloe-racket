@@ -60,8 +60,8 @@
    "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define point-menu
   (string-append
@@ -376,8 +376,8 @@
                  "1 entries\r\n"
                  "u  up\r\n"
                  ".  show hidden\r\n"
-                 "n  next\r\n"
-                 "p  prev\r\n"))
+                 "\u001b[2mn  next\u001b[0m\r\n"
+                 "\u001b[2mp  prev\u001b[0m\r\n"))
   (for ([name '(file-step link-step other-step)])
     (define text (driver-eval! state `(gel-text menu ,name)))
     (check-not-equal? text "")
@@ -406,7 +406,8 @@
                 (string-append
                  "0 entries\r\n"
                  "u  up\r\n.  show hidden\r\n"
-                 "n  next\r\np  prev\r\n"))
+                 "\u001b[2mn  next\u001b[0m\r\n"
+                 "\u001b[2mp  prev\u001b[0m\r\n"))
   (driver-eval! state '(define many-mirror (Mirror of many-directory)))
   (define-value-rows! state 'many-rows 'many-mirror)
   (define rendered (driver-eval! state '(gel-text menu many-mirror)))
@@ -650,7 +651,7 @@
      (check-equal? (length (regexp-match* #rx"b  lib/\r\n" transcript)) 2)
      (check-equal? (length (regexp-match* #rx"c  link@\r\n" transcript)) 2)
      (check-regexp-match
-      #rx"a  disk.aloe\r\n\r\n1 entries\r\nu  up\r\n[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey a\r\n"
+      #rx"a  disk.aloe\r\n\r\n1 entries\r\nu  up\r\n[.]  show hidden\r\n\u001b[[]2mn  next\u001b[[]0m\r\n\u001b[[]2mp  prev\u001b[[]0m\r\n\r\nkey a\r\n"
       transcript)
      (check-regexp-match #rx"key a\r\nTOS: #<File " transcript)
      (check-regexp-match

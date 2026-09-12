@@ -281,8 +281,8 @@
     "2 entries\r\n"
     "u  up\r\n"
     ".  show hidden\r\n"
-    "n  next\r\n"
-    "p  prev\r\n"))
+    "\u001b[2mn  next\u001b[0m\r\n"
+    "\u001b[2mp  prev\u001b[0m\r\n"))
   (check-equal?
    (driver-eval! state '(gel-text menu cwd-mirror #t 0))
    (string-append
@@ -293,14 +293,20 @@
     "3 entries\r\n"
     "u  up\r\n"
     ".  hide hidden\r\n"
-    "n  next\r\n"
-    "p  prev\r\n"))
+    "\u001b[2mn  next\u001b[0m\r\n"
+    "\u001b[2mp  prev\u001b[0m\r\n"))
   (check-equal?
    (driver-eval! state '(gel-text menu cwd-mirror #f 1))
-   "2 entries\r\nu  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")
+   (string-append
+    "2 entries\r\nu  up\r\n.  show hidden\r\n"
+    "\u001b[2mn  next\u001b[0m\r\n"
+    "p  prev\r\n"))
   (check-equal?
    (driver-eval! state '(gel-text menu cwd-mirror #t 1))
-   "3 entries\r\nu  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"))
+   (string-append
+    "3 entries\r\nu  up\r\n.  hide hidden\r\n"
+    "\u001b[2mn  next\u001b[0m\r\n"
+    "p  prev\r\n")))
 
 (test-case "page resets on navigation and hidden toggles while visibility persists"
   (define nodes

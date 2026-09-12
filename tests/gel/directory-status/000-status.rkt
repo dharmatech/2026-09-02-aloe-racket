@@ -20,6 +20,14 @@
   '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l"
     "m" "o" "r" "s" "t" "v" "w" "x" "y" "z"))
 
+(define faint "\u001b[2m")
+(define reset "\u001b[0m")
+
+(define (expected-paging-line text live?)
+  (if live?
+      (string-append text "\r\n")
+      (string-append faint text reset "\r\n")))
+
 (define (load-silently! state path)
   (define output (open-output-string))
   (check-equal? (driver-load-file! state path output) '())
@@ -81,8 +89,8 @@
        "")
    "u  up\r\n"
    (if show-hidden ".  hide hidden\r\n" ".  show hidden\r\n")
-   "n  next\r\n"
-   "p  prev\r\n"))
+   (expected-paging-line "n  next" (< (add1 page) page-count))
+   (expected-paging-line "p  prev" (positive? page))))
 
 (define (make-counting-fs current nodes)
   (define inner (make-fs-double current nodes))
@@ -193,7 +201,12 @@
     (define-directory! state)
     (define-step! state 'start 'cwd)
     (define menu (driver-eval! state '(gel-text menu start)))
-    (check-true (string-contains? menu "n  next\r\np  prev\r\n"))
+    (check-true
+     (string-suffix?
+      menu
+      (string-append
+       (expected-paging-line "n  next" #f)
+       (expected-paging-line "p  prev" #f))))
     (check-eq? (driver-eval! state '(start handle-key "n"))
                (driver-eval! state 'start))
     (check-eq? (driver-eval! state '(start handle-key "p"))

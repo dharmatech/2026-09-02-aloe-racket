@@ -52,8 +52,8 @@
    "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define all-menu
   (string-append
@@ -68,8 +68,8 @@
    "7 entries\r\n"
    "u  up\r\n"
    ".  hide hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define (driver-type-datum state datum)
   (type->datum
@@ -250,14 +250,16 @@
                 (string-append
                  "0 entries\r\n"
                  "u  up\r\n.  show hidden\r\n"
-                 "n  next\r\np  prev\r\n"))
+                 "\u001b[2mn  next\u001b[0m\r\n"
+                 "\u001b[2mp  prev\u001b[0m\r\n"))
   (check-equal?
    (driver-eval! empty-state '(gel-text menu shown-state))
    (string-append
     "a  .one\r\nb  .two\r\n\r\n"
     "2 entries\r\n"
     "u  up\r\n.  hide hidden\r\n"
-    "n  next\r\np  prev\r\n")))
+    "\u001b[2mn  next\u001b[0m\r\n"
+    "\u001b[2mp  prev\u001b[0m\r\n")))
 
 (test-case "visibility persists through Directory navigation and sends"
   (define state (make-directory-driver))
@@ -450,7 +452,7 @@
   (check-equal? (length (regexp-match* #rx"a  alpha\r\n" transcript)) 1)
   (check-equal? (length (regexp-match* #rx"a  [.]config/\r\n" transcript)) 1)
   (check-regexp-match
-   #rx"[.]  show hidden\r\nn  next\r\np  prev\r\n\r\nkey [.]\r\nTOS: #<Directory"
+   #rx"[.]  show hidden\r\n\u001b[[]2mn  next\u001b[[]0m\r\n\u001b[[]2mp  prev\u001b[[]0m\r\n\r\nkey [.]\r\nTOS: #<Directory"
    transcript)
   (check-true (string-contains? transcript ".  hide hidden\r\n"))
   (check-true (string-suffix? transcript "key q\r\n"))

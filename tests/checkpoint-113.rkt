@@ -43,8 +43,8 @@
    "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define (driver-type-datum state datum)
   (type->datum

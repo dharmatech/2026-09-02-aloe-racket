@@ -49,8 +49,8 @@
    "4 entries\r\n"
    "u  up\r\n"
    ".  show hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define all-menu
   (string-append
@@ -64,8 +64,8 @@
    "6 entries\r\n"
    "u  up\r\n"
    ".  hide hidden\r\n"
-   "n  next\r\n"
-   "p  prev\r\n"))
+   "\u001b[2mn  next\u001b[0m\r\n"
+   "\u001b[2mp  prev\u001b[0m\r\n"))
 
 (define point-menu
   (string-append
@@ -523,7 +523,7 @@
     "page 2 of 2\r\n"
     "u  up\r\n"
     ".  show hidden\r\n"
-    "n  next\r\n"
+    "\u001b[2mn  next\u001b[0m\r\n"
     "p  prev\r\n"))
   (check-equal?
    (driver-eval! paging-state '((second-page handle-key "p") page))

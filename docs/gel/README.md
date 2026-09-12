@@ -10,6 +10,7 @@ Identity is `(project, number)`. Spoken name is **project 000**.
 |---|---|---|
 | Presentations | [`presentations/`](presentations/) | Gel-owned presentations |
 | Directory status | [`directory-status/`](directory-status/) | Listing count and `page N of M` |
+| Directory dim | [`directory-dim/`](directory-dim/) | Faint `n` / `p` when that page move is a no-op |
 
 Do not append these slices to root `CHECKPOINTS.md`. Do not number
 them 118, 119, … . Predecessor Directory UX remains global 112–117.

@@ -130,22 +130,35 @@
         (fn (text row)
           (text append (self value-line row)))))
 
+    (page-count
+      (count Int)
+      Int
+      (let ((page-size (gel-item-keys len)))
+        ((count + (page-size - 1)) / page-size)))
+
+    (move-line
+      (text String)
+      (live Bool)
+      String
+      (if live
+          (text append "\r\n")
+          ((("\x1b[2m" append text) append "\x1b[0m")
+           append "\r\n")))
+
     (directory-status
       (count Int)
       (page Int)
       String
-      (let ((page-size (gel-item-keys len)))
-        (let ((page-count
-               ((count + (page-size - 1)) / page-size))
-              (count-text
-               (((count text) append " entries") append "\r\n")))
-          (if (page-count > 1)
-              (((((count-text append "page ") append
-                   ((page + 1) text))
-                  append " of ")
-                 append (page-count text))
-                append "\r\n")
-              count-text))))
+      (let ((page-count (self page-count count))
+            (count-text
+             (((count text) append " entries") append "\r\n")))
+        (if (page-count > 1)
+            (((((count-text append "page ") append
+                 ((page + 1) text))
+                append " of ")
+               append (page-count text))
+              append "\r\n")
+            count-text)))
 
     (menu-text (value GelMenu) String
       (value case
@@ -204,20 +217,28 @@
       String
       (if (gel-menus directory? value)
           (let ((rows (gel-menus directory-rows value show-hidden)))
-            (let ((text
-                   (self value-rows-text
-                     (gel-menus window rows page)))
-                  (status
-                   (self directory-status (rows len) page))
-                  (commands
-                   (if show-hidden
-                       "u  up\r\n.  hide hidden\r\nn  next\r\np  prev\r\n"
-                       "u  up\r\n.  show hidden\r\nn  next\r\np  prev\r\n")))
-              (((if (text = "")
-                    text
-                    (text append "\r\n"))
-                append status)
-               append commands)))
+            (let ((count (rows len)))
+              (let ((page-count (self page-count count)))
+                (let ((text
+                       (self value-rows-text
+                         (gel-menus window rows page)))
+                      (status
+                       (self directory-status count page))
+                      (commands
+                       ((if show-hidden
+                            "u  up\r\n.  hide hidden\r\n"
+                            "u  up\r\n.  show hidden\r\n")
+                        append
+                        ((self move-line
+                           "n  next"
+                           ((page + 1) < page-count))
+                         append
+                         (self move-line "p  prev" (page > 0))))))
+                  (((if (text = "")
+                        text
+                        (text append "\r\n"))
+                    append status)
+                   append commands)))))
           (let ((text
                  (self menu-text
                    (gel-menus of value show-hidden page))))
