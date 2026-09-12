@@ -389,15 +389,15 @@
 (define (infer-expression expression environment expected)
   (define inferred
     (match expression
-      [(int-expr _) INT]
-      [(float-expr _) FLOAT]
-      [(bool-expr _) BOOL]
-      [(string-expr _) STRING]
-      [(variable-expr name)
+      [(int-expr _ _) INT]
+      [(float-expr _ _) FLOAT]
+      [(bool-expr _ _) BOOL]
+      [(string-expr _ _) STRING]
+      [(variable-expr name _)
        (type-environment-ref environment name)]
       [(? load-expr?)
        (typecheck-load! expression environment)]
-      [(check-expr left right _ _)
+      [(check-expr left right _ _ _)
        (define left-type
          (infer-expression left environment expected))
        (define right-type
@@ -407,19 +407,19 @@
         right-type
         "check operands must have the same type")
        right-type]
-      [(define-expr name value-expression)
+      [(define-expr name value-expression _)
        (define value-type
          (infer-expression value-expression environment #f))
        (type-environment-set! environment name value-type)
        VOID]
-      [(define-protocol-expr name signatures)
+      [(define-protocol-expr name signatures _)
        (define protocol (protocol-type name signatures))
        (type-environment-set! environment name protocol)
        (for ([signature (in-list signatures)])
          (check-method-types! signature environment (make-hasheq)))
        VOID]
       [(define-class-expr
-        name type-parameters protocol fields constructors methods)
+        name type-parameters protocol fields constructors methods _)
        (check-class-definition!
         name
         type-parameters
@@ -429,14 +429,14 @@
         methods
         environment)
        VOID]
-      [(define-methods-expr target methods)
+      [(define-methods-expr target methods _)
        (check-method-definitions! target methods environment)
        VOID]
-      [(fn-expr parameters body)
+      [(fn-expr parameters body _)
        (infer-function parameters body environment expected)]
-      [(case-expr scrutinee clauses else-body)
+      [(case-expr scrutinee clauses else-body _)
        (infer-case scrutinee clauses else-body environment expected)]
-      [(send-expr receiver selector arguments)
+      [(send-expr receiver selector arguments _ _)
        (infer-send receiver selector arguments environment expected)]))
   (when expected
     (unify-types! inferred expected))

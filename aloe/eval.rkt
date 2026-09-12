@@ -53,15 +53,15 @@
 
 (define (eval-expr expression environment)
   (match expression
-    [(int-expr value) value]
-    [(float-expr value) value]
-    [(bool-expr value) value]
-    [(string-expr value) value]
-    [(variable-expr name)
+    [(int-expr value _) value]
+    [(float-expr value _) value]
+    [(bool-expr value _) value]
+    [(string-expr value _) value]
+    [(variable-expr name _)
      (env-lookup environment name)]
     [(? load-expr?)
      (eval-load! expression environment)]
-    [(check-expr left right left-datum right-datum)
+    [(check-expr left right left-datum right-datum _)
      (define left-value (eval-expr left environment))
      (define right-value (eval-expr right environment))
      (unless (aloe-values-equal? left-value right-value)
@@ -72,11 +72,11 @@
               right-datum
               (aloe-value->display-string right-value)))
      right-value]
-    [(define-expr name value-expression)
+    [(define-expr name value-expression _)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
-    [(define-protocol-expr _ _) (void)]
-    [(define-class-expr name type-parameters protocol fields constructors methods)
+    [(define-protocol-expr _ _ _) (void)]
+    [(define-class-expr name type-parameters protocol fields constructors methods _)
      (define class-fields (or fields '()))
      (define class-constructors
        (or constructors
@@ -91,7 +91,7 @@
                    class-constructors
                    methods
                    environment))]
-    [(define-methods-expr target methods)
+    [(define-methods-expr target methods _)
      (define target-class (env-lookup environment target))
      (cond
        [(list-class-object? target-class)
@@ -112,11 +112,11 @@
         (error 'eval-aloe
                "define-methods target is not a class: ~a"
                target)])]
-    [(fn-expr parameters body)
+    [(fn-expr parameters body _)
      (function-value parameters body environment)]
-    [(case-expr scrutinee clauses else-body)
+    [(case-expr scrutinee clauses else-body _)
      (eval-case scrutinee clauses else-body environment)]
-    [(send-expr receiver-expression selector argument-expressions)
+    [(send-expr receiver-expression selector argument-expressions _ _)
      (define receiver (eval-expr receiver-expression environment))
      (define arguments
        (for/list ([argument-expression (in-list argument-expressions)])

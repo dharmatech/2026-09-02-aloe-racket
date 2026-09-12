@@ -93,14 +93,34 @@
 (test-case "the String library is exactly one derived Aloe method"
   (check-equal? (file->string string-library-path)
                 exact-string-library-source)
-  (check-equal?
+  (check-match
    (string-library-expressions)
    (list
-    (parse-datum
-     '(define-methods String
-        (methods
-          (starts-with? (prefix String) Bool
-            ((self take (prefix len)) = prefix))))))))
+    (define-methods-expr
+     'String
+     (list
+      (method-declaration
+       'starts-with?
+       '()
+       (list (parameter-declaration 'prefix 'String))
+       'Bool
+       (send-expr
+        (send-expr
+         (variable-expr 'self _)
+         'take
+         (list (send-expr
+                (variable-expr 'prefix _)
+                'len
+                '()
+                _
+                _))
+         _
+         _)
+        '=
+        (list (variable-expr 'prefix _))
+        _
+        _)))
+     _))))
 
 (define (define-string-reflection! environment)
   (eval-source
