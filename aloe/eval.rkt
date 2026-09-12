@@ -9,6 +9,7 @@
                   host-receiver-invoke-method)
          "mirror.rkt"
          "parse.rkt"
+         "signature-catalog.rkt"
          "signature.rkt"
          "symbol.rkt")
 
@@ -31,7 +32,6 @@
 (struct runtime-list-type (element-type) #:transparent)
 (struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
-(struct signature-spec (selector parameters return) #:transparent)
 
 (define current-eval-load-paths (make-parameter '()))
 
@@ -235,38 +235,6 @@
     [(symbol? type) type]
     [else '?]))
 
-(define (substitute-type-datum datum substitution)
-  (cond
-    [(and (symbol? datum) (hash-has-key? substitution datum))
-     (hash-ref substitution datum)]
-    [(list? datum)
-     (map (lambda (part)
-            (substitute-type-datum part substitution))
-          datum)]
-    [else datum]))
-
-(define (method->signature-spec method substitution)
-  (signature-spec
-   (method-declaration-selector method)
-   (for/list ([parameter
-               (in-list (method-declaration-parameters method))])
-     (substitute-type-datum
-      (parameter-declaration-type parameter)
-      substitution))
-   (substitute-type-datum
-    (method-declaration-return-type method)
-    substitution)))
-
-(define (methods->signature-specs methods substitution)
-  (for/list ([method (in-list methods)])
-    (method->signature-spec method substitution)))
-
-(define (host-method->signature-spec method)
-  (signature-spec
-   (host-method-selector method)
-   (host-method-parameter-types method)
-   (host-method-return-type method)))
-
 (define (instance-signature-specs instance)
   (define class (instance-value-class instance))
   (define substitution
@@ -277,14 +245,12 @@
                (vector->list
                 (instance-value-type-arguments instance))))))
   (append
-   (for/list ([field (in-list (class-value-fields class))])
-     (signature-spec
-      (field-declaration-name field)
-      '()
-      (substitute-type-datum
-       (field-declaration-type field)
-       substitution)))
-   (methods->signature-specs (class-value-methods class) substitution)))
+   (field-declarations->signature-specs
+    (class-value-fields class)
+    substitution)
+   (method-declarations->signature-specs
+    (class-value-methods class)
+    substitution)))
 
 (define (class-instance-type-datum class)
   (define parameters (class-value-type-parameters class))
@@ -293,11 +259,9 @@
       (cons (class-value-name class) parameters)))
 
 (define (class-signature-specs class)
-  (list
-   (signature-spec
-    'new
-    (map field-declaration-type (class-value-fields class))
-    (class-instance-type-datum class))))
+  (constructor-declarations->signature-specs
+   (class-value-constructors class)
+   (class-instance-type-datum class)))
 
 (define (list-signature-specs value)
   (define element-type
@@ -306,13 +270,10 @@
         'T))
   (define substitution (make-hasheq (list (cons 'T element-type))))
   (append
-   (list (signature-spec 'empty? '() 'Bool)
-         (signature-spec 'first '() element-type)
-         (signature-spec 'rest '() (list 'List element-type))
-         (signature-spec 'cons (list element-type)
-                         (list 'List element-type))
-         (signature-spec 'len '() 'Int))
-   (methods->signature-specs
+   (substitute-signature-specs
+    (kernel-instance-signature-specs 'List)
+    substitution)
+   (method-declarations->signature-specs
     (list-class-object-methods (list-value-class value))
     substitution)))
 
@@ -322,75 +283,46 @@
 (define (value-signature-specs value [environment #f])
   (cond
     [(exact-integer? value)
-     (list (signature-spec '+ '(Int) 'Int)
-           (signature-spec '- '(Int) 'Int)
-           (signature-spec '* '(Int) 'Int)
-           (signature-spec '/ '(Int) 'Int)
-           (signature-spec '< '(Int) 'Bool)
-           (signature-spec '> '(Int) 'Bool)
-           (signature-spec '<= '(Int) 'Bool)
-           (signature-spec '>= '(Int) 'Bool)
-           (signature-spec '= '(Int) 'Bool)
-           (signature-spec 'float '() 'Float)
-           (signature-spec 'text '() 'String))]
+     (kernel-instance-signature-specs 'Int)]
     [(flonum? value)
-     (list (signature-spec '+ '(Float) 'Float)
-           (signature-spec '- '(Float) 'Float)
-           (signature-spec '* '(Float) 'Float)
-           (signature-spec '/ '(Float) 'Float)
-           (signature-spec '< '(Float) 'Bool)
-           (signature-spec '> '(Float) 'Bool)
-           (signature-spec '<= '(Float) 'Bool)
-           (signature-spec '>= '(Float) 'Bool)
-           (signature-spec '= '(Float) 'Bool))]
+     (kernel-instance-signature-specs 'Float)]
     [(boolean? value)
-     (list (signature-spec 'if '((-> T) (-> T)) 'T))]
+     (kernel-instance-signature-specs 'Bool)]
     [(string? value)
      (append
-      (list (signature-spec '= '(String) 'Bool)
-            (signature-spec 'append '(String) 'String)
-            (signature-spec 'len '() 'Int)
-            (signature-spec 'take '(Int) 'String))
+      (kernel-instance-signature-specs 'String)
       (let ([class (string-class-for environment)])
         (if class
-            (methods->signature-specs
+            (method-declarations->signature-specs
              (string-class-object-methods class)
              (make-hasheq))
             '())))]
     [(symbol-value? value)
-     (list (signature-spec 'name '() 'String)
-           (signature-spec '= '(Symbol) 'Bool))]
+     (kernel-instance-signature-specs 'Symbol)]
     [(host-receiver? value)
-     (map host-method->signature-spec
-          (host-interface-methods
-           (host-receiver-interface value)))]
+     (host-method-declarations->signature-specs
+      (host-interface-methods
+       (host-receiver-interface value)))]
     [(function-value? value)
      (list
-      (signature-spec
-       'call
+      (make-call-signature-spec
        (make-list (length (function-value-parameters value)) 'T)
        'U))]
     [(list-value? value) (list-signature-specs value)]
     [(instance-value? value) (instance-signature-specs value)]
     [(class-value? value) (class-signature-specs value)]
     [(list-class-object? value)
-     (list (signature-spec 'of '(T) '(List T))
-           (signature-spec 'empty '() '(List T)))]
+     (kernel-class-object-signature-specs 'List)]
+    [(string-class-object? value)
+     (kernel-class-object-signature-specs 'String)]
     [(symbol-class-object? value)
-     (list (signature-spec 'intern '(String) 'Symbol))]
+     (kernel-class-object-signature-specs 'Symbol)]
     [(mirror-class-object? value)
-     (list (signature-spec 'of '(T) 'Mirror))]
+     (kernel-class-object-signature-specs 'Mirror)]
     [(mirror-value? value)
-     (list (signature-spec 'messages '() '(List Symbol))
-           (signature-spec 'signatures '() '(List Signature))
-           (signature-spec 'invoke '(Signature) 'U)
-           (signature-spec 'subject '() 'U)
-           (signature-spec 'raw '() 'String))]
+     (kernel-instance-signature-specs 'Mirror)]
     [(signature-value? value)
-     (list (signature-spec 'selector '() 'Symbol)
-           (signature-spec 'params '() '(List TypeData))
-           (signature-spec 'return '() 'TypeData)
-           (signature-spec 'accepts? '(Mirror) 'Bool))]
+     (kernel-instance-signature-specs 'Signature)]
     [else '()]))
 
 (define (value-selector-names value [environment #f])
@@ -419,13 +351,17 @@
     [(instance-value? subject)
      (define class (instance-value-class subject))
      (define method-index
-       (- row-index (length (class-value-fields class))))
+       (- row-index
+          (length
+           (field-declarations->signature-specs
+            (class-value-fields class)))))
      (if (negative? method-index)
          '()
          (method-declaration-type-parameters
           (list-ref (class-value-methods class) method-index)))]
     [(list-value? subject)
-     (define method-index (- row-index 5))
+     (define method-index
+       (- row-index (kernel-instance-signature-count 'List)))
      (if (negative? method-index)
          '()
          (method-declaration-type-parameters
@@ -433,7 +369,8 @@
            (list-class-object-methods (list-value-class subject))
            method-index)))]
     [(string? subject)
-     (define method-index (- row-index 4))
+     (define method-index
+       (- row-index (kernel-instance-signature-count 'String)))
      (define class (string-class-for environment))
      (if (or (negative? method-index) (not class))
          '()
@@ -649,13 +586,14 @@
                     (- row-index field-count))
           arguments))]
     [(list-value? subject)
-     (if (< row-index 5)
+     (define kernel-count (kernel-instance-signature-count 'List))
+     (if (< row-index kernel-count)
          (send-to-list subject selector arguments)
          (apply-list-method
           subject
           (list-ref
            (list-class-object-methods (list-value-class subject))
-           (- row-index 5))
+           (- row-index kernel-count))
           arguments))]
     [(class-value? subject) (construct-instance subject selector arguments)]
     [(list-class-object? subject)
@@ -673,7 +611,8 @@
     [(boolean? subject)
      (send-to-bool subject selector arguments)]
     [(string? subject)
-     (if (< row-index 4)
+     (define kernel-count (kernel-instance-signature-count 'String))
+     (if (< row-index kernel-count)
          (send-to-string subject selector arguments environment)
          (let ([class (string-class-for environment)])
            (unless class (unknown-message selector))
@@ -682,7 +621,7 @@
             class
             (list-ref
              (string-class-object-methods class)
-             (- row-index 4))
+             (- row-index kernel-count))
             arguments)))]
     [(symbol-value? subject)
      (send-to-symbol subject selector arguments)]

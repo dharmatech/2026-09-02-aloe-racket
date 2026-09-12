@@ -3,7 +3,8 @@
 (require racket/list
          racket/match
          "host.rkt"
-         "parse.rkt")
+         "parse.rkt"
+         "signature-catalog.rkt")
 
 (provide (struct-out exn:fail:aloe-type)
          (struct-out int-type)
@@ -21,12 +22,14 @@
          (struct-out symbol-class-type)
          (struct-out mirror-class-type)
          (struct-out function-type)
+         (struct-out signature-spec)
          type-environment?
          type-environment-bound?
          make-type-environment
          type-of
          typecheck-program
-         type->datum)
+         type->datum
+         type-signature-specs)
 
 (struct exn:fail:aloe-type exn:fail () #:transparent)
 
@@ -197,6 +200,158 @@
     [(opaque-type? resolved) (opaque-type-name resolved)]
     [(void-type? resolved) 'Void]
     [else '?]))
+
+(define (checker-type? value)
+  (let checker-type? ([candidate value])
+    (cond
+      [(or (int-type? candidate)
+           (float-type? candidate)
+           (bool-type? candidate)
+           (string-type? candidate)
+           (symbol-type? candidate)
+           (mirror-type? candidate)
+           (signature-type? candidate)
+           (type-data-type? candidate)
+           (symbol-class-type? candidate)
+           (mirror-class-type? candidate)
+           (void-type? candidate))
+       #t]
+      [(protocol-type? candidate)
+       (and (symbol? (protocol-type-name candidate))
+            (list? (protocol-type-signatures candidate))
+            (andmap method-declaration?
+                    (protocol-type-signatures candidate)))]
+      [(instance-type? candidate)
+       (and (class-info? (instance-type-class candidate))
+            (list? (instance-type-arguments candidate))
+            (= (length (instance-type-arguments candidate))
+               (length
+                (class-info-type-parameters
+                 (instance-type-class candidate))))
+            (andmap checker-type?
+                    (instance-type-arguments candidate)))]
+      [(list-type? candidate)
+       (checker-type? (list-type-element candidate))]
+      [(class-type? candidate)
+       (class-info? (class-type-class candidate))]
+      [(list-class-type? candidate)
+       (and (parameter-type?
+             (list-class-type-element-parameter candidate))
+            (list? (list-class-type-methods candidate))
+            (andmap method-declaration?
+                    (list-class-type-methods candidate)))]
+      [(string-class-type? candidate)
+       (and (list? (string-class-type-methods candidate))
+            (andmap method-declaration?
+                    (string-class-type-methods candidate)))]
+      [(function-type? candidate)
+       (and (list? (function-type-parameters candidate))
+            (andmap checker-type?
+                    (function-type-parameters candidate))
+            (checker-type? (function-type-result candidate)))]
+      [(host-receiver-type? candidate)
+       (host-interface? (host-receiver-type-interface candidate))]
+      [(parameter-type? candidate)
+       (and (symbol? (parameter-type-id candidate))
+            (symbol? (parameter-type-name candidate)))]
+      [(type-variable? candidate)
+       (and (symbol? (type-variable-id candidate))
+            (or (not (type-variable-label candidate))
+                (symbol? (type-variable-label candidate)))
+            (boolean? (type-variable-numeric? candidate))
+            (or (not (type-variable-binding candidate))
+                (checker-type?
+                 (type-variable-binding candidate))))]
+      [(opaque-type? candidate)
+       (symbol? (opaque-type-name candidate))]
+      [else #f])))
+
+(define (fresh-signature-spec-list specs)
+  (for/list ([spec (in-list specs)]) spec))
+
+(define (deferred-signature-family family)
+  (error 'type-signature-specs
+         "checker type family ~a is deferred by editor-signatures-of-type 001"
+         family))
+
+(define (type-signature-specs type environment)
+  (unless (checker-type? type)
+    (raise-argument-error 'type-signature-specs "checker type" type))
+  (unless (type-environment? environment)
+    (raise-argument-error
+     'type-signature-specs "type-environment?" environment))
+  (define resolved (resolve-type type))
+  (cond
+    [(int-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Int))]
+    [(float-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Float))]
+    [(bool-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Bool))]
+    [(string-type? resolved)
+     (append
+      (kernel-instance-signature-specs 'String)
+      (method-declarations->signature-specs
+       (string-class-type-methods
+        (type-environment-string-class environment))))]
+    [(symbol-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Symbol))]
+    [(mirror-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Mirror))]
+    [(signature-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Signature))]
+    [(list-type? resolved)
+     (define element-datum
+       (type->datum (list-type-element resolved)))
+     (define substitution (hasheq 'T element-datum))
+     (define list-class (type-environment-ref environment 'List))
+     (append
+      (substitute-signature-specs
+       (kernel-instance-signature-specs 'List)
+       substitution)
+      (if (list-class-type? list-class)
+          (method-declarations->signature-specs
+           (list-class-type-methods list-class)
+           substitution)
+          '()))]
+    [(function-type? resolved)
+     (list
+      (make-call-signature-spec
+       (map type->datum (function-type-parameters resolved))
+       (type->datum (function-type-result resolved))))]
+    [(list-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'List))]
+    [(string-class-type? resolved) '()]
+    [(symbol-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'Symbol))]
+    [(mirror-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'Mirror))]
+    [(parameter-type? resolved)
+     (substitute-signature-specs
+      (kernel-instance-signature-specs 'Float)
+      (hasheq 'Float (parameter-type-name resolved)))]
+    [(or (type-variable? resolved)
+         (void-type? resolved)
+         (type-data-type? resolved)
+         (opaque-type? resolved))
+     '()]
+    [(instance-type? resolved)
+     (deferred-signature-family 'instance-type)]
+    [(class-type? resolved)
+     (deferred-signature-family 'class-type)]
+    [(protocol-type? resolved)
+     (deferred-signature-family 'protocol-type)]
+    [(host-receiver-type? resolved)
+     (deferred-signature-family 'host-receiver-type)]))
 
 (define (type-mismatch message left right)
   (if message
