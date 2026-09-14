@@ -4,6 +4,7 @@
          racket/match
          "host.rkt"
          "parse.rkt"
+         "private/expression-selection.rkt"
          "signature-catalog.rkt")
 
 (provide (struct-out exn:fail:aloe-type)
@@ -32,6 +33,11 @@
          type-signature-specs)
 
 (struct exn:fail:aloe-type exn:fail () #:transparent)
+(struct expression-type-observation (type signatures) #:transparent)
+
+(struct retained-expression-type (expression type environment))
+(struct expression-observer
+  (target root-depth [retained #:mutable] [answer #:mutable]))
 
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
@@ -80,6 +86,9 @@
 (define current-typecheck-load-paths (make-parameter '()))
 (define current-typecheck-program-depth (make-parameter 0))
 (define current-construction-obligations (make-parameter #f))
+(define current-expression-observer (make-parameter #f))
+(define current-legacy-deferred-generic-instantiation?
+  (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -534,10 +543,59 @@
           (add1 (current-typecheck-program-depth))])
       (for/fold ([result VOID])
                 ([expression (in-list expressions)])
-        (type-of expression environment))))
+        (define root-type (type-of expression environment))
+        (materialize-expression-observation-at-root-end!)
+        root-type)))
   (when outermost?
     (check-protocol-conformance! environment))
   result)
+
+(define (typecheck-program/observe
+         expressions environment selected-expression)
+  (define observer
+    (expression-observer
+     selected-expression
+     (add1 (current-typecheck-program-depth))
+     #f
+     #f))
+  (parameterize ([current-expression-observer observer])
+    (typecheck-program expressions environment))
+  (cond
+    [(not selected-expression) #f]
+    [(expression-observer-answer observer)
+     (expression-observer-answer observer)]
+    [else
+     (error
+      'typecheck-program/observe
+      "successful program did not observe the selected expression")]))
+
+(define (retain-expression-observation! expression type environment)
+  (define observer (current-expression-observer))
+  (when (and observer
+             (not (expression-observer-answer observer))
+             (eq? expression (expression-observer-target observer))
+             (not (current-legacy-deferred-generic-instantiation?)))
+    (set-expression-observer-retained!
+     observer
+     (retained-expression-type expression type environment))))
+
+(define (materialize-expression-observation-at-root-end!)
+  (define observer (current-expression-observer))
+  (when (and observer
+             (= (current-typecheck-program-depth)
+                (expression-observer-root-depth observer))
+             (expression-observer-retained observer)
+             (not (expression-observer-answer observer)))
+    (define retained (expression-observer-retained observer))
+    (define type (retained-expression-type-type retained))
+    (define environment
+      (retained-expression-type-environment retained))
+    (define answer
+      (expression-type-observation
+       (type->datum type)
+       (type-signature-specs type environment)))
+    (set-expression-observer-answer! observer answer)
+    (set-expression-observer-retained! observer #f)))
 
 (define (typecheck-load! expression environment)
   (define path (load-expr-resolved-path expression))
@@ -609,6 +667,7 @@
        (infer-send receiver selector arguments environment expected)]))
   (when expected
     (unify-types! inferred expected))
+  (retain-expression-observation! expression inferred environment)
   inferred)
 
 (define (infer-function parameters body environment expected)
@@ -795,12 +854,21 @@
   (define method-substitution
     (extend-method-substitution substitution method #t))
   (check-method-types! method environment method-substitution)
-  (when check-body?
+  (when (or check-body?
+            (selected-expression-in-method-body? method))
     (check-method-body!
      (instance-type class (class-info-parameter-types class))
      method
      environment
      method-substitution)))
+
+(define (selected-expression-in-method-body? method)
+  (define observer (current-expression-observer))
+  (and observer
+       (expression-observer-target observer)
+       (expression-contains-node?
+        (method-declaration-body method)
+        (expression-observer-target observer))))
 
 (define (check-method-types! method environment substitution)
   (for ([parameter (in-list (method-declaration-parameters method))])
@@ -1357,8 +1425,10 @@
         substitution))
      (when (and (pair? (class-info-type-parameters class))
                 (not (class-info-explicit-constructors? class)))
-       (check-method-body!
-        instance method environment substitution))
+       (parameterize
+           ([current-legacy-deferred-generic-instantiation? #t])
+         (check-method-body!
+          instance method environment substitution)))
      return-type]))
 
 (define (select-method-overload
@@ -1810,3 +1880,9 @@
 ;; normal part of the checker's public API.
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
+
+;; Editor expression queries observe the real checker pass through this
+;; deliberately narrow internal bridge.
+(module* expression-query-observation #f
+  (provide (struct-out expression-type-observation)
+           typecheck-program/observe))
