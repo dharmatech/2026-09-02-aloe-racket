@@ -1,6 +1,9 @@
 # Editor signatures of a type 001 — Kernel type query
 
-**Status.** Ready to implement.
+**Status.** Implemented and reviewed. The focused 12-test suite and hand check
+are green. The recursive suite has only the two pre-existing
+`tests/gel/presentations/003-doc-law.rkt` wording failures already present in
+`HEAD`; this checkpoint introduces no additional failure.
 
 ## Goal
 

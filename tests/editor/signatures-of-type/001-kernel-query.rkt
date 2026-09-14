@@ -4,7 +4,6 @@
          racket/runtime-path
          rackunit
          "../../../aloe/driver.rkt"
-         "../../../aloe/host.rkt"
          "../../../aloe/parse.rkt"
          "../../../aloe/signature-catalog.rkt"
          "../../../aloe/signature.rkt"
@@ -50,14 +49,6 @@
      (driver-eval!
       state
       (list-element-expression rows-expression index)))))
-
-(define (check-deferred thunk family)
-  (check-exn
-   (regexp
-    (format
-     "type-signature-specs: checker type family ~a is deferred"
-     family))
-   thunk))
 
 (test-case "the exact two-argument query and shared row type are public"
   (define query (dynamic-require type-path 'type-signature-specs))
@@ -361,56 +352,3 @@
     (check-equal?
      (type:type-signature-specs type environment)
      '())))
-
-(test-case "declaration-backed type families are visibly deferred"
-  (define environment (type:make-type-environment))
-  (type:typecheck-program
-   (map parse-datum
-        '((define-protocol DeferredProtocol001)
-          (define-class DeferredPoint001
-            (fields (x Int))
-            (methods))))
-   environment)
-  (check-deferred
-   (lambda ()
-     (type:type-signature-specs
-      (static-type environment '(DeferredPoint001 new 1))
-      environment))
-   'instance-type)
-  (check-deferred
-   (lambda ()
-     (type:type-signature-specs
-      (static-type environment 'DeferredPoint001)
-      environment))
-   'class-type)
-  (check-deferred
-   (lambda ()
-     (type:type-signature-specs
-      (static-type environment 'DeferredProtocol001)
-      environment))
-   'protocol-type)
-
-  (define implementation-calls 0)
-  (define interface
-    (make-host-interface
-     'DeferredHost001
-     (list
-      (make-host-method
-       'touch
-       '()
-       'String
-       (lambda (_state)
-         (set! implementation-calls (add1 implementation-calls))
-         "called")))))
-  (define state (make-driver))
-  (driver-inject-host!
-   state 'deferred-host-001 (make-host-receiver interface #f))
-  (check-deferred
-   (lambda ()
-     (type:type-signature-specs
-      (static-type
-       (driver-type-environment state)
-       'deferred-host-001)
-      (driver-type-environment state)))
-   'host-receiver-type)
-  (check-equal? implementation-calls 0))

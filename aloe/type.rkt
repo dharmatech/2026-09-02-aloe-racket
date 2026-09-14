@@ -269,11 +269,6 @@
 (define (fresh-signature-spec-list specs)
   (for/list ([spec (in-list specs)]) spec))
 
-(define (deferred-signature-family family)
-  (error 'type-signature-specs
-         "checker type family ~a is deferred by editor-signatures-of-type 001"
-         family))
-
 (define (type-signature-specs type environment)
   (unless (checker-type? type)
     (raise-argument-error 'type-signature-specs "checker type" type))
@@ -345,13 +340,32 @@
          (opaque-type? resolved))
      '()]
     [(instance-type? resolved)
-     (deferred-signature-family 'instance-type)]
+     (define class (instance-type-class resolved))
+     (define substitution
+       (make-hasheq
+        (map cons
+             (class-info-type-parameters class)
+             (map type->datum (instance-type-arguments resolved)))))
+     (append
+      (field-declarations->signature-specs
+       (class-info-fields class)
+       substitution)
+      (method-declarations->signature-specs
+       (class-info-methods class)
+       substitution))]
     [(class-type? resolved)
-     (deferred-signature-family 'class-type)]
+     (define class (class-type-class resolved))
+     (constructor-declarations->signature-specs
+      (class-info-constructors class)
+      (type->datum
+       (instance-type class (class-info-parameter-types class))))]
     [(protocol-type? resolved)
-     (deferred-signature-family 'protocol-type)]
+     (method-declarations->signature-specs
+      (protocol-type-signatures resolved))]
     [(host-receiver-type? resolved)
-     (deferred-signature-family 'host-receiver-type)]))
+     (host-method-declarations->signature-specs
+      (host-interface-methods
+       (host-receiver-type-interface resolved)))]))
 
 (define (type-mismatch message left right)
   (if message
