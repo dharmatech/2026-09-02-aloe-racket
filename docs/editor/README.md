@@ -29,18 +29,17 @@ conversation.
 
 | # | Project | Path | This conversation | Depends on |
 |---|---|---|---|---|
-| 1 | Source locations | [`source-locations/`](source-locations/) | **Brief.** Start here. | — |
-| 2 | Signatures of a type | [`signatures-of-type/`](signatures-of-type/) | Charter. Independent of 1. | — |
-| 3 | Expression query | [`expression-query/`](expression-query/) | Charter. After 1 and 2 exist. | 1, 2 |
-| 4 | LSP adapter | [`lsp/`](lsp/) | Charter. After 3 exists. | 3 |
+| 1 | Source locations | [`source-locations/`](source-locations/) | **Implemented and reviewed.** editor-source-locations 000. | — |
+| 2 | Signatures of a type | [`signatures-of-type/`](signatures-of-type/) | **Implemented and reviewed.** editor-signatures-of-type 000–002. | — |
+| 3 | Expression query | [`expression-query/`](expression-query/) | **Implemented and reviewed.** editor-expression-query 000–003. | 1, 2 |
+| 4 | LSP adapter | [`lsp/`](lsp/) | **Implemented and reviewed.** editor-lsp 000–009. | 3 |
+| 5 | VS Code client | [`vscode/`](vscode/) | **Charter.** Hover-only extension. | 4 |
 
-Project 2 can be designed while 1 is being built. Project 3 must not
-start until 1 and 2 are specified (3's charter says what to wait for).
-Project 4 must not start until 3 has a spec and a working query.
-
-A VS Code extension is a client of 4, not a fifth language project.
-It is named in the LSP charter as a later thin client. Do not open a
-VS Code folder until the adapter's spec exists.
+Projects 1–4 are implemented and reviewed. Project 5 is a **client** of
+4, not a fifth language project. Its charter is
+[`vscode/charter.md`](vscode/charter.md). A designer conversation writes
+`vscode/spec.md` and stops. Do not implement the extension in that
+conversation.
 
 ## Not in this map
 
@@ -62,7 +61,7 @@ because the editor learned a new keyword.
 
 | Project | Consumer that is not VS Code |
 |---|---|
-| Source locations | Tests of spans; then type errors with `path:line:column` |
+| Source locations | Tests of spans; then the expression query |
 | Signatures of a type | Tests against `Mirror` rows; REPL / Gel may reuse later |
 | Expression query | A Racket function and, if the spec wants it, a CLI |
 

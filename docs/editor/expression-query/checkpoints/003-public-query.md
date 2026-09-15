@@ -1,6 +1,11 @@
 # Editor expression query 003 — Public path query
 
-**Status.** Ready to implement.
+**Status.** Implemented and reviewed. The focused 18-test suite and the
+135-test editor predecessor suite are green, and the exact Point hand check
+matches the required public result and location. The recursive suite passes
+1,897 of 1,899 tests; its only failures are the two pre-existing
+`tests/gel/presentations/003-doc-law.rkt` wording contradictions. This
+checkpoint introduces no additional failure.
 
 ## Goal
 

@@ -1,6 +1,6 @@
 # Editor source locations 000 — Expression spans
 
-**Status.** Ready to implement.
+**Status.** Implemented and reviewed.
 
 ## Goal
 
