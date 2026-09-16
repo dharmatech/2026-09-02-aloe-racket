@@ -29,8 +29,8 @@ Rejected:
 
 ## Sim and numerics (2026-09-02)
 
-Decided: `Point` and `Boid` are generic. `Sim` is not. Flock is
-`(List (Boid Float))`. No implicit `Int`/`Float` mix; `(n float)` converts.
+Decided: `Point` is generic. `Boid` and `Sim` are not. Flock is
+`(List Boid)`. No implicit `Int`/`Float` mix; `(n float)` converts.
 
 Rejected: `Sim[T]` whose `step` body hard-codes `0.0` / `0.01` and pretends
 to be parametric.

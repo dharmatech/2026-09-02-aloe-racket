@@ -356,9 +356,8 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```
-Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Math
+Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Boid | Math
        | (Point Type)
-       | (Boid Type)
        | (List Type)
        | (-> Type ...)
        | (Name Type ...)
@@ -385,7 +384,7 @@ Math
 (Point Float)
 (List String)
 (List (Point Int))
-(List (Boid Float))
+(List Boid)
 (-> U)
 (-> T U)
 (-> A T A)
@@ -399,7 +398,7 @@ Generic classes follow the C# class shape: one definition, type parameters, inva
 
 - `Point[T]` is written `(Point T)` as a type.
 - `List[Int]` is not a `List[Float]`.
-- Constraints (`T : Num`) are not in 0.1. `Point` methods assume `T` understands `+ - * /` the same way `Int`/`Float` do. The Boids program instantiates `T = Float`.
+- Constraints (`T : Num`) are not in 0.1. `Point` methods assume `T` understands `+ - * /` the same way `Int`/`Float` do. Boid is not generic; the Boids program uses `(Point Float)` and `Boid`.
 
 ### 5.3 Checking
 

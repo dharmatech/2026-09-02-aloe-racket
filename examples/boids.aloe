@@ -2,19 +2,19 @@
 
 ;; Aloe 0.1 — Boids target program
 
-(define-class (Boid T)
+(define-class Boid
   (fields
-    (position (Point T))
-    (velocity (Point T)))
+    (position (Point Float))
+    (velocity (Point Float)))
   (methods
-    (in-view? (other (Boid T)) Bool
+    (in-view? (other Boid) Bool
       (let ((to ((other position) - (self position)))
             (hd (self velocity)))
         (if (0.0 < (hd dot hd))
             (0.0 < (hd dot to))
             #t)))
 
-    (neighbors (flock (List (Boid T))) (r T) (List (Boid T))
+    (neighbors (flock (List Boid)) (r Float) (List Boid)
       (flock fold (List empty)
         (fn (neighbors other)
           (let ((d2 ((self position) dist2 (other position))))
@@ -23,7 +23,7 @@
                   ((self in-view? other) (neighbors cons other))
                   (else neighbors))))))
 
-    (cohere (others (List (Boid T))) (Point T)
+    (cohere (others (List Boid)) (Point Float)
       (let ((origin (Point new 0.0 0.0)))
         (if (others empty?)
             origin
@@ -34,7 +34,7 @@
               - (self position))
              * 0.01))))
 
-    (align (others (List (Boid T))) (Point T)
+    (align (others (List Boid)) (Point Float)
       (let ((origin (Point new 0.0 0.0)))
         (if (others empty?)
             origin
@@ -45,7 +45,7 @@
               - (self velocity))
              * 0.05))))
 
-    (separate (flock (List (Boid T))) (Point T)
+    (separate (flock (List Boid)) (Point Float)
       (let ((origin (Point new 0.0 0.0)))
         ((flock fold origin
            (fn (acc other)
@@ -56,14 +56,14 @@
                        (else ((self position) - (other position))))))))
          * 0.001)))
 
-    (advance (new-vel (Point T)) (Boid T)
+    (advance (new-vel (Point Float)) Boid
       (Boid new
         ((self position) + new-vel)
         new-vel))))
 
 (define-class Sim
   (fields
-    (flock (List (Boid Float))))
+    (flock (List Boid)))
   (methods
     (step () Sim
       (let ((bs       (self flock))
