@@ -69,10 +69,24 @@ The specification is wrong unless all of these are true:
    hover contents (type plus ordered `selector : params -> return`
    rows). The extension does not format a second catalog.
 4. The first slice's proof is: in an Extension Development Host,
-   open [`examples/point.aloe`](../../../examples/point.aloe),
-   hover `(Point new 1 2)` or its `+`, and see the Point type and
-   its four typed rows. That human check is the bar. Electron /
-   `@vscode/test-electron` is out of 000.
+   open
+   [`tests/editor/lsp/fixtures/point.aloe`](../../../tests/editor/lsp/fixtures/point.aloe),
+   hover `(Point new 1 2)` or its `+`, and see the exact four-row
+   hover already locked by editor-lsp 000:
+
+   ```text
+   type: (Point Int)
+   messages:
+     x : () -> Int
+     y : () -> Int
+     + : ((Point Int)) -> (Point Int)
+     dist2 : ((Point Int)) -> Int
+   ```
+
+   That human check is the bar. Electron /
+   `@vscode/test-electron` is out of 000. Do not use
+   `examples/point.aloe` for this check: it has no
+   `(Point new 1 2)` and declares eight Point rows, not four.
 5. No completion, diagnostics, grammar, themes, snippets, or
    wrap command. The server already refuses to advertise
    completion and diagnostics; the client must not pretend
@@ -127,7 +141,8 @@ that starts from the query and LSP, not from this client.
 
 - 000 may check `package.json` / client command shape without
   launching VS Code
-- Acceptance is the human hover on `examples/point.aloe`
+- Acceptance is the human hover on
+  `tests/editor/lsp/fixtures/point.aloe` as in §3.4
 - Run 000 via Extension Development Host (`F5`). A local `.vsix`
   is allowed later; it is not required to specify a publisher
   listing
