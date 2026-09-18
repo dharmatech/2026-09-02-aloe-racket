@@ -468,7 +468,8 @@
   (define source (file->string lsp-module-path))
   (check-equal?
    (regexp-match* #rx"\"[^\"]+\\.rkt\"" source)
-   '("\"expression-query.rkt\""))
+   '("\"expression-query.rkt\""
+     "\"completion-query.rkt\""))
   (for ([required
          (in-list
           '("query-expression-at"

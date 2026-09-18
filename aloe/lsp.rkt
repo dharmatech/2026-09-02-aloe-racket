@@ -23,7 +23,15 @@
                   expression-query-result-type
                   signature-spec-parameters
                   signature-spec-return
-                  signature-spec-selector))
+                  signature-spec-selector)
+         (only-in "completion-query.rkt"
+                  query-selector-completions
+                  selector-completion-item?
+                  selector-completion-item-label
+                  selector-completion-item-detail
+                  selector-completion-item-insert-text
+                  selector-completion-item-replacement-start
+                  selector-completion-item-replacement-span))
 
 (provide run-lsp-server)
 
@@ -35,12 +43,17 @@
 (struct exn:fail:snapshot exn:fail ())
 (struct hover-success (result) #:transparent)
 (struct hover-failure (message) #:transparent)
+(struct completion-success (result) #:transparent)
+(struct completion-failure () #:transparent)
 
 (define snapshot-failure-message
   "unable to create synchronized document snapshot")
 
 (define generic-hover-failure-message
   "unable to produce hover result")
+
+(define completion-failure-message
+  "unable to produce completion result")
 
 (define (raise-snapshot-failure)
   (raise
@@ -134,7 +147,10 @@
     (hasheq
      'openClose #t
      'change 1)
-    'hoverProvider #t)
+    'hoverProvider #t
+    'completionProvider
+    (hasheq
+     'triggerCharacters (list " ")))
    'serverInfo
    (hasheq
     'name "aloe-lsp")))
@@ -298,6 +314,7 @@
 (define supported-request-methods
   '("initialize"
     "textDocument/hover"
+    "textDocument/completion"
     "shutdown"))
 
 (define supported-notification-methods
@@ -350,6 +367,9 @@
       (hash-has-key? (hash-ref params 'position) 'character)
       (exact-nonnegative-integer?
        (hash-ref (hash-ref params 'position) 'character))))))
+
+(define (completion-params? request)
+  (hover-params? request))
 
 (define (shutdown-params? request)
   (or (not (rpc-request-params-present? request))
@@ -563,7 +583,67 @@
           (hover-failure generic-hover-failure-message))])
     (hover-success (computation))))
 
-(define (run-lsp-server/with-query input output error-output query)
+(define (completion-item->jsexpr text item)
+  (cond
+    [(not (selector-completion-item? item))
+     (error 'completion-item->jsexpr "unexpected completion item")]
+    [else
+     (define label (selector-completion-item-label item))
+     (define detail (selector-completion-item-detail item))
+     (define insert-text (selector-completion-item-insert-text item))
+     (define replacement-start
+       (selector-completion-item-replacement-start item))
+     (define replacement-span
+       (selector-completion-item-replacement-span item))
+     (unless (and (string? label)
+                  (string? detail)
+                  (string? insert-text)
+                  (exact-positive-integer? replacement-start)
+                  (exact-nonnegative-integer? replacement-span))
+       (error 'completion-item->jsexpr "invalid completion item fields"))
+     (define start-offset (sub1 replacement-start))
+     (define end-offset (+ start-offset replacement-span))
+     (define start-position (offset->lsp-position text start-offset))
+     (define end-position (offset->lsp-position text end-offset))
+     (unless (and start-position end-position)
+       (error 'completion-item->jsexpr "invalid completion item range"))
+     (hasheq
+      'label label
+      'detail detail
+      'insertText insert-text
+      'textEdit
+      (hasheq
+       'range
+       (hasheq
+        'start start-position
+        'end end-position)
+       'newText insert-text))]))
+
+(define (query-completion query document line character)
+  (define text (open-document-text document))
+  (define path (uri->local-path (open-document-uri document)))
+  (define query-position
+    (and path
+         (lsp-position->query-position text line character)))
+  (cond
+    [(not query-position) '()]
+    [else
+     (define items
+       (query text query-position #:source-path path))
+     (unless (list? items)
+       (error 'query-completion "unexpected completion result"))
+     (for/list ([item (in-list items)])
+       (completion-item->jsexpr text item))]))
+
+(define (completion-outcome computation)
+  (with-handlers
+      ([exn:fail?
+        (lambda (_exception)
+          (completion-failure))])
+    (completion-success (computation))))
+
+(define (run-lsp-server/with-queries
+         input output error-output hover-query completion-query)
   (void error-output)
   (define documents (make-hash))
   (with-handlers ([exn:fail:framing? (lambda (_exception) 1)])
@@ -634,7 +714,7 @@
                         (lambda ()
                           (if document
                               (query-hover
-                               query
+                               hover-query
                                document
                                (hash-ref position 'line)
                                (hash-ref position 'character))
@@ -646,6 +726,37 @@
                        [else
                         (write-error-response
                          output id -32803 (hover-failure-message outcome))])
+                     (loop state)))]
+                 [(string=? method "textDocument/completion")
+                  (if
+                   (not (completion-params? message))
+                   (begin
+                     (write-error-response
+                      output id -32602 "Invalid params")
+                     (loop state))
+                   (let ()
+                     (define parameters (rpc-request-params message))
+                     (define uri
+                       (hash-ref (hash-ref parameters 'textDocument) 'uri))
+                     (define position (hash-ref parameters 'position))
+                     (define document (hash-ref documents uri #f))
+                     (define outcome
+                       (completion-outcome
+                        (lambda ()
+                          (if document
+                              (query-completion
+                               completion-query
+                               document
+                               (hash-ref position 'line)
+                               (hash-ref position 'character))
+                              '()))))
+                     (cond
+                       [(completion-success? outcome)
+                        (write-response
+                         output id (completion-success-result outcome))]
+                       [else
+                        (write-error-response
+                         output id -32803 completion-failure-message)])
                      (loop state)))]
                  [(string=? method "shutdown")
                   (if (shutdown-params? message)
@@ -684,9 +795,21 @@
                  [else
                   (loop state)])])])]))))
 
+(define (run-lsp-server/with-query input output error-output hover-query)
+  (run-lsp-server/with-queries
+   input
+   output
+   error-output
+   hover-query
+   query-selector-completions))
+
 (define (run-lsp-server input output error-output)
-  (run-lsp-server/with-query
-   input output error-output query-expression-at))
+  (run-lsp-server/with-queries
+   input
+   output
+   error-output
+   query-expression-at
+   query-selector-completions))
 
 (module+ main
   (exit
@@ -699,6 +822,7 @@
 
 (module* test-support #f
   (provide run-lsp-server/with-query
+           run-lsp-server/with-queries
            apply-document-sync!
            open-document?
            open-document-uri

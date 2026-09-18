@@ -33,20 +33,25 @@ conversation.
 | 2 | Signatures of a type | [`signatures-of-type/`](signatures-of-type/) | **Implemented and reviewed.** editor-signatures-of-type 000–002. | — |
 | 3 | Expression query | [`expression-query/`](expression-query/) | **Implemented and reviewed.** editor-expression-query 000–003. | 1, 2 |
 | 4 | LSP adapter | [`lsp/`](lsp/) | **Implemented and reviewed.** editor-lsp 000–009. | 3 |
-| 5 | VS Code client | [`vscode/`](vscode/) | **Charter.** Hover-only extension. | 4 |
+| 5 | VS Code client | [`vscode/`](vscode/) | **Implemented and reviewed.** editor-vscode 000 (hover). | 4 |
+| 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
 
-Projects 1–4 are implemented and reviewed. Project 5 is a **client** of
-4, not a fifth language project. Its charter is
-[`vscode/charter.md`](vscode/charter.md). A designer conversation writes
-`vscode/spec.md` and stops. Do not implement the extension in that
-conversation.
+Projects 1–6 are implemented and reviewed. Project 5 is the VS Code hover
+client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
+implemented by editor-completion 000–002 for the public Racket query and 003
+for its LSP integration.
+
+Incomplete-buffer recovery is **in** project 6's first spec (one named
+rule, tested). It remains out of hover. Highlighting, wrap-form, and
+top-level name completion stay off this map.
 
 ## Not in this map
 
 These are easy to smuggle in as "editor prerequisites." They are not.
 
-- Incomplete / unclosed buffer recovery
 - A new parser, or leaving the Racket reader
+- Full incremental parse / as-you-type recovery beyond the one named
+  completion rule
 - Macros / `syntax-rules` / `syntax-case`
 - Wrap-the-preceding-expression as a VS Code command
 - Rename, go-to-definition, semantic tokens, formatting
@@ -64,6 +69,7 @@ because the editor learned a new keyword.
 | Source locations | Tests of spans; then the expression query |
 | Signatures of a type | Tests against `Mirror` rows; REPL / Gel may reuse later |
 | Expression query | A Racket function and, if the spec wants it, a CLI |
+| Completion | Snippet + cursor unit tests; LSP then wraps the same function |
 
 If a proposed slice has no consumer besides "we will need this for
 LSP," it is too early.

@@ -47,7 +47,9 @@
    (hasheq
     'positionEncoding "utf-16"
     'textDocumentSync (hasheq 'openClose #t 'change 1)
-    'hoverProvider #t)
+    'hoverProvider #t
+    'completionProvider
+    (hasheq 'triggerCharacters (list " ")))
    'serverInfo (hasheq 'name "aloe-lsp")))
 
 (define (initialize-message [id "initialize"])
@@ -694,7 +696,8 @@
   (define source (file->string lsp-module-path))
   (check-equal?
    (regexp-match* #rx"\"[^\"]+\\.rkt\"" source)
-   '("\"expression-query.rkt\""))
+   '("\"expression-query.rkt\""
+     "\"completion-query.rkt\""))
   (for ([forbidden
          (in-list
           '("parse.rkt"

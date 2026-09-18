@@ -177,7 +177,9 @@
    (hasheq
     'positionEncoding "utf-16"
     'textDocumentSync (hasheq 'openClose #t 'change 1)
-    'hoverProvider #t)
+    'hoverProvider #t
+    'completionProvider
+    (hasheq 'triggerCharacters (list " ")))
    'serverInfo (hasheq 'name "aloe-lsp")))
 
 (define expected-hover

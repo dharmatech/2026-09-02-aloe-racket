@@ -34,10 +34,12 @@
 
 (struct exn:fail:aloe-type exn:fail () #:transparent)
 (struct expression-type-observation (type signatures) #:transparent)
+(struct selector-receiver-observation (signatures) #:transparent)
 
 (struct retained-expression-type (expression type environment))
 (struct expression-observer
   (target root-depth [retained #:mutable] [answer #:mutable]))
+(struct selector-receiver-observer (target escape))
 
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
@@ -87,6 +89,7 @@
 (define current-typecheck-program-depth (make-parameter 0))
 (define current-construction-obligations (make-parameter #f))
 (define current-expression-observer (make-parameter #f))
+(define current-selector-receiver-observer (make-parameter #f))
 (define current-legacy-deferred-generic-instantiation?
   (make-parameter #f))
 
@@ -569,6 +572,19 @@
       'typecheck-program/observe
       "successful program did not observe the selected expression")]))
 
+(define (typecheck-program/observe-selector-receiver
+         expressions environment target-send)
+  (let/ec escape
+    (define observer
+      (selector-receiver-observer
+       (send-expr-receiver target-send)
+       escape))
+    (parameterize ([current-selector-receiver-observer observer])
+      (typecheck-program expressions environment))
+    (error
+     'typecheck-program/observe-selector-receiver
+     "successful program did not observe the target send receiver")))
+
 (define (retain-expression-observation! expression type environment)
   (define observer (current-expression-observer))
   (when (and observer
@@ -578,6 +594,16 @@
     (set-expression-observer-retained!
      observer
      (retained-expression-type expression type environment))))
+
+(define (observe-selector-receiver! expression type environment)
+  (define observer (current-selector-receiver-observer))
+  (when (and observer
+             (eq? expression
+                  (selector-receiver-observer-target observer))
+             (not (current-legacy-deferred-generic-instantiation?)))
+    ((selector-receiver-observer-escape observer)
+     (selector-receiver-observation
+      (type-signature-specs type environment)))))
 
 (define (materialize-expression-observation-at-root-end!)
   (define observer (current-expression-observer))
@@ -668,6 +694,7 @@
   (when expected
     (unify-types! inferred expected))
   (retain-expression-observation! expression inferred environment)
+  (observe-selector-receiver! expression inferred environment)
   inferred)
 
 (define (infer-function parameters body environment expected)
@@ -863,12 +890,20 @@
      method-substitution)))
 
 (define (selected-expression-in-method-body? method)
-  (define observer (current-expression-observer))
-  (and observer
-       (expression-observer-target observer)
-       (expression-contains-node?
-        (method-declaration-body method)
-        (expression-observer-target observer))))
+  (define expression-observer (current-expression-observer))
+  (define selector-observer (current-selector-receiver-observer))
+  (define targets
+    (filter
+     values
+     (list
+      (and expression-observer
+           (expression-observer-target expression-observer))
+      (and selector-observer
+           (selector-receiver-observer-target selector-observer)))))
+  (for/or ([target (in-list targets)])
+    (expression-contains-node?
+     (method-declaration-body method)
+     target)))
 
 (define (check-method-types! method environment substitution)
   (for ([parameter (in-list (method-declaration-parameters method))])
@@ -1886,3 +1921,9 @@
 (module* expression-query-observation #f
   (provide (struct-out expression-type-observation)
            typecheck-program/observe))
+
+;; Editor completion queries escape at the successful inference boundary for
+;; the exact receiver recovered by the private selector-site parser.
+(module* completion-query-observation #f
+  (provide (struct-out selector-receiver-observation)
+           typecheck-program/observe-selector-receiver))

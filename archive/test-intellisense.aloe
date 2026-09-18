@@ -1,0 +1,36 @@
+
+(123 + 234)
+
+(List of 10 20 30)
+
+((List of 10 20 30) cons 40)
+
+(((List of 10 20 30) cons 40) first)
+
+;; (load "examples/point.aloe")
+
+(load "point.aloe")
+
+(define p0 (Point new 0.0 0.0))
+
+(p0 * 1.2)
+
+(define p1 (p0 + (Point new 1.0 2.0)))
+
+(p1 * 5.0)
+
+(load "boids.aloe")
+
+;; (load "examples/boids.aloe")
+
+(demo flock)
+
+demo
+
+((demo flock) first)
+
+((demo flock) len)
+
+(((demo flock) first) neighbors (demo flock) 1000.0)
+
+((((demo flock) first) neighbors (demo flock) 1000.0) len)

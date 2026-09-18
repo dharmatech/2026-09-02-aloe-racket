@@ -44,7 +44,9 @@
     'positionEncoding "utf-16"
     'textDocumentSync
     (hasheq 'openClose #t 'change 1)
-    'hoverProvider #t)
+    'hoverProvider #t
+    'completionProvider
+    (hasheq 'triggerCharacters (list " ")))
    'serverInfo
    (hasheq 'name "aloe-lsp")))
 
@@ -231,7 +233,9 @@
      'capabilities))
   (check-equal? capabilities
                 (hash-ref expected-initialize-result 'capabilities))
-  (check-false (hash-has-key? capabilities 'completionProvider))
+  (check-equal?
+   (hash-ref capabilities 'completionProvider)
+   (hasheq 'triggerCharacters (list " ")))
   (check-false (hash-has-key? capabilities 'diagnosticProvider)))
 
 (test-case "test-support query is called once and wholly supplies hover data"
