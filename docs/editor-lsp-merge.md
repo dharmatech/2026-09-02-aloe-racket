@@ -75,16 +75,20 @@ put the directory UI on `main`.
 ## 3. Facts to verify before touching git
 
 Record the SHAs you actually see. The numbers below were true when
-this charter was written (2026-09-19). If the *editor tip* or
-`origin/main` drifted, stop. Local `main` may be the 0.3 landing
-(`7b09ca1`) or that landing plus this charter file; both are fine.
+this charter was last edited (2026-09-19). If the *editor tip*
+drifted, stop.
+
+The human already pushed the 0.3 landing and this charter to
+`origin/main`. Local and origin were in sync. **Do not push** from
+this assignment even if your landing commits leave local `main`
+ahead again.
 
 | Ref | Expected SHA (prefix) | Role |
 |---|---|---|
-| local `main` | `7b09ca1` or this charter on top of it | Destination. Constructors, Option, filesystem, host, Mirror/Gel stack, **no LSP**. |
+| local `main` | has `docs/editor-lsp-merge.md`, no `aloe/lsp.rkt` | Destination. Constructors, Option, filesystem, host, Mirror/Gel stack, **no LSP**. Ancestor of `8b0a110`. |
 | `experiment/2026-09-12-editor` | `aef6fa7` | **Source tree** for the whitelist. Do not merge this branch. |
 | merge-base of those two | `8b0a110` | `experiment/filesystem` tip, before the 0.3 landing-docs commit. |
-| `origin/main` | `c2baa20` | **Not the destination.** Do not update. |
+| `origin/main` | already published; may match `main` at start | **Do not push.** |
 
 Must be true:
 
