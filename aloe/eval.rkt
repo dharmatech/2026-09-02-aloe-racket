@@ -1244,6 +1244,14 @@
      (substring receiver
                 0
                 (min (max argument 0) (string-length receiver)))]
+    [(drop)
+     (unless (= (length arguments) 1)
+       (arity-error "String drop" 1 (length arguments)))
+     (define argument (car arguments))
+     (unless (exact-integer? argument)
+       (error 'eval-aloe "String drop expects an Int argument"))
+     (substring receiver
+                (min (max argument 0) (string-length receiver)))]
     [else (send-to-string-method receiver selector arguments environment)]))
 
 (define (send-to-string-method receiver selector arguments environment)

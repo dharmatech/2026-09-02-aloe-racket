@@ -23,9 +23,15 @@
         (list "(\"abc\" take 3)" "abc" 'String)
         (list "(\"abc\" take 5)" "abc" 'String)
         (list "(\"abc\" take -1)" "" 'String)
-        (list "(\"\" take 2)" "" 'String)))
+        (list "(\"\" take 2)" "" 'String)
+        (list "(\"abc\" drop -1)" "abc" 'String)
+        (list "(\"abc\" drop 0)" "abc" 'String)
+        (list "(\"abc\" drop 1)" "bc" 'String)
+        (list "(\"abc\" drop 3)" "" 'String)
+        (list "(\"abc\" drop 9)" "" 'String)
+        (list "(\"\" drop 2)" "" 'String)))
 
-(test-case "String len and take have the specified values and types"
+(test-case "String len, take, and drop have the specified values and types"
   (for ([entry (in-list successful-kernel-cases)])
     (define source (car entry))
     (define expected-value (cadr entry))
@@ -33,32 +39,44 @@
     (check-equal? (eval-source source) expected-value source)
     (check-equal? (checked-type source) expected-type source)))
 
-(test-case "String len and take count characters rather than encoded bytes"
+(test-case "String len, take, and drop count characters rather than encoded bytes"
   (check-equal? (eval-source "(\"é🙂水\" len)") 3)
   (check-equal? (checked-type "(\"é🙂水\" len)") 'Int)
   (check-equal? (eval-source "(\"é🙂水\" take 2)") "é🙂")
-  (check-equal? (checked-type "(\"é🙂水\" take 2)") 'String))
+  (check-equal? (checked-type "(\"é🙂水\" take 2)") 'String)
+  (check-equal? (eval-source "(\"é🙂水\" drop 2)") "水")
+  (check-equal? (checked-type "(\"é🙂水\" drop 2)") 'String))
 
-(test-case "the checker enforces String kernel arities and exact Int take"
+(test-case "the checker enforces String kernel arities and exact Int slicing"
   (for ([source (in-list '("(\"abc\" len 1)"
                            "(\"abc\" take)"
                            "(\"abc\" take 1 2)"
                            "(\"abc\" take 1.0)"
                            "(\"abc\" take #t)"
-                           "(\"abc\" take \"2\")"))])
+                           "(\"abc\" take \"2\")"
+                           "(\"abc\" drop)"
+                           "(\"abc\" drop 1 2)"
+                           "(\"abc\" drop 1.0)"
+                           "(\"abc\" drop #t)"
+                           "(\"abc\" drop \"2\")"))])
     (check-static-error source)))
 
-(test-case "the raw runtime enforces String kernel arities and exact Int take"
+(test-case "the raw runtime enforces String kernel arities and exact Int slicing"
   (define environment (runtime:make-top-level-env))
   (define (raw-eval datum)
     (eval-expr (parse-datum datum) environment))
   (for ([datum (in-list '(("abc" len 1)
                           ("abc" take)
-                          ("abc" take 1 2)))])
+                          ("abc" take 1 2)
+                          ("abc" drop)
+                          ("abc" drop 1 2)))])
     (check-exn #rx"arity error" (lambda () (raw-eval datum))))
   (for ([datum (in-list '(("abc" take 1.0)
                           ("abc" take #t)
-                          ("abc" take "2")))])
+                          ("abc" take "2")
+                          ("abc" drop 1.0)
+                          ("abc" drop #t)
+                          ("abc" drop "2")))])
     (check-exn #rx"expects an Int argument"
                (lambda () (raw-eval datum)))))
 
@@ -158,10 +176,14 @@ ALOE
 (define string-append-row ((string-rows rest) first))
 (define string-len-row (((string-rows rest) rest) first))
 (define string-take-row ((((string-rows rest) rest) rest) first))
-(define string-starts-with-row
+(define string-drop-row
   (((((string-rows rest) rest) rest) rest) first))
-(define string-empty-row
+(define string-starts-with-row
   ((((((string-rows rest) rest) rest) rest) rest) first))
+(define string-split-lines-row
+  (((((((string-rows rest) rest) rest) rest) rest) rest) first))
+(define string-empty-row
+  ((((((((string-rows rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
    environment))
 
@@ -184,31 +206,37 @@ ALOE
   (void (eval-source empty-method-source environment))
   (void (define-string-reflection-rows! environment))
 
-  (check-equal? (eval-source "(string-messages len)" environment) 6)
-  (check-equal? (eval-source "(string-rows len)" environment) 6)
+  (check-equal? (eval-source "(string-messages len)" environment) 8)
+  (check-equal? (eval-source "(string-rows len)" environment) 8)
   (check-equal?
    (for/list ([row (in-list '(string-equal-row
                               string-append-row
                               string-len-row
                               string-take-row
+                              string-drop-row
                               string-starts-with-row
+                              string-split-lines-row
                               string-empty-row))])
      (row-selector environment row))
-   '("=" "append" "len" "take" "starts-with?" "empty?"))
+   '("=" "append" "len" "take" "drop" "starts-with?" "split-lines" "empty?"))
   (check-equal?
    (for/list ([row (in-list '(string-equal-row
                               string-append-row
                               string-len-row
                               string-take-row
+                              string-drop-row
                               string-starts-with-row
+                              string-split-lines-row
                               string-empty-row))])
      (row-parameter-count environment row))
-   '(1 1 0 1 1 0))
+   '(1 1 0 1 1 1 0 0))
   (check-equal? (row-first-parameter environment 'string-equal-row)
                 "#<Symbol String>")
   (check-equal? (row-first-parameter environment 'string-append-row)
                 "#<Symbol String>")
   (check-equal? (row-first-parameter environment 'string-take-row)
+                "#<Symbol Int>")
+  (check-equal? (row-first-parameter environment 'string-drop-row)
                 "#<Symbol Int>")
   (check-equal? (row-first-parameter environment 'string-starts-with-row)
                 "#<Symbol String>")
@@ -217,14 +245,18 @@ ALOE
                               string-append-row
                               string-len-row
                               string-take-row
+                              string-drop-row
                               string-starts-with-row
+                              string-split-lines-row
                               string-empty-row))])
      (row-return environment row))
    '("#<Symbol Bool>"
      "#<Symbol String>"
      "#<Symbol Int>"
      "#<Symbol String>"
+     "#<Symbol String>"
      "#<Symbol Bool>"
+     "#<List #<Symbol List> #<Symbol String>>"
      "#<Symbol Bool>"))
 
   (check-equal?
@@ -233,6 +265,9 @@ ALOE
   (check-equal?
    (eval-source "(string-mirror invoke string-take-row 2)" environment)
    "ab")
+  (check-equal?
+   (eval-source "(string-mirror invoke string-drop-row 1)" environment)
+   "bc")
   (check-false
    (eval-source "(string-mirror invoke string-empty-row)" environment))
   (check-true
@@ -243,10 +278,10 @@ ALOE
   (define fresh-environment (make-top-level-env))
   (check-equal?
    (eval-source "(((Mirror of \"abc\") messages) len)" fresh-environment)
-   5)
+   7)
   (check-equal?
    (eval-source "(((Mirror of \"abc\") signatures) len)" fresh-environment)
-   5))
+   7))
 
 (test-case "exact invocation of a shadowed String selector runs its Aloe row"
   (define environment (make-top-level-env))
@@ -259,12 +294,12 @@ ALOE
 (define collision-mirror (Mirror of "abc"))
 (define collision-rows (collision-mirror signatures))
 (define aloe-len-row
-  ((((((collision-rows rest) rest) rest) rest) rest) first))
+  ((((((((collision-rows rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
     environment))
   (check-equal? (eval-source "(\"abc\" len)" environment) 3)
   (check-equal? (checked-type "(\"abc\" len)") 'Int)
-  (check-equal? (eval-source "((collision-mirror messages) len)" environment) 5)
+  (check-equal? (eval-source "((collision-mirror messages) len)" environment) 7)
   (check-equal? (row-selector environment 'aloe-len-row) "len")
   (check-equal? (row-return environment 'aloe-len-row) "#<Symbol String>")
   (check-equal?

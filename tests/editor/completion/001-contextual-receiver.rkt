@@ -47,7 +47,8 @@
    '((= (String) Bool)
      (append (String) String)
      (len () Int)
-     (take (Int) String))))
+     (take (Int) String)
+     (drop (Int) String))))
 
 (define point-float-rows
   (triples->specs
@@ -250,7 +251,7 @@
   (check-equal?
    (map signature-spec-selector
         (selector-receiver-observation-signatures answer))
-   '(= append len take repeat001 repeat001 before001)))
+   '(= append len take drop repeat001 repeat001 before001)))
 
 (define lexical-class-template
   (string-append

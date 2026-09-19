@@ -50,7 +50,8 @@
    '((= (String) Bool)
      (append (String) String)
      (len () Int)
-     (take (Int) String))))
+     (take (Int) String)
+     (drop (Int) String))))
 
 (define list-int-rows
   (triples->specs

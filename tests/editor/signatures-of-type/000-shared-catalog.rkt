@@ -104,7 +104,8 @@
     '((= (String) Bool)
       (append (String) String)
       (len () Int)
-      (take (Int) String))))
+      (take (Int) String)
+      (drop (Int) String))))
   (check-equal?
    (kernel-instance-signature-specs 'Symbol)
    (triples->specs

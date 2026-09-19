@@ -14,6 +14,8 @@ Identity is `(project, number)`. Spoken name is **project 000**.
 
 ## Process
 
+The shared pipeline is [`docs/workflow.md`](../workflow.md).
+
 Each project is either:
 
 - **Brief** — the work is locked enough to slice. A checkpoint-manager

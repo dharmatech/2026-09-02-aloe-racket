@@ -36,6 +36,7 @@ inference fills in what you do not write.
 - [SPEC.md](SPEC.md) — language law, including constructors, receiver-anchored
   `case`, and typed host capabilities
 - [CHECKPOINTS.md](CHECKPOINTS.md) — implementation order
+- [docs/workflow.md](docs/workflow.md) — conversation pipeline for new work
 - [AGENTS.md](AGENTS.md) — rules for a coding agent
 - [lib/list.aloe](lib/list.aloe) — Aloe implementations of `fold`, `reverse`, and `map`
 - [lib/string.aloe](lib/string.aloe) — Aloe implementation of `starts-with?`

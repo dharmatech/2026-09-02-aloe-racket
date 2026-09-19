@@ -1,9 +1,10 @@
 # Aloe handoff
 
 Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
-`AGENTS.md`, `CHECKPOINTS.md`, this file. If the work touches Gel, also read
-`docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
-do not replay rejected designs.
+`AGENTS.md`, `CHECKPOINTS.md`, [`docs/workflow.md`](workflow.md), this file.
+If the work touches Gel, also read `docs/gel.md`. Spec is law. Decisions
+record accepted and rejected directions; do not replay rejected designs.
+The conversation pipeline for new work is `docs/workflow.md`.
 
 ## `main` after the editor / LSP landing
 
@@ -167,10 +168,14 @@ instruction to implement ahead of an approved checkpoint.
 
 ## Designer and implementer roles
 
-If you are the designer: inspect the current implementation, identify a
-concrete application pressure, propose or amend governing documentation, and
-write a small checkpoint specification. Wait for human approval before
-implementation.
+The split of high-level discussion, designer, checkpoint manager, and
+implementer is [`docs/workflow.md`](workflow.md).
+
+If you are the designer or checkpoint manager: inspect the current
+implementation, identify a concrete application pressure, propose or amend
+governing documentation, and write one specification or one checkpoint.
+Wait for human approval before implementation. Do not implement in that
+conversation.
 
 If you are the implementer: implement only the approved checkpoint, add its
 tests, run the required verification, and stop when green. Do not silently add

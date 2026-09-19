@@ -1671,15 +1671,18 @@
         "arity error for String len: expected 0 arguments, got ~a"
         (length arguments)))
      INT]
-    [(take)
+    [(take drop)
      (unless (= (length arguments) 1)
        (raise-type-error
-        "arity error for String take: expected 1 argument, got ~a"
+        "arity error for String ~a: expected 1 argument, got ~a"
+        selector
         (length arguments)))
      (define argument-type
        (infer-expression (car arguments) environment INT))
      (unify-types!
-      argument-type INT "String take expects an Int argument")
+      argument-type
+      INT
+      (format "String ~a expects an Int argument" selector))
      STRING]
     [else
      (infer-defined-string-method selector arguments environment)]))

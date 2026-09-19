@@ -1,0 +1,43 @@
+(load "option.aloe")
+
+(define-class Position
+  (fields
+    (line Int)
+    (column Int))
+  (methods
+    (= (other Position) Bool
+      (if ((self line) = (other line))
+          ((self column) = (other column))
+          #f))
+
+    (before? (other Position) Bool
+      (if ((self line) < (other line))
+          #t
+          (if ((self line) = (other line))
+              ((self column) < (other column))
+              #f)))
+
+    (before-or-equal? (other Position) Bool
+      (if (self before? other)
+          #t
+          (self = other)))
+
+    (after (string String) Position
+      (let ((pieces (string split-lines)))
+        (let ((line-count ((pieces len) - 1))
+              (final-piece ((pieces reverse) first)))
+          (if (line-count = 0)
+              (Position new
+                (self line)
+                ((self column) + (string len)))
+              (Position new
+                ((self line) + line-count)
+                (final-piece len))))))))
+
+(define-class Span
+  (fields
+    (start Position)
+    (end Position))
+  (methods
+    (empty? () Bool
+      ((self start) = (self end)))))

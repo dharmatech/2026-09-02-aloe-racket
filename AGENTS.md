@@ -1,6 +1,8 @@
 # Agent rules for Aloe 0.1
 
 Read `SPEC.md` and `CHECKPOINTS.md` before writing code.
+How work is split across conversations is [`docs/workflow.md`](docs/workflow.md).
+This file is for implementing an approved checkpoint.
 
 - Implement one checkpoint at a time. Do not skip ahead to Boids.
 - Add tests in the same change. Run them. Stop when green.

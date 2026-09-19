@@ -93,7 +93,9 @@
     (append (String) String)
     (len () Int)
     (take (Int) String)
-    (starts-with? (String) Bool)))
+    (drop (Int) String)
+    (starts-with? (String) Bool)
+    (split-lines () (List String))))
 
 (define boid-triples
   '((position () (Point Float))
@@ -517,7 +519,14 @@
       "(\"x\" leaky002|)")))
   (check-equal?
    (map public:selector-completion-item-label extension-query)
-   '("=" "append" "len" "take" "starts-with?" "leaky002"))
+   '("="
+     "append"
+     "len"
+     "take"
+     "drop"
+     "starts-with?"
+     "split-lines"
+     "leaky002"))
   (check-equal? (query-marked/result "(\"x\" leaky002|)") '())
   (check-equal? (query-marked/result "(missing-before p|)") '())
   (check-equal?

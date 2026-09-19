@@ -50,7 +50,8 @@
   (list (signature-spec '= '(String) 'Bool)
         (signature-spec 'append '(String) 'String)
         (signature-spec 'len '() 'Int)
-        (signature-spec 'take '(Int) 'String)))
+        (signature-spec 'take '(Int) 'String)
+        (signature-spec 'drop '(Int) 'String)))
 
 (define symbol-instance-signatures
   (list (signature-spec 'name '() 'String)
