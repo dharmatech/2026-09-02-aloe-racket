@@ -1,7 +1,6 @@
 # Charter — editor / LSP onto `main`
 
-**Status.** Assignment for one merge conversation. Not Aloe law.
-Not a language-feature checkpoint. Not a kernel rewrite.
+**Status.** Landed on `main` at `266e031`. Historical merge assignment.
 
 **Your job.** Land already-implemented editor support (source
 locations, signature catalog, expression/completion queries, LSP,

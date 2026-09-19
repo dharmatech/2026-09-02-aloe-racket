@@ -296,13 +296,15 @@ See section 3.1. Top-level only in 0.1.
 ### 4.6 `define-methods`
 
 ```
-(define-methods List
+(define-methods Target
   (methods
     (selector (param Type) ... ReturnType body)
     ...))
 ```
 
-Adds Aloe method bodies to the existing built-in `List` class. `T` denotes the list element type in these declarations.
+Adds Aloe method bodies to the existing built-in `List` or `String` class.
+For `List` declarations, `T` denotes the list element type. `String` has no
+class type parameter, so `T` is not implicitly in scope there.
 
 ### 4.7 Method / `fn` / `let` bodies
 
@@ -354,9 +356,8 @@ Types appear only in **annotation position**: field types, method parameter and 
 ### 5.1 Type grammar
 
 ```
-Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Math
+Type ::= Int | Float | Bool | String | Symbol | Mirror | Signature | Sim | Boid | Math
        | (Point Type)
-       | (Boid Type)
        | (List Type)
        | (-> Type ...)
        | (Name Type ...)
@@ -383,7 +384,7 @@ Math
 (Point Float)
 (List String)
 (List (Point Int))
-(List (Boid Float))
+(List Boid)
 (-> U)
 (-> T U)
 (-> A T A)
@@ -397,7 +398,9 @@ Generic classes follow the C# class shape: one definition, type parameters, inva
 
 - `Point[T]` is written `(Point T)` as a type.
 - `List[Int]` is not a `List[Float]`.
-- Constraints (`T : Num`) are not in 0.1. `Point` methods assume `T` understands `+ - * /` the same way `Int`/`Float` do. The Boids program instantiates `T = Float`.
+- Constraints (`T : Num`) are not in 0.1. `Point` methods assume `T`
+  understands `+ - * /` the same way `Int`/`Float` do. Boid is not generic;
+  the Boids program uses `(Point Float)` and `Boid`.
 
 ### 5.3 Checking
 
@@ -542,6 +545,23 @@ returning the ordinary Aloe result. The checker requires the first argument to
 be `Signature` and infers the remaining arguments normally; because it cannot
 know a signature variable's row, its result is the expected type when present
 and otherwise a fresh type variable.
+
+### 7.5 `String`
+
+`String` is a primitive type with these kernel messages:
+
+| Send | Meaning | Type |
+|---|---|---|
+| `(s = other)` | string equality | `Bool`, with `other : String` |
+| `(s append other)` | concatenation | `String`, with `other : String` |
+| `(s len)` | character count | `Int` |
+| `(s take n)` | prefix clamped to the string bounds | `String`, with `n : Int` |
+
+`take` returns `""` when `n <= 0`, all of `s` when `n` is at least its
+length, and otherwise its first `n` characters. `starts-with?` is an Aloe
+method defined in `lib/string.aloe` and installed in default environments,
+parallel to List's Aloe-defined `fold`, `reverse`, and `map`. The four kernel
+messages above remain primitive and take precedence during ordinary dispatch.
 
 ---
 

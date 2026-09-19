@@ -5,7 +5,7 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
 do not replay rejected designs.
 
-## `main` through checkpoint 107
+## `main` after the editor / LSP landing
 
 Proposal B is implemented through checkpoint 95, ratified into `SPEC.md` by
 [checkpoint 96](checkpoints/0096-ratify-class-constructors.md), and landed on
@@ -13,6 +13,11 @@ Proposal B is implemented through checkpoint 95, ratified into `SPEC.md` by
 [Proposal B document](class-constructors.md) remains historical design and
 implementation context; `SPEC.md` is law. Proposal A on
 `codex/unified-nominal-adts` was rejected and is not authority.
+
+The global checkpoint spine on `main` reaches checkpoint 107, then records
+String checkpoints 114–115. Editor support is organized separately under
+`docs/editor/` as local projects; it is not Gel and is not global checkpoint
+118.
 
 ## What Aloe is
 
@@ -30,7 +35,7 @@ Slogan: `Scheme + Smalltalk + Types`.
 Keep the kernel small. Grow the language from applications, and add host access
 only through explicit typed capabilities.
 
-## Current state (`main` through checkpoint 107)
+## Current state (`main` through checkpoint 107, String 114–115, and editor/LSP)
 
 - Interpreter and type checker in Racket; no compiler or macros.
 - `define-class`, `define-methods`, `fn`/`call`, `let`, `if`/`cond`, `load`,
@@ -41,8 +46,11 @@ only through explicit typed capabilities.
   payload; generic construction uses payload constraints and expected types.
 - Generics, homogeneous `List`, protocols with required methods, and
   C#-style method overloading. Exact argument types beat protocol matches.
-- Primitive `Int`, `Float`, `Bool`, `String`, and interned `Symbol` values.
-- Boids in `examples/boids.aloe` and `examples/point.aloe`.
+- Primitive `Int`, `Float`, `Bool`, `String`, and interned `Symbol` values;
+  String supplies kernel `len`/`take` and Aloe-defined `starts-with?` from
+  the bootstrapped `lib/string.aloe`.
+- Boids in `examples/boids.aloe` and `examples/point.aloe`; `Boid` is
+  monomorphic and its flock type is `(List Boid)`.
 - Cohen-style symbolic algebra in `examples/mpl/`, including `Math`, `Sym`,
   `Num`, `Sum`, `Prod`, and `Pow`. `Math` is a protocol supertype and primitive
   `Int` is not implicitly lifted to it.
@@ -53,6 +61,10 @@ only through explicit typed capabilities.
   `#<…>` printer.
 - `Mirror` and `Signature` provide nominally owned reflection and exact-row
   invocation without adding `perform` to ordinary objects.
+- Source locations, the shared signature catalog, expression and completion
+  queries, the LSP adapter, and the VS Code hover/completion client are on
+  `main`. Their project law and history live under `docs/editor/`; this editor
+  work is independent of Gel.
 - Gel is an Aloe-written keystroke object environment with an immutable
   `GelStack`, reflected menus, typed one-argument pending sends,
   integer entry, and a thin Racket terminal runner.
@@ -60,8 +72,9 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 107 are green on `main`. `Option`
-  is loadable from `lib/option.aloe` and is not a default-driver binding.
+- Tests through checkpoint 107, String checkpoints 114–115, and the local
+  editor projects are green on `main`. `Option` is loadable from
+  `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
   with `current`, `path`, `child`, `parent`, `name`, `inspect`, and `entries`;
   it remains unchanged. `lib/disk.aloe` defines generic `Disk`
@@ -142,8 +155,10 @@ controlled test double. The host crossing vocabulary remains `Int`, `Bool`,
 not crossed, and `(List Item)` is likewise built in Aloe. There is no file-text
 reading or Gel filesystem UI. Option remains loadable rather than bootstrapped,
 default drivers still have no `fs-host`. Gel-directory, presentations, and
-editor/LSP work remain on their experiment branches and are not part of this
-state.
+`gel-directory-run` remain experimental and are not part of this state. The
+editor/LSP work and `docs/editor/` are on `main` and are not Gel. The
+`experiment/2026-09-12-editor` branch remains the stacked snapshot containing
+Gel-directory together with the editor work; it was not merged as a branch.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository

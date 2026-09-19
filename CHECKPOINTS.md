@@ -379,3 +379,21 @@ success, and reports both source datums and displayed values on failure.
 - Live `Directory.entries` returns mixed `(List Item)` via host
   `names` then `child` + `inspect`. Vanished names are omitted.
   No `(here entries)`. Thin `lib/fs.aloe` unchanged.
+
+## Later experiment checkpoints and local editor projects
+
+Global checkpoints 108–113 and 116–117 are Gel-directory work. They live on
+`experiment/gel-directory-surface` and later Gel branches, not on `main`.
+
+## 114. [String `len` and `take`](docs/checkpoints/0114-string-len-take.md)
+
+- `String` supplies primitive character-count and clamped-prefix messages.
+
+## 115. [String `starts-with?`](docs/checkpoints/0115-string-starts-with.md)
+
+- `lib/string.aloe` defines `starts-with?` with `define-methods String` and is
+  installed in default environments.
+
+Editor and LSP work is organized as local projects rather than global
+checkpoints. See [docs/editor/README.md](docs/editor/README.md); there is no
+global checkpoint 118.

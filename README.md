@@ -22,8 +22,8 @@ The core stays small on purpose. Libraries and programs grow the rest
 ## Status
 
 Aloe remains an exploratory prototype. Local `main` includes the language and
-filesystem work through checkpoint 107; this is not a finished public 0.3
-release.
+filesystem work through checkpoint 107, String checkpoints 114–115, and the
+local editor/LSP projects; this is not a finished public release.
 The implementation is a definitional interpreter
 plus a type checker,
 written in Racket.
@@ -38,11 +38,14 @@ inference fills in what you do not write.
 - [CHECKPOINTS.md](CHECKPOINTS.md) — implementation order
 - [AGENTS.md](AGENTS.md) — rules for a coding agent
 - [lib/list.aloe](lib/list.aloe) — Aloe implementations of `fold`, `reverse`, and `map`
+- [lib/string.aloe](lib/string.aloe) — Aloe implementation of `starts-with?`
 - [lib/option.aloe](lib/option.aloe) — loadable `Option` with `None` and `Some`
 - [lib/fs.aloe](lib/fs.aloe) — thin `Path`, `Entry`, and `Fs` filesystem API
 - [lib/disk.aloe](lib/disk.aloe) — live `Disk`, `Location`, and `Item` filesystem API
 - [examples/boids.aloe](examples/boids.aloe) — target program
 - [examples/mpl/](examples/mpl/) — 0.2 computer algebra fragment
+- [docs/editor/](docs/editor/) — source-query and LSP local-project documentation
+- [editors/vscode/](editors/vscode/) — VS Code hover/completion client
 - [docs/journal/](docs/journal/) — release notes
 
 ## Driver
