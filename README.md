@@ -21,7 +21,9 @@ The core stays small on purpose. Libraries and programs grow the rest
 
 ## Status
 
-Aloe 0.2 is an exploratory prototype.
+Aloe remains an exploratory prototype. Local `main` includes the language and
+filesystem work through checkpoint 107; this is not a finished public 0.3
+release.
 The implementation is a definitional interpreter
 plus a type checker,
 written in Racket.
@@ -31,10 +33,14 @@ inference fills in what you do not write.
 
 ## Layout
 
-- [SPEC.md](SPEC.md) — language 0.1 plus 0.2 additions
+- [SPEC.md](SPEC.md) — language law, including constructors, receiver-anchored
+  `case`, and typed host capabilities
 - [CHECKPOINTS.md](CHECKPOINTS.md) — implementation order
 - [AGENTS.md](AGENTS.md) — rules for a coding agent
 - [lib/list.aloe](lib/list.aloe) — Aloe implementations of `fold`, `reverse`, and `map`
+- [lib/option.aloe](lib/option.aloe) — loadable `Option` with `None` and `Some`
+- [lib/fs.aloe](lib/fs.aloe) — thin `Path`, `Entry`, and `Fs` filesystem API
+- [lib/disk.aloe](lib/disk.aloe) — live `Disk`, `Location`, and `Item` filesystem API
 - [examples/boids.aloe](examples/boids.aloe) — target program
 - [examples/mpl/](examples/mpl/) — 0.2 computer algebra fragment
 - [docs/journal/](docs/journal/) — release notes

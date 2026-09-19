@@ -5,15 +5,14 @@ Read first, in order: `SPEC.md`, `docs/philosophy.md`, `docs/decisions.md`,
 `docs/gel.md`. Spec is law. Decisions record accepted and rejected directions;
 do not replay rejected designs.
 
-## `experiment/filesystem`
+## `main` through checkpoint 107
 
-Proposal B is implemented through checkpoint 95 and ratified into `SPEC.md`
-by [checkpoint 96](checkpoints/0096-ratify-class-constructors.md). Checkpoint
-97 merges the sealed typed host boundary from `main` onto that constructor
-line. The [Proposal B document](class-constructors.md) remains as historical
-design and implementation context; `SPEC.md` is law on this branch. Proposal A
-on `codex/unified-nominal-adts` was rejected and is not authority. Constructors
-have not been merged to `main`.
+Proposal B is implemented through checkpoint 95, ratified into `SPEC.md` by
+[checkpoint 96](checkpoints/0096-ratify-class-constructors.md), and landed on
+`main` with the typed host and filesystem work through checkpoint 107. The
+[Proposal B document](class-constructors.md) remains historical design and
+implementation context; `SPEC.md` is law. Proposal A on
+`codex/unified-nominal-adts` was rejected and is not authority.
 
 ## What Aloe is
 
@@ -31,7 +30,7 @@ Slogan: `Scheme + Smalltalk + Types`.
 Keep the kernel small. Grow the language from applications, and add host access
 only through explicit typed capabilities.
 
-## Current state (0.4 on `experiment/filesystem`)
+## Current state (`main` through checkpoint 107)
 
 - Interpreter and type checker in Racket; no compiler or macros.
 - `define-class`, `define-methods`, `fn`/`call`, `let`, `if`/`cond`, `load`,
@@ -61,7 +60,7 @@ only through explicit typed capabilities.
   dispatch, static checking, driver injection, and reflection.
 - Generic fields retain exact injected host-interface types, allowing wrappers
   around capabilities without source-written host type names.
-- Tests through checkpoint 107 are green on `experiment/filesystem`. `Option`
+- Tests through checkpoint 107 are green on `main`. `Option`
   is loadable from `lib/option.aloe` and is not a default-driver binding.
   `lib/fs.aloe` defines `Path`, the four-constructor `Entry`, and generic `Fs`
   with `current`, `path`, `child`, `parent`, `name`, `inspect`, and `entries`;
@@ -129,9 +128,9 @@ protocols, overloading, strings, symbols, and richer display. Gel drove
 reflection, exact signature invocation, terminal input, and the typed host
 boundary.
 
-The filesystem libraries now provide loadable `Option`, thin `Path`, the
-closed four-constructor `Entry`, generic `Fs`, and the second library's generic
-`Disk` and `Location` on `experiment/filesystem`. Thin `lib/fs.aloe` remains
+The filesystem libraries on `main` now provide loadable `Option`, thin `Path`,
+the closed four-constructor `Entry`, generic `Fs`, and the second library's
+generic `Disk` and `Location`. Thin `lib/fs.aloe` remains
 unchanged and provides path algebra, `inspect`, and mixed `(List Entry)`
 listings. `lib/disk.aloe` now provides `Location.inspect`, `Item`, and nested
 live `File`, `Directory`, `SymbolicLink`, and `Other` objects with live
@@ -142,8 +141,9 @@ controlled test double. The host crossing vocabulary remains `Int`, `Bool`,
 `String`, and homogeneous `(List String)`; `(List Entry)` is built in Aloe,
 not crossed, and `(List Item)` is likewise built in Aloe. There is no file-text
 reading or Gel filesystem UI. Option remains loadable rather than bootstrapped,
-default drivers still have no `fs-host`, and constructors are not merged to
-`main`.
+default drivers still have no `fs-host`. Gel-directory, presentations, and
+editor/LSP work remain on their experiment branches and are not part of this
+state.
 
 Other open directions include broader Gel object interaction, authored Gel
 surfaces, stack navigation, multi-argument builders, processes, repository
