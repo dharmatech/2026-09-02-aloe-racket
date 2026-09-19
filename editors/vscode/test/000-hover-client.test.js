@@ -186,6 +186,10 @@ test('development launch has one bare Extension Host configuration', () => {
 
 test('production files preserve the thin-client boundary', () => {
   assert.match(read('.gitignore'), /^node_modules\/$/m);
+  assert.match(read('.gitignore'), /^\*\.vsix$/m);
+  assert.match(read('.vscodeignore'), /^test\/\*\*$/m);
+  assert.match(read('.vscodeignore'), /^node_modules\/vscode-oniguruma\/\*\*$/m);
+  assert.match(read('.vscodeignore'), /^node_modules\/vscode-textmate\/\*\*$/m);
 
   const optionsSource = read('client-options.js');
   for (const forbidden of [
