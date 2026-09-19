@@ -7,12 +7,12 @@ rules. It is not LSP semantic tokens and not tree-sitter.
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Design assignment that produces the spec |
-| `spec.md` | Law for this experiment (not written yet) |
+| [`spec.md`](spec.md) | Reviewed design specification for the local project |
+| [`checkpoints/000-lexical-highlighting.md`](checkpoints/000-lexical-highlighting.md) | **Implemented and reviewed.** TextMate lexical scopes and declarative language configuration |
 
-Depends on **editor-vscode 000**: language id `aloe` and the
-extension in `editors/vscode/` already exist. Do not implement.
-Do not write global checkpoints. Do not reopen hover, completion,
-or `aloe/lsp.rkt`.
+Depends on the implemented and reviewed **editor-vscode 000**: language id
+`aloe` and the extension in `editors/vscode/` already exist. Do not write
+global checkpoints or reopen Hover, completion, or `aloe/lsp.rkt`.
 
-No slices issued. The human reviews the charter, then a **new**
-designer conversation writes `spec.md`.
+Implemented and reviewed: **editor-highlighting 000**. This local project is
+closed with exactly one slice; do not issue 001.

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Aloe",
+  "scopeName": "source.aloe",
+  "patterns": [
+    { "include": "#line-comment" },
+    { "include": "#block-comment" },
+    { "include": "#string" },
+    { "include": "#float" },
+    { "include": "#integer" },
+    { "include": "#boolean" },
+    { "include": "#special-form" },
+    { "include": "#section-word" },
+    { "include": "#nominal-name" }
+  ],
+  "repository": {
+    "line-comment": {
+      "name": "comment.line.semicolon.aloe",
+      "match": "(?<!#);.*$"
+    },
+    "block-comment": {
+      "name": "comment.block.aloe",
+      "begin": "#\\|",
+      "end": "\\|#",
+      "patterns": [
+        { "include": "#block-comment" }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.aloe",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.aloe",
+          "match": "\\\\(?:U[0-9A-Fa-f]{1,8}|u[0-9A-Fa-f]{1,4}|x[0-9A-Fa-f]{1,2}|[0-7]{1,3}|[abtnvfre\"'\\\\])|\\\\$"
+        }
+      ]
+    },
+    "float": {
+      "name": "constant.numeric.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])[+-]?(?:(?:[0-9]+\\.[0-9]*|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)(?![^\\s()\\[\\]{}\"'`,;])"
+    },
+    "integer": {
+      "name": "constant.numeric.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])[+-]?[0-9]+(?![^\\s()\\[\\]{}\"'`,;])"
+    },
+    "boolean": {
+      "name": "constant.language.boolean.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])#(?:t|f)(?![^\\s()\\[\\]{}\"'`,;])"
+    },
+    "special-form": {
+      "name": "keyword.control.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])(?:define|define-class|define-methods|define-protocol|fn|let|if|cond|load|check|case)(?![^\\s()\\[\\]{}\"'`,;])"
+    },
+    "section-word": {
+      "name": "keyword.other.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])(?:fields|methods|constructors|type|else)(?![^\\s()\\[\\]{}\"'`,;])"
+    },
+    "nominal-name": {
+      "name": "entity.name.type.aloe",
+      "match": "(?<![^\\s()\\[\\]{}\"'`,;])[A-Z][A-Za-z0-9]*(?![^\\s()\\[\\]{}\"'`,;])"
+    }
+  }
+}

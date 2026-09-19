@@ -1,0 +1,26 @@
+; line comment: define Point 1 #t "string"
+;; conventional comment: fields Some -2.5 #f
+
+define define-class define-methods define-protocol fn let if cond load check case
+fields methods constructors type else
+Point Int Float Bool String Symbol Mirror Signature Some None T U Tree2
+call new self quote begin len append starts-with? before?
+define-class? my-Point #true Some? 123abc +12foo Point.part redefined
+
+0 42 +7 -3 0.0 1. -0.25 +.5 1e3 -2E-4
+#t #f
+
+"plain define Point #t 123"
+"simple \a \b \t \n \v \f \r \e \" \' \\"
+"numeric \0 \123 \xA \x4F \u03bb \U0001F642"
+"continued\
+line define Point #t"
+
+#| outer define Point 12 #t
+   #| inner methods Some -3.5 #f "string"
+      nested body
+   |#
+   outer tail constructors U
+|# (define after Point)
+
+#; (define DatumCommentIsUncolored 1)

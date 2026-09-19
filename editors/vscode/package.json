@@ -19,7 +19,15 @@
         ],
         "extensions": [
           ".aloe"
-        ]
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "aloe",
+        "scopeName": "source.aloe",
+        "path": "./syntaxes/aloe.tmLanguage.json"
       }
     ],
     "configuration": {
@@ -39,5 +47,9 @@
   },
   "dependencies": {
     "vscode-languageclient": "9.0.1"
+  },
+  "devDependencies": {
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.3.2"
   }
 }

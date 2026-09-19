@@ -35,9 +35,9 @@ conversation.
 | 4 | LSP adapter | [`lsp/`](lsp/) | **Implemented and reviewed.** editor-lsp 000–009. | 3 |
 | 5 | VS Code client | [`vscode/`](vscode/) | **Implemented and reviewed.** editor-vscode 000 (hover). | 4 |
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
-| 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Charter.** TextMate grammar + language configuration in the existing VS Code extension. Not semantic tokens. | 5 |
+| 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
 
-Projects 1–6 are implemented and reviewed. Project 5 is the VS Code hover
+Projects 1–7 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
 implemented by editor-completion 000–002 for the public Racket query and 003
 for its LSP integration. Project 7 is a client skin: lexical coloring of
