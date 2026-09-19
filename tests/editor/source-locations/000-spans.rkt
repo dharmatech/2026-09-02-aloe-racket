@@ -105,6 +105,53 @@
   (check-equal? first-parse second-parse)
   (check-location-free first-parse))
 
+(define (normalize-locations value)
+  (cond
+    [(srcloc? value) #f]
+    [(struct? value)
+     (for/list ([part (in-vector (struct->vector value))])
+       (normalize-locations part))]
+    [(pair? value)
+     (cons (normalize-locations (car value))
+           (normalize-locations (cdr value)))]
+    [(vector? value)
+     (for/vector ([part (in-vector value)])
+       (normalize-locations part))]
+    [else value]))
+
+(test-case "datum and source entries share the complete grammar"
+  (for ([datum
+         (in-list
+          '((load "lib/option.aloe")
+            (check (1 + 2) 3)
+            (define answer (if #t 42 0))
+            (define-protocol P (ping () Int))
+            (define-class (Box T) P
+              (constructors
+                (Empty (fields))
+                (Full (fields (value T))))
+              (methods
+                (get () T
+                  (self case
+                    (Empty () (self get))
+                    (Full (value) value)))))
+            (define-methods String
+              (methods
+                (twice () String (self append self))))
+            (fn (x) (x + 1))
+            (let ((x 1)) (x + 2))
+            (cond (#f 1) (else 2))
+            ((Option Some 1) case
+              (None () 0)
+              (Some (value) value))
+            ((Point new 1 2) + p)))])
+    (define datum-expression (parse-datum datum))
+    (define source-expression
+      (first (read-program (format "~s\n" datum))))
+    (check-location-free datum-expression)
+    (check-equal? (normalize-locations datum-expression)
+                  (normalize-locations source-expression))))
+
 (define pathless
   (first (read-program "(x + 2)\n")))
 

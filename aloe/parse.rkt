@@ -89,19 +89,6 @@
     (load-expr-directory expression))
    #f))
 
-(define (parse-atom datum)
-  (cond
-    [(boolean? datum) (bool-expr datum #f)]
-    [(exact-integer? datum) (int-expr datum #f)]
-    [(flonum? datum) (float-expr datum #f)]
-    [(string? datum) (string-expr datum #f)]
-    [(symbol? datum) (variable-expr datum #f)]
-    [else
-     (raise-arguments-error
-      'parse-datum
-      "unsupported Aloe atom in checkpoint 1"
-      "datum" datum)]))
-
 (define (parse-field-declaration datum)
   (match datum
     [(list (? symbol? name) type)
@@ -157,77 +144,6 @@
            (pair? datum)
            (or (eq? (car datum) '->)
                (capital-name? (car datum))))))
-
-(define (split-method-type-parameters parts datum)
-  (cond
-    [(and (pair? parts)
-          (list? (car parts))
-          (pair? (car parts))
-          (eq? (caar parts) 'type))
-     (define names (cdar parts))
-     (unless (and (pair? names) (andmap symbol? names))
-       (raise-arguments-error
-        'parse-datum
-        "method type header must be (type Name ...)"
-        "header" (car parts)
-        "method" datum))
-     (define duplicate (check-duplicates names))
-     (when duplicate
-       (raise-arguments-error
-        'parse-datum
-        "method type parameters must be unique"
-        "type parameter" duplicate
-        "method" datum))
-     (values names (cdr parts))]
-    [else (values '() parts)]))
-
-(define (parse-method-declaration datum)
-  (match datum
-    [(list (? symbol? selector) raw-parts ...)
-     (define-values (type-parameters parts)
-       (split-method-type-parameters raw-parts datum))
-     (when (< (length parts) 2)
-       (raise-arguments-error
-        'parse-datum
-        "malformed method; expected parameters, return type, and body"
-        "method" datum))
-     (define explicit-empty-parameters?
-       (and (pair? parts) (null? (car parts))))
-     (when (and explicit-empty-parameters?
-                (not (= (length parts) 3)))
-       (raise-arguments-error
-        'parse-datum
-        "malformed zero-parameter method"
-        "method" datum))
-     (define parameter-datums
-       (if explicit-empty-parameters?
-           '()
-           (take parts (- (length parts) 2))))
-     (define return-type
-       (if explicit-empty-parameters?
-           (cadr parts)
-           (list-ref parts (length parameter-datums))))
-     (define body
-       (if explicit-empty-parameters?
-           (caddr parts)
-           (last parts)))
-     (unless (clearly-type-sexpr? return-type)
-       (raise-arguments-error
-        'parse-datum
-        "method return type must be a type expression"
-        "return type" return-type
-        "method" datum))
-     (method-declaration
-      selector
-      type-parameters
-      (map parse-parameter-declaration parameter-datums)
-      return-type
-      (parse-datum body))]
-    [_
-     (raise-arguments-error
-      'parse-datum
-      "malformed method declaration"
-      "method" datum)]))
 
 (define (parse-protocol-signature datum)
   (match datum
@@ -318,85 +234,6 @@
      "datum" datum))
   constructors)
 
-(define (parse-case scrutinee-datum clause-datums datum)
-  (unless (pair? clause-datums)
-    (raise-arguments-error
-     'parse-datum
-     "case requires at least one clause"
-     "datum" datum))
-  (define named-clauses '())
-  (define else-body #f)
-  (for ([clause-datum (in-list clause-datums)]
-        [index (in-naturals)])
-    (define final? (= index (sub1 (length clause-datums))))
-    (match clause-datum
-      [(list 'else body-datum)
-       (unless final?
-         (raise-arguments-error
-          'parse-datum
-          "else must be the final case clause"
-          "datum" datum))
-       (set! else-body (parse-datum body-datum))]
-      [(list (? symbol? selector) (? list? payload-names) body-datum)
-       (when (eq? selector 'else)
-         (raise-arguments-error
-          'parse-datum
-          "malformed else clause; expected (else body)"
-          "clause" clause-datum
-          "datum" datum))
-       (unless (andmap symbol? payload-names)
-         (raise-arguments-error
-          'parse-datum
-          "case payload names must be identifiers"
-          "clause" clause-datum
-          "datum" datum))
-       (set! named-clauses
-             (cons (case-clause
-                    selector
-                    payload-names
-                    (parse-datum body-datum))
-                   named-clauses))]
-      [_
-       (raise-arguments-error
-        'parse-datum
-        "malformed case clause; expected (Name (id ...) body) or (else body)"
-        "clause" clause-datum
-        "datum" datum)]))
-  (case-expr (parse-datum scrutinee-datum)
-             (reverse named-clauses)
-             else-body
-             #f))
-
-(define (desugar-let binding-datums body datum)
-  (unless (list? binding-datums)
-    (raise-arguments-error
-     'parse-datum
-     "let bindings must be a list"
-     "bindings" binding-datums))
-  (define bindings
-    (for/list ([binding-datum (in-list binding-datums)])
-      (match binding-datum
-        [(list (? symbol? name) expression)
-         (cons name (parse-datum expression))]
-        [_
-         (raise-arguments-error
-          'parse-datum
-          "malformed let binding; expected (name expression)"
-          "binding" binding-datum)])))
-  (define names (map car bindings))
-  (define duplicate (check-duplicates names))
-  (when duplicate
-    (raise-arguments-error
-     'parse-datum
-     "let binding names must be unique"
-     "name" duplicate
-     "datum" datum))
-  (send-expr (fn-expr names (parse-datum body) #f)
-             'call
-             (map cdr bindings)
-             #f
-             #f))
-
 (define (make-if-expression test-expression
                             then-expression
                             else-expression
@@ -409,237 +246,17 @@
    loc
    #f))
 
-(define (desugar-if test-datum then-datum else-datum)
-  (make-if-expression
-   (parse-datum test-datum)
-   (parse-datum then-datum)
-   (parse-datum else-datum)))
-
-(define (desugar-cond clause-datums datum)
-  (unless (and (list? clause-datums) (pair? clause-datums))
-    (raise-arguments-error
-     'parse-datum
-     "cond requires at least one clause and a final else clause"
-     "datum" datum))
-  (define clauses
-    (for/list ([clause (in-list clause-datums)])
-      (match clause
-        [(list test expression) (list test expression)]
-        [_
-         (raise-arguments-error
-          'parse-datum
-          "malformed cond clause; expected (test expression)"
-          "clause" clause
-          "datum" datum)])))
-  (define final-clause (last clauses))
-  (unless (eq? (first final-clause) 'else)
-    (raise-arguments-error
-     'parse-datum
-     "cond requires else as its final clause"
-     "datum" datum))
-  (for ([clause (in-list (drop-right clauses 1))])
-    (when (eq? (first clause) 'else)
-      (raise-arguments-error
-       'parse-datum
-       "else must be the final cond clause"
-       "datum" datum)))
-  (for/fold ([alternate (parse-datum (second final-clause))])
-            ([clause (in-list (reverse (drop-right clauses 1)))])
-    (make-if-expression
-     (parse-datum (first clause))
-     (parse-datum (second clause))
-     alternate)))
-
-(define (parse-datum datum)
-  (match datum
-    ['()
-     (raise-arguments-error
-      'parse-datum
-      "empty combination is illegal"
-      "datum" datum)]
-    [(list 'load (? string? path))
-     (load-expr path
-                (or (current-aloe-source-directory)
-                    (current-directory))
-                #f)]
-    [(cons 'load _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed load; expected (load \"path.aloe\")"
-      "datum" datum)]
-    [(list 'check left right)
-     (check-expr (parse-datum left)
-                 (parse-datum right)
-                 left
-                 right
-                 #f)]
-    [(cons 'check _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed check; expected (check left right)"
-      "datum" datum)]
-    [(list 'define (? symbol? name) value)
-     (define-expr name (parse-datum value) #f)]
-    [(cons 'define _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed define; expected (define name expression)"
-      "datum" datum)]
-    [(list 'define-protocol (? symbol? name) signature-datums ...)
-     (define-protocol-expr
-      name
-      (map parse-protocol-signature signature-datums)
-      #f)]
-    [(cons 'define-protocol _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed define-protocol; expected a name and method signatures"
-      "datum" datum)]
-    [(list 'define-class
-           header
-           (cons 'fields field-datums)
-           (cons 'methods method-datums))
-     (define class-header (parse-class-header header datum))
-     (define-class-expr
-      (car class-header)
-      (cdr class-header)
-      #f
-      (ensure-distinct-fields
-       (map parse-field-declaration field-datums)
-       datum)
-      #f
-      (map parse-method-declaration method-datums)
-      #f)]
-    [(list 'define-class
-           header
-           (? symbol? protocol)
-           (cons 'fields field-datums)
-           (cons 'methods method-datums))
-     (define class-header (parse-class-header header datum))
-     (define-class-expr
-      (car class-header)
-      (cdr class-header)
-      protocol
-      (ensure-distinct-fields
-       (map parse-field-declaration field-datums)
-       datum)
-      #f
-      (map parse-method-declaration method-datums)
-      #f)]
-    [(list 'define-class
-           header
-           (cons 'constructors constructor-datums)
-           (cons 'methods method-datums))
-     (define class-header (parse-class-header header datum))
-     (define-class-expr
-      (car class-header)
-      (cdr class-header)
-      #f
-      #f
-      (parse-constructors constructor-datums datum)
-      (map parse-method-declaration method-datums)
-      #f)]
-    [(list 'define-class
-           header
-           (? symbol? protocol)
-           (cons 'constructors constructor-datums)
-           (cons 'methods method-datums))
-     (define class-header (parse-class-header header datum))
-     (define-class-expr
-      (car class-header)
-      (cdr class-header)
-      protocol
-      #f
-      (parse-constructors constructor-datums datum)
-      (map parse-method-declaration method-datums)
-      #f)]
-    [(cons 'define-class _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed define-class; expected a name, optional protocol, fields or constructors, and methods"
-      "datum" datum)]
-    [(list 'define-methods
-           (? symbol? target)
-           (cons 'methods method-datums))
-     (define-methods-expr
-      target
-      (map parse-method-declaration method-datums)
-      #f)]
-    [(cons 'define-methods _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed define-methods; expected a target and methods"
-      "datum" datum)]
-    [(list 'fn parameter-names body)
-     (unless (and (list? parameter-names)
-                  (andmap symbol? parameter-names))
-       (raise-arguments-error
-        'parse-datum
-        "fn parameters must be an untyped list of names"
-        "parameters" parameter-names))
-     (define duplicate (check-duplicates parameter-names))
-     (when duplicate
-       (raise-arguments-error
-        'parse-datum
-        "fn parameter names must be unique"
-        "parameter" duplicate))
-     (fn-expr parameter-names (parse-datum body) #f)]
-    [(cons 'fn _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed fn; expected (fn (name ...) body)"
-      "datum" datum)]
-    [(list 'let binding-datums body)
-     (desugar-let binding-datums body datum)]
-    [(cons 'let _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed let; expected (let ((name expression) ...) body)"
-      "datum" datum)]
-    [(cons 'cond clause-datums)
-     (desugar-cond clause-datums datum)]
-    [(list 'if test-datum then-datum else-datum)
-     (desugar-if test-datum then-datum else-datum)]
-    [(cons 'if _)
-     (raise-arguments-error
-      'parse-datum
-      "malformed if; expected (if test then else)"
-      "datum" datum)]
-    [(list scrutinee 'case clause-datums ...)
-     (parse-case scrutinee clause-datums datum)]
-    [(list _)
-     (raise-arguments-error
-      'parse-datum
-      "combination has no selector"
-      "datum" datum)]
-    [(list receiver selector arguments ...)
-     (unless (symbol? selector)
-       (raise-arguments-error
-        'parse-datum
-        "selector must be a symbol"
-        "selector" selector
-        "datum" datum))
-     (send-expr (parse-datum receiver)
-                selector
-                (map parse-datum arguments)
-                #f
-                #f)]
-    [(? pair?)
-     (raise-arguments-error
-      'parse-datum
-      "malformed combination"
-      "datum" datum)]
-    [_ (parse-atom datum)]))
-
 (define (parse-program datums)
   (map parse-datum datums))
 
 (define (syntax-location form)
-  (srcloc (syntax-source form)
-          (syntax-line form)
-          (syntax-column form)
-          (syntax-position form)
-          (syntax-span form)))
+  (define source (syntax-source form))
+  (define line (syntax-line form))
+  (define column (syntax-column form))
+  (define position (syntax-position form))
+  (define span (syntax-span form))
+  (and (or source line column position span)
+       (srcloc source line column position span)))
 
 (define (syntax-section-items form name)
   (define items (syntax->list form))
@@ -1095,6 +712,9 @@
       "malformed combination"
       "datum" datum)]
     [else (parse-syntax-atom form)]))
+
+(define (parse-datum datum)
+  (parse-syntax-expression (datum->syntax #f datum)))
 
 (define (read-program-port input source-path)
   (port-count-lines! input)
