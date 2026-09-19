@@ -1,7 +1,7 @@
 # Charter — parser / checker elegance
 
-**Status.** Assignment for one refactor conversation. Not Aloe law.
-Not a new language feature. Not LSP redesign.
+**Status.** Landed on `main` at `8701dce`. Historical refactor assignment.
+Not Aloe law. Not a new language feature. Not LSP redesign.
 
 **Your job.** Make the kernel look like one grammar and one checker
 again. Unify the duplicated parser in `aloe/parse.rkt`. Move editor
