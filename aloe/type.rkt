@@ -4,7 +4,7 @@
          racket/match
          "host.rkt"
          "parse.rkt"
-         "private/expression-selection.rkt"
+         "private/checker-observation.rkt"
          "signature-catalog.rkt")
 
 (provide (struct-out exn:fail:aloe-type)
@@ -33,13 +33,6 @@
          type-signature-specs)
 
 (struct exn:fail:aloe-type exn:fail () #:transparent)
-(struct expression-type-observation (type signatures) #:transparent)
-(struct selector-receiver-observation (signatures) #:transparent)
-
-(struct retained-expression-type (expression type environment))
-(struct expression-observer
-  (target root-depth [retained #:mutable] [answer #:mutable]))
-(struct selector-receiver-observer (target escape))
 
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
@@ -88,10 +81,6 @@
 (define current-typecheck-load-paths (make-parameter '()))
 (define current-typecheck-program-depth (make-parameter 0))
 (define current-construction-obligations (make-parameter #f))
-(define current-expression-observer (make-parameter #f))
-(define current-selector-receiver-observer (make-parameter #f))
-(define current-legacy-deferred-generic-instantiation?
-  (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -553,76 +542,6 @@
     (check-protocol-conformance! environment))
   result)
 
-(define (typecheck-program/observe
-         expressions environment selected-expression)
-  (define observer
-    (expression-observer
-     selected-expression
-     (add1 (current-typecheck-program-depth))
-     #f
-     #f))
-  (parameterize ([current-expression-observer observer])
-    (typecheck-program expressions environment))
-  (cond
-    [(not selected-expression) #f]
-    [(expression-observer-answer observer)
-     (expression-observer-answer observer)]
-    [else
-     (error
-      'typecheck-program/observe
-      "successful program did not observe the selected expression")]))
-
-(define (typecheck-program/observe-selector-receiver
-         expressions environment target-send)
-  (let/ec escape
-    (define observer
-      (selector-receiver-observer
-       (send-expr-receiver target-send)
-       escape))
-    (parameterize ([current-selector-receiver-observer observer])
-      (typecheck-program expressions environment))
-    (error
-     'typecheck-program/observe-selector-receiver
-     "successful program did not observe the target send receiver")))
-
-(define (retain-expression-observation! expression type environment)
-  (define observer (current-expression-observer))
-  (when (and observer
-             (not (expression-observer-answer observer))
-             (eq? expression (expression-observer-target observer))
-             (not (current-legacy-deferred-generic-instantiation?)))
-    (set-expression-observer-retained!
-     observer
-     (retained-expression-type expression type environment))))
-
-(define (observe-selector-receiver! expression type environment)
-  (define observer (current-selector-receiver-observer))
-  (when (and observer
-             (eq? expression
-                  (selector-receiver-observer-target observer))
-             (not (current-legacy-deferred-generic-instantiation?)))
-    ((selector-receiver-observer-escape observer)
-     (selector-receiver-observation
-      (type-signature-specs type environment)))))
-
-(define (materialize-expression-observation-at-root-end!)
-  (define observer (current-expression-observer))
-  (when (and observer
-             (= (current-typecheck-program-depth)
-                (expression-observer-root-depth observer))
-             (expression-observer-retained observer)
-             (not (expression-observer-answer observer)))
-    (define retained (expression-observer-retained observer))
-    (define type (retained-expression-type-type retained))
-    (define environment
-      (retained-expression-type-environment retained))
-    (define answer
-      (expression-type-observation
-       (type->datum type)
-       (type-signature-specs type environment)))
-    (set-expression-observer-answer! observer answer)
-    (set-expression-observer-retained! observer #f)))
-
 (define (typecheck-load! expression environment)
   (define path (load-expr-resolved-path expression))
   (unless (file-exists? path)
@@ -888,22 +807,6 @@
      method
      environment
      method-substitution)))
-
-(define (selected-expression-in-method-body? method)
-  (define expression-observer (current-expression-observer))
-  (define selector-observer (current-selector-receiver-observer))
-  (define targets
-    (filter
-     values
-     (list
-      (and expression-observer
-           (expression-observer-target expression-observer))
-      (and selector-observer
-           (selector-receiver-observer-target selector-observer)))))
-  (for/or ([target (in-list targets)])
-    (expression-contains-node?
-     (method-declaration-body method)
-     target)))
 
 (define (check-method-types! method environment substitution)
   (for ([parameter (in-list (method-declaration-parameters method))])
@@ -1910,6 +1813,20 @@
 
 (define (unknown-message selector)
   (raise-type-error "unknown message: ~a" selector))
+
+(define-values
+  (current-legacy-deferred-generic-instantiation?
+   typecheck-program/observe
+   typecheck-program/observe-selector-receiver
+   retain-expression-observation!
+   observe-selector-receiver!
+   materialize-expression-observation-at-root-end!
+   selected-expression-in-method-body?)
+  (make-checker-observation-api
+   typecheck-program
+   current-typecheck-program-depth
+   type->datum
+   type-signature-specs))
 
 ;; The driver needs one narrow construction hook without making host types a
 ;; normal part of the checker's public API.

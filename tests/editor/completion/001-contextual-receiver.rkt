@@ -16,6 +16,8 @@
                  completion-query-observation))
 
 (define-runtime-path type-path "../../../aloe/type.rkt")
+(define-runtime-path checker-observation-path
+  "../../../aloe/private/checker-observation.rkt")
 (define-runtime-path main-path "../../../aloe/main.rkt")
 (define-runtime-path driver-path "../../../aloe/driver.rkt")
 (define-runtime-path point-path "../../../examples/point.aloe")
@@ -463,26 +465,27 @@
    (eq? (selector-receiver-observation-signatures answer)
         shared-rows))
 
-  ;; Keep the private bridge visibly declarative: its result is built by one
-  ;; direct shared-catalog call, without an alternate declaration-table or
-  ;; runtime reflection path.  The operation name is the checkpoint's fixed
-  ;; internal API; local helper names are deliberately not inspected.
-  (define type-source (file->string type-path))
+  ;; Keep the private observation hook visibly declarative: its result is
+  ;; built by one direct shared-catalog call, without an alternate
+  ;; declaration-table or runtime reflection path.
+  (define observation-source
+    (file->string checker-observation-path))
   (define bridge-start
     (string-position
-     type-source
-     "(define (typecheck-program/observe-selector-receiver"))
+     observation-source
+     "(define (observe-selector-receiver!"))
   (define next-established-boundary
     (and bridge-start
          (let ([relative
                 (string-position
-                 (substring type-source bridge-start)
+                 (substring observation-source bridge-start)
                  "(define (materialize-expression-observation-at-root-end!")])
            (and relative (+ bridge-start relative)))))
   (check-not-false bridge-start)
   (check-not-false next-established-boundary)
   (define bridge-source
-    (substring type-source bridge-start next-established-boundary))
+    (substring
+     observation-source bridge-start next-established-boundary))
   (check-equal?
    (length (regexp-match* #rx"type-signature-specs" bridge-source))
    1)
