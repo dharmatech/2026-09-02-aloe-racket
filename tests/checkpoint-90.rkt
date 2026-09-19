@@ -72,7 +72,7 @@
 (check-equal? (map case-clause-selector (case-expr-clauses with-else-body))
               '(Ok))
 (check-equal? (case-expr-else-body with-else-body)
-              (string-expr "error"))
+              (string-expr "error" #f))
 
 ;; Exhaustiveness and constructor validity are deliberately not parser work.
 (check-true

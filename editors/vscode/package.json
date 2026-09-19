@@ -1,0 +1,43 @@
+{
+  "name": "aloe-language-client",
+  "displayName": "Aloe",
+  "publisher": "aloe-local",
+  "version": "0.0.1",
+  "main": "./extension.js",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "activationEvents": [
+    "onLanguage:aloe"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "aloe",
+        "aliases": [
+          "Aloe"
+        ],
+        "extensions": [
+          ".aloe"
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Aloe",
+      "properties": {
+        "aloe.racketPath": {
+          "type": "string",
+          "default": "racket",
+          "scope": "machine",
+          "description": "The Racket executable used to start the Aloe language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  }
+}

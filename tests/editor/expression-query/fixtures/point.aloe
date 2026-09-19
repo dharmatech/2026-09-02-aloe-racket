@@ -1,0 +1,10 @@
+(define-class (Point T)
+  (fields
+    (x T)
+    (y T))
+  (methods
+    (+ (other (Point T)) (Point T)
+      self)
+    (dist2 (other (Point T)) T
+      (self x))))
+(Point new 1 2)

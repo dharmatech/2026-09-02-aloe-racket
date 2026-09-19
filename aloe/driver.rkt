@@ -29,7 +29,9 @@
   (define runtime-environment (make-runtime-environment))
   (define type-environment (make-type-environment))
   (typecheck-program (list-library-expressions) type-environment)
+  (typecheck-program (string-library-expressions) type-environment)
   (eval-exprs (list-library-expressions) runtime-environment)
+  (eval-exprs (string-library-expressions) runtime-environment)
   (driver runtime-environment type-environment))
 
 (define (driver-inject-host! state name receiver)

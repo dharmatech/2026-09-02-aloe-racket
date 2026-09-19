@@ -1,0 +1,37 @@
+
+;; (list 1 2 3)               Scheme
+
+;; (obj method arg ...)       ALOE
+
+(123 * 10)
+
+((123 * 10) <= 2000)
+
+
+(List empty)
+
+((List empty) cons 10)
+
+(((List empty) cons 10) cons 20)
+
+(define ls (List of 10 20 30))
+
+ls
+
+(ls empty?)
+
+(load "point.aloe")
+
+(Point new 1.0 2.0)
+
+((Point new 1.0 2.0) * 3.0)
+
+(((Point new 1.0 2.0) * 3.0) x)
+
+
+
+(load "boids.aloe")
+
+(demo flock)
+
+((demo flock) first)

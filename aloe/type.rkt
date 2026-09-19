@@ -3,7 +3,9 @@
 (require racket/list
          racket/match
          "host.rkt"
-         "parse.rkt")
+         "parse.rkt"
+         "private/expression-selection.rkt"
+         "signature-catalog.rkt")
 
 (provide (struct-out exn:fail:aloe-type)
          (struct-out int-type)
@@ -21,14 +23,23 @@
          (struct-out symbol-class-type)
          (struct-out mirror-class-type)
          (struct-out function-type)
+         (struct-out signature-spec)
          type-environment?
          type-environment-bound?
          make-type-environment
          type-of
          typecheck-program
-         type->datum)
+         type->datum
+         type-signature-specs)
 
 (struct exn:fail:aloe-type exn:fail () #:transparent)
+(struct expression-type-observation (type signatures) #:transparent)
+(struct selector-receiver-observation (signatures) #:transparent)
+
+(struct retained-expression-type (expression type environment))
+(struct expression-observer
+  (target root-depth [retained #:mutable] [answer #:mutable]))
+(struct selector-receiver-observer (target escape))
 
 (struct int-type () #:transparent)
 (struct float-type () #:transparent)
@@ -43,6 +54,7 @@
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
 (struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
+(struct string-class-type ([methods #:mutable]) #:transparent)
 (struct symbol-class-type () #:transparent)
 (struct mirror-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
@@ -61,7 +73,7 @@
         explicit-constructors?
         [methods #:mutable])
   #:transparent)
-(struct type-environment (bindings parent) #:transparent)
+(struct type-environment (bindings parent string-class) #:transparent)
 
 (define INT (int-type))
 (define FLOAT (float-type))
@@ -76,6 +88,10 @@
 (define current-typecheck-load-paths (make-parameter '()))
 (define current-typecheck-program-depth (make-parameter 0))
 (define current-construction-obligations (make-parameter #f))
+(define current-expression-observer (make-parameter #f))
+(define current-selector-receiver-observer (make-parameter #f))
+(define current-legacy-deferred-generic-instantiation?
+  (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -91,17 +107,23 @@
 (define (make-type-environment)
   (define list-element-parameter
     (parameter-type (gensym 'T) 'T))
+  (define string-class (string-class-type '()))
   (type-environment
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
                 (list-class-type list-element-parameter '()))
+          (cons 'String string-class)
           (cons 'Symbol (symbol-class-type))
           (cons 'Mirror (mirror-class-type))))
-   #f))
+   #f
+   string-class))
 
 (define (make-local-type-environment parent bindings)
-  (type-environment (make-hasheq bindings) parent))
+  (type-environment
+   (make-hasheq bindings)
+   parent
+   (type-environment-string-class parent)))
 
 (define (type-environment-bound? environment name)
   (cond
@@ -174,6 +196,7 @@
     [(class-type? resolved)
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
+    [(string-class-type? resolved) '(Class String)]
     [(symbol-class-type? resolved) '(Class Symbol)]
     [(mirror-class-type? resolved) '(Class Mirror)]
     [(function-type? resolved)
@@ -189,6 +212,172 @@
     [(opaque-type? resolved) (opaque-type-name resolved)]
     [(void-type? resolved) 'Void]
     [else '?]))
+
+(define (checker-type? value)
+  (let checker-type? ([candidate value])
+    (cond
+      [(or (int-type? candidate)
+           (float-type? candidate)
+           (bool-type? candidate)
+           (string-type? candidate)
+           (symbol-type? candidate)
+           (mirror-type? candidate)
+           (signature-type? candidate)
+           (type-data-type? candidate)
+           (symbol-class-type? candidate)
+           (mirror-class-type? candidate)
+           (void-type? candidate))
+       #t]
+      [(protocol-type? candidate)
+       (and (symbol? (protocol-type-name candidate))
+            (list? (protocol-type-signatures candidate))
+            (andmap method-declaration?
+                    (protocol-type-signatures candidate)))]
+      [(instance-type? candidate)
+       (and (class-info? (instance-type-class candidate))
+            (list? (instance-type-arguments candidate))
+            (= (length (instance-type-arguments candidate))
+               (length
+                (class-info-type-parameters
+                 (instance-type-class candidate))))
+            (andmap checker-type?
+                    (instance-type-arguments candidate)))]
+      [(list-type? candidate)
+       (checker-type? (list-type-element candidate))]
+      [(class-type? candidate)
+       (class-info? (class-type-class candidate))]
+      [(list-class-type? candidate)
+       (and (parameter-type?
+             (list-class-type-element-parameter candidate))
+            (list? (list-class-type-methods candidate))
+            (andmap method-declaration?
+                    (list-class-type-methods candidate)))]
+      [(string-class-type? candidate)
+       (and (list? (string-class-type-methods candidate))
+            (andmap method-declaration?
+                    (string-class-type-methods candidate)))]
+      [(function-type? candidate)
+       (and (list? (function-type-parameters candidate))
+            (andmap checker-type?
+                    (function-type-parameters candidate))
+            (checker-type? (function-type-result candidate)))]
+      [(host-receiver-type? candidate)
+       (host-interface? (host-receiver-type-interface candidate))]
+      [(parameter-type? candidate)
+       (and (symbol? (parameter-type-id candidate))
+            (symbol? (parameter-type-name candidate)))]
+      [(type-variable? candidate)
+       (and (symbol? (type-variable-id candidate))
+            (or (not (type-variable-label candidate))
+                (symbol? (type-variable-label candidate)))
+            (boolean? (type-variable-numeric? candidate))
+            (or (not (type-variable-binding candidate))
+                (checker-type?
+                 (type-variable-binding candidate))))]
+      [(opaque-type? candidate)
+       (symbol? (opaque-type-name candidate))]
+      [else #f])))
+
+(define (fresh-signature-spec-list specs)
+  (for/list ([spec (in-list specs)]) spec))
+
+(define (type-signature-specs type environment)
+  (unless (checker-type? type)
+    (raise-argument-error 'type-signature-specs "checker type" type))
+  (unless (type-environment? environment)
+    (raise-argument-error
+     'type-signature-specs "type-environment?" environment))
+  (define resolved (resolve-type type))
+  (cond
+    [(int-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Int))]
+    [(float-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Float))]
+    [(bool-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Bool))]
+    [(string-type? resolved)
+     (append
+      (kernel-instance-signature-specs 'String)
+      (method-declarations->signature-specs
+       (string-class-type-methods
+        (type-environment-string-class environment))))]
+    [(symbol-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Symbol))]
+    [(mirror-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Mirror))]
+    [(signature-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-instance-signature-specs 'Signature))]
+    [(list-type? resolved)
+     (define element-datum
+       (type->datum (list-type-element resolved)))
+     (define substitution (hasheq 'T element-datum))
+     (define list-class (type-environment-ref environment 'List))
+     (append
+      (substitute-signature-specs
+       (kernel-instance-signature-specs 'List)
+       substitution)
+      (if (list-class-type? list-class)
+          (method-declarations->signature-specs
+           (list-class-type-methods list-class)
+           substitution)
+          '()))]
+    [(function-type? resolved)
+     (list
+      (make-call-signature-spec
+       (map type->datum (function-type-parameters resolved))
+       (type->datum (function-type-result resolved))))]
+    [(list-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'List))]
+    [(string-class-type? resolved) '()]
+    [(symbol-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'Symbol))]
+    [(mirror-class-type? resolved)
+     (fresh-signature-spec-list
+      (kernel-class-object-signature-specs 'Mirror))]
+    [(parameter-type? resolved)
+     (substitute-signature-specs
+      (kernel-instance-signature-specs 'Float)
+      (hasheq 'Float (parameter-type-name resolved)))]
+    [(or (type-variable? resolved)
+         (void-type? resolved)
+         (type-data-type? resolved)
+         (opaque-type? resolved))
+     '()]
+    [(instance-type? resolved)
+     (define class (instance-type-class resolved))
+     (define substitution
+       (make-hasheq
+        (map cons
+             (class-info-type-parameters class)
+             (map type->datum (instance-type-arguments resolved)))))
+     (append
+      (field-declarations->signature-specs
+       (class-info-fields class)
+       substitution)
+      (method-declarations->signature-specs
+       (class-info-methods class)
+       substitution))]
+    [(class-type? resolved)
+     (define class (class-type-class resolved))
+     (constructor-declarations->signature-specs
+      (class-info-constructors class)
+      (type->datum
+       (instance-type class (class-info-parameter-types class))))]
+    [(protocol-type? resolved)
+     (method-declarations->signature-specs
+      (protocol-type-signatures resolved))]
+    [(host-receiver-type? resolved)
+     (host-method-declarations->signature-specs
+      (host-interface-methods
+       (host-receiver-type-interface resolved)))]))
 
 (define (type-mismatch message left right)
   (if message
@@ -300,6 +489,9 @@
     [(and (list-class-type? resolved-left)
           (list-class-type? resolved-right))
      resolved-left]
+    [(and (string-class-type? resolved-left)
+          (string-class-type? resolved-right))
+     resolved-left]
     [(and (symbol-class-type? resolved-left)
           (symbol-class-type? resolved-right))
      resolved-left]
@@ -354,10 +546,82 @@
           (add1 (current-typecheck-program-depth))])
       (for/fold ([result VOID])
                 ([expression (in-list expressions)])
-        (type-of expression environment))))
+        (define root-type (type-of expression environment))
+        (materialize-expression-observation-at-root-end!)
+        root-type)))
   (when outermost?
     (check-protocol-conformance! environment))
   result)
+
+(define (typecheck-program/observe
+         expressions environment selected-expression)
+  (define observer
+    (expression-observer
+     selected-expression
+     (add1 (current-typecheck-program-depth))
+     #f
+     #f))
+  (parameterize ([current-expression-observer observer])
+    (typecheck-program expressions environment))
+  (cond
+    [(not selected-expression) #f]
+    [(expression-observer-answer observer)
+     (expression-observer-answer observer)]
+    [else
+     (error
+      'typecheck-program/observe
+      "successful program did not observe the selected expression")]))
+
+(define (typecheck-program/observe-selector-receiver
+         expressions environment target-send)
+  (let/ec escape
+    (define observer
+      (selector-receiver-observer
+       (send-expr-receiver target-send)
+       escape))
+    (parameterize ([current-selector-receiver-observer observer])
+      (typecheck-program expressions environment))
+    (error
+     'typecheck-program/observe-selector-receiver
+     "successful program did not observe the target send receiver")))
+
+(define (retain-expression-observation! expression type environment)
+  (define observer (current-expression-observer))
+  (when (and observer
+             (not (expression-observer-answer observer))
+             (eq? expression (expression-observer-target observer))
+             (not (current-legacy-deferred-generic-instantiation?)))
+    (set-expression-observer-retained!
+     observer
+     (retained-expression-type expression type environment))))
+
+(define (observe-selector-receiver! expression type environment)
+  (define observer (current-selector-receiver-observer))
+  (when (and observer
+             (eq? expression
+                  (selector-receiver-observer-target observer))
+             (not (current-legacy-deferred-generic-instantiation?)))
+    ((selector-receiver-observer-escape observer)
+     (selector-receiver-observation
+      (type-signature-specs type environment)))))
+
+(define (materialize-expression-observation-at-root-end!)
+  (define observer (current-expression-observer))
+  (when (and observer
+             (= (current-typecheck-program-depth)
+                (expression-observer-root-depth observer))
+             (expression-observer-retained observer)
+             (not (expression-observer-answer observer)))
+    (define retained (expression-observer-retained observer))
+    (define type (retained-expression-type-type retained))
+    (define environment
+      (retained-expression-type-environment retained))
+    (define answer
+      (expression-type-observation
+       (type->datum type)
+       (type-signature-specs type environment)))
+    (set-expression-observer-answer! observer answer)
+    (set-expression-observer-retained! observer #f)))
 
 (define (typecheck-load! expression environment)
   (define path (load-expr-resolved-path expression))
@@ -378,15 +642,15 @@
 (define (infer-expression expression environment expected)
   (define inferred
     (match expression
-      [(int-expr _) INT]
-      [(float-expr _) FLOAT]
-      [(bool-expr _) BOOL]
-      [(string-expr _) STRING]
-      [(variable-expr name)
+      [(int-expr _ _) INT]
+      [(float-expr _ _) FLOAT]
+      [(bool-expr _ _) BOOL]
+      [(string-expr _ _) STRING]
+      [(variable-expr name _)
        (type-environment-ref environment name)]
       [(? load-expr?)
        (typecheck-load! expression environment)]
-      [(check-expr left right _ _)
+      [(check-expr left right _ _ _)
        (define left-type
          (infer-expression left environment expected))
        (define right-type
@@ -396,19 +660,19 @@
         right-type
         "check operands must have the same type")
        right-type]
-      [(define-expr name value-expression)
+      [(define-expr name value-expression _)
        (define value-type
          (infer-expression value-expression environment #f))
        (type-environment-set! environment name value-type)
        VOID]
-      [(define-protocol-expr name signatures)
+      [(define-protocol-expr name signatures _)
        (define protocol (protocol-type name signatures))
        (type-environment-set! environment name protocol)
        (for ([signature (in-list signatures)])
          (check-method-types! signature environment (make-hasheq)))
        VOID]
       [(define-class-expr
-        name type-parameters protocol fields constructors methods)
+        name type-parameters protocol fields constructors methods _)
        (check-class-definition!
         name
         type-parameters
@@ -418,17 +682,19 @@
         methods
         environment)
        VOID]
-      [(define-methods-expr target methods)
+      [(define-methods-expr target methods _)
        (check-method-definitions! target methods environment)
        VOID]
-      [(fn-expr parameters body)
+      [(fn-expr parameters body _)
        (infer-function parameters body environment expected)]
-      [(case-expr scrutinee clauses else-body)
+      [(case-expr scrutinee clauses else-body _)
        (infer-case scrutinee clauses else-body environment expected)]
-      [(send-expr receiver selector arguments)
+      [(send-expr receiver selector arguments _ _)
        (infer-send receiver selector arguments environment expected)]))
   (when expected
     (unify-types! inferred expected))
+  (retain-expression-observation! expression inferred environment)
+  (observe-selector-receiver! expression inferred environment)
   inferred)
 
 (define (infer-function parameters body environment expected)
@@ -615,12 +881,29 @@
   (define method-substitution
     (extend-method-substitution substitution method #t))
   (check-method-types! method environment method-substitution)
-  (when check-body?
+  (when (or check-body?
+            (selected-expression-in-method-body? method))
     (check-method-body!
      (instance-type class (class-info-parameter-types class))
      method
      environment
      method-substitution)))
+
+(define (selected-expression-in-method-body? method)
+  (define expression-observer (current-expression-observer))
+  (define selector-observer (current-selector-receiver-observer))
+  (define targets
+    (filter
+     values
+     (list
+      (and expression-observer
+           (expression-observer-target expression-observer))
+      (and selector-observer
+           (selector-receiver-observer-target selector-observer)))))
+  (for/or ([target (in-list targets)])
+    (expression-contains-node?
+     (method-declaration-body method)
+     target)))
 
 (define (check-method-types! method environment substitution)
   (for ([parameter (in-list (method-declaration-parameters method))])
@@ -669,6 +952,19 @@
         method
         environment
         method-substitution))]
+    [(and (eq? target 'String) (string-class-type? target-type))
+     (define existing-methods (string-class-type-methods target-type))
+     ;; Match List: install every declaration before checking bodies so
+     ;; methods in one extension form may recurse and call one another.
+     (set-string-class-type-methods!
+      target-type
+      (append existing-methods methods))
+     (for ([method (in-list methods)])
+       (define method-substitution
+         (extend-method-substitution (make-hasheq) method #t))
+       (check-method-types! method environment method-substitution)
+       (check-method-body!
+        STRING method environment method-substitution))]
     [(class-type? target-type)
      (define class (class-type-class target-type))
      (define existing-methods (class-info-methods class))
@@ -1164,8 +1460,10 @@
         substitution))
      (when (and (pair? (class-info-type-parameters class))
                 (not (class-info-explicit-constructors? class)))
-       (check-method-body!
-        instance method environment substitution))
+       (parameterize
+           ([current-legacy-deferred-generic-instantiation? #t])
+         (check-method-body!
+          instance method environment substitution)))
      return-type]))
 
 (define (select-method-overload
@@ -1450,19 +1748,54 @@
   result-type)
 
 (define (infer-string-send selector arguments environment)
-  (unless (memq selector '(= append)) (unknown-message selector))
-  (unless (= (length arguments) 1)
-    (raise-type-error
-     "arity error for String ~a: expected 1 argument, got ~a"
+  (case selector
+    [(= append)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for String ~a: expected 1 argument, got ~a"
+        selector
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment STRING))
+     (unify-types!
+      argument-type
+      STRING
+      (format "String ~a expects a String argument" selector))
+     (if (eq? selector '=) BOOL STRING)]
+    [(len)
+     (unless (null? arguments)
+       (raise-type-error
+        "arity error for String len: expected 0 arguments, got ~a"
+        (length arguments)))
+     INT]
+    [(take)
+     (unless (= (length arguments) 1)
+       (raise-type-error
+        "arity error for String take: expected 1 argument, got ~a"
+        (length arguments)))
+     (define argument-type
+       (infer-expression (car arguments) environment INT))
+     (unify-types!
+      argument-type INT "String take expects an Int argument")
+     STRING]
+    [else
+     (infer-defined-string-method selector arguments environment)]))
+
+(define (infer-defined-string-method selector arguments environment)
+  (define string-class (type-environment-string-class environment))
+  (define selected
+    (select-method-overload
+     (string-class-type-methods string-class)
      selector
-     (length arguments)))
-  (define argument-type
-    (infer-expression (car arguments) environment STRING))
-  (unify-types!
-   argument-type
-   STRING
-   (format "String ~a expects a String argument" selector))
-  (if (eq? selector '=) BOOL STRING))
+     arguments
+     environment
+     (make-hasheq)
+     'String))
+  (define method (method-match-method selected))
+  (type-from-sexpr
+   (method-declaration-return-type method)
+   environment
+   (method-match-substitution selected)))
 
 (define (infer-symbol-class-send selector arguments environment)
   (unless (eq? selector 'intern) (unknown-message selector))
@@ -1582,3 +1915,15 @@
 ;; normal part of the checker's public API.
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
+
+;; Editor expression queries observe the real checker pass through this
+;; deliberately narrow internal bridge.
+(module* expression-query-observation #f
+  (provide (struct-out expression-type-observation)
+           typecheck-program/observe))
+
+;; Editor completion queries escape at the successful inference boundary for
+;; the exact receiver recovered by the private selector-site parser.
+(module* completion-query-observation #f
+  (provide (struct-out selector-receiver-observation)
+           typecheck-program/observe-selector-receiver))

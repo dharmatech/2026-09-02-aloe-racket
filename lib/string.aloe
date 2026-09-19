@@ -1,0 +1,4 @@
+(define-methods String
+  (methods
+    (starts-with? (prefix String) Bool
+      ((self take (prefix len)) = prefix))))

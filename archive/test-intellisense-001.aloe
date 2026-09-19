@@ -1,0 +1,7 @@
+
+(load "point.aloe")
+
+(Point new 1.2 2.3)
+
+((Point new 1.2 2.3) + (Point new 3.4 4.5))
+

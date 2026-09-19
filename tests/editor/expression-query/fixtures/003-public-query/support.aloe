@@ -1,0 +1,4 @@
+(define-class Loaded
+  (fields
+    (value Int))
+  (methods))

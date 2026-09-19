@@ -1,0 +1,129 @@
+(load "point.aloe")
+
+;; Aloe 0.1 — Boids target program
+
+(define-class Boid
+  (fields
+    (position (Point Float))
+    (velocity (Point Float)))
+  (methods
+    (in-view? (other Boid) Bool
+      (let ((to ((other position) - (self position)))
+            (hd (self velocity)))
+        (if (0.0 < (hd dot hd))
+            (0.0 < (hd dot to))
+            #t)))
+
+    (neighbors (flock (List Boid)) (r Float) (List Boid)
+      (flock fold (List empty)
+        (fn (neighbors other)
+          (let ((d2 ((self position) dist2 (other position))))
+            (cond ((d2 <= 0.0)           neighbors)
+                  ((d2 >= (r * r))       neighbors)
+                  ((self in-view? other) (neighbors cons other))
+                  (else neighbors))))))
+
+    (cohere (others (List Boid)) (Point Float)
+      (let ((origin (Point new 0.0 0.0)))
+        (if (others empty?)
+            origin
+            (((((others map (fn (other) (other position)))
+                fold origin
+                (fn (acc p) (acc + p)))
+               / ((others len) float))
+              - (self position))
+             * 0.01))))
+
+    (align (others (List Boid)) (Point Float)
+      (let ((origin (Point new 0.0 0.0)))
+        (if (others empty?)
+            origin
+            (((((others map (fn (other) (other velocity)))
+                fold origin
+                (fn (acc v) (acc + v)))
+               / ((others len) float))
+              - (self velocity))
+             * 0.05))))
+
+    (separate (flock (List Boid)) (Point Float)
+      (let ((origin (Point new 0.0 0.0)))
+        ((flock fold origin
+           (fn (acc other)
+             (let ((d2 ((self position) dist2 (other position))))
+               (acc +
+                 (cond ((d2 <= 0.0)  origin)
+                       ((d2 >= 25.0) origin)
+                       (else ((self position) - (other position))))))))
+         * 0.001)))
+
+    (advance (new-vel (Point Float)) Boid
+      (Boid new
+        ((self position) + new-vel)
+        new-vel))))
+
+(define-class Sim
+  (fields
+    (flock (List Boid)))
+  (methods
+    (step () Sim
+      (let ((bs       (self flock))
+            (cohere-r 50.0)
+            (align-r  50.0))
+
+        (Sim new
+          (bs map
+            (fn (b)
+              (let ((cn    (b neighbors bs cohere-r))
+                    (an    (b neighbors bs align-r))
+                    (separ (b separate bs)))
+                  (let ((new-vel
+                         ((((b velocity) + (b cohere cn))
+                           + (b align an))
+                          + separ)))
+                    (b advance new-vel))))))))))
+
+(define demo
+  (Sim new
+    (List of
+      (Boid new (Point new 0.0 0.0) (Point new 1.0 0.0))
+      (Boid new (Point new 1.0 1.0) (Point new 0.0 1.0))
+      (Boid new (Point new 2.0 0.0) (Point new 1.0 1.0)))))
+
+(demo step)
+(demo step)
+
+;;
+
+;; (load "examples/point.aloe")
+
+(define p0 (Point new 0.0 0.0))
+(define p1 (Point new 1.0 2.0))
+
+
+
+(p0 dist2 p1)
+
+(p0 + p1)
+
+
+
+;; (load "examples/boids.aloe")
+
+(define ls (demo flock))
+
+(ls empty?)
+
+(ls len)
+
+
+(define ls-a (List of 10 20 30 40))
+
+(ls-a map (fn (x) (x + 1)))
+
+;; (List of "abc" "bcd" 123)
+
+;; ((List of 10 20 30)
+
+((List of 10 20 30) cons 40)
+
+(123 >= 100)
