@@ -37,15 +37,18 @@ conversation.
 | 4 | LSP adapter | [`lsp/`](lsp/) | **Implemented and reviewed.** editor-lsp 000–009. | 3 |
 | 5 | VS Code client | [`vscode/`](vscode/) | **Implemented and reviewed.** editor-vscode 000 (hover). | 4 |
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
+| 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
 
-Projects 1–6 are implemented and reviewed. Project 5 is the VS Code hover
+Projects 1–7 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
 implemented by editor-completion 000–002 for the public Racket query and 003
-for its LSP integration.
+for its LSP integration. Project 7 is a client skin: lexical coloring of
+`.aloe` buffers. It does not add an LSP method or a Racket query.
 
 Incomplete-buffer recovery is **in** project 6's first spec (one named
-rule, tested). It remains out of hover. Highlighting, wrap-form, and
-top-level name completion stay off this map.
+rule, tested). It remains out of hover. Wrap-form and top-level name
+completion stay off this map. Semantic tokens stay off this map;
+project 7 is TextMate plus language configuration only.
 
 ## Not in this map
 
@@ -57,6 +60,7 @@ These are easy to smuggle in as "editor prerequisites." They are not.
 - Macros / `syntax-rules` / `syntax-case`
 - Wrap-the-preceding-expression as a VS Code command
 - Rename, go-to-definition, semantic tokens, formatting
+- Tree-sitter, GitHub Linguist, or a second editor's grammar
 - Embedding Gel in VS Code
 - Global checkpoints
 
@@ -72,6 +76,8 @@ because the editor learned a new keyword.
 | Signatures of a type | Tests against `Mirror` rows; REPL / Gel may reuse later |
 | Expression query | A Racket function and, if the spec wants it, a CLI |
 | Completion | Snippet + cursor unit tests; LSP then wraps the same function |
+| Syntax highlighting | Grammar-token tests. VS Code is the human consumer; there is no Racket query. |
 
 If a proposed slice has no consumer besides "we will need this for
-LSP," it is too early.
+LSP," it is too early. Project 7 is a client skin, not an LSP feature,
+so that rule does not block it.

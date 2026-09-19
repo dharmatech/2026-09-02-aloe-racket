@@ -29,11 +29,24 @@ test('manifest has the exact extension identity and Aloe contribution', () => {
   assert.equal(manifest.type, undefined);
   assert.deepEqual(manifest.activationEvents, ['onLanguage:aloe']);
   assert.deepEqual(manifest.contributes.languages, [
-    { id: 'aloe', aliases: ['Aloe'], extensions: ['.aloe'] }
+    {
+      id: 'aloe',
+      aliases: ['Aloe'],
+      extensions: ['.aloe'],
+      configuration: './language-configuration.json'
+    }
+  ]);
+  assert.deepEqual(manifest.contributes.grammars, [
+    {
+      language: 'aloe',
+      scopeName: 'source.aloe',
+      path: './syntaxes/aloe.tmLanguage.json'
+    }
   ]);
 
   assert.deepEqual(Object.keys(manifest.contributes).sort(), [
     'configuration',
+    'grammars',
     'languages'
   ]);
   assert.deepEqual(
@@ -56,7 +69,10 @@ test('manifest has one pinned runtime dependency and only a Node test script', (
 
   assert.deepEqual(manifest.dependencies, { 'vscode-languageclient': '9.0.1' });
   assert.equal(manifest.dependencies.vscode, undefined);
-  assert.equal(manifest.devDependencies, undefined);
+  assert.deepEqual(manifest.devDependencies, {
+    'vscode-oniguruma': '2.0.1',
+    'vscode-textmate': '9.3.2'
+  });
   assert.deepEqual(manifest.scripts, { test: 'node --test' });
   assert.equal(manifest.scripts.build, undefined);
   assert.equal(manifest.scripts['vscode:prepublish'], undefined);
@@ -70,9 +86,21 @@ test('lockfile pins the root and language client without test or build tooling',
   assert.equal(root.name, manifest.name);
   assert.equal(root.version, manifest.version);
   assert.deepEqual(root.dependencies, { 'vscode-languageclient': '9.0.1' });
+  assert.deepEqual(root.devDependencies, {
+    'vscode-oniguruma': '2.0.1',
+    'vscode-textmate': '9.3.2'
+  });
   assert.equal(
     lock.packages['node_modules/vscode-languageclient'].version,
     '9.0.1'
+  );
+  assert.equal(
+    lock.packages['node_modules/vscode-oniguruma'].version,
+    '2.0.1'
+  );
+  assert.equal(
+    lock.packages['node_modules/vscode-textmate'].version,
+    '9.3.2'
   );
 
   const packageNames = Object.keys(lock.packages);
