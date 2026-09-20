@@ -145,6 +145,8 @@
             (,editor handle-key "left")))])
     (check-equal? (driver-type state datum) 'AloemacsEditor))
 
+  (check-equal? (driver-type state `(,editor frame 8 4)) 'String)
+
   (for ([datum
          (in-list
           `((,editor insert)
@@ -161,7 +163,10 @@
             (,editor handle-key 1)
             (,editor handle-key "left" "right")
             (,editor frame)
-            (,editor frame 80 24)))])
+            (,editor frame 8)
+            (,editor frame 8 4 2)
+            (,editor frame "8" 4)
+            (,editor frame 8 #t)))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

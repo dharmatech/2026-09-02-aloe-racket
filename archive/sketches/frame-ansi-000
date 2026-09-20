@@ -1,0 +1,33 @@
+
+
+    (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
+      ("\u001b[?25l" append
+        ("\u001b[2J" append
+          ("\u001b[H" append
+            (body append
+              ("\u001b[" append
+                ((cursor-row text) append
+                  (";" append
+                    ((cursor-column text) append
+                      ("H" append "\u001b[?25h"))))))))))
+
+
+
+    (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
+      ("\u001b[?25l" append ("\u001b[2J" append ("\u001b[H" append (body append
+              ("\u001b[" append
+                ((cursor-row text) append
+                  (";" append
+                    ((cursor-column text) append
+                      ("H" append "\u001b[?25h"))))))))))                      
+
+
+
+
+    (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
+      (let ((ls (List of "\u001b[?25l" "\u001b[2J" "\u001b[H" body "\u001b["
+                         (cursor-row text) ";"
+                         (cursor-column text) 
+                         "H"
+                         "\u001b[?25h")))
+        (ls concat)

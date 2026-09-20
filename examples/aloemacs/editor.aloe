@@ -26,6 +26,68 @@
             length
             column)))
 
+    (max-zero (value Int) Int
+      (if (value < 0)
+          0
+          value))
+
+    (source-line (lines (List String)) (index Int) String
+      (if (lines empty?)
+          ""
+          (if (index = 0)
+              (lines first)
+              (self source-line (lines rest) (index - 1)))))
+
+    (render-rows
+      (lines (List String))
+      (source-index Int)
+      (left Int)
+      (columns Int)
+      (remaining Int)
+      String
+      (let ((row
+             (((self source-line lines source-index) drop left)
+              take columns)))
+        (if (remaining = 1)
+            row
+            ((row append "\r\n") append
+              (self render-rows
+                lines
+                (source-index + 1)
+                left
+                columns
+                (remaining - 1))))))
+
+    (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
+      ("\u001b[?25l" append
+        ("\u001b[2J" append
+          ("\u001b[H" append
+            (body append
+              ("\u001b[" append
+                ((cursor-row text) append
+                  (";" append
+                    ((cursor-column text) append
+                      ("H" append "\u001b[?25h"))))))))))
+
+    (frame (columns Int) (rows Int) String
+      (let ((point (self point)))
+        (let ((top
+               (self max-zero
+                 ((point line) - (rows - 1))))
+              (left
+               (self max-zero
+                 ((point column) - (columns - 1)))))
+          (let ((body
+                 (self render-rows
+                   ((self text) lines)
+                   top
+                   left
+                   columns
+                   rows))
+                (cursor-row (((point line) - top) + 1))
+                (cursor-column (((point column) - left) + 1)))
+            (self frame-ansi body cursor-row cursor-column)))))
+
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
         (None ()

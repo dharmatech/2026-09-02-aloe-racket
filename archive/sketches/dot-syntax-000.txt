@@ -1,0 +1,14 @@
+
+
+(((obj m0 1 2 3) m1 2 3 4) m2 3 4 5)        ;; ALOE
+
+obj.m0(1, 2, 3).m1(2, 3, 4).m2(3, 4, 5)     ;; C#
+
+
+
+(obj m0 1 2 3).(m2 2 3 4).(m2 3 4 5)     ;; method chaining
+
+obj.m0(1 2 3).m1(2 3 4).m2(3 4 5)        ;; alternatively
+
+(obj m0 1 2 3).x                         ;; field access
+(obj m0 1 2 3).y
