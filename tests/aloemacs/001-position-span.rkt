@@ -50,9 +50,9 @@
    "#<List \"a\" \"b\">")
 
   (check-true (void? (load-text! state)))
-  (for ([name (in-list '(Option Position Span))])
+  (for ([name (in-list '(Option Position Span Text))])
     (check-true (bound-in-driver? state name)))
-  (for ([name (in-list '(Some None Text EditResult))])
+  (for ([name (in-list '(Some None EditResult))])
     (check-true (unbound-in-driver? state name)))
 
   (define fresh-state (make-driver))
@@ -197,10 +197,11 @@
   (check-position state `(,reversed start) 5 6)
   (check-position state `(,reversed end) -1 -2))
 
-(test-case "001 exposes no later text or edit surface"
+(test-case "001 values expose no later edit surface"
   (define state (make-driver))
   (load-text! state)
-  (for ([name (in-list '(Text EditResult))])
+  (check-true (bound-in-driver? state 'Text))
+  (for ([name (in-list '(EditResult))])
     (check-true (unbound-in-driver? state name))
     (check-exn
      (regexp (format "unbound symbol: ~a" name))

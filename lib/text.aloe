@@ -41,3 +41,42 @@
   (methods
     (empty? () Bool
       ((self start) = (self end)))))
+
+(define-class Text
+  (constructors
+    (from-string (fields (source String))))
+  (methods
+    (to-string () String
+      (self case
+        (from-string (stored-source) stored-source)))
+
+    (lines () (List String)
+      ((self to-string) split-lines))
+
+    (valid-position? (position Position) Bool
+      (if ((position line) < 0)
+          #f
+          (if ((position column) < 0)
+              #f
+              (let ((lines (self lines)))
+                (if ((position line) >= (lines len))
+                    #f
+                    (let ((selected
+                           (lines fold
+                             (Position new 0 0)
+                             (fn (cursor current-line)
+                               (if ((cursor line) = (position line))
+                                   (Position new
+                                     ((cursor line) + 1)
+                                     (current-line len))
+                                   (Position new
+                                     ((cursor line) + 1)
+                                     (cursor column)))))))
+                      ((position column) <= (selected column))))))))
+
+    (valid-span? (span Span) Bool
+      (if (self valid-position? (span start))
+          (if (self valid-position? (span end))
+              ((span start) before-or-equal? (span end))
+              #f)
+          #f))))
