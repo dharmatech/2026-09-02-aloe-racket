@@ -235,8 +235,15 @@ runner binding as the equivalent of:
       (Position new 0 0)
       #f)
     (Fs new fs-host)
-    (Option None)))
+    (if #t
+        (Option None)
+        (Option Some (Path new "/typed-none")))))
 ```
+
+The `if` is the typed-`None` form: its unselected `Some` branch determines
+`T = Path`. A bare `(Option None)` in this `AloemacsSession` constructor is
+rejected because `T` remains unknown; the outer generic construction does not
+push `(Option Path)` onto that argument before `H` is known.
 
 Thus loading `main.aloe` requires `fs-host` to have been explicitly injected.
 It still requires no `term` binding. The zero-argument program is empty and

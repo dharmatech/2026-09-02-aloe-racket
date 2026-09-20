@@ -483,7 +483,9 @@ Then run one checked expression sequence by hand:
         (Position new 0 0)
         #f)
       (Fs new fs-host)
-      (Option None))))
+      (if #t
+          (Option None)
+          (Option Some (Path new "/typed-none"))))))
 (driver-eval!
  state
  '(define visited
@@ -512,6 +514,12 @@ Expected:
 ```racket
 '("!old" "/cwd/a.txt" "!old")
 ```
+
+The `if` in the `base` construction is an intentional typed `None`: its
+unselected `Some` branch determines `T = Path`. A bare `(Option None)` as this
+`AloemacsSession` constructor payload is rejected because `T` remains unknown;
+the outer generic construction does not push `(Option Path)` onto that
+argument before `H` is known.
 
 ## Acceptance
 

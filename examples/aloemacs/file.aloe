@@ -1,0 +1,99 @@
+(load "editor.aloe")
+(load "../../lib/fs.aloe")
+
+(define-class (AloemacsSession H)
+  (fields
+    (editor AloemacsEditor)
+    (fs (Fs H))
+    (path (Option Path)))
+  (methods
+    (with-editor (editor AloemacsEditor) (AloemacsSession H)
+      (AloemacsSession new
+        editor
+        (self fs)
+        (self path)))
+
+    (unchanged () (AloemacsSession H)
+      (AloemacsSession new
+        (self editor)
+        (self fs)
+        (self path)))
+
+    (visited (contents String) (path Path) (AloemacsSession H)
+      (AloemacsSession new
+        (AloemacsEditor new
+          (Text from-string contents)
+          (Position new 0 0)
+          #f)
+        (self fs)
+        (Option Some path)))
+
+    (text () Text
+      ((self editor) text))
+
+    (point () Position
+      ((self editor) point))
+
+    (quit () Bool
+      ((self editor) quit))
+
+    (insert (string String) (AloemacsSession H)
+      (self with-editor ((self editor) insert string)))
+
+    (newline () (AloemacsSession H)
+      (self with-editor ((self editor) newline)))
+
+    (backward-delete () (AloemacsSession H)
+      (self with-editor ((self editor) backward-delete)))
+
+    (move-left () (AloemacsSession H)
+      (self with-editor ((self editor) move-left)))
+
+    (move-right () (AloemacsSession H)
+      (self with-editor ((self editor) move-right)))
+
+    (move-up () (AloemacsSession H)
+      (self with-editor ((self editor) move-up)))
+
+    (move-down () (AloemacsSession H)
+      (self with-editor ((self editor) move-down)))
+
+    (request-quit () (AloemacsSession H)
+      (self with-editor ((self editor) request-quit)))
+
+    (frame (columns Int) (rows Int) String
+      ((self editor) frame columns rows))
+
+    (visit (path Path) (Option (AloemacsSession H))
+      (let ((resolved ((self fs) path (path text))))
+        (((self fs) inspect resolved) case
+          (None ()
+            (Option Some (self visited "" resolved)))
+          (Some (entry)
+            (entry case
+              (RegularFile (file)
+                (((self fs) read resolved) case
+                  (None () (Option None))
+                  (Some (contents)
+                    (Option Some (self visited contents resolved)))))
+              (Directory (directory) (Option None))
+              (SymbolicLink (link) (Option None))
+              (Other (other kind) (Option None)))))))
+
+    (save () (Option (AloemacsSession H))
+      ((self path) case
+        (None () (Option None))
+        (Some (path)
+          (((self fs) write path ((self text) to-string)) case
+            (None () (Option None))
+            (Some (contents) (Option Some (self unchanged)))))))
+
+    (handle-key (key String) (AloemacsSession H)
+      (cond
+        ((self quit) (self unchanged))
+        ((key = "save")
+         ((self save) case
+           (None () (self unchanged))
+           (Some (session) session)))
+        (else
+         (self with-editor ((self editor) handle-key key)))))))
