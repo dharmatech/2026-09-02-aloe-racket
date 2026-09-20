@@ -49,6 +49,11 @@ Decided: host key input uses the `tui-term` package, not `#%terminal` directly
 and not a project C FFI. Term is Aloe's first optional typed host capability:
 `(term read-key)` returns a `String`, and `(term write-line string)` uses
 Racket `display`, writes `"\r\n"`, flushes, and returns the string.
+`(term write string) : String` displays exactly the string with no appended
+newline or delimiter, flushes, and returns the string. `(term columns)` and
+`(term rows)` return positive `Int` dimensions from a fresh whole-pair query;
+invalid results or ordinary discovery failures replace the whole pair with
+the 80-column by 24-row fallback.
 
 Both terminal runners create a checked driver and explicitly inject the
 production Term receiver into its runtime and checker environments before

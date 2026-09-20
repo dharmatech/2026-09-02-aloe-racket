@@ -57,7 +57,13 @@
       [else
        (loop)])))
 
-(struct term-state (output reader))
+(define fallback-columns 80)
+(define fallback-rows 24)
+
+(define (default-size-reader)
+  (values fallback-columns fallback-rows))
+
+(struct term-state (output reader size-reader))
 
 (define (term-read-key state)
   ((term-state-reader state)))
@@ -69,18 +75,56 @@
   (flush-output output)
   value)
 
+(define (term-write state value)
+  (define output (term-state-output state))
+  (display value output)
+  (flush-output output)
+  value)
+
+(define (normalized-term-size state)
+  (define size-values
+    (with-handlers ([exn:fail? (lambda (_exception) #f)])
+      (call-with-values (term-state-size-reader state) list)))
+  (cond
+    [(and size-values
+          (= (length size-values) 2)
+          (andmap (lambda (value)
+                    (and (exact-integer? value) (positive? value)))
+                  size-values))
+     (apply values size-values)]
+    [else
+     (values fallback-columns fallback-rows)]))
+
+(define (term-columns state)
+  (define-values (columns _rows) (normalized-term-size state))
+  columns)
+
+(define (term-rows state)
+  (define-values (_columns rows) (normalized-term-size state))
+  rows)
+
 (define term-interface
   (make-host-interface
    'Term
    (list
     (make-host-method 'read-key '() 'String term-read-key)
     (make-host-method
-     'write-line '(String) 'String term-write-line))))
+     'write-line '(String) 'String term-write-line)
+    (make-host-method 'write '(String) 'String term-write)
+    (make-host-method 'columns '() 'Int term-columns)
+    (make-host-method 'rows '() 'Int term-rows))))
 
 (define (make-term-receiver [output (current-output-port)]
-                            [reader read-next-key])
-  (make-host-receiver term-interface (term-state output reader)))
+                            [reader read-next-key]
+                            [size-reader default-size-reader])
+  (make-host-receiver
+   term-interface
+   (term-state output reader size-reader)))
 
 (define (call-with-tty-term-receiver procedure)
   (with-term (make-tty-term)
-    (procedure (make-term-receiver))))
+    (procedure
+     (make-term-receiver
+      (current-output-port)
+      read-next-key
+      current-term-size))))

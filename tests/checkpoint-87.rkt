@@ -22,8 +22,16 @@
     (parse-datum datum)
     (driver-type-environment state))))
 
+(define (aloe-list-ref-expression list-expression index)
+  (define tail-expression
+    (for/fold ([expression list-expression])
+              ([_step (in-range index)])
+      `(,expression rest)))
+  `(,tail-expression first))
+
 (test-case "Term reflects its exact ordered descriptor without effects"
   (define reader-calls 0)
+  (define size-calls 0)
   (define output (open-output-string))
   (define state (make-driver))
   (driver-inject-host!
@@ -33,7 +41,10 @@
     output
     (lambda ()
       (set! reader-calls (add1 reader-calls))
-      "q")))
+      "q")
+    (lambda ()
+      (set! size-calls (add1 size-calls))
+      (values 132 43))))
   (driver-eval! state '(define term-mirror (Mirror of term)))
   (driver-eval! state '(define term-rows (term-mirror signatures)))
 
@@ -45,42 +56,44 @@
    (driver-type-datum state '(term-mirror signatures))
    '(List Signature))
 
-  (check-equal? (driver-eval! state '((term-mirror messages) len)) 2)
-  (check-equal?
-   (driver-eval! state '(((term-mirror messages) first) name))
-   "read-key")
-  (check-equal?
-   (driver-eval! state '((((term-mirror messages) rest) first) name))
-   "write-line")
-  (check-equal? (driver-eval! state '(term-rows len)) 2)
-  (check-equal?
-   (driver-eval! state '(((term-rows first) selector) name))
-   "read-key")
-  (check-equal?
-   (driver-eval!
-    state
-    '((((term-rows rest) first) selector) name))
-   "write-line")
-  (check-equal?
-   (driver-eval! state '(((term-rows first) params) len))
-   0)
-  (check-equal?
-   (aloe-value->string
-    (driver-eval! state '((term-rows first) return)))
-   "#<Symbol String>")
-  (check-equal?
-   (aloe-value->string
-    (driver-eval!
-     state
-     '((((term-rows rest) first) params) first)))
-   "#<Symbol String>")
-  (check-equal?
-   (aloe-value->string
-    (driver-eval!
-     state
-     '(((term-rows rest) first) return)))
-   "#<Symbol String>")
+  (define expected-rows
+    '(("read-key" () "String")
+      ("write-line" ("String") "String")
+      ("write" ("String") "String")
+      ("columns" () "Int")
+      ("rows" () "Int")))
+  (check-equal? (driver-eval! state '((term-mirror messages) len)) 5)
+  (check-equal? (driver-eval! state '(term-rows len)) 5)
+  (for ([expected (in-list expected-rows)]
+        [index (in-naturals)])
+    (define message-expression
+      (aloe-list-ref-expression '(term-mirror messages) index))
+    (define row-expression
+      (aloe-list-ref-expression 'term-rows index))
+    (define params-expression `(,row-expression params))
+    (check-equal?
+     (driver-eval! state `(,message-expression name))
+     (car expected))
+    (check-equal?
+     (driver-eval! state `((,row-expression selector) name))
+     (car expected))
+    (check-equal?
+     (driver-eval! state `(,params-expression len))
+     (length (cadr expected)))
+    (for ([parameter (in-list (cadr expected))]
+          [parameter-index (in-naturals)])
+      (check-equal?
+       (aloe-value->string
+        (driver-eval!
+         state
+         (aloe-list-ref-expression params-expression parameter-index)))
+       (format "#<Symbol ~a>" parameter)))
+    (check-equal?
+     (aloe-value->string
+      (driver-eval! state `(,row-expression return)))
+     (format "#<Symbol ~a>" (caddr expected))))
   (check-equal? reader-calls 0)
+  (check-equal? size-calls 0)
   (check-equal? (get-output-string output) ""))
 
 (test-case "all scalar declaration tokens reify from one interface"

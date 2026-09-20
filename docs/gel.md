@@ -185,9 +185,11 @@ work.
 
 - `tui-term` remains an optional dependency for physical terminal use. Core
   Aloe, Boids, and MPL do not load it.
-- Term is the first optional typed capability. One ordered descriptor defines
-  `read-key : () -> String` and `write-line : (String) -> String` for both the
-  evaluator and checker.
+- Term is the first optional typed capability. One ordered descriptor defines,
+  in order, `read-key : () -> String`, `write-line : (String) -> String`,
+  `write : (String) -> String`, `columns : () -> Int`, and
+  `rows : () -> Int` for the evaluator, checker, and reflection. Gel still
+  sends only `read-key` and `write-line`.
 - `host/racket/term-run.rkt` and `host/racket/gel-run.rkt` each create one
   checked driver, explicitly inject Term, and use that driver for loading and
   evaluation.
