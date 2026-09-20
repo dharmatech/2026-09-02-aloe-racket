@@ -56,11 +56,12 @@ design or implement a later layer in an earlier layer's conversation.
 |---|---|---|---|---|
 | 1 | Text | [`text/`](text/) | **Implemented.** Spec and aloemacs-text 000–003. | String messages the tests force |
 | 2 | Term | [`term/`](term/) | **Implemented.** Spec and aloemacs-term 000. | Existing Term capability |
-| 3 | Loop | [`loop/`](loop/) | **Charter issued.** Designer writes `spec.md`. | 1, 2 |
-| 4 | File | `file/` | Not chartered. | 3, existing Fs |
+| 3 | Loop | [`loop/`](loop/) | **Implemented.** Spec and aloemacs-loop 000–003. | 1, 2 |
+| 4 | File | `file/` | Not chartered. Next. | 3, existing Fs |
 
-Layers 1 and 2 do not depend on each other. Text no longer blocks a
-Term charter. Do not design Term inside a Text conversation.
+Text, Term, and Loop are done. Do not design File inside a Loop
+conversation. The first running program is `examples/aloemacs/` plus
+`host/racket/aloemacs-run.rkt`.
 
 ## Not in this map
 
