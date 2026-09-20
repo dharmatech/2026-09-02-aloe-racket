@@ -1,0 +1,7 @@
+(load "editor.aloe")
+
+(define aloemacs-editor
+  (AloemacsEditor new
+    (Text from-string "")
+    (Position new 0 0)
+    #f))

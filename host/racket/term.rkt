@@ -24,6 +24,15 @@
       (eq? key 'esc)
       (eqv? key #\u1b)))
 
+(define (backspace-key? message)
+  (define key (tkeymsg-key message))
+  (or (eq? key 'backspace)
+      (eqv? key #\backspace)
+      (eqv? key #\rubout)
+      (and (eqv? key #\h)
+           (equal? (tkeymsg-mods message) '(ctrl))
+           (not (tkeymsg-char message)))))
+
 (define (printable-character? character)
   (or (char-graphic? character)
       (char=? character #\space)))
@@ -36,6 +45,7 @@
   (cond
     [(return-key? key) "return"]
     [(escape-key? key) "escape"]
+    [(backspace-key? message) "backspace"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))

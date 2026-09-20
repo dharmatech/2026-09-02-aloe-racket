@@ -31,3 +31,5 @@
                          "H"
                          "\u001b[?25h")))
         (ls concat)
+
+;; See C# concat method (LINQ)
