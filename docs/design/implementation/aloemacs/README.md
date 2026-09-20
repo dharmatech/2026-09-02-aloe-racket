@@ -54,14 +54,13 @@ design or implement a later layer in an earlier layer's conversation.
 
 | # | Layer | Path | This conversation | Depends on |
 |---|---|---|---|---|
-| 1 | Text | [`text/`](text/) | **Charter issued.** Designer writes `spec.md`. | String messages the tests force |
-| 2 | Term | `term/` | Not chartered. | Existing Term capability |
+| 1 | Text | [`text/`](text/) | **Implemented.** Spec and aloemacs-text 000–003. | String messages the tests force |
+| 2 | Term | `term/` | Not chartered. Next. | Existing Term capability |
 | 3 | Loop | `loop/` | Not chartered. | 1, 2 |
 | 4 | File | `file/` | Not chartered. | 3, existing Fs |
 
-Layers 1 and 2 do not depend on each other. Charter Term only after
-the Text spec exists, or in a separate high-level pass — not inside
-the Text designer conversation.
+Layers 1 and 2 do not depend on each other. Text no longer blocks a
+Term charter. Do not design Term inside a Text conversation.
 
 ## Not in this map
 
