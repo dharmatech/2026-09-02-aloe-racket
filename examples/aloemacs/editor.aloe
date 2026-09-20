@@ -241,28 +241,22 @@
         #t))
 
     (handle-key (key String) AloemacsEditor
-      (if (self quit)
-          (AloemacsEditor new
-            (self text)
-            (self point)
-            (self quit))
-          (if (key = "return")
-              (self newline)
-              (if (key = "backspace")
-                  (self backward-delete)
-                  (if (key = "left")
-                      (self move-left)
-                      (if (key = "right")
-                          (self move-right)
-                          (if (key = "up")
-                              (self move-up)
-                              (if (key = "down")
-                                  (self move-down)
-                                  (if (key = "escape")
-                                      (self request-quit)
-                                      (if ((key len) = 1)
-                                          (self insert key)
-                                          (AloemacsEditor new
-                                            (self text)
-                                            (self point)
-                                            (self quit))))))))))))))
+      (cond
+        ((self quit)
+         (AloemacsEditor new
+           (self text)
+           (self point)
+           (self quit)))
+        ((key = "return") (self newline))
+        ((key = "backspace") (self backward-delete))
+        ((key = "left") (self move-left))
+        ((key = "right") (self move-right))
+        ((key = "up") (self move-up))
+        ((key = "down") (self move-down))
+        ((key = "escape") (self request-quit))
+        (((key len) = 1) (self insert key))
+        (else
+         (AloemacsEditor new
+           (self text)
+           (self point)
+           (self quit)))))))
