@@ -80,3 +80,58 @@
               ((span start) before-or-equal? (span end))
               #f)
           #f))))
+
+(define-class EditResult
+  (fields
+    (text Text)
+    (position Position))
+  (methods))
+
+(define-methods Text
+  (methods
+    (replace (span Span) (string String) (Option EditResult)
+      (if (self valid-span? span)
+          (let ((old (self to-string))
+                (lines (self lines))
+                (start (span start))
+                (end (span end)))
+            (let ((start-prefix
+                   (lines fold
+                     (Position new 0 0)
+                     (fn (cursor current-line)
+                       (if ((cursor line) < (start line))
+                           (Position new
+                             ((cursor line) + 1)
+                             (((cursor column) + (current-line len)) + 1))
+                           (Position new
+                             ((cursor line) + 1)
+                             (cursor column))))))
+                  (end-prefix
+                   (lines fold
+                     (Position new 0 0)
+                     (fn (cursor current-line)
+                       (if ((cursor line) < (end line))
+                           (Position new
+                             ((cursor line) + 1)
+                             (((cursor column) + (current-line len)) + 1))
+                           (Position new
+                             ((cursor line) + 1)
+                             (cursor column)))))))
+              (let ((a ((start-prefix column) + (start column)))
+                    (b ((end-prefix column) + (end column))))
+                (let ((new-source
+                       (((old take a) append string) append (old drop b))))
+                  (Option Some
+                    (EditResult new
+                      (Text from-string new-source)
+                      (start after string)))))))
+          (Option None)))
+
+    (insert (position Position) (string String) (Option EditResult)
+      (self replace (Span new position position) string))
+
+    (delete (span Span) (Option EditResult)
+      (self replace span ""))
+
+    (newline (position Position) (Option EditResult)
+      (self insert position "\n"))))

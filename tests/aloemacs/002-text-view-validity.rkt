@@ -67,9 +67,9 @@
     (check-true (unbound-in-driver? state name)))
 
   (check-true (void? (load-text! state)))
-  (for ([name (in-list '(Option Position Span Text))])
+  (for ([name (in-list '(Option Position Span Text EditResult))])
     (check-true (bound-in-driver? state name)))
-  (for ([name (in-list '(Some None EditResult from-string))])
+  (for ([name (in-list '(Some None from-string))])
     (check-true (unbound-in-driver? state name)))
 
   (check-true
@@ -256,25 +256,16 @@
   (check-position state '(span-002 start) 0 2)
   (check-position state '(span-002 end) 1 0))
 
-(test-case "002 exposes no edit, offset, setter, or normalization surface"
+(test-case "Text keeps source, offset helpers, setters, and normalization private"
   (define state (make-driver))
   (load-text! state)
-  (check-true (unbound-in-driver? state 'EditResult))
-  (check-exn #rx"unbound symbol: EditResult"
-             (lambda () (driver-eval! state 'EditResult)))
-
   (for ([datum
          (in-list
-          '(((Text from-string "abc") replace
-             (Span new (Position new 0 0) (Position new 0 1)) "x")
-            ((Text from-string "abc") insert (Position new 0 0) "x")
-            ((Text from-string "abc") delete
-             (Span new (Position new 0 0) (Position new 0 1)))
-            ((Text from-string "abc") newline (Position new 0 0))
-            ((Text from-string "abc") offset (Position new 0 0))
+          '(((Text from-string "abc") offset (Position new 0 0))
             ((Text from-string "abc") line-at 0)
             ((Text from-string "abc") source)
             ((Text from-string "abc") set-source "changed")
+            ((Text from-string "abc") set-lines (List of "changed"))
             ((Text from-string "abc") normalize)))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
