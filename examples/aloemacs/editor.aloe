@@ -1,0 +1,206 @@
+(load "../../lib/text.aloe")
+
+(define-class AloemacsEditor
+  (fields
+    (text Text)
+    (point Position)
+    (quit Bool))
+  (methods
+    (line-length (line Int) Int
+      (let ((selected
+             (((self text) lines) fold
+               (Position new 0 0)
+               (fn (cursor current-line)
+                 (if ((cursor line) = line)
+                     (Position new
+                       ((cursor line) + 1)
+                       (current-line len))
+                     (Position new
+                       ((cursor line) + 1)
+                       (cursor column)))))))
+        (selected column)))
+
+    (clamp-column (column Int) (line Int) Int
+      (let ((length (self line-length line)))
+        (if (column > length)
+            length
+            column)))
+
+    (insert (string String) AloemacsEditor
+      (((self text) insert (self point) string) case
+        (None ()
+          (AloemacsEditor new
+            (self text)
+            (self point)
+            (self quit)))
+        (Some (result)
+          (AloemacsEditor new
+            (result text)
+            (result position)
+            (self quit)))))
+
+    (newline () AloemacsEditor
+      (((self text) newline (self point)) case
+        (None ()
+          (AloemacsEditor new
+            (self text)
+            (self point)
+            (self quit)))
+        (Some (result)
+          (AloemacsEditor new
+            (result text)
+            (result position)
+            (self quit)))))
+
+    (backward-delete () AloemacsEditor
+      (let ((point (self point)))
+        (if ((point column) > 0)
+            (let ((span
+                   (Span new
+                     (Position new
+                       (point line)
+                       ((point column) - 1))
+                     point)))
+              (((self text) delete span) case
+                (None ()
+                  (AloemacsEditor new
+                    (self text)
+                    point
+                    (self quit)))
+                (Some (result)
+                  (AloemacsEditor new
+                    (result text)
+                    (result position)
+                    (self quit)))))
+            (if ((point line) > 0)
+                (let ((span
+                       (Span new
+                         (Position new
+                           ((point line) - 1)
+                           (self line-length ((point line) - 1)))
+                         point)))
+                  (((self text) delete span) case
+                    (None ()
+                      (AloemacsEditor new
+                        (self text)
+                        point
+                        (self quit)))
+                    (Some (result)
+                      (AloemacsEditor new
+                        (result text)
+                        (result position)
+                        (self quit)))))
+                (AloemacsEditor new
+                  (self text)
+                  point
+                  (self quit))))))
+
+    (move-left () AloemacsEditor
+      (let ((point (self point)))
+        (if ((point column) > 0)
+            (AloemacsEditor new
+              (self text)
+              (Position new
+                (point line)
+                ((point column) - 1))
+              (self quit))
+            (if ((point line) > 0)
+                (AloemacsEditor new
+                  (self text)
+                  (Position new
+                    ((point line) - 1)
+                    (self line-length ((point line) - 1)))
+                  (self quit))
+                (AloemacsEditor new
+                  (self text)
+                  point
+                  (self quit))))))
+
+    (move-right () AloemacsEditor
+      (let ((point (self point))
+            (line-count (((self text) lines) len)))
+        (let ((line-length (self line-length (point line))))
+          (if ((point column) < line-length)
+              (AloemacsEditor new
+                (self text)
+                (Position new
+                  (point line)
+                  ((point column) + 1))
+                (self quit))
+              (if ((point line) < (line-count - 1))
+                  (AloemacsEditor new
+                    (self text)
+                    (Position new
+                      ((point line) + 1)
+                      0)
+                    (self quit))
+                  (AloemacsEditor new
+                    (self text)
+                    point
+                    (self quit)))))))
+
+    (move-up () AloemacsEditor
+      (let ((point (self point)))
+        (if ((point line) = 0)
+            (AloemacsEditor new
+              (self text)
+              point
+              (self quit))
+            (AloemacsEditor new
+              (self text)
+              (Position new
+                ((point line) - 1)
+                (self clamp-column
+                  (point column)
+                  ((point line) - 1)))
+              (self quit)))))
+
+    (move-down () AloemacsEditor
+      (let ((point (self point))
+            (line-count (((self text) lines) len)))
+        (if ((point line) = (line-count - 1))
+            (AloemacsEditor new
+              (self text)
+              point
+              (self quit))
+            (AloemacsEditor new
+              (self text)
+              (Position new
+                ((point line) + 1)
+                (self clamp-column
+                  (point column)
+                  ((point line) + 1)))
+              (self quit)))))
+
+    (request-quit () AloemacsEditor
+      (AloemacsEditor new
+        (self text)
+        (self point)
+        #t))
+
+    (handle-key (key String) AloemacsEditor
+      (if (self quit)
+          (AloemacsEditor new
+            (self text)
+            (self point)
+            (self quit))
+          (if (key = "return")
+              (self newline)
+              (if (key = "backspace")
+                  (self backward-delete)
+                  (if (key = "left")
+                      (self move-left)
+                      (if (key = "right")
+                          (self move-right)
+                          (if (key = "up")
+                              (self move-up)
+                              (if (key = "down")
+                                  (self move-down)
+                                  (if (key = "escape")
+                                      (self request-quit)
+                                      (if ((key len) = 1)
+                                          (self insert key)
+                                          (AloemacsEditor new
+                                            (self text)
+                                            (self point)
+                                            (self quit))))))))))))))
