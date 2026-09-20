@@ -57,7 +57,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 1 | Text | [`text/`](text/) | **Implemented.** Spec and aloemacs-text 000–003. | String messages the tests force |
 | 2 | Term | [`term/`](term/) | **Implemented.** Spec and aloemacs-term 000. | Existing Term capability |
 | 3 | Loop | [`loop/`](loop/) | **Implemented.** Spec and aloemacs-loop 000–003. | 1, 2 |
-| 4 | File | `file/` | Not chartered. Next. | 3, existing Fs |
+| 4 | File | [`file/`](file/) | **Checkpoint ready.** aloemacs-file 000 implemented; 001 ready. | 3, existing Fs |
 
 Text, Term, and Loop are done. Do not design File inside a Loop
 conversation. The first running program is `examples/aloemacs/` plus

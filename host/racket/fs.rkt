@@ -9,7 +9,7 @@
          make-fs-double
          make-fs-receiver)
 
-(struct fs-double-state (current nodes))
+(struct fs-double-state (current nodes contents))
 (struct fs-production-state ())
 
 (define production-state (fs-production-state))
@@ -160,6 +160,60 @@
     [(fs-production-state? state) (production-names state normalized)]
     [else (error 'fs "unknown filesystem receiver state")]))
 
+(define (double-read state normalized)
+  (unless (eq? (hash-ref (fs-double-state-nodes state) normalized #f) 'file)
+    (error 'fs "read requires a regular file: ~a" normalized))
+  (hash-ref (fs-double-state-contents state) normalized))
+
+(define (production-read normalized)
+  (unless (string=? (production-kind normalized) "file")
+    (error 'fs "read requires a regular file: ~a" normalized))
+  (bytes->string/utf-8 (file->bytes normalized) #f))
+
+(define (fs-read state path)
+  (define normalized (resolve-path state path))
+  (cond
+    [(fs-double-state? state) (double-read state normalized)]
+    [(fs-production-state? state) (production-read normalized)]
+    [else (error 'fs "unknown filesystem receiver state")]))
+
+(define (double-write state normalized text)
+  (define nodes (fs-double-state-nodes state))
+  (define kind (double-kind state normalized))
+  (unless (or (string=? kind "file")
+              (and (string=? kind "missing")
+                   (string=? (double-kind state (fs-parent state normalized))
+                             "directory")))
+    (error 'fs "write requires a regular file or a missing child of a directory: ~a"
+           normalized))
+  (when (string=? kind "missing")
+    (hash-set! nodes normalized 'file))
+  (hash-set! (fs-double-state-contents state) normalized text)
+  text)
+
+(define (production-write state normalized text)
+  (define kind (production-kind normalized))
+  (unless (or (string=? kind "file")
+              (and (string=? kind "missing")
+                   (string=? (production-kind (fs-parent state normalized))
+                             "directory")))
+    (error 'fs "write requires a regular file or a missing child of a directory: ~a"
+           normalized))
+  (call-with-output-file
+   normalized
+   (lambda (output)
+     (write-bytes (string->bytes/utf-8 text) output))
+   #:exists 'truncate
+   #:mode 'binary)
+  text)
+
+(define (fs-write state path text)
+  (define normalized (resolve-path state path))
+  (cond
+    [(fs-double-state? state) (double-write state normalized text)]
+    [(fs-production-state? state) (production-write state normalized text)]
+    [else (error 'fs "unknown filesystem receiver state")]))
+
 (define fs-interface
   (make-host-interface
    'FsHost
@@ -171,9 +225,11 @@
     (make-host-method 'parent '(String) 'String fs-parent)
     (make-host-method 'name '(String) 'String fs-name)
     (make-host-method 'kind '(String) 'String fs-kind)
-    (make-host-method 'names '(String) '(List String) fs-names))))
+    (make-host-method 'names '(String) '(List String) fs-names)
+    (make-host-method 'read '(String) 'String fs-read)
+    (make-host-method 'write '(String String) 'String fs-write))))
 
-(define (make-fs-double current nodes)
+(define (make-fs-double current nodes [contents (hash)])
   (unless (and (string? current) (absolute-posix-path? current))
     (raise-argument-error 'make-fs-double "absolute POSIX path string" current))
   (unless (hash? nodes)
@@ -190,15 +246,44 @@
        "node table values must be file, directory, symlink, or a string"
        "path" path
        "kind" kind)))
+  (unless (hash? contents)
+    (raise-argument-error 'make-fs-double "hash?" contents))
+  (for ([(path text) (in-hash contents)])
+    (unless (string? path)
+      (raise-arguments-error
+       'make-fs-double
+       "content table keys must be path strings"
+       "path" path))
+    (unless (eq? (hash-ref nodes path #f) 'file)
+      (raise-arguments-error
+       'make-fs-double
+       "content table keys must name regular-file nodes"
+       "path" path))
+    (unless (string? text)
+      (raise-arguments-error
+       'make-fs-double
+       "content table values must be strings"
+       "path" path
+       "content" text)))
+  (define private-nodes
+    (make-hash
+     (for/list ([(path kind) (in-hash nodes)])
+       (cons (string->immutable-string path)
+             (if (string? kind)
+                 (string->immutable-string kind)
+                 kind)))))
+  (define private-contents
+    (make-hash
+     (for/list ([(path kind) (in-hash private-nodes)]
+                #:when (eq? kind 'file))
+       (cons path
+             (string->immutable-string (hash-ref contents path ""))))))
   (make-host-receiver
    fs-interface
    (fs-double-state
     (normalize-absolute-posix-path current)
-    (for/hash ([(path kind) (in-hash nodes)])
-      (values (string->immutable-string path)
-              (if (string? kind)
-                  (string->immutable-string kind)
-                  kind))))))
+    private-nodes
+    private-contents)))
 
 (define (make-fs-receiver)
   (make-host-receiver fs-interface production-state))

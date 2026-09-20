@@ -64,4 +64,38 @@
           ((self inspect (self child path name)) case
             (None () acc)
             (Some (entry) (acc cons entry)))))
-       reverse))))
+       reverse))
+
+    (read (path Path) (Option String)
+      ((self inspect path) case
+        (None () (Option None))
+        (Some (entry)
+          (entry case
+            (RegularFile (file)
+              (Option Some ((self host) read (file text))))
+            (Directory (directory) (Option None))
+            (SymbolicLink (link) (Option None))
+            (Other (other kind) (Option None))))))
+
+    (write (path Path) (text String) (Option String)
+      ((self inspect path) case
+        (None ()
+          ((self parent path) case
+            (None () (Option None))
+            (Some (parent)
+              ((self inspect parent) case
+                (None () (Option None))
+                (Some (entry)
+                  (entry case
+                    (RegularFile (file) (Option None))
+                    (Directory (directory)
+                      (Option Some ((self host) write (path text) text)))
+                    (SymbolicLink (link) (Option None))
+                    (Other (other kind) (Option None))))))))
+        (Some (entry)
+          (entry case
+            (RegularFile (file)
+              (Option Some ((self host) write (file text) text)))
+            (Directory (directory) (Option None))
+            (SymbolicLink (link) (Option None))
+            (Other (other kind) (Option None))))))))

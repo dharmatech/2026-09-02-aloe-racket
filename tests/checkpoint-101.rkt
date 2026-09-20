@@ -41,7 +41,7 @@
 (test-case "filesystem host interface has one locked nominal identity"
   (check-equal?
    (map host-method-selector (host-interface-methods fs-interface))
-   '(current resolve child root? parent name kind names))
+   '(current resolve child root? parent name kind names read write))
   (define first-double (make-fs-double "/cwd" nodes))
   (define second-double (make-fs-double "/other" (hash)))
   (check-eq? (host-receiver-interface first-double) fs-interface)
