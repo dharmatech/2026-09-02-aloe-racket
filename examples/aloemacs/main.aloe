@@ -1,7 +1,12 @@
-(load "editor.aloe")
+(load "file.aloe")
 
 (define aloemacs-editor
-  (AloemacsEditor new
-    (Text from-string "")
-    (Position new 0 0)
-    #f))
+  (AloemacsSession new
+    (AloemacsEditor new
+      (Text from-string "")
+      (Position new 0 0)
+      #f)
+    (Fs new fs-host)
+    (if #t
+        (Option None)
+        (Option Some (Path new "/typed-none")))))

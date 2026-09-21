@@ -8,9 +8,11 @@
          (only-in "../../aloe/env.rkt" env-bound?)
          "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt"
+                  exn:fail:aloe-type?
                   type-environment-bound?
                   type-of
                   type->datum)
+         "../../host/racket/fs.rkt"
          "../../host/racket/term.rkt"
          "../../host/racket/aloemacs-run.rkt")
 
@@ -18,12 +20,17 @@
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 
 (define expected-main-datums
-  '((load "editor.aloe")
+  '((load "file.aloe")
     (define aloemacs-editor
-      (AloemacsEditor new
-        (Text from-string "")
-        (Position new 0 0)
-        #f))))
+      (AloemacsSession new
+        (AloemacsEditor new
+          (Text from-string "")
+          (Position new 0 0)
+          #f)
+        (Fs new fs-host)
+        (if #t
+            (Option None)
+            (Option Some (Path new "/typed-none")))))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\r\n\u001b[1;1H\u001b[?25h")
@@ -103,32 +110,63 @@
 (test-case "main loads an exact checked starting state into only one driver"
   (define state (make-driver))
   (define fresh-state (make-driver))
-  (for ([name (in-list '(AloemacsEditor Text aloemacs-editor))])
+  (define fs-host
+    (make-fs-double
+     "/cwd"
+     (hash "/cwd" 'directory "/cwd/kept.txt" 'file)
+     (hash "/cwd/kept.txt" "kept")))
+  (for ([name (in-list
+               '(AloemacsSession AloemacsEditor Text Fs Path Option
+                 aloemacs-editor))])
     (check-true (unbound-in-driver? state name))
     (check-true (unbound-in-driver? fresh-state name)))
+  (driver-inject-host! state 'fs-host fs-host)
+  (check-true (unbound-in-driver? state 'term))
 
   (define load-output (open-output-string))
   (check-equal? (driver-load-file! state main-path load-output) '())
   (check-equal? (get-output-string load-output) "")
-  (for ([name (in-list '(AloemacsEditor Text aloemacs-editor))])
+  (for ([name (in-list
+               '(AloemacsSession AloemacsEditor Text Fs Path Option
+                 aloemacs-editor))])
     (check-true (bound-in-driver? state name))
     (check-true (unbound-in-driver? fresh-state name)))
-  (check-equal? (driver-type state 'aloemacs-editor) 'AloemacsEditor)
+  (check-equal? (driver-type state 'aloemacs-editor)
+                '(AloemacsSession FsHost))
   (check-equal?
    (driver-eval! state '((aloemacs-editor text) to-string))
    "")
   (check-equal? (driver-eval! state '((aloemacs-editor point) line)) 0)
   (check-equal? (driver-eval! state '((aloemacs-editor point) column)) 0)
-  (check-false (driver-eval! state '(aloemacs-editor quit))))
+  (check-false (driver-eval! state '(aloemacs-editor quit)))
+  (check-false (driver-eval! state '((aloemacs-editor path) present?)))
+  (check-equal? (driver-eval! state '(fs-host read "/cwd/kept.txt"))
+                "kept")
+  (check-equal? (driver-eval! state '((fs-host names "/cwd") len)) 1)
+  (check-equal? (driver-eval! state '((fs-host names "/cwd") first))
+                "kept.txt")
+  (check-true (unbound-in-driver? state 'term)))
 
-(test-case "runner exports the two entry procedures at their exact arities"
+(test-case "main requires explicit fs-host injection"
+  (define state (make-driver))
+  (check-exn exn:fail:aloe-type?
+             (lambda () (driver-load-file! state main-path))))
+
+(test-case "runner exports the three entry procedures at their exact arities"
   (check-true (procedure? run-aloemacs))
   (check-true (procedure-arity-includes? run-aloemacs 0))
-  (check-false (procedure-arity-includes? run-aloemacs 1))
+  (check-true (procedure-arity-includes? run-aloemacs 1))
+  (check-false (procedure-arity-includes? run-aloemacs 2))
   (check-true (procedure? run-aloemacs-with-term))
   (check-true (procedure-arity-includes? run-aloemacs-with-term 1))
+  (check-true (procedure-arity-includes? run-aloemacs-with-term 2))
   (check-false (procedure-arity-includes? run-aloemacs-with-term 0))
-  (check-false (procedure-arity-includes? run-aloemacs-with-term 2)))
+  (check-false (procedure-arity-includes? run-aloemacs-with-term 3))
+  (check-true (procedure? run-aloemacs-with-hosts))
+  (check-true (procedure-arity-includes? run-aloemacs-with-hosts 2))
+  (check-true (procedure-arity-includes? run-aloemacs-with-hosts 3))
+  (check-false (procedure-arity-includes? run-aloemacs-with-hosts 1))
+  (check-false (procedure-arity-includes? run-aloemacs-with-hosts 4)))
 
 (test-case "escape writes and flushes one initial frame before stopping"
   (define-values (term remaining key-calls size-calls events)
@@ -164,7 +202,9 @@
             "driver-inject-host!"
             "driver-load-file!"
             "driver-eval!"
-            "call-with-tty-term-receiver"))])
+            "call-with-tty-term-receiver"
+            "make-fs-receiver"
+            "run-aloemacs-with-hosts"))])
     (check-regexp-match (regexp required) source))
   (for ([forbidden
          (in-list
@@ -181,12 +221,22 @@
             "Span new"
             "Mirror"
             "\\u001b"
-            "escape"
-            "backspace"
-            "left"
-            "right"
-            "up"
-            "down"))])
+            "\"save\""
+            "\"escape\""
+            "\"backspace\""
+            "\"left\""
+            "\"right\""
+            "\"up\""
+            "\"down\""))])
     (check-false
      (regexp-match? (regexp (regexp-quote forbidden)) source)
-     forbidden)))
+     forbidden))
+  (for ([forbidden
+         (in-list
+          '("\\(fs-host (?:kind|inspect|read|write)"
+            "\\(aloemacs-editor save\\)"
+            "\\(.*text.*to-string"
+            "\\(AloemacsSession new"
+            "\\(Text from-string"
+            "\\(Position new"))])
+    (check-false (regexp-match? (pregexp forbidden) source) forbidden)))

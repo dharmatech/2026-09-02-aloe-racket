@@ -33,6 +33,11 @@
            (equal? (tkeymsg-mods message) '(ctrl))
            (not (tkeymsg-char message)))))
 
+(define (plain-ctrl-s-key? message)
+  (and (eqv? (tkeymsg-key message) #\s)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (not (tkeymsg-char message))))
+
 (define (printable-character? character)
   (or (char-graphic? character)
       (char=? character #\space)))
@@ -46,6 +51,7 @@
     [(return-key? key) "return"]
     [(escape-key? key) "escape"]
     [(backspace-key? message) "backspace"]
+    [(plain-ctrl-s-key? message) "save"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))
