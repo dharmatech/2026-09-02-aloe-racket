@@ -22,7 +22,9 @@
     (visited (contents String) (path Path) (AloemacsSession H)
       (AloemacsSession new
         (AloemacsEditor new
-          (Text from-string contents)
+          (((Text from-string contents) focus-at 0) case
+            (None () (Text from-string contents))
+            (Some (focused) focused))
           (Position new 0 0)
           #f)
         (self fs)

@@ -23,6 +23,7 @@ either editor.
 | What | Where |
 |---|---|
 | This map, charters, specs, checkpoints | `docs/design/implementation/aloemacs/` |
+| Hands-on tour | [`demo.md`](demo.md) |
 | Editor program | `examples/aloemacs/` (promote to `apps/aloemacs/` only if it outgrows examples) |
 | General libraries the editor forces | `lib/` (`string.aloe`, later `text.aloe`) |
 | Term host and runner | `host/racket/` |
@@ -58,10 +59,14 @@ design or implement a later layer in an earlier layer's conversation.
 | 2 | Term | [`term/`](term/) | **Implemented.** Spec and aloemacs-term 000. | Existing Term capability |
 | 3 | Loop | [`loop/`](loop/) | **Implemented.** Spec and aloemacs-loop 000–003. | 1, 2 |
 | 4 | File | [`file/`](file/) | **Implemented.** Spec and aloemacs-file 000–003. | 3, existing Fs |
+| 5 | Index | [`index/`](index/) | **Implemented.** Spec and aloemacs-index 000–002. | 3–4 (editor + `Text` / File strings) |
 
-Text, Term, Loop, and File are done. That is the first-product
-ladder. Do not add a fifth layer in a File conversation. The running
-program is `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
+The first-product ladder is Text through File. Index is the
+follow-on: immutable zipper lines so Down and `frame` stay cheap
+at the bottom of a large file. The Scale (source-scan) charter
+stays withdrawn. Do not issue aloemacs-index 003. The running
+program remains `examples/aloemacs/` plus
+`host/racket/aloemacs-run.rkt`.
 
 ## Not in this map
 
@@ -83,6 +88,7 @@ Easy to smuggle in. They are not.
 | Term | Tests and a host double; optional one-shot write of a frame |
 | Loop | One-buffer insert / move / quit, full redraw |
 | File | Load and save through existing Fs |
+| Index | No-TTY Down + frame at the start **and** end of a many-line fixture |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

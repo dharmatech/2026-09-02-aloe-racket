@@ -216,13 +216,23 @@
    state 'visited '(source visit (Path new "./dir/../a.txt")) 'source)
   (check-session state 'visited "old\ntext" 0 0 #f "/cwd/a.txt")
   (check-structurally-equal
-   state '(visited text) '(Text from-string "old\ntext"))
+   state '(visited text)
+   '(((Text from-string "old\ntext") focus-at 0) case
+      (None () (Text from-string ""))
+      (Some (focused) focused)))
+  (check-equal? (driver-eval! state '((visited text) focus-line)) 0)
   (check-structurally-equal state '(visited fs) '(source fs))
 
   (define names-before (driver-eval! state '((fs-host names "/cwd") len)))
   (define-option-session!
    state 'missing '(source visit (Path new "new.txt")) 'source)
   (check-session state 'missing "" 0 0 #f "/cwd/new.txt")
+  (check-equal? (driver-eval! state '((missing text) focus-line)) 0)
+  (check-structurally-equal
+   state '(missing text)
+   '(((Text from-string "") focus-at 0) case
+      (None () (Text from-string "unexpected None"))
+      (Some (focused) focused)))
   (check-equal? (driver-eval! state '(fs-host kind "/cwd/new.txt"))
                 "missing")
   (check-equal? (driver-eval! state '((fs-host names "/cwd") len))

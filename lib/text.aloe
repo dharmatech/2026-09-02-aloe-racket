@@ -44,35 +44,114 @@
 
 (define-class Text
   (constructors
-    (from-string (fields (source String))))
+    (from-string (fields (source String)))
+    (indexed (fields
+      (above (List String))
+      (current String)
+      (below (List String))
+      (focus Int))))
   (methods
     (to-string () String
       (self case
-        (from-string (stored-source) stored-source)))
+        (from-string (stored-source) stored-source)
+        (indexed (above current below focus)
+          (let ((all-lines (self lines)))
+            ((all-lines rest) fold
+              (all-lines first)
+              (fn (source line)
+                ((source append "\n") append line)))))))
 
     (lines () (List String)
-      ((self to-string) split-lines))
+      (self case
+        (from-string (source) (source split-lines))
+        (indexed (above current below focus)
+          (above fold
+            (below cons current)
+            (fn (lines line) (lines cons line))))))
+
+    (indexed-value () Text
+      (self case
+        (from-string (source)
+          (let ((pieces (source split-lines)))
+            (Text indexed
+              (List empty)
+              (pieces first)
+              (pieces rest)
+              0)))
+        (indexed (above current below focus) self)))
+
+    (focus-at (line Int) (Option Text)
+      (if (line < 0)
+          (Option None)
+          (self case
+            (from-string (source)
+              ((self indexed-value) focus-at line))
+            (indexed (above current below focus)
+              (if (line = focus)
+                  (Option Some self)
+                  (if (line < focus)
+                      (if (above empty?)
+                          (Option None)
+                          ((self focus-up) focus-at line))
+                      (if (below empty?)
+                          (Option None)
+                          ((self focus-down) focus-at line))))))))
+
+    (focus-line () Int
+      ((self indexed-value) case
+        (from-string (source) 0)
+        (indexed (above current below focus) focus)))
+
+    (current-line () String
+      ((self indexed-value) case
+        (from-string (source) source)
+        (indexed (above current below focus) current)))
+
+    (has-previous? () Bool
+      ((self indexed-value) case
+        (from-string (source) #f)
+        (indexed (above current below focus)
+          (if (above empty?) #f #t))))
+
+    (has-next? () Bool
+      ((self indexed-value) case
+        (from-string (source) #f)
+        (indexed (above current below focus)
+          (if (below empty?) #f #t))))
+
+    (focus-up () Text
+      (self case
+        (from-string (source) ((self indexed-value) focus-up))
+        (indexed (above current below focus)
+          (if (above empty?)
+              self
+              (Text indexed
+                (above rest)
+                (above first)
+                (below cons current)
+                (focus - 1))))))
+
+    (focus-down () Text
+      (self case
+        (from-string (source) ((self indexed-value) focus-down))
+        (indexed (above current below focus)
+          (if (below empty?)
+              self
+              (Text indexed
+                (above cons current)
+                (below first)
+                (below rest)
+                (focus + 1))))))
 
     (valid-position? (position Position) Bool
       (if ((position line) < 0)
           #f
           (if ((position column) < 0)
               #f
-              (let ((lines (self lines)))
-                (if ((position line) >= (lines len))
-                    #f
-                    (let ((selected
-                           (lines fold
-                             (Position new 0 0)
-                             (fn (cursor current-line)
-                               (if ((cursor line) = (position line))
-                                   (Position new
-                                     ((cursor line) + 1)
-                                     (current-line len))
-                                   (Position new
-                                     ((cursor line) + 1)
-                                     (cursor column)))))))
-                      ((position column) <= (selected column))))))))
+              ((self focus-at (position line)) case
+                (None () #f)
+                (Some (selected)
+                  ((position column) <= ((selected current-line) len)))))))
 
     (valid-span? (span Span) Bool
       (if (self valid-position? (span start))
@@ -89,42 +168,54 @@
 
 (define-methods Text
   (methods
+    (replace-pieces
+      (pieces (List String))
+      (prefix String)
+      (suffix String)
+      (above (List String))
+      (below (List String))
+      (focus Int)
+      Text
+      (if ((pieces rest) empty?)
+          (Text indexed
+            above
+            ((prefix append (pieces first)) append suffix)
+            below
+            focus)
+          (self replace-pieces
+            (pieces rest)
+            ""
+            suffix
+            (above cons (prefix append (pieces first)))
+            below
+            (focus + 1))))
+
     (replace (span Span) (string String) (Option EditResult)
       (if (self valid-span? span)
-          (let ((old (self to-string))
-                (lines (self lines))
-                (start (span start))
+          (let ((start (span start))
                 (end (span end)))
-            (let ((start-prefix
-                   (lines fold
-                     (Position new 0 0)
-                     (fn (cursor current-line)
-                       (if ((cursor line) < (start line))
-                           (Position new
-                             ((cursor line) + 1)
-                             (((cursor column) + (current-line len)) + 1))
-                           (Position new
-                             ((cursor line) + 1)
-                             (cursor column))))))
-                  (end-prefix
-                   (lines fold
-                     (Position new 0 0)
-                     (fn (cursor current-line)
-                       (if ((cursor line) < (end line))
-                           (Position new
-                             ((cursor line) + 1)
-                             (((cursor column) + (current-line len)) + 1))
-                           (Position new
-                             ((cursor line) + 1)
-                             (cursor column)))))))
-              (let ((a ((start-prefix column) + (start column)))
-                    (b ((end-prefix column) + (end column))))
-                (let ((new-source
-                       (((old take a) append string) append (old drop b))))
-                  (Option Some
-                    (EditResult new
-                      (Text from-string new-source)
-                      (start after string)))))))
+            ((self focus-at (start line)) case
+              (None () (Option None))
+              (Some (at-start)
+                (at-start case
+                  (from-string (source) (Option None))
+                  (indexed (above current below focus)
+                    ((at-start focus-at (end line)) case
+                      (None () (Option None))
+                      (Some (at-end)
+                        (at-end case
+                          (from-string (source) (Option None))
+                          (indexed (end-above end-current end-below end-focus)
+                            (Option Some
+                              (EditResult new
+                                (self replace-pieces
+                                  (string split-lines)
+                                  (current take (start column))
+                                  (end-current drop (end column))
+                                  above
+                                  end-below
+                                  (start line))
+                                (start after string))))))))))))
           (Option None)))
 
     (insert (position Position) (string String) (Option EditResult)

@@ -361,12 +361,16 @@ cases:
 
 ```racket
 (make-tkeymsg #\s '(ctrl) #f) ; => "save"
+(make-tkeymsg #\s '(ctrl) #\s) ; => "save"
 ```
 
-This is the exact plain Ctrl-S shape emitted by the current `tui-term` VT
-decoder. Ctrl-Shift-S, Alt-S, printable `s`, and every other mapping retain
+The key must be `#\s`, modifiers must be exactly `'(ctrl)`, and the decoded
+character may be `#f` or `#\s`. The current `tui-term` VT decoder emits the
+second shape (including when the character defaults to the key). Focused
+no-TTY tests cover both shapes, especially the live `#\s` character case.
+Ctrl-Shift-S, Alt-S, printable `s`, Backspace, and every other mapping retain
 their current behavior. This is not a Term method or a general modifier
-keymap.
+keymap; the five-row Term interface remains unchanged.
 
 `AloemacsSession.handle-key` follows this order:
 
@@ -516,7 +520,8 @@ No test in this file injects Term or touches the production disk.
 
 ### 8.3 Ctrl-S — `file-key-mapping.rkt`
 
-This focused no-TTY test proves the exact Ctrl-S `tkeymsg` becomes `"save"`.
+This focused no-TTY test proves both Ctrl-S `tkeymsg` forms in section 6
+become `"save"`, including the live `char = #\s` message.
 It also proves printable `s` remains `"s"` and Ctrl-Shift-S and Alt-S are not
 silently normalized to save. Existing Return, Escape, Backspace, arrow,
 printable, and unknown-symbol mapping tests remain green.

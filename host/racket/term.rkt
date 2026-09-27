@@ -36,7 +36,8 @@
 (define (plain-ctrl-s-key? message)
   (and (eqv? (tkeymsg-key message) #\s)
        (equal? (tkeymsg-mods message) '(ctrl))
-       (not (tkeymsg-char message))))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) #\s))))
 
 (define (printable-character? character)
   (or (char-graphic? character)

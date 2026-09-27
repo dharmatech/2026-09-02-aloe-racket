@@ -1,14 +1,15 @@
 # aloemacs-file 002 — Ctrl-S key normalization
 
-**Status.** Ready to implement.
+**Status.** Correction ready to implement; the original 002 was implemented
+and reviewed.
 
 ## Goal
 
-Make the existing Term key boundary normalize the exact plain Ctrl-S message
-emitted by `tui-term` to the named Aloe command String `"save"`. Preserve
-printable `s`, Ctrl-Shift-S, Alt-S, every existing Return, Escape, Backspace,
-and arrow mapping, unknown named keys, unsupported-key errors, and the
-five-row Term capability unchanged.
+Make the existing Term key boundary normalize plain Ctrl-S messages, including
+the live `tui-term` decoder shape, to the named Aloe command String `"save"`.
+Preserve printable `s`, Ctrl-Shift-S, Alt-S, every existing Return, Escape,
+Backspace, and arrow mapping, unknown named keys, unsupported-key errors, and
+the five-row Term capability unchanged.
 
 This checkpoint is the physical-key bridge to the reviewed
 `AloemacsSession.handle-key "save"` behavior. Stop when it is green. Do not
@@ -28,8 +29,8 @@ is below.
   explicitly injected host capability; this checkpoint does not change host
   types, checking, dispatch, reflection, or injection.
 - [`../spec.md`](../spec.md), especially sections 1, 6, 8.3, 9, and 10, is the
-  local design authority. This checkpoint implements only the one exact
-  Ctrl-S normalization in section 6.
+  local design authority. This checkpoint implements only the plain Ctrl-S
+  normalization in section 6.
 - **aloemacs-file 000–001** are implemented and reviewed. The immutable
   `AloemacsSession` already recognizes the complete String `"save"`, performs
   explicit save before quit, preserves ordinary printable `"s"`, and absorbs
@@ -58,16 +59,21 @@ current precedence is:
 7. turn a symbolic key into its name; and
 8. reject every remaining unsupported key.
 
-Because modifiers are otherwise ignored for printable key characters, the
-message below currently reaches the printable-key branch and returns `"s"`:
+Because modifiers are otherwise ignored for printable key characters, both
+messages below currently reach a printable branch and return `"s"`:
 
 ```racket
 (make-tkeymsg #\s '(ctrl) #f)
+(make-tkeymsg #\s '(ctrl) #\s)
 ```
 
+The current `tui-term` VT decoder emits the second shape; `make-tkeymsg` with
+the character omitted is decoder-equivalent because the character defaults
+to the key.
+
 `examples/aloemacs/file.aloe` already handles the named String `"save"`
-directly. `examples/aloemacs/main.aloe` and the current runner still use the
-pre-file-layer starting value and are intentionally unchanged in this slice.
+directly. The file-layer starting value and runner are already integrated;
+this correction does not change them.
 
 The existing Term interface remains exactly:
 
@@ -86,7 +92,7 @@ Neither this table nor `make-term-receiver` changes.
 ### May edit
 
 - `host/racket/term.rkt`
-- `tests/aloemacs/file-key-mapping.rkt` (new)
+- `tests/aloemacs/file-key-mapping.rkt` (existing focused test)
 
 ### Must not edit
 
@@ -95,7 +101,7 @@ Neither this table nor `make-term-receiver` changes.
 - any file under `aloe/`, `lib/`, `examples/`, `gel/`, or `bin/`
 - `host/racket/fs.rkt`, `host/racket/aloemacs-run.rkt`, another host module,
   package metadata, or `tui-term`
-- any existing test, including `tests/aloemacs/key-mapping.rkt`,
+- any other existing test, including `tests/aloemacs/key-mapping.rkt`,
   `tests/aloemacs/file-session.rkt`, Term tests, runner tests, and historical
   global checkpoint tests
 - the aloemacs maps, charter, specification, or predecessor checkpoint
@@ -105,12 +111,13 @@ Neither this table nor `make-term-receiver` changes.
 If another file appears necessary, stop and send the checkpoint back for
 correction rather than widening the slice.
 
-## Exact Ctrl-S form
+## Plain Ctrl-S forms
 
-Before both printable-character cases in `tkeymsg->aloe-key`, map exactly:
+Before both printable-character cases in `tkeymsg->aloe-key`, map both:
 
 ```racket
 (make-tkeymsg #\s '(ctrl) #f)
+(make-tkeymsg #\s '(ctrl) #\s)
 ```
 
 to:
@@ -123,9 +130,11 @@ All three message components are normative:
 
 - key is the lowercase character `#\s`;
 - modifiers are exactly the list `'(ctrl)`; and
-- the separate decoded-character field is exactly `#f`.
+- the separate decoded-character field is either `#f` or `#\s`.
 
-This is the plain Ctrl-S shape emitted by the current `tui-term` VT decoder.
+The `#\s` decoded-character field is the live plain Ctrl-S shape emitted by
+the current `tui-term` VT decoder; `#f` remains accepted for the same key and
+modifiers.
 A small private Racket predicate is permitted. Do not export it, change the
 module's `provide` surface, or expose `tkeymsg` structure to Aloe.
 
@@ -137,7 +146,7 @@ The resulting precedence is exactly:
 2. Return detection;
 3. Escape detection;
 4. existing exact Backspace detection;
-5. exact plain Ctrl-S detection;
+5. plain Ctrl-S detection for either specified decoded-character field;
 6. printable decoded character;
 7. printable key character;
 8. symbolic key via `symbol->string`; and
@@ -153,13 +162,16 @@ through the old conversion rules:
 ```racket
 (make-tkeymsg #\s)                    ; => "s"
 (make-tkeymsg #\s '(ctrl shift) #f)  ; => "s"
+(make-tkeymsg #\s '(ctrl shift) #\s) ; => "s"
 (make-tkeymsg #\s '(alt) #f)         ; => "s"
-(make-tkeymsg #\s '(ctrl) #\s)       ; => "s"
+(make-tkeymsg #\s '(alt) #\s)        ; => "s"
+(make-tkeymsg #\s '(ctrl) #\x)       ; => "x"
 ```
 
 The exact ordering and membership of the modifier list matter. Do not map
 every message containing `ctrl`, every key whose printed form is `s`, the
-uppercase character `#\S`, or a decoded printable `s` to `"save"`.
+uppercase character `#\S`, or an unrelated decoded printable character to
+`"save"`.
 
 `tkeymsg->aloe-key` remains a pure conversion. It performs no input read,
 output write, flush, size query, driver mutation, filesystem operation,
@@ -182,29 +194,31 @@ The implementation must leave all existing behavior untouched:
   `unsupported key` error; and
 - a non-`tkeymsg` argument raises the existing argument-contract error.
 
-There is no general modifier vocabulary or modifier-aware dispatch. The one
-Ctrl-S shape is a closed application normalization, like the reviewed
+There is no general modifier vocabulary or modifier-aware dispatch. These
+Ctrl-S forms are a closed application normalization, like the reviewed
 Backspace compatibility forms.
 
 ## Required focused tests
 
-Create `tests/aloemacs/file-key-mapping.rkt`. Require only `rackunit`, the
+Update `tests/aloemacs/file-key-mapping.rkt`. Require only `rackunit`, the
 `make-tkeymsg` constructor from `tui/term/messages`, and the existing local
 Term module. Do not construct an Aloe driver, host receiver, session,
 filesystem, or physical TTY.
 
 Prove all of the following:
 
-1. `(make-tkeymsg #\s '(ctrl) #f)` returns exactly `"save"`.
+1. Both `(make-tkeymsg #\s '(ctrl) #f)` and the live
+   `(make-tkeymsg #\s '(ctrl) #\s)` return exactly `"save"`.
 2. Plain printable `s` returns `"s"`.
-3. Ctrl-Shift-S and Alt-S each return `"s"`, not `"save"`.
-4. A Ctrl-S-shaped message with decoded character `#\s` returns `"s"`,
-   proving the required `#f` field is part of the match.
+3. Ctrl-Shift-S and Alt-S each return `"s"`, not `"save"`, with both `#f` and
+   `#\s` decoded-character fields.
+4. A message with key `#\s`, modifiers `'(ctrl)`, and an unrelated decoded
+   printable character such as `#\x` returns `"x"`, not `"save"`.
 5. A representative neighboring printable key such as `#\q` retains its
    one-character result.
 6. At least one existing Backspace shape still returns `"backspace"`, proving
    the new clause did not preempt that earlier normalization.
-7. Repeated conversion of the exact Ctrl-S message is stable and has no
+7. Repeated conversion of a plain Ctrl-S message is stable and has no
    observable state.
 
 Do not duplicate the complete mapping matrix from
@@ -253,25 +267,26 @@ Then run this pure no-TTY hand exercise from the repository root:
 The exact result is:
 
 ```racket
-'("save" "s" "s" "s" "s")
+'("save" "s" "s" "s" "save")
 ```
 
 No physical-TTY hand check is required.
 
 ## Acceptance
 
-- The exact plain Ctrl-S `tkeymsg` becomes the one String `"save"` before
-  printable handling.
-- Plain `s`, Ctrl-Shift-S, Alt-S, decoded-character Ctrl-S, and every existing
-  mapping retain their stated behavior.
+- Both specified plain Ctrl-S `tkeymsg` shapes become the one String `"save"`
+  before printable handling, including the live decoded-character shape.
+- Plain `s`, Ctrl-Shift-S, Alt-S, Backspace, and every existing mapping retain
+  their stated behavior.
 - `tkeymsg->aloe-key` remains pure and its public module surface is unchanged.
 - The Term descriptor, receiver factory, TTY lifetime, Aloe session, editor,
-  filesystem, starting value, runner, and every existing test are unchanged.
+  filesystem, starting value, runner, and every other existing test are
+  unchanged.
 - The focused test, directly affected predecessor tests, and full recursive
   suite are green; the hand check returns the exact stated list; and
   `git diff --check` is clean.
-- Stop for human review. Do not start aloemacs-file 003, main/runner
-  integration, or another editor feature.
+- Stop for human review. Do not edit the implemented aloemacs-file 003 or
+  start another editor feature.
 
 ## Explicit non-goals
 

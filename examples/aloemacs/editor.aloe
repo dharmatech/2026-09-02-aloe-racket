@@ -6,22 +6,11 @@
     (point Position)
     (quit Bool))
   (methods
-    (line-length (line Int) Int
-      (let ((selected
-             (((self text) lines) fold
-               (Position new 0 0)
-               (fn (cursor current-line)
-                 (if ((cursor line) = line)
-                     (Position new
-                       ((cursor line) + 1)
-                       (current-line len))
-                     (Position new
-                       ((cursor line) + 1)
-                       (cursor column)))))))
-        (selected column)))
+    (line-length (text Text) Int
+      ((text current-line) len))
 
-    (clamp-column (column Int) (line Int) Int
-      (let ((length (self line-length line)))
+    (clamp-column (column Int) (text Text) Int
+      (let ((length (self line-length text)))
         (if (column > length)
             length
             column)))
@@ -31,32 +20,32 @@
           0
           value))
 
-    (source-line (lines (List String)) (index Int) String
-      (if (lines empty?)
-          ""
-          (if (index = 0)
-              (lines first)
-              (self source-line (lines rest) (index - 1)))))
+    (viewport-top (text Text) (top Int) Text
+      (if ((text focus-line) = top)
+          text
+          (self viewport-top (text focus-up) top)))
 
     (render-rows
-      (lines (List String))
-      (source-index Int)
+      (text Text)
       (left Int)
       (columns Int)
       (remaining Int)
+      (has-line Bool)
       String
       (let ((row
-             (((self source-line lines source-index) drop left)
-              take columns)))
+             (if has-line
+                 (((text current-line) drop left) take columns)
+                 "")))
         (if (remaining = 1)
             row
-            ((row append "\r\n") append
-              (self render-rows
-                lines
-                (source-index + 1)
-                left
-                columns
-                (remaining - 1))))))
+            (let ((has-next (if has-line (text has-next?) #f)))
+              ((row append "\r\n") append
+                (self render-rows
+                  (if has-next (text focus-down) text)
+                  left
+                  columns
+                  (remaining - 1)
+                  has-next))))))
 
     (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
       ((List of
@@ -82,16 +71,21 @@
               (left
                (self max-zero
                  ((point column) - (columns - 1)))))
-          (let ((body
-                 (self render-rows
-                   ((self text) lines)
-                   top
-                   left
-                   columns
-                   rows))
-                (cursor-row (((point line) - top) + 1))
+          (let ((cursor-row (((point line) - top) + 1))
                 (cursor-column (((point column) - left) + 1)))
-            (self frame-ansi body cursor-row cursor-column)))))
+            (((self text) focus-at (point line)) case
+              (None ()
+                (self frame-ansi "" cursor-row cursor-column))
+              (Some (focused)
+                (self frame-ansi
+                  (self render-rows
+                    (self viewport-top focused top)
+                    left
+                    columns
+                    rows
+                    #t)
+                  cursor-row
+                  cursor-column)))))))
 
     (unchanged () AloemacsEditor
       (AloemacsEditor new
@@ -99,9 +93,9 @@
         (self point)
         (self quit)))
 
-    (with-point (point Position) AloemacsEditor
+    (with-text-and-point (text Text) (point Position) AloemacsEditor
       (AloemacsEditor new
-        (self text)
+        text
         point
         (self quit)))
 
@@ -134,69 +128,91 @@
                 (None () (self unchanged))
                 (Some (result) (self from-edit result))))
             (if ((point line) > 0)
-                (let ((span
-                       (Span new
-                         (Position new
-                           ((point line) - 1)
-                           (self line-length ((point line) - 1)))
-                         point)))
-                  (((self text) delete span) case
-                    (None () (self unchanged))
-                    (Some (result) (self from-edit result))))
+                (((self text) focus-at (point line)) case
+                  (None () (self unchanged))
+                  (Some (focused)
+                    (if (focused has-previous?)
+                        (let ((previous (focused focus-up)))
+                          (let ((span
+                                 (Span new
+                                   (Position new
+                                     ((point line) - 1)
+                                     (self line-length previous))
+                                   point)))
+                            ((focused delete span) case
+                              (None () (self unchanged))
+                              (Some (result) (self from-edit result)))))
+                        (self unchanged))))
                 (self unchanged)))))
 
     (move-left () AloemacsEditor
       (let ((point (self point)))
-        (if ((point column) > 0)
-            (self with-point
-              (Position new
-                (point line)
-                ((point column) - 1)))
-            (if ((point line) > 0)
-                (self with-point
+        (if ((point column) = 0)
+            (if ((point line) = 0)
+                (self unchanged)
+                (((self text) focus-at (point line)) case
+                  (None () (self unchanged))
+                  (Some (focused)
+                    (if (focused has-previous?)
+                        (let ((previous (focused focus-up)))
+                          (self with-text-and-point previous
+                            (Position new
+                              ((point line) - 1)
+                              (self line-length previous))))
+                        (self unchanged)))))
+            (((self text) focus-at (point line)) case
+              (None () (self unchanged))
+              (Some (focused)
+                (self with-text-and-point focused
                   (Position new
-                    ((point line) - 1)
-                    (self line-length ((point line) - 1))))
-                (self unchanged)))))
+                    (point line)
+                    ((point column) - 1))))))))
 
     (move-right () AloemacsEditor
-      (let ((point (self point))
-            (line-count (((self text) lines) len)))
-        (let ((line-length (self line-length (point line))))
-          (if ((point column) < line-length)
-              (self with-point
-                (Position new
-                  (point line)
-                  ((point column) + 1)))
-              (if ((point line) < (line-count - 1))
-                  (self with-point
+      (let ((point (self point)))
+        (((self text) focus-at (point line)) case
+          (None () (self unchanged))
+          (Some (focused)
+            (let ((length (self line-length focused)))
+              (if ((point column) < length)
+                  (self with-text-and-point focused
                     (Position new
-                      ((point line) + 1)
-                      0))
-                  (self unchanged))))))
+                      (point line)
+                      ((point column) + 1)))
+                  (if (focused has-next?)
+                      (self with-text-and-point (focused focus-down)
+                        (Position new
+                          ((point line) + 1)
+                          0))
+                      (self unchanged))))))))
 
     (move-up () AloemacsEditor
       (let ((point (self point)))
         (if ((point line) = 0)
             (self unchanged)
-            (self with-point
-              (Position new
-                ((point line) - 1)
-                (self clamp-column
-                  (point column)
-                  ((point line) - 1)))))))
+            (((self text) focus-at (point line)) case
+              (None () (self unchanged))
+              (Some (focused)
+                (if (focused has-previous?)
+                    (let ((previous (focused focus-up)))
+                      (self with-text-and-point previous
+                        (Position new
+                          ((point line) - 1)
+                          (self clamp-column (point column) previous))))
+                    (self unchanged)))))))
 
     (move-down () AloemacsEditor
-      (let ((point (self point))
-            (line-count (((self text) lines) len)))
-        (if ((point line) = (line-count - 1))
-            (self unchanged)
-            (self with-point
-              (Position new
-                ((point line) + 1)
-                (self clamp-column
-                  (point column)
-                  ((point line) + 1)))))))
+      (let ((point (self point)))
+        (((self text) focus-at (point line)) case
+          (None () (self unchanged))
+          (Some (focused)
+            (if (focused has-next?)
+                (let ((next (focused focus-down)))
+                  (self with-text-and-point next
+                    (Position new
+                      ((point line) + 1)
+                      (self clamp-column (point column) next))))
+                (self unchanged))))))
 
     (request-quit () AloemacsEditor
       (AloemacsEditor new

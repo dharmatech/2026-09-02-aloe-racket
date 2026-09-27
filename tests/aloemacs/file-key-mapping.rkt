@@ -4,9 +4,12 @@
          (only-in tui/term/messages make-tkeymsg)
          "../../host/racket/term.rkt")
 
-(test-case "exact plain Ctrl-S normalizes to save"
+(test-case "both plain Ctrl-S decoder shapes normalize to save"
   (check-equal?
    (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl) #f))
+   "save")
+  (check-equal?
+   (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl) #\s))
    "save"))
 
 (test-case "neighboring s messages retain printable handling"
@@ -15,11 +18,17 @@
    (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl shift) #f))
    "s")
   (check-equal?
+   (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl shift) #\s))
+   "s")
+  (check-equal?
    (tkeymsg->aloe-key (make-tkeymsg #\s '(alt) #f))
    "s")
   (check-equal?
-   (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl) #\s))
-   "s"))
+   (tkeymsg->aloe-key (make-tkeymsg #\s '(alt) #\s))
+   "s")
+  (check-equal?
+   (tkeymsg->aloe-key (make-tkeymsg #\s '(ctrl) #\x))
+   "x"))
 
 (test-case "neighboring printable key remains unchanged"
   (check-equal? (tkeymsg->aloe-key (make-tkeymsg #\q)) "q"))
@@ -29,7 +38,7 @@
    (tkeymsg->aloe-key (make-tkeymsg #\h '(ctrl) #f))
    "backspace"))
 
-(test-case "exact Ctrl-S conversion is repeatable"
-  (define message (make-tkeymsg #\s '(ctrl) #f))
+(test-case "live Ctrl-S conversion is repeatable"
+  (define message (make-tkeymsg #\s '(ctrl) #\s))
   (check-equal? (tkeymsg->aloe-key message) "save")
   (check-equal? (tkeymsg->aloe-key message) "save"))
