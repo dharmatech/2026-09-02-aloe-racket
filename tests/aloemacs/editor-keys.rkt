@@ -32,7 +32,9 @@
   `(AloemacsEditor new
      (Text from-string ,source)
      (Position new ,line ,column)
-     ,quit))
+     ,quit
+     0
+     0))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!
@@ -88,7 +90,7 @@
   (check-exn #rx"unbound symbol: AloemacsEditor"
              (lambda () (driver-eval! fresh-state 'AloemacsEditor))))
 
-(test-case "AloemacsEditor has the exact three-field construction surface"
+(test-case "AloemacsEditor has the exact five-field construction surface"
   (define state (make-driver))
   (load-editor! state)
   (define editor (editor-expression "abc" 0 2 #f))
@@ -97,7 +99,9 @@
           `((,editor AloemacsEditor)
             ((,editor text) Text)
             ((,editor point) Position)
-            ((,editor quit) Bool)))])
+            ((,editor quit) Bool)
+            ((,editor scroll-row) Int)
+            ((,editor scroll-col) Int)))])
     (check-equal? (driver-type state (car entry)) (cadr entry)))
 
   (for ([datum
@@ -110,18 +114,30 @@
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              #f
-              "fourth")
-            (AloemacsEditor new "abc" (Position new 0 2) #f)
-            (AloemacsEditor new (Text from-string "abc") 2 #f)
+              #f)
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              0)
+              #f
+              "fourth")
+            (AloemacsEditor new "abc" (Position new 0 2) #f 0 0)
+            (AloemacsEditor new (Text from-string "abc") 2 #f 0 0)
+            (AloemacsEditor new
+              (Text from-string "abc")
+              (Position new 0 2)
+              0 0 0)
+            (AloemacsEditor new
+              (Text from-string "abc")
+              (Position new 0 2)
+              #f "row" 0)
+            (AloemacsEditor new
+              (Text from-string "abc")
+              (Position new 0 2)
+              #f 0 "column")
             (AloemacsEditor from-string
               (Text from-string "abc")
               (Position new 0 2)
-              #f)
+              #f 0 0)
             (,editor path)
             (,editor dirty)
             (,editor selection)))])

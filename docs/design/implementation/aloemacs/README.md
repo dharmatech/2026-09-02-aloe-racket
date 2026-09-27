@@ -60,13 +60,13 @@ design or implement a later layer in an earlier layer's conversation.
 | 3 | Loop | [`loop/`](loop/) | **Implemented.** Spec and aloemacs-loop 000–003. | 1, 2 |
 | 4 | File | [`file/`](file/) | **Implemented.** Spec and aloemacs-file 000–003. | 3, existing Fs |
 | 5 | Index | [`index/`](index/) | **Implemented.** Spec and aloemacs-index 000–002. | 3–4 (editor + `Text` / File strings) |
+| 6 | Viewport | [`viewport/`](viewport/) | **Implemented.** Spec and aloemacs-viewport 000–002. | 5 (stored origin; reopen Loop §6) |
 
-The first-product ladder is Text through File. Index is the
-follow-on: immutable zipper lines so Down and `frame` stay cheap
-at the bottom of a large file. The Scale (source-scan) charter
-stays withdrawn. Do not issue aloemacs-index 003. The running
-program remains `examples/aloemacs/` plus
-`host/racket/aloemacs-run.rkt`.
+The first-product ladder is Text through File. Index made line
+lookup cheap. Viewport stores the visible origin (Legmacs
+`ensure-visible`) so Up walks the screen. The Scale charter
+stays withdrawn. The running program remains
+`examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
 ## Not in this map
 
@@ -89,6 +89,7 @@ Easy to smuggle in. They are not.
 | Loop | One-buffer insert / move / quit, full redraw |
 | File | Load and save through existing Fs |
 | Index | No-TTY Down + frame at the start **and** end of a many-line fixture |
+| Viewport | Down to last screen row, then Up: cursor row decreases, `top` holds |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

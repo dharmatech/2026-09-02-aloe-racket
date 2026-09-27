@@ -26,7 +26,10 @@
       (define previous (string->symbol (format "~a-~a" name (sub1 step))))
       (define next (string->symbol (format "~a-~a" name step)))
       (define start (current-inexact-milliseconds))
-      (driver-eval! state `(define ,next (,previous handle-key "down")))
+      (driver-eval!
+       state
+       `(define ,next
+          ((,previous handle-key "down") ensure-visible 80 24)))
       (define result (driver-eval! state `(,next frame 80 24)))
       (define elapsed (/ (- (current-inexact-milliseconds) start) 1000.0))
       (check-equal? result
@@ -61,11 +64,11 @@
   (driver-eval!
    state
    '(define top-0
-      (AloemacsEditor new top-text (Position new 0 0) #f)))
+      (AloemacsEditor new top-text (Position new 0 0) #f 0 0)))
   (driver-eval!
    state
    '(define bottom-0
-      (AloemacsEditor new bottom-text (Position new 9000 0) #f)))
+      (AloemacsEditor new bottom-text (Position new 9000 0) #f 0 0)))
   (check-equal? (driver-eval! state '((top-0 text) focus-line)) 0)
   (check-equal? (driver-eval! state '((bottom-0 text) focus-line)) 9000)
   (measure-case state 'top 0)

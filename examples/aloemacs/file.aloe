@@ -26,7 +26,9 @@
             (None () (Text from-string contents))
             (Some (focused) focused))
           (Position new 0 0)
-          #f)
+          #f
+          0
+          0)
         (self fs)
         (Option Some path)))
 
@@ -65,6 +67,9 @@
 
     (frame (columns Int) (rows Int) String
       ((self editor) frame columns rows))
+
+    (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
+      (self with-editor ((self editor) ensure-visible columns rows)))
 
     (visit (path Path) (Option (AloemacsSession H))
       (let ((resolved ((self fs) path (path text))))

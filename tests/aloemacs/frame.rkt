@@ -31,18 +31,27 @@
   `(AloemacsEditor new
      (Text from-string ,source)
      (Position new ,line ,column)
-     ,quit))
+     ,quit
+     0
+     0))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!
    state
    `(define ,name ,(editor-expression source line column quit))))
 
+(define (fit-editor! state name source columns rows)
+  (driver-eval!
+   state
+   `(define ,name (,source ensure-visible ,columns ,rows))))
+
 (define (check-editor-unchanged state name source line column quit)
   (check-equal? (driver-eval! state `((,name text) to-string)) source)
   (check-equal? (driver-eval! state `((,name point) line)) line)
   (check-equal? (driver-eval! state `((,name point) column)) column)
-  (check-equal? (driver-eval! state `(,name quit)) quit))
+  (check-equal? (driver-eval! state `(,name quit)) quit)
+  (check-equal? (driver-eval! state `(,name scroll-row)) 0)
+  (check-equal? (driver-eval! state `(,name scroll-col)) 0))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\r\n\u001b[1;1H\u001b[?25h")
@@ -93,20 +102,26 @@
   (load-editor! state)
   (define source "zero\none\ntwo\nthree\nfour\nfive")
   (define-editor! state 'vertical-source source 5 4 #f)
+  (fit-editor! state 'vertical-fitted 'vertical-source 8 4)
 
   (check-equal?
-   (driver-eval! state '(vertical-source frame 8 4))
+   (driver-eval! state '(vertical-fitted frame 8 4))
    vertical-frame)
+  (check-equal? (driver-eval! state '(vertical-fitted scroll-row)) 2)
+  (check-equal? (driver-eval! state '(vertical-fitted scroll-col)) 0)
   (check-editor-unchanged state 'vertical-source source 5 4 #f))
 
 (test-case "frame clips horizontally and renders missing source lines blank"
   (define state (make-driver))
   (load-editor! state)
   (define-editor! state 'horizontal-source "0123456789" 0 10 #f)
+  (fit-editor! state 'horizontal-fitted 'horizontal-source 8 4)
 
   (check-equal?
-   (driver-eval! state '(horizontal-source frame 8 4))
+   (driver-eval! state '(horizontal-fitted frame 8 4))
    horizontal-frame)
+  (check-equal? (driver-eval! state '(horizontal-fitted scroll-row)) 0)
+  (check-equal? (driver-eval! state '(horizontal-fitted scroll-col)) 3)
   (check-editor-unchanged
    state 'horizontal-source "0123456789" 0 10 #f))
 
@@ -116,11 +131,13 @@
   (define source "0123456789\nabcdefghij")
   (define-editor! state 'running-source source 1 10 #f)
   (define-editor! state 'quit-source source 1 10 #t)
+  (fit-editor! state 'running-fitted 'running-source 8 2)
+  (fit-editor! state 'quit-fitted 'quit-source 8 2)
 
   (define running-frame
-    (driver-eval! state '(running-source frame 8 2)))
+    (driver-eval! state '(running-fitted frame 8 2)))
   (define quit-frame
-    (driver-eval! state '(quit-source frame 8 2)))
+    (driver-eval! state '(quit-fitted frame 8 2)))
   (check-equal? running-frame shared-origin-frame)
   (check-equal? quit-frame shared-origin-frame)
   (check-equal? running-frame quit-frame)

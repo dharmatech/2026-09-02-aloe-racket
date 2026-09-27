@@ -4,7 +4,9 @@
   (fields
     (text Text)
     (point Position)
-    (quit Bool))
+    (quit Bool)
+    (scroll-row Int)
+    (scroll-col Int))
   (methods
     (line-length (text Text) Int
       ((text current-line) len))
@@ -19,6 +21,23 @@
       (if (value < 0)
           0
           value))
+
+    (fit-origin (point Int) (origin Int) (size Int) Int
+      (self max-zero
+        (if (point < origin)
+            point
+            (if (point >= (origin + size))
+                ((point - size) + 1)
+                origin))))
+
+    (ensure-visible (columns Int) (rows Int) AloemacsEditor
+      (let ((point (self point)))
+        (AloemacsEditor new
+          (self text)
+          point
+          (self quit)
+          (self fit-origin (point line) (self scroll-row) rows)
+          (self fit-origin (point column) (self scroll-col) columns))))
 
     (viewport-top (text Text) (top Int) Text
       (if ((text focus-line) = top)
@@ -65,12 +84,8 @@
 
     (frame (columns Int) (rows Int) String
       (let ((point (self point)))
-        (let ((top
-               (self max-zero
-                 ((point line) - (rows - 1))))
-              (left
-               (self max-zero
-                 ((point column) - (columns - 1)))))
+        (let ((top (self scroll-row))
+              (left (self scroll-col)))
           (let ((cursor-row (((point line) - top) + 1))
                 (cursor-column (((point column) - left) + 1)))
             (((self text) focus-at (point line)) case
@@ -91,19 +106,25 @@
       (AloemacsEditor new
         (self text)
         (self point)
-        (self quit)))
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)))
 
     (with-text-and-point (text Text) (point Position) AloemacsEditor
       (AloemacsEditor new
         text
         point
-        (self quit)))
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)))
 
     (from-edit (result EditResult) AloemacsEditor
       (AloemacsEditor new
         (result text)
         (result position)
-        (self quit)))
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)))
 
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
@@ -218,7 +239,9 @@
       (AloemacsEditor new
         (self text)
         (self point)
-        #t))
+        #t
+        (self scroll-row)
+        (self scroll-col)))
 
     (handle-key (key String) AloemacsEditor
       (cond

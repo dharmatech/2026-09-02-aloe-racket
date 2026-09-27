@@ -26,7 +26,14 @@
       (AloemacsEditor new
         ,(focused-text source focus)
         (Position new ,line ,column)
-        ,quit))))
+        ,quit
+        0
+        0))))
+
+(define (fit-editor! state name source columns rows)
+  (driver-eval!
+   state
+   `(define ,name (,source ensure-visible ,columns ,rows))))
 
 (define (frame body row column)
   (string-append
@@ -48,13 +55,17 @@
      "\n"))
   (define-editor! state 'top source 2 3 #f)
   (define-editor! state 'bottom source 9000 2 #t)
+  (fit-editor! state 'top-fitted 'top 8 4)
+  (fit-editor! state 'bottom-fitted 'bottom 8 4)
   (define top-frame
     (frame "L0000\r\nL0001\r\nL0002\r\nL0003" 3 4))
   (define bottom-frame
     (frame "L8997\r\nL8998\r\nL8999\r\nL9000" 4 3))
   (for ([i (in-range 2)])
-    (check-equal? (driver-eval! state '(top frame 8 4)) top-frame)
-    (check-equal? (driver-eval! state '(bottom frame 8 4)) bottom-frame))
+    (check-equal? (driver-eval! state '(top-fitted frame 8 4)) top-frame)
+    (check-equal? (driver-eval! state '(bottom-fitted frame 8 4)) bottom-frame))
+  (check-equal? (driver-eval! state '(bottom scroll-row)) 0)
+  (check-equal? (driver-eval! state '(bottom-fitted scroll-row)) 8997)
   (check-state state 'top 2 3 #f 2)
   (check-state state 'bottom 9000 2 #t 9000)
   (check-equal? (driver-eval! state '((bottom text) current-line)) "L9000"))
@@ -64,12 +75,16 @@
   (define-editor! state 'empty "" 0 0 #f)
   (define-editor! state 'eof "ab\ncd\n" 2 0 #f)
   (define-editor! state 'wide "0123456789\nabcdefghij\nKLMNOPQRST" 2 10 #f)
+  (fit-editor! state 'eof-fitted 'eof 5 4)
+  (fit-editor! state 'wide-fitted 'wide 4 3)
   (check-equal? (driver-eval! state '(empty frame 5 3))
                 (frame "\r\n\r\n" 1 1))
-  (check-equal? (driver-eval! state '(eof frame 5 4))
+  (check-equal? (driver-eval! state '(eof-fitted frame 5 4))
                 (frame "ab\r\ncd\r\n\r\n" 3 1))
-  (check-equal? (driver-eval! state '(wide frame 4 3))
+  (check-equal? (driver-eval! state '(wide-fitted frame 4 3))
                 (frame "789\r\nhij\r\nRST" 3 4))
+  (check-equal? (driver-eval! state '(wide scroll-col)) 0)
+  (check-equal? (driver-eval! state '(wide-fitted scroll-col)) 7)
   (check-state state 'empty 0 0 #f 0)
   (check-state state 'eof 2 0 #f 2)
   (check-state state 'wide 2 10 #f 2))
@@ -85,7 +100,7 @@
       (AloemacsEditor new
         (Text from-string ,source)
         (Position new 2 1)
-        #f)))
+        #f 0 0)))
   (define expected (frame "aa\r\nbb\r\ncc" 3 2))
   (for ([name (in-list '(focused misfocused cold))])
     (check-equal? (driver-eval! state `(,name frame 5 3)) expected))
@@ -99,5 +114,5 @@
        (AloemacsEditor new
          (Text from-string ,source)
          (Position new 2 1)
-         #f)))
+         #f 0 0)))
    (driver-eval! state 'cold)))

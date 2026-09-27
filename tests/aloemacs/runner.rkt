@@ -26,7 +26,9 @@
         (AloemacsEditor new
           (Text from-string "")
           (Position new 0 0)
-          #f)
+          #f
+          0
+          0)
         (Fs new fs-host)
         (if #t
             (Option None)

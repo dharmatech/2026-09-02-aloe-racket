@@ -76,7 +76,9 @@
   `(AloemacsEditor new
      (Text from-string ,source)
      (Position new ,line ,column)
-     ,quit))
+     ,quit
+     0
+     0))
 
 (define (session-expression source line column quit [path #f])
   `(AloemacsSession new

@@ -39,10 +39,16 @@
           (None () aloemacs-editor)
           (Some (session) session)))))
   (let loop ()
+    (define columns (driver-eval! state '(term columns)))
+    (define rows (driver-eval! state '(term rows)))
     (driver-eval!
      state
-     '(term write
-        (aloemacs-editor frame (term columns) (term rows))))
+     `(define aloemacs-editor
+        (aloemacs-editor ensure-visible ,columns ,rows)))
+    (driver-eval!
+     state
+     `(term write
+        (aloemacs-editor frame ,columns ,rows)))
     (driver-eval!
      state
      '(define aloemacs-editor
