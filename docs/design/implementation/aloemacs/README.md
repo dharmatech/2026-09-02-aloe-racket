@@ -57,11 +57,11 @@ design or implement a later layer in an earlier layer's conversation.
 | 1 | Text | [`text/`](text/) | **Implemented.** Spec and aloemacs-text 000–003. | String messages the tests force |
 | 2 | Term | [`term/`](term/) | **Implemented.** Spec and aloemacs-term 000. | Existing Term capability |
 | 3 | Loop | [`loop/`](loop/) | **Implemented.** Spec and aloemacs-loop 000–003. | 1, 2 |
-| 4 | File | [`file/`](file/) | **Checkpoint ready.** aloemacs-file 000–002 implemented; 003 ready. | 3, existing Fs |
+| 4 | File | [`file/`](file/) | **Implemented.** Spec and aloemacs-file 000–003. | 3, existing Fs |
 
-Text, Term, and Loop are done. Do not design File inside a Loop
-conversation. The first running program is `examples/aloemacs/` plus
-`host/racket/aloemacs-run.rkt`.
+Text, Term, Loop, and File are done. That is the first-product
+ladder. Do not add a fifth layer in a File conversation. The running
+program is `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
 ## Not in this map
 
