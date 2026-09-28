@@ -63,7 +63,9 @@
      (>= (Int) Bool)
      (= (Int) Bool)
      (float () Float)
-     (text () String))))
+     (text () String)
+     (min (Int) Int)
+     (max (Int) Int))))
 
 (define list-int-rows
   (triples->specs

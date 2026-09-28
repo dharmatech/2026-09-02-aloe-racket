@@ -150,8 +150,8 @@ ALOE
 ALOE
    ))
 
-(test-case "only List String and user classes accept define-methods"
-  (for ([target (in-list '(Int Float Bool Symbol))])
+(test-case "Float Bool and Symbol reject define-methods"
+  (for ([target (in-list '(Float Bool Symbol))])
     (define source
       (format
        "(define-methods ~a (methods (extended? () Bool #t)))"

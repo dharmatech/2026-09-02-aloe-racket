@@ -302,9 +302,10 @@ See section 3.1. Top-level only in 0.1.
     ...))
 ```
 
-Adds Aloe method bodies to the existing built-in `List` or `String` class.
-For `List` declarations, `T` denotes the list element type. `String` has no
-class type parameter, so `T` is not implicitly in scope there.
+Adds Aloe method bodies to the existing built-in `List`, `String`, or `Int`
+class. For `List` declarations, `T` denotes the list element type. `String`
+and `Int` have no class type parameter, so `T` is not implicitly in scope
+there.
 
 ### 4.7 Method / `fn` / `let` bodies
 
@@ -489,6 +490,10 @@ It also defines `(point dist2 other)`, returning the squared distance as `T`.
 ```
 (n float)    ; Int → Float
 ```
+
+`min` and `max` are Aloe methods defined in `lib/int.aloe` and installed in
+default checked environments; they are derived from `<`, `>`, and `if`, not
+kernel messages.
 
 Boids must use `(avg-pos / (n float))`, not `(avg-pos / n)`. No implicit promotion in 0.1.
 

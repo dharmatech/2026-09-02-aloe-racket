@@ -1,0 +1,6 @@
+(define-methods Int
+  (methods
+    (min (other Int) Int
+      (if (self < other) self other))
+    (max (other Int) Int
+      (if (self > other) self other))))

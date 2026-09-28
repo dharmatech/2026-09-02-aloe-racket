@@ -100,10 +100,15 @@
          (append (list-class-object-methods target-class) methods))
         (set-list-class-object-environment! target-class environment)]
        [(string-class-object? target-class)
-        (set-string-class-object-methods!
+       (set-string-class-object-methods!
          target-class
          (append (string-class-object-methods target-class) methods))
         (set-string-class-object-environment! target-class environment)]
+       [(int-class-object? target-class)
+        (set-int-class-object-methods!
+         target-class
+         (append (int-class-object-methods target-class) methods))
+        (set-int-class-object-environment! target-class environment)]
        [(class-value? target-class)
         (set-class-value-methods!
          target-class
@@ -192,7 +197,7 @@
        receiver selector (map aloe-value->host-argument arguments))
       environment)]
     [(exact-integer? receiver)
-     (send-to-int receiver selector arguments)]
+     (send-to-int receiver selector arguments environment)]
     [(flonum? receiver)
      (send-to-float receiver selector arguments)]
     [(boolean? receiver)
@@ -280,10 +285,20 @@
 (define (string-class-for environment)
   (and environment (env-string-class environment)))
 
+(define (int-class-for environment)
+  (and environment (env-int-class environment)))
+
 (define (value-signature-specs value [environment #f])
   (cond
     [(exact-integer? value)
-     (kernel-instance-signature-specs 'Int)]
+     (append
+      (kernel-instance-signature-specs 'Int)
+      (let ([class (int-class-for environment)])
+        (if class
+            (method-declarations->signature-specs
+             (int-class-object-methods class)
+             (make-hasheq))
+            '())))]
     [(flonum? value)
      (kernel-instance-signature-specs 'Float)]
     [(boolean? value)
@@ -315,6 +330,7 @@
      (kernel-class-object-signature-specs 'List)]
     [(string-class-object? value)
      (kernel-class-object-signature-specs 'String)]
+    [(int-class-object? value) '()]
     [(symbol-class-object? value)
      (kernel-class-object-signature-specs 'Symbol)]
     [(mirror-class-object? value)
@@ -376,6 +392,14 @@
          '()
          (method-declaration-type-parameters
           (list-ref (string-class-object-methods class) method-index)))]
+    [(exact-integer? subject)
+     (define method-index
+       (- row-index (kernel-instance-signature-count 'Int)))
+     (define class (int-class-for environment))
+     (if (or (negative? method-index) (not class))
+         '()
+         (method-declaration-type-parameters
+          (list-ref (int-class-object-methods class) method-index)))]
     [(class-value? subject) (class-value-type-parameters subject)]
     [(boolean? subject) '(T)]
     [(function-value? subject) '(T U)]
@@ -605,7 +629,18 @@
     [(function-value? subject)
      (send-to-function subject selector arguments)]
     [(exact-integer? subject)
-     (send-to-int subject selector arguments)]
+     (define kernel-count (kernel-instance-signature-count 'Int))
+     (if (< row-index kernel-count)
+         (send-to-int subject selector arguments environment)
+         (let ([class (int-class-for environment)])
+           (unless class (unknown-message selector))
+           (apply-int-method
+            subject
+            class
+            (list-ref
+             (int-class-object-methods class)
+             (- row-index kernel-count))
+            arguments)))]
     [(flonum? subject)
      (send-to-float subject selector arguments)]
     [(boolean? subject)
@@ -815,6 +850,7 @@
     [(function-value? value) 'Fn]
     [(or (class-value? value)
          (list-class-object? value)
+         (int-class-object? value)
          (string-class-object? value))
      'Class]
     [else 'Object]))
@@ -1159,7 +1195,7 @@
    (method-declaration-body method)
    (make-local-env (list-class-object-environment class) bindings)))
 
-(define (send-to-int receiver selector arguments)
+(define (send-to-int receiver selector arguments [environment #f])
   (cond
     [(eq? selector 'float)
      (unless (null? arguments)
@@ -1169,7 +1205,7 @@
      (unless (null? arguments)
        (arity-error "Int text" 0 (length arguments)))
      (number->string receiver)]
-    [else
+    [(memq selector '(+ - * / < > <= >= =))
      (define operation
        (case selector
          [(+) +]
@@ -1180,11 +1216,41 @@
          [(>) >]
          [(<=) <=]
          [(>=) >=]
-         [(=) =]
-         [else (unknown-message selector)]))
+         [(=) =]))
      (operation receiver
                 (number-argument
-                 "Int" selector arguments exact-integer?))]))
+                 "Int" selector arguments exact-integer?))]
+    [else (send-to-int-method receiver selector arguments environment)]))
+
+(define (send-to-int-method receiver selector arguments environment)
+  (define class (int-class-for environment))
+  (unless class (unknown-message selector))
+  (define selected
+    (select-runtime-method
+     (int-class-object-methods class)
+     selector
+     arguments
+     'Int
+     (lambda (method)
+       (method-arguments-specificity method arguments (make-hasheq)))))
+  (apply-int-method
+   receiver class (runtime-method-match-method selected) arguments))
+
+(define (apply-int-method receiver class method arguments)
+  (define parameters (method-declaration-parameters method))
+  (unless (= (length parameters) (length arguments))
+    (arity-error
+     (format "Int method ~a" (method-declaration-selector method))
+     (length parameters)
+     (length arguments)))
+  (define bindings
+    (cons (cons 'self receiver)
+          (for/list ([parameter (in-list parameters)]
+                     [argument (in-list arguments)])
+            (cons (parameter-declaration-name parameter) argument))))
+  (eval-expr
+   (method-declaration-body method)
+   (make-local-env (int-class-object-environment class) bindings)))
 
 (define (send-to-float receiver selector arguments)
   (define operation
@@ -1320,6 +1386,7 @@
     [(symbol-value? value)
      (format "#<Symbol ~a>" (symbol-value-name value))]
     [(string-class-object? value) "#<class String>"]
+    [(int-class-object? value) "#<class Int>"]
     [(symbol-class-object? value) "#<class Symbol>"]
     [(mirror-class-object? value) "#<class Mirror>"]
     [(mirror-value? value) "#<Mirror>"]

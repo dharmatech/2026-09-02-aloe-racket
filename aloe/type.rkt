@@ -20,6 +20,7 @@
          (struct-out list-type)
          (struct-out class-type)
          (struct-out list-class-type)
+         (struct-out int-class-type)
          (struct-out symbol-class-type)
          (struct-out mirror-class-type)
          (struct-out function-type)
@@ -47,6 +48,7 @@
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
 (struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
+(struct int-class-type ([methods #:mutable]) #:transparent)
 (struct string-class-type ([methods #:mutable]) #:transparent)
 (struct symbol-class-type () #:transparent)
 (struct mirror-class-type () #:transparent)
@@ -66,7 +68,7 @@
         explicit-constructors?
         [methods #:mutable])
   #:transparent)
-(struct type-environment (bindings parent string-class) #:transparent)
+(struct type-environment (bindings parent int-class string-class) #:transparent)
 
 (define INT (int-type))
 (define FLOAT (float-type))
@@ -97,21 +99,25 @@
   (define list-element-parameter
     (parameter-type (gensym 'T) 'T))
   (define string-class (string-class-type '()))
+  (define int-class (int-class-type '()))
   (type-environment
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
                 (list-class-type list-element-parameter '()))
+          (cons 'Int int-class)
           (cons 'String string-class)
           (cons 'Symbol (symbol-class-type))
           (cons 'Mirror (mirror-class-type))))
    #f
+   int-class
    string-class))
 
 (define (make-local-type-environment parent bindings)
   (type-environment
    (make-hasheq bindings)
    parent
+   (type-environment-int-class parent)
    (type-environment-string-class parent)))
 
 (define (type-environment-bound? environment name)
@@ -185,6 +191,7 @@
     [(class-type? resolved)
      (list 'Class (class-info-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
+    [(int-class-type? resolved) '(Class Int)]
     [(string-class-type? resolved) '(Class String)]
     [(symbol-class-type? resolved) '(Class Symbol)]
     [(mirror-class-type? resolved) '(Class Mirror)]
@@ -241,6 +248,10 @@
             (list? (list-class-type-methods candidate))
             (andmap method-declaration?
                     (list-class-type-methods candidate)))]
+      [(int-class-type? candidate)
+       (and (list? (int-class-type-methods candidate))
+            (andmap method-declaration?
+                    (int-class-type-methods candidate)))]
       [(string-class-type? candidate)
        (and (list? (string-class-type-methods candidate))
             (andmap method-declaration?
@@ -279,8 +290,11 @@
   (define resolved (resolve-type type))
   (cond
     [(int-type? resolved)
-     (fresh-signature-spec-list
-      (kernel-instance-signature-specs 'Int))]
+     (append
+      (kernel-instance-signature-specs 'Int)
+      (method-declarations->signature-specs
+       (int-class-type-methods
+        (type-environment-int-class environment))))]
     [(float-type? resolved)
      (fresh-signature-spec-list
       (kernel-instance-signature-specs 'Float))]
@@ -324,6 +338,7 @@
     [(list-class-type? resolved)
      (fresh-signature-spec-list
       (kernel-class-object-signature-specs 'List))]
+    [(int-class-type? resolved) '()]
     [(string-class-type? resolved) '()]
     [(symbol-class-type? resolved)
      (fresh-signature-spec-list
@@ -477,6 +492,9 @@
      resolved-left]
     [(and (list-class-type? resolved-left)
           (list-class-type? resolved-right))
+     resolved-left]
+    [(and (int-class-type? resolved-left)
+          (int-class-type? resolved-right))
      resolved-left]
     [(and (string-class-type? resolved-left)
           (string-class-type? resolved-right))
@@ -868,6 +886,16 @@
        (check-method-types! method environment method-substitution)
        (check-method-body!
         STRING method environment method-substitution))]
+    [(and (eq? target 'Int) (int-class-type? target-type))
+     (set-int-class-type-methods!
+      target-type
+      (append (int-class-type-methods target-type) methods))
+     (for ([method (in-list methods)])
+       (define method-substitution
+         (extend-method-substitution (make-hasheq) method #t))
+       (check-method-types! method environment method-substitution)
+       (check-method-body!
+        INT method environment method-substitution))]
     [(class-type? target-type)
      (define class (class-type-class target-type))
      (define existing-methods (class-info-methods class))
@@ -1104,8 +1132,11 @@
        [(or (int-type? receiver-type)
             (float-type? receiver-type)
             (parameter-type? receiver-type))
-        (infer-numeric-send
-         receiver-type selector arguments environment)]
+        (if (and (int-type? receiver-type)
+                 (not (memq selector '(+ - * / < > <= >= = float text))))
+            (infer-defined-int-method selector arguments environment)
+            (infer-numeric-send
+             receiver-type selector arguments environment))]
        [(bool-type? receiver-type)
         (infer-bool-send selector arguments environment expected)]
        [(string-type? receiver-type)
@@ -1634,6 +1665,22 @@
      (unify-types! argument-type receiver mismatch-message)
      (ensure-numeric-type! receiver)
      (if (memq selector '(< > <= >= =)) BOOL receiver)]))
+
+(define (infer-defined-int-method selector arguments environment)
+  (define int-class (type-environment-int-class environment))
+  (define selected
+    (select-method-overload
+     (int-class-type-methods int-class)
+     selector
+     arguments
+     environment
+     (make-hasheq)
+     'Int))
+  (define method (method-match-method selected))
+  (type-from-sexpr
+   (method-declaration-return-type method)
+   environment
+   (method-match-substitution selected)))
 
 (define (infer-bool-send selector arguments environment expected)
   (unless (eq? selector 'if) (unknown-message selector))

@@ -225,3 +225,8 @@ Decided: OO listing is `(dir entries)` returning `(List Item)` on a live
 Decided: `len` and `take` are the irreducible String kernel facts. Derived
 String behavior belongs in Aloe through `define-methods String`; this lifts
 String only, not every primitive.
+
+## Int derived methods (2026-09-28)
+
+Decided: `Int` is lifted for derived Aloe methods through `define-methods`.
+`Float`, `Bool`, and `Symbol` remain closed to `define-methods` in this series.

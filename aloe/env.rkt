@@ -5,36 +5,46 @@
 
 (provide top-level-env?
          (struct-out list-class-object)
+         (struct-out int-class-object)
          (struct-out string-class-object)
          make-top-level-env
          make-local-env
          env-bound?
          env-lookup
+         env-int-class
          env-string-class
          env-define!)
 
-(struct top-level-env (bindings parent string-class))
+(struct top-level-env (bindings parent int-class string-class))
 (struct dummy-object ())
 (struct list-class-object ([methods #:mutable] [environment #:mutable]))
+(struct int-class-object ([methods #:mutable] [environment #:mutable]))
 (struct string-class-object ([methods #:mutable] [environment #:mutable]))
 
 (define (make-top-level-env)
   (define list-class (list-class-object '() #f))
+  (define int-class (int-class-object '() #f))
   (define string-class (string-class-object '() #f))
   (top-level-env
    (make-hasheq (list (cons 'dummy (dummy-object))
                       (cons 'List list-class)
+                      (cons 'Int int-class)
                       (cons 'String string-class)
                       (cons 'Symbol (symbol-class-object))
                       (cons 'Mirror (mirror-class-object list-class))))
    #f
+   int-class
    string-class))
 
 (define (make-local-env parent bindings)
   (top-level-env
    (make-hasheq bindings)
    parent
+   (top-level-env-int-class parent)
    (top-level-env-string-class parent)))
+
+(define (env-int-class environment)
+  (top-level-env-int-class environment))
 
 (define (env-string-class environment)
   (top-level-env-string-class environment))

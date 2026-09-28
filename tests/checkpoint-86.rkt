@@ -117,6 +117,8 @@
    "9  =  1\r\n"
    "10  float  0\r\n"
    "11  text  0\r\n"
+   "12  min  1\r\n"
+   "13  max  1\r\n"
    "\r\n"))
 
 (define (run-scripted-gel keys)
