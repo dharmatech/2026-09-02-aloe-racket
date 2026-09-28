@@ -8,11 +8,10 @@ proves the slice is too big, stop and promote it to a charter.
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-text-next-lines.md`](checkpoints/000-text-next-lines.md) | Whole implementer assignment |
+| [`checkpoints/000-text-next-lines.md`](checkpoints/000-text-next-lines.md) | **Implemented.** `Text.next-lines`; `render-rows` removed |
 
 Parent map: [`../README.md`](../README.md).
 
 Identity is `(aloemacs-next-lines, 000)`, spoken
 **aloemacs-next-lines 000**. Do not write global 116. Do not
-rewrite `frame-ansi`. Predecessor: aloemacs-viewport-top 000
-(`frame` already uses `focus-at`).
+issue 001. Do not rewrite `frame-ansi`.

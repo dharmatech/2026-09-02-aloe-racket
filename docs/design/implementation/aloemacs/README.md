@@ -78,8 +78,8 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 |---|---|---|
 | line-length | [`line-length/`](line-length/) | **Implemented.** aloemacs-line-length 000 |
 | int-min | [`int-min/`](int-min/) | **Implemented.** aloemacs-int-min 000 |
-| viewport-top | [`viewport-top/`](viewport-top/) | **Checkpoint issued.** aloemacs-viewport-top 000 |
-| next-lines | [`next-lines/`](next-lines/) | **Checkpoint issued.** aloemacs-next-lines 000 |
+| viewport-top | [`viewport-top/`](viewport-top/) | **Implemented.** aloemacs-viewport-top 000 |
+| next-lines | [`next-lines/`](next-lines/) | **Implemented.** aloemacs-next-lines 000 |
 
 ## Not in this map
 
