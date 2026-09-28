@@ -34,28 +34,6 @@
           (self fit-origin (point column) (self scroll-col) columns)
           (self history))))
 
-    (render-rows
-      (text Text)
-      (left Int)
-      (columns Int)
-      (remaining Int)
-      (has-line Bool)
-      String
-      (let ((row
-             (if has-line
-                 (((text current-line) drop left) take columns)
-                 "")))
-        (if (remaining = 1)
-            row
-            (let ((has-next (if has-line (text has-next?) #f)))
-              ((row append "\r\n") append
-                (self render-rows
-                  (if has-next (text focus-down) text)
-                  left
-                  columns
-                  (remaining - 1)
-                  has-next))))))
-
     (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
       ((List of
          "\u001b[?25l"
@@ -87,12 +65,16 @@
                     (self frame-ansi "" cursor-row cursor-column))
                   (Some (at-top)
                     (self frame-ansi
-                      (self render-rows
-                        at-top
-                        left
-                        columns
-                        rows
-                        #t)
+                      (if (rows < 1)
+                          ""
+                          (let ((clipped
+                                 ((at-top next-lines rows) map
+                                   (fn (line)
+                                     ((line drop left) take columns)))))
+                            ((clipped rest) fold
+                              (clipped first)
+                              (fn (body line)
+                                ((body append "\r\n") append line)))))
                       cursor-row
                       cursor-column)))))))))
 

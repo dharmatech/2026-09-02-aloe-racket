@@ -107,6 +107,15 @@
         (from-string (source) source)
         (indexed (above current below focus) current)))
 
+    (next-lines (n Int) (List String)
+      (if (n <= 0)
+          (List empty)
+          (let ((at-line (self indexed-value)))
+            (let ((next (if (at-line has-next?)
+                            (at-line focus-down)
+                            (Text indexed (List empty) "" (List empty) 0))))
+              ((next next-lines (n - 1)) cons (at-line current-line))))))
+
     (line-length () Int
       ((self current-line) len))
 
