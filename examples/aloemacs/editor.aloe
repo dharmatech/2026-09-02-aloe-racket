@@ -34,11 +34,6 @@
           (self fit-origin (point column) (self scroll-col) columns)
           (self history))))
 
-    (viewport-top (text Text) (top Int) Text
-      (if ((text focus-line) = top)
-          text
-          (self viewport-top (text focus-up) top)))
-
     (render-rows
       (text Text)
       (left Int)
@@ -87,15 +82,19 @@
               (None ()
                 (self frame-ansi "" cursor-row cursor-column))
               (Some (focused)
-                (self frame-ansi
-                  (self render-rows
-                    (self viewport-top focused top)
-                    left
-                    columns
-                    rows
-                    #t)
-                  cursor-row
-                  cursor-column)))))))
+                ((focused focus-at top) case
+                  (None ()
+                    (self frame-ansi "" cursor-row cursor-column))
+                  (Some (at-top)
+                    (self frame-ansi
+                      (self render-rows
+                        at-top
+                        left
+                        columns
+                        rows
+                        #t)
+                      cursor-row
+                      cursor-column)))))))))
 
     (unchanged () AloemacsEditor
       (AloemacsEditor new
