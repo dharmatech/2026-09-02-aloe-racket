@@ -17,24 +17,12 @@
     (scroll-col Int)
     (history (List UndoFrame)))
   (methods
-    (clamp-column (column Int) (text Text) Int
-      (let ((length (text line-length)))
-        (if (column > length)
-            length
-            column)))
-
-    (max-zero (value Int) Int
-      (if (value < 0)
-          0
-          value))
-
     (fit-origin (point Int) (origin Int) (size Int) Int
-      (self max-zero
-        (if (point < origin)
-            point
-            (if (point >= (origin + size))
-                ((point - size) + 1)
-                origin))))
+      ((if (point < origin)
+           point
+           (if (point >= (origin + size))
+               ((point - size) + 1)
+               origin)) max 0))
 
     (ensure-visible (columns Int) (rows Int) AloemacsEditor
       (let ((point (self point)))
@@ -246,7 +234,7 @@
                       (self with-text-and-point previous
                         (Position new
                           ((point line) - 1)
-                          (self clamp-column (point column) previous))))
+                          ((point column) min (previous line-length)))))
                     (self unchanged)))))))
 
     (move-down () AloemacsEditor
@@ -259,7 +247,7 @@
                   (self with-text-and-point next
                     (Position new
                       ((point line) + 1)
-                      (self clamp-column (point column) next))))
+                      ((point column) min (next line-length)))))
                 (self unchanged))))))
 
     (request-quit () AloemacsEditor

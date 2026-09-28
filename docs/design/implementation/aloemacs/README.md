@@ -77,10 +77,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | Identity | Path | This conversation |
 |---|---|---|
 | line-length | [`line-length/`](line-length/) | **Implemented.** aloemacs-line-length 000 |
-
-`clamp-column` / `max-zero` wait on
-[`../int-methods/`](../int-methods/) (`Int` `min` / `max`), then a
-later standalone inline.
+| int-min | [`int-min/`](int-min/) | **Implemented.** aloemacs-int-min 000 |
 
 ## Not in this map
 
