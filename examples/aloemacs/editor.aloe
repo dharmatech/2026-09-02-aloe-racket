@@ -1,12 +1,21 @@
 (load "../../lib/text.aloe")
 
+(define-class UndoFrame
+  (fields
+    (text Text)
+    (point Position)
+    (scroll-row Int)
+    (scroll-col Int))
+  (methods))
+
 (define-class AloemacsEditor
   (fields
     (text Text)
     (point Position)
     (quit Bool)
     (scroll-row Int)
-    (scroll-col Int))
+    (scroll-col Int)
+    (history (List UndoFrame)))
   (methods
     (line-length (text Text) Int
       ((text current-line) len))
@@ -37,7 +46,8 @@
           point
           (self quit)
           (self fit-origin (point line) (self scroll-row) rows)
-          (self fit-origin (point column) (self scroll-col) columns))))
+          (self fit-origin (point column) (self scroll-col) columns)
+          (self history))))
 
     (viewport-top (text Text) (top Int) Text
       (if ((text focus-line) = top)
@@ -108,7 +118,8 @@
         (self point)
         (self quit)
         (self scroll-row)
-        (self scroll-col)))
+        (self scroll-col)
+        (self history)))
 
     (with-text-and-point (text Text) (point Position) AloemacsEditor
       (AloemacsEditor new
@@ -116,7 +127,8 @@
         point
         (self quit)
         (self scroll-row)
-        (self scroll-col)))
+        (self scroll-col)
+        (self history)))
 
     (from-edit (result EditResult) AloemacsEditor
       (AloemacsEditor new
@@ -124,7 +136,25 @@
         (result position)
         (self quit)
         (self scroll-row)
-        (self scroll-col)))
+        (self scroll-col)
+        ((self history) cons
+          (UndoFrame new
+            (self text)
+            (self point)
+            (self scroll-row)
+            (self scroll-col)))))
+
+    (undo () AloemacsEditor
+      (if ((self history) empty?)
+          (self unchanged)
+          (let ((frame ((self history) first)))
+            (AloemacsEditor new
+              (frame text)
+              (frame point)
+              (self quit)
+              (frame scroll-row)
+              (frame scroll-col)
+              ((self history) rest)))))
 
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
@@ -241,7 +271,8 @@
         (self point)
         #t
         (self scroll-row)
-        (self scroll-col)))
+        (self scroll-col)
+        (self history)))
 
     (handle-key (key String) AloemacsEditor
       (cond
@@ -253,5 +284,6 @@
         ((key = "up") (self move-up))
         ((key = "down") (self move-down))
         ((key = "escape") (self request-quit))
+        ((key = "undo") (self undo))
         (((key len) = 1) (self insert key))
         (else (self unchanged))))))

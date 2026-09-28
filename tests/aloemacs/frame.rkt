@@ -33,7 +33,8 @@
      (Position new ,line ,column)
      ,quit
      0
-     0))
+     0
+     (List empty)))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!

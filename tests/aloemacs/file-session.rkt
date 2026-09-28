@@ -78,7 +78,8 @@
      (Position new ,line ,column)
      ,quit
      0
-     0))
+     0
+     (List empty)))
 
 (define (session-expression source line column quit [path #f])
   `(AloemacsSession new

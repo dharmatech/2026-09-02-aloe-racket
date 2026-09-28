@@ -26,7 +26,8 @@
      (Position new ,line ,column)
      ,quit
      ,scroll-row
-     ,scroll-col))
+     ,scroll-col
+     (List empty)))
 
 (define (define-editor! state name source line column quit scroll-row scroll-col)
   (driver-eval!
@@ -108,9 +109,9 @@
             (AloemacsEditor new (Text from-string "abc")
               (Position new 0 2) #f 0 0 0)
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f "row" 0)
+              (Position new 0 2) #f "row" 0 (List empty))
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f 0 "column")
+              (Position new 0 2) #f 0 "column" (List empty))
             (,editor ensure-visible)
             (,editor ensure-visible 4)
             (,editor ensure-visible 4 2 1)

@@ -61,12 +61,14 @@ design or implement a later layer in an earlier layer's conversation.
 | 4 | File | [`file/`](file/) | **Implemented.** Spec and aloemacs-file 000–003. | 3, existing Fs |
 | 5 | Index | [`index/`](index/) | **Implemented.** Spec and aloemacs-index 000–002. | 3–4 (editor + `Text` / File strings) |
 | 6 | Viewport | [`viewport/`](viewport/) | **Implemented.** Spec and aloemacs-viewport 000–002. | 5 (stored origin; reopen Loop §6) |
+| 7 | Undo | [`undo/`](undo/) | **Charter issued.** Designer writes `spec.md`. | 3–6 (edits + zipper sharing) |
 
-The first-product ladder is Text through File. Index made line
-lookup cheap. Viewport stores the visible origin (Legmacs
-`ensure-visible`) so Up walks the screen. The Scale charter
-stays withdrawn. The running program remains
-`examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
+The first-product ladder is Text through File. Index and
+Viewport made large files and Up feel like an editor. Undo is
+the next Aloe pressure: persistent history, one key, no
+mutation. The Scale charter stays withdrawn. The running
+program remains `examples/aloemacs/` plus
+`host/racket/aloemacs-run.rkt`.
 
 ## Not in this map
 
@@ -90,6 +92,7 @@ Easy to smuggle in. They are not.
 | File | Load and save through existing Fs |
 | Index | No-TTY Down + frame at the start **and** end of a many-line fixture |
 | Viewport | Down to last screen row, then Up: cursor row decreases, `top` holds |
+| Undo | Insert/newline/backspace then undo restores prior text and point |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

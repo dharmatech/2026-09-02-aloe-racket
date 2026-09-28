@@ -27,7 +27,8 @@
         (Position new ,line ,column)
         ,quit
         0
-        0))))
+        0
+        (List empty)))))
 
 (define (step! state name previous selector . arguments)
   (driver-eval! state `(define ,name (,previous ,selector ,@arguments))))
@@ -150,7 +151,7 @@
                    (AloemacsEditor new
                      (Text from-string "aa\nbb\ncc")
                      (Position new 1 1)
-                     #f 0 0)))
+                     #f 0 0 (List empty))))
   (step! state 'cold-left 'cold 'move-left)
   (step! state 'cold-insert 'cold 'insert "Q")
   (check-focused state 'cold-left "aa\nbb\ncc" 1 0 #f)
@@ -170,7 +171,7 @@
                    (AloemacsEditor new
                      (Text from-string "a\nb")
                      (Position new 0 0)
-                     #f 0 0)))
+                     #f 0 0 (List empty))))
   (step! state 'cold-start-left 'cold-start 'move-left)
   (step! state 'cold-start-up 'cold-start 'move-up)
   (driver-eval! state
@@ -178,7 +179,7 @@
                    (AloemacsEditor new
                      (Text from-string "a\nb")
                      (Position new 1 1)
-                     #f 0 0)))
+                     #f 0 0 (List empty))))
   (step! state 'cold-end-right 'cold-end 'move-right)
   (step! state 'cold-end-down 'cold-end 'move-down)
   (for ([actual (in-list '(cold-start-left cold-start-up
@@ -191,7 +192,7 @@
                    (AloemacsEditor new
                      (Text from-string "a\nb")
                      (Position new 4 0)
-                     #f 0 0)))
+                     #f 0 0 (List empty))))
   (step! state 'invalid-insert 'invalid 'insert "x")
   (check-equal-editor state 'invalid-insert 'invalid))
 
@@ -206,7 +207,8 @@
                      (Some (text) text))))
   (driver-eval! state
                 '(define e0
-                   (AloemacsEditor new focused (Position new 9000 0) #f 0 0)))
+                   (AloemacsEditor new focused (Position new 9000 0) #f 0 0
+                     (List empty))))
   (step! state 'e1 'e0 'move-down)
   (step! state 'e2 'e1 'move-down)
   (step! state 'e3 'e2 'move-right)
