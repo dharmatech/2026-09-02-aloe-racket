@@ -80,6 +80,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | int-min | [`int-min/`](int-min/) | **Implemented.** aloemacs-int-min 000 |
 | viewport-top | [`viewport-top/`](viewport-top/) | **Implemented.** aloemacs-viewport-top 000 |
 | next-lines | [`next-lines/`](next-lines/) | **Implemented.** aloemacs-next-lines 000 |
+| visited-unchanged | [`visited-unchanged/`](visited-unchanged/) | **Implemented.** aloemacs-visited-unchanged 000 |
 
 ## Not in this map
 

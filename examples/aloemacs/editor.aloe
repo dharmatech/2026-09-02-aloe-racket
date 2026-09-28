@@ -79,13 +79,7 @@
                       cursor-column)))))))))
 
     (unchanged () AloemacsEditor
-      (AloemacsEditor new
-        (self text)
-        (self point)
-        (self quit)
-        (self scroll-row)
-        (self scroll-col)
-        (self history)))
+      self)
 
     (with-text-and-point (text Text) (point Position) AloemacsEditor
       (AloemacsEditor new

@@ -14,17 +14,12 @@
         (self path)))
 
     (unchanged () (AloemacsSession H)
-      (AloemacsSession new
-        (self editor)
-        (self fs)
-        (self path)))
+      self)
 
     (visited (contents String) (path Path) (AloemacsSession H)
       (AloemacsSession new
         (AloemacsEditor new
-          (((Text from-string contents) focus-at 0) case
-            (None () (Text from-string contents))
-            (Some (focused) focused))
+          ((Text from-string contents) indexed-value)
           (Position new 0 0)
           #f
           0
