@@ -61,14 +61,26 @@ design or implement a later layer in an earlier layer's conversation.
 | 4 | File | [`file/`](file/) | **Implemented.** Spec and aloemacs-file 000–003. | 3, existing Fs |
 | 5 | Index | [`index/`](index/) | **Implemented.** Spec and aloemacs-index 000–002. | 3–4 (editor + `Text` / File strings) |
 | 6 | Viewport | [`viewport/`](viewport/) | **Implemented.** Spec and aloemacs-viewport 000–002. | 5 (stored origin; reopen Loop §6) |
-| 7 | Undo | [`undo/`](undo/) | **Charter issued.** Designer writes `spec.md`. | 3–6 (edits + zipper sharing) |
+| 7 | Undo | [`undo/`](undo/) | **Implemented.** Spec and aloemacs-undo 000. | 3–6 (edits + zipper sharing) |
 
-The first-product ladder is Text through File. Index and
-Viewport made large files and Up feel like an editor. Undo is
-the next Aloe pressure: persistent history, one key, no
-mutation. The Scale charter stays withdrawn. The running
-program remains `examples/aloemacs/` plus
-`host/racket/aloemacs-run.rkt`.
+The first-product ladder is Text through File. Index, Viewport,
+and Undo are follow-ons: zipper lines, stored origin, persistent
+snapshots. The Scale charter stays withdrawn. Do not issue
+aloemacs-undo 001. The running program remains
+`examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
+
+## Idiom cleanups
+
+Locked one-slice cleanups. Each folder is a **standalone
+checkpoint** (no charter, no spec, no manager) unless it grows.
+
+| Identity | Path | This conversation |
+|---|---|---|
+| line-length | [`line-length/`](line-length/) | **Implemented.** aloemacs-line-length 000 |
+
+`clamp-column` / `max-zero` wait on
+[`../int-methods/`](../int-methods/) (`Int` `min` / `max`), then a
+later standalone inline.
 
 ## Not in this map
 

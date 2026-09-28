@@ -107,6 +107,9 @@
         (from-string (source) source)
         (indexed (above current below focus) current)))
 
+    (line-length () Int
+      ((self current-line) len))
+
     (has-previous? () Bool
       ((self indexed-value) case
         (from-string (source) #f)

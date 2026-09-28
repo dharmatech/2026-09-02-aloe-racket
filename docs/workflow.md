@@ -44,13 +44,21 @@ Decide whether the work exists, what it is for, what it is not, and
 how it splits into projects. Write a map and, when the shape is still
 open, a charter per project.
 
-This conversation does not write `spec.md`, does not write
-checkpoints, and does not implement.
+This conversation does not write `spec.md` and does not implement.
 
 When the work is already locked (a vocabulary, a SPEC amendment, a
 small kernel lift), the high-level discussion may write a **brief**
 that goes straight to a checkpoint manager. That is the "Brief"
 case in [`docs/editor/README.md`](editor/README.md).
+
+When the work is locked **and** fits one implementer conversation
+(a local idiom cleanup, a one-send move), the discussion may write
+a **standalone checkpoint** under
+`docs/design/implementation/<project>/…/checkpoints/000-slug.md`
+and hand that file to an implementer. No charter, no `spec.md`, no
+checkpoint manager. The file is a checkpoint: goal, files, tests,
+stop. If the implementer proves the slice is too big, stop and
+promote it to a charter.
 
 ### Designer
 
@@ -187,7 +195,7 @@ Typical next-conversation jobs:
 |---|---|
 | Designer | the project's `charter.md` |
 | Checkpoint manager | the project's `spec.md`, or a `*-designer.md` / `*-brief.md` / `checkpoint-manager.md` |
-| Implementer | the one checkpoint file |
+| Implementer | the one checkpoint file (including a discussion-written standalone 000) |
 
 ## When not to use this pipeline
 

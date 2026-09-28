@@ -17,11 +17,8 @@
     (scroll-col Int)
     (history (List UndoFrame)))
   (methods
-    (line-length (text Text) Int
-      ((text current-line) len))
-
     (clamp-column (column Int) (text Text) Int
-      (let ((length (self line-length text)))
+      (let ((length (text line-length)))
         (if (column > length)
             length
             column)))
@@ -188,7 +185,7 @@
                                  (Span new
                                    (Position new
                                      ((point line) - 1)
-                                     (self line-length previous))
+                                     (previous line-length))
                                    point)))
                             ((focused delete span) case
                               (None () (self unchanged))
@@ -209,7 +206,7 @@
                           (self with-text-and-point previous
                             (Position new
                               ((point line) - 1)
-                              (self line-length previous))))
+                              (previous line-length))))
                         (self unchanged)))))
             (((self text) focus-at (point line)) case
               (None () (self unchanged))
@@ -224,7 +221,7 @@
         (((self text) focus-at (point line)) case
           (None () (self unchanged))
           (Some (focused)
-            (let ((length (self line-length focused)))
+            (let ((length (focused line-length)))
               (if ((point column) < length)
                   (self with-text-and-point focused
                     (Position new
