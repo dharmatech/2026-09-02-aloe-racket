@@ -55,11 +55,7 @@
       (self case
         (from-string (stored-source) stored-source)
         (indexed (above current below focus)
-          (let ((all-lines (self lines)))
-            ((all-lines rest) fold
-              (all-lines first)
-              (fn (source line)
-                ((source append "\n") append line)))))))
+          ("\n" joined-with above current below))))
 
     (lines () (List String)
       (self case

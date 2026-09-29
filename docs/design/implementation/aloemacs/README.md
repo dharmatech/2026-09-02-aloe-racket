@@ -23,6 +23,7 @@ either editor.
 | What | Where |
 |---|---|
 | This map, charters, specs, checkpoints | `docs/design/implementation/aloemacs/` |
+| High-level discussion continuation | [`discussion.md`](discussion.md) |
 | Hands-on tour | [`demo.md`](demo.md) |
 | Editor program | `examples/aloemacs/` (promote to `apps/aloemacs/` only if it outgrows examples) |
 | General libraries the editor forces | `lib/` (`string.aloe`, later `text.aloe`) |
@@ -65,11 +66,21 @@ design or implement a later layer in an earlier layer's conversation.
 | 8 | Echo | [`echo/`](echo/) | **Implemented.** Spec and aloemacs-echo 000–001. | 4, 6 (path + text rectangle) |
 
 The first-product ladder is Text through File. Index, Viewport,
-and Undo are follow-ons. Echo is the next **editor** growth: a
-reserved row for path and save. Safe cells and faster
-`split-lines` are later, separate explorations. The Scale
-charter stays withdrawn. The running program remains
+and Undo are follow-ons. Echo is implemented. Faster
+`split-lines` / `to-string` is completed as a **language-library**
+series ([`../string-load-save/`](../string-load-save/)).
+Safe cells remain a later, separate display exploration. The
+Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
+
+## Related language work
+
+Visit and save use the linear String sends from the completed series beside
+this map.
+
+| Identity | Path | This conversation |
+|---|---|---|
+| string-load-save | [`../string-load-save/`](../string-load-save/) | **Implemented and accepted.** Checkpoints 000–001. |
 
 ## Idiom cleanups
 

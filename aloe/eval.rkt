@@ -1318,6 +1318,65 @@
        (error 'eval-aloe "String drop expects an Int argument"))
      (substring receiver
                 (min (max argument 0) (string-length receiver)))]
+    [(split-lines)
+     (unless (null? arguments)
+       (arity-error "String split-lines" 0 (length arguments)))
+     (define-values (piece-start reversed-pieces)
+       (for/fold ([piece-start 0] [reversed-pieces '()])
+                 ([index (in-range (string-length receiver))])
+         (if (char=? (string-ref receiver index) #\newline)
+             (values (add1 index)
+                     (cons (substring receiver piece-start index)
+                           reversed-pieces))
+             (values piece-start reversed-pieces))))
+     (make-list-value
+      (env-lookup environment 'List)
+      (reverse
+       (cons (substring receiver piece-start (string-length receiver))
+             reversed-pieces)))]
+    [(joined-with)
+     (unless (= (length arguments) 3)
+       (arity-error "String joined-with" 3 (length arguments)))
+     (define above (car arguments))
+     (define current (cadr arguments))
+     (define below (caddr arguments))
+     (define (string-list-elements value)
+       (unless (and (list-value? value)
+                    (let ([element-type (list-value-element-type value)])
+                      (or (not element-type) (eq? element-type 'String)))
+                    (for/and ([element (in-vector (list-value-elements value))])
+                      (string? element)))
+         (error 'eval-aloe
+                "String joined-with expects (List String) arguments"))
+       (list-value-elements value))
+     (define above-elements (string-list-elements above))
+     (unless (string? current)
+       (error 'eval-aloe "String joined-with expects a String current"))
+     (define below-elements (string-list-elements below))
+     (define piece-count
+       (+ (vector-length above-elements) 1 (vector-length below-elements)))
+     (define piece-length
+       (+ (for/sum ([piece (in-vector above-elements)]) (string-length piece))
+          (string-length current)
+          (for/sum ([piece (in-vector below-elements)]) (string-length piece))))
+     (define result
+       (make-string (+ piece-length
+                       (* (sub1 piece-count) (string-length receiver)))))
+     (define offset 0)
+     (define first-piece? #t)
+     (define (copy-piece! piece)
+       (unless first-piece?
+         (string-copy! result offset receiver)
+         (set! offset (+ offset (string-length receiver))))
+       (set! first-piece? #f)
+       (string-copy! result offset piece)
+       (set! offset (+ offset (string-length piece))))
+     (for ([index (in-range (sub1 (vector-length above-elements)) -1 -1)])
+       (copy-piece! (vector-ref above-elements index)))
+     (copy-piece! current)
+     (for ([piece (in-vector below-elements)])
+       (copy-piece! piece))
+     result]
     [else (send-to-string-method receiver selector arguments environment)]))
 
 (define (send-to-string-method receiver selector arguments environment)

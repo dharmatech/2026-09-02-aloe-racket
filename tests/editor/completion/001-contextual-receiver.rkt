@@ -48,7 +48,9 @@
      (append (String) String)
      (len () Int)
      (take (Int) String)
-     (drop (Int) String))))
+     (drop (Int) String)
+     (split-lines () (List String))
+     (joined-with ((List String) String (List String)) String))))
 
 (define point-float-rows
   (triples->specs
@@ -251,7 +253,7 @@
   (check-equal?
    (map signature-spec-selector
         (selector-receiver-observation-signatures answer))
-   '(= append len take drop repeat001 repeat001 before001)))
+   '(= append len take drop split-lines joined-with repeat001 repeat001 before001)))
 
 (define lexical-class-template
   (string-append

@@ -51,7 +51,11 @@
         (signature-spec 'append '(String) 'String)
         (signature-spec 'len '() 'Int)
         (signature-spec 'take '(Int) 'String)
-        (signature-spec 'drop '(Int) 'String)))
+        (signature-spec 'drop '(Int) 'String)
+        (signature-spec 'split-lines '() '(List String))
+        (signature-spec 'joined-with
+                        '((List String) String (List String))
+                        'String)))
 
 (define symbol-instance-signatures
   (list (signature-spec 'name '() 'String)

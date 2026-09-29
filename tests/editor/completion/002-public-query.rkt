@@ -96,8 +96,9 @@
     (len () Int)
     (take (Int) String)
     (drop (Int) String)
-    (starts-with? (String) Bool)
-    (split-lines () (List String))))
+    (split-lines () (List String))
+    (joined-with ((List String) String (List String)) String)
+    (starts-with? (String) Bool)))
 
 (define boid-triples
   '((position () (Point Float))
@@ -526,8 +527,9 @@
      "len"
      "take"
      "drop"
-     "starts-with?"
      "split-lines"
+     "joined-with"
+     "starts-with?"
      "leaky002"))
   (check-equal? (query-marked/result "(\"x\" leaky002|)") '())
   (check-equal? (query-marked/result "(missing-before p|)") '())

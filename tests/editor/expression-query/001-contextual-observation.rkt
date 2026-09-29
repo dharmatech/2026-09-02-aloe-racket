@@ -51,7 +51,9 @@
      (append (String) String)
      (len () Int)
      (take (Int) String)
-     (drop (Int) String))))
+     (drop (Int) String)
+     (split-lines () (List String))
+     (joined-with ((List String) String (List String)) String))))
 
 (define list-int-rows
   (triples->specs

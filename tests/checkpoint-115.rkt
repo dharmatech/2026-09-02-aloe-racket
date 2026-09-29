@@ -21,17 +21,7 @@
    "(define-methods String\n"
    "  (methods\n"
    "    (starts-with? (prefix String) Bool\n"
-   "      ((self take (prefix len)) = prefix))\n"
-   "\n"
-   "    (split-lines () (List String)\n"
-   "      (if ((self len) = 0)\n"
-   "          (List of \"\")\n"
-   "          (let ((first-character (self take 1))\n"
-   "                (remaining-lines ((self drop 1) split-lines)))\n"
-   "            (if (first-character = \"\\n\")\n"
-   "                (remaining-lines cons \"\")\n"
-   "                ((remaining-lines rest) cons\n"
-   "                  (first-character append (remaining-lines first)))))))))\n"))
+   "      ((self take (prefix len)) = prefix))))\n"))
 
 (define (checked-type source [environment (make-type-environment)])
   (type->datum (typecheck-source source environment)))
@@ -100,7 +90,7 @@
     "(\".bashrc\" starts-with? \".\")"
     raw-runtime-environment)))
 
-(test-case "the String library contains exactly the two derived Aloe methods"
+(test-case "the String library contains exactly the derived starts-with method"
   (check-equal? (file->string string-library-path)
                 exact-string-library-source)
   (check-match
@@ -129,13 +119,7 @@
         '=
         (list (variable-expr 'prefix _))
         _
-        _))
-      (method-declaration
-       'split-lines
-       '()
-       '()
-       '(List String)
-       _))
+        _)))
      _))))
 
 (define (define-string-reflection! environment)
@@ -155,36 +139,39 @@
   ((((checkpoint-115-string-rows rest) rest) rest) first))
 (define checkpoint-115-drop-row
   (((((checkpoint-115-string-rows rest) rest) rest) rest) first))
-(define checkpoint-115-starts-with-row
-  ((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) first))
 (define checkpoint-115-split-lines-row
+  ((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) first))
+(define checkpoint-115-joined-with-row
   (((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) rest) first))
+(define checkpoint-115-starts-with-row
+  ((((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
    environment))
 
 (define (row-selector environment row)
   (eval-source (format "((~a selector) name)" row) environment))
 
-(test-case "default String reflection exposes both Aloe methods after the kernel"
+(test-case "default String reflection exposes the kernel split before the Aloe method"
   (define environment (make-top-level-env))
   (void (define-string-reflection! environment))
 
   (check-equal?
    (eval-source "(checkpoint-115-string-messages len)" environment)
-   7)
+   8)
   (check-equal?
    (eval-source "(checkpoint-115-string-rows len)" environment)
-   7)
+   8)
   (check-equal?
    (for/list ([row (in-list '(checkpoint-115-equal-row
                               checkpoint-115-append-row
                               checkpoint-115-len-row
                               checkpoint-115-take-row
                               checkpoint-115-drop-row
-                              checkpoint-115-starts-with-row
-                              checkpoint-115-split-lines-row))])
+                              checkpoint-115-split-lines-row
+                              checkpoint-115-joined-with-row
+                              checkpoint-115-starts-with-row))])
      (row-selector environment row))
-   '("=" "append" "len" "take" "drop" "starts-with?" "split-lines"))
+   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "starts-with?"))
   (check-equal?
    (eval-source "((checkpoint-115-starts-with-row params) len)" environment)
    1)
@@ -218,10 +205,14 @@ ALOE
      "checkpoint-115-starts-with-row \".\")")
     environment)))
 
-(test-case "the derived String methods are not kernel messages"
+(test-case "starts-with stays Aloe-defined and split-lines moves to the kernel"
   (for ([path (in-list (list eval-path env-path type-path))])
     (check-false
-     (regexp-match? #rx"starts-with\\?|split-lines" (file->string path))
+     (regexp-match? #rx"starts-with\\?" (file->string path))
+     (path->string path)))
+  (for ([path (in-list (list eval-path type-path))])
+    (check-true
+     (regexp-match? #rx"split-lines" (file->string path))
      (path->string path))))
 
 (test-case "List library and String kernel behavior remain available"

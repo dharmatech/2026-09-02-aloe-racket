@@ -1712,12 +1712,13 @@
       STRING
       (format "String ~a expects a String argument" selector))
      (if (eq? selector '=) BOOL STRING)]
-    [(len)
+    [(len split-lines)
      (unless (null? arguments)
        (raise-type-error
-        "arity error for String len: expected 0 arguments, got ~a"
+        "arity error for String ~a: expected 0 arguments, got ~a"
+        selector
         (length arguments)))
-     INT]
+     (if (eq? selector 'len) INT (list-type STRING))]
     [(take drop)
      (unless (= (length arguments) 1)
        (raise-type-error
@@ -1730,6 +1731,20 @@
       argument-type
       INT
       (format "String ~a expects an Int argument" selector))
+     STRING]
+    [(joined-with)
+     (unless (= (length arguments) 3)
+       (raise-type-error
+        "arity error for String joined-with: expected 3 arguments, got ~a"
+        (length arguments)))
+     (for ([argument (in-list arguments)]
+           [expected-type (in-list (list (list-type STRING)
+                                         STRING
+                                         (list-type STRING)))])
+       (define actual-type
+         (infer-expression argument environment expected-type))
+       (unify-types! actual-type expected-type
+                     "String joined-with argument type mismatch"))
      STRING]
     [else
      (infer-defined-string-method selector arguments environment)]))

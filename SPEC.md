@@ -561,12 +561,28 @@ and otherwise a fresh type variable.
 | `(s append other)` | concatenation | `String`, with `other : String` |
 | `(s len)` | character count | `Int` |
 | `(s take n)` | prefix clamped to the string bounds | `String`, with `n : Int` |
+| `(s drop n)` | suffix after a clamped number of characters | `String`, with `n : Int` |
+| `(s split-lines)` | LF-delimited pieces, including empty pieces | `(List String)` |
+| `(separator joined-with above current below)` | join the Text zipper pieces | `String`, with `above`, `below` : `(List String)` and `current` : `String` |
 
 `take` returns `""` when `n <= 0`, all of `s` when `n` is at least its
-length, and otherwise its first `n` characters. `starts-with?` is an Aloe
-method defined in `lib/string.aloe` and installed in default environments,
-parallel to List's Aloe-defined `fold`, `reverse`, and `map`. The four kernel
-messages above remain primitive and take precedence during ordinary dispatch.
+length, and otherwise its first `n` characters. `drop` returns all of `s`
+when `n <= 0`, `""` when `n` is at least its length, and otherwise the suffix
+after its first `n` characters. `split-lines` splits at every LF and preserves
+empty pieces, including the final piece after a trailing LF. CR, BOM, and
+Unicode characters are ordinary content. Positions use Racket character
+units. `starts-with?` is an Aloe method defined in `lib/string.aloe` and
+installed in default environments, parallel to List's Aloe-defined `fold`,
+`reverse`, and `map`. The seven kernel messages above remain primitive and take
+precedence during ordinary dispatch.
+
+`joined-with` copies `reverse(above), current, below` in that order, placing
+the receiver String between adjacent pieces. `above` stores its nearest
+predecessor first. Empty sides add no piece; `current` always counts as one,
+even when empty. Empty pieces preserve their surrounding separators, including
+a trailing separator for a final empty `below` piece. An empty separator
+concatenates the pieces. This kernel send scans the existing List vectors and
+copies into one result String.
 
 ---
 

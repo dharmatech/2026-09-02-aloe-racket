@@ -74,14 +74,18 @@
     (check-exn #rx"String drop expects an Int argument"
                (lambda () (raw-eval datum)))))
 
-(test-case "String reflection exposes drop as the fifth exact kernel row"
+(test-case "String reflection exposes drop then split-lines as exact kernel rows"
   (check-equal?
    (kernel-instance-signature-specs 'String)
    (list (signature-spec '= '(String) 'Bool)
          (signature-spec 'append '(String) 'String)
          (signature-spec 'len '() 'Int)
          (signature-spec 'take '(Int) 'String)
-         (signature-spec 'drop '(Int) 'String)))
+         (signature-spec 'drop '(Int) 'String)
+         (signature-spec 'split-lines '() '(List String))
+         (signature-spec 'joined-with
+                         '((List String) String (List String))
+                         'String)))
   (check-equal? (kernel-class-object-signature-specs 'String) '())
 
   (define state (make-driver))
@@ -91,8 +95,7 @@
                   (define prerequisite-drop-row
                     (((((prerequisite-rows rest) rest) rest) rest) first))
                   (define prerequisite-split-lines-row
-                    (((((((prerequisite-rows rest) rest) rest) rest) rest)
-                      rest)
+                    ((((((prerequisite-rows rest) rest) rest) rest) rest)
                      first))))])
     (void (driver-eval! state datum)))
   (check-equal?
@@ -116,7 +119,7 @@
   (check-equal?
    (driver-eval! state '((prerequisite-split-lines-row selector) name))
    "split-lines")
-  (check-false
+  (check-true
    (for/or ([row (in-list (kernel-instance-signature-specs 'String))])
      (eq? (signature-spec-selector row) 'split-lines)))
   (for ([datum (in-list '((String new)
@@ -138,7 +141,7 @@
                       (list "a\r\nb" '("a\r" "b"))))])
     (check-list! state (car entry) (cadr entry))))
 
-(test-case "default drivers load both String methods and retain List behavior"
+(test-case "default drivers load the String method and retain List behavior"
   (define state (make-driver))
   (check-true (driver-eval! state '(".bashrc" starts-with? ".")))
   (check-list! state "ready\n" '("ready" ""))
@@ -148,26 +151,26 @@
     '((List of 1 2 3) fold 0 (fn (sum item) (sum + item))))
    6))
 
-(test-case "raw environments retain the library bootstrap boundary"
+(test-case "raw environments know split-lines without the String library"
   (define runtime-environment (runtime:make-top-level-env))
   (check-equal?
    (eval-expr (parse-datum '("abc" drop 1)) runtime-environment)
    "bc")
-  (check-exn
-   #rx"unknown message: split-lines"
-   (lambda ()
-     (eval-expr
-      (parse-datum '("a\nb" split-lines))
-      runtime-environment)))
+  (check-equal?
+   (aloe-value->string
+    (eval-expr
+     (parse-datum '("a\nb" split-lines))
+     runtime-environment))
+   "#<List \"a\" \"b\">")
 
   (define type-environment (checker:make-type-environment))
   (check-equal?
    (checker:type->datum
     (checker:type-of (parse-datum '("abc" drop 1)) type-environment))
    'String)
-  (check-exn
-   checker:exn:fail:aloe-type?
-   (lambda ()
-     (checker:type-of
-      (parse-datum '("a\nb" split-lines))
-      type-environment))))
+  (check-equal?
+   (checker:type->datum
+    (checker:type-of
+     (parse-datum '("a\nb" split-lines))
+     type-environment))
+   '(List String)))
