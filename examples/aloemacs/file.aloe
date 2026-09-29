@@ -5,13 +5,15 @@
   (fields
     (editor AloemacsEditor)
     (fs (Fs H))
-    (path (Option Path)))
+    (path (Option Path))
+    (echo String))
   (methods
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
         editor
         (self fs)
-        (self path)))
+        (self path)
+        (self echo)))
 
     (unchanged () (AloemacsSession H)
       self)
@@ -26,7 +28,8 @@
           0
           (List empty))
         (self fs)
-        (Option Some path)))
+        (Option Some path)
+        ""))
 
     (text () Text
       ((self editor) text))
@@ -62,10 +65,47 @@
       (self with-editor ((self editor) request-quit)))
 
     (frame (columns Int) (rows Int) String
-      ((self editor) frame columns rows))
+      (let ((editor (self editor))
+            (text-rows (if (rows >= 2) (rows - 1) rows)))
+        (let ((body (editor frame columns text-rows)))
+          (if (rows < 2)
+              body
+              (let ((point (editor point))
+                    (label
+                      ((self path) case
+                        (None () "untitled")
+                        (Some (path) (path text)))))
+                (let ((row
+                        (cond
+                          (((self echo) = "saved")
+                            ("saved: " append label))
+                          (((self echo) = "failed")
+                            ("failed: " append label))
+                          (else label))))
+                  (let ((cursor-row (((point line) - (editor scroll-row)) + 1))
+                        (cursor-column
+                          (((point column) - (editor scroll-col)) + 1)))
+                    ((List of
+                       body
+                       "\u001b[?25l"
+                       "\u001b["
+                       (rows text)
+                       ";1H"
+                       (row take columns)
+                       "\u001b["
+                       (cursor-row text)
+                       ";"
+                       (cursor-column text)
+                       "H"
+                       "\u001b[?25h")
+                     fold
+                     ""
+                     (fn (acc part) (acc append part))))))))))
 
     (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
-      (self with-editor ((self editor) ensure-visible columns rows)))
+      (self with-editor
+        ((self editor) ensure-visible columns
+          (if (rows >= 2) (rows - 1) rows))))
 
     (visit (path Path) (Option (AloemacsSession H))
       (let ((resolved ((self fs) path (path text))))
@@ -96,7 +136,15 @@
         ((self quit) (self unchanged))
         ((key = "save")
          ((self save) case
-           (None () (self unchanged))
-           (Some (session) session)))
+           (None ()
+             (AloemacsSession new
+               (self editor) (self fs) (self path) "failed"))
+           (Some (session)
+             (AloemacsSession new
+               (session editor) (session fs) (session path) "saved"))))
         (else
-         (self with-editor ((self editor) handle-key key)))))))
+         (AloemacsSession new
+           ((self editor) handle-key key)
+           (self fs)
+           (self path)
+           ""))))))

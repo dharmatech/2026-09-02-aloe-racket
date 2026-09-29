@@ -41,7 +41,8 @@
       (AloemacsSession new
         editor
         (Fs new fs-host)
-        (Option Some (Path new "/cwd/a.txt")))))
+        (Option Some (Path new "/cwd/a.txt"))
+        "prior")))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -56,7 +57,9 @@
   (check-equal? (driver-eval! state '((editor unchanged) scroll-col)) 3)
   (check-equal? (driver-eval! state '(((editor unchanged) history) len)) 1)
   (check-equal? (driver-eval! state '(((session unchanged) path) present?))
-                #t))
+                #t)
+  (check-equal? (driver-eval! state '((session unchanged) echo))
+                "prior"))
 
 (test-case "visit indexes the first line of nonempty and empty text"
   (define state (make-session-state))
@@ -72,7 +75,8 @@
           0
           (List empty))
         (Fs new fs-host)
-        (Option Some (Path new "/cwd/a.txt")))))
+        (Option Some (Path new "/cwd/a.txt"))
+        "prior")))
   (driver-eval!
    state
    '(define visited
@@ -82,6 +86,7 @@
   (check-equal? (driver-eval! state '((visited text) focus-line)) 0)
   (check-equal? (driver-eval! state '((visited text) current-line)) "a")
   (check-equal? (driver-eval! state '((visited text) to-string)) "a\nb")
+  (check-equal? (driver-eval! state '(visited echo)) "")
 
   (driver-eval!
    state
@@ -91,4 +96,5 @@
         (Some (session) session))))
   (check-equal? (driver-eval! state '((empty-visit text) focus-line)) 0)
   (check-equal? (driver-eval! state '((empty-visit text) current-line)) "")
-  (check-equal? (driver-eval! state '((empty-visit text) to-string)) ""))
+  (check-equal? (driver-eval! state '((empty-visit text) to-string)) "")
+  (check-equal? (driver-eval! state '(empty-visit echo)) ""))

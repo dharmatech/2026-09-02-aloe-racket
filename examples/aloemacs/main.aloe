@@ -12,4 +12,5 @@
     (Fs new fs-host)
     (if #t
         (Option None)
-        (Option Some (Path new "/typed-none")))))
+        (Option Some (Path new "/typed-none")))
+    ""))

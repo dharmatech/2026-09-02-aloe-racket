@@ -32,7 +32,8 @@
           (Text from-string "draft") (Position new 0 0)
           #f 0 0 (List empty))
         (Fs new fs-host)
-        ,no-path))))
+        ,no-path
+        ""))))
 
 (define (step! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -90,7 +91,9 @@
   (check-equal? (history-len state 'saved) 2)
   (check-equal? (disk-text state "/cwd/old.txt") "Xza\r\nb\r\n")
   (step! state 'saved-key '(saved handle-key "save"))
-  (same state 'saved-key 'saved)
+  (for ([field (in-list '(editor fs path))])
+    (same state `(saved-key ,field) `(saved ,field)))
+  (check-equal? (driver-eval! state '(saved-key echo)) "saved")
   (check-equal? (history-len state 'saved-key) 2)
   ;; A changed backing file makes any accidental write during undo visible.
   (driver-eval! state '(fs-host write "/cwd/old.txt" "external"))
@@ -110,7 +113,9 @@
   (step! state 'resaved '(twice handle-key "save"))
   (check-equal? (disk-text state "/cwd/old.txt") "a\r\nb\r\n")
   (check-equal? (history-len state 'resaved) 0)
-  (same state 'resaved 'twice)
+  (for ([field (in-list '(editor fs path))])
+    (same state `(resaved ,field) `(twice ,field)))
+  (check-equal? (driver-eval! state '(resaved echo)) "saved")
   (check-equal? (text state 'handled) "Xza\r\nb\r\n"))
 
 (test-case "direct newline and backspace undo; untitled save remains a no-op"
@@ -123,7 +128,9 @@
   (same state '(undone editor) '(newline editor))
   (check-equal? (history-len state 'undone) 1)
   (step! state 'untitled-save '(undone handle-key "save"))
-  (same state 'untitled-save 'undone)
+  (for ([field (in-list '(editor fs path))])
+    (same state `(untitled-save ,field) `(undone ,field)))
+  (check-equal? (driver-eval! state '(untitled-save echo)) "failed")
   (check-equal? (history-len state 'untitled-save) 1)
   (step! state 'bottom '(untitled-save handle-key "undo"))
   (same state 'bottom 'source))

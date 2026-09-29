@@ -74,7 +74,8 @@
   `(AloemacsSession new
      ,editor
      (Fs new fs-host)
-     ,(if path `(Option Some (Path new ,path)) no-path)))
+     ,(if path `(Option Some (Path new ,path)) no-path)
+     ""))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -98,6 +99,7 @@
             ((,session editor) AloemacsEditor)
             ((,session fs) (Fs FsHost))
             ((,session path) (Option Path))
+            ((,session echo) String)
             ((,session ensure-visible 4 2) (AloemacsSession FsHost))))])
     (check-equal? (driver-type state (car entry)) (cadr entry)))
   (for ([datum
@@ -221,7 +223,9 @@
                 `(define untitled ,(session-expression 'editor #f)))
   (driver-eval! state '(define no-save (untitled handle-key "save")))
   (check-origin state '(no-save editor) 1 2)
-  (check-same state 'no-save 'untitled)
+  (for ([field (in-list '(editor fs path))])
+    (check-same state `(no-save ,field) `(untitled ,field)))
+  (check-equal? (driver-eval! state '(no-save echo)) "failed")
   (check-equal?
    (driver-eval! state
                  '((untitled save) case

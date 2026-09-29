@@ -1,10 +1,11 @@
 # Try aloemacs
 
 A hands-on tour of the first-product ladder: one buffer, a full-screen
-frame, visit a path, type, save with Ctrl-S, quit with Escape. There is
-no status line, no minibuffer, and no `C-x` prefix, so save is silent
-and easy to miss. This file describes behavior that already exists. It
-does not change the specs.
+frame, visit a path, type, save with Ctrl-S, quit with Escape. The bottom
+echo row shows `untitled` or the bound path and reports `saved:` or
+`failed:` after Ctrl-S until the next key. There is no minibuffer or
+`C-x` prefix. This file describes behavior that already exists. It does
+not change the specs.
 
 ## Start
 
@@ -38,11 +39,11 @@ non-file is refused and the runner exits.
 | Return | Newline |
 | Backspace | Delete backward (joins lines at column 0) |
 | Arrow keys | Move; wrap at line ends; clamp on up/down |
-| **Ctrl-S** | Save. Writes the current text to the **bound** path. No echo. |
+| **Ctrl-S** | Save. Writes the current text to the **bound** path and reports success or failure on the echo row. |
 | **Escape** | Quit. Does **not** save. |
 
-Untitled Ctrl-S does nothing (no path). There is no prompt and no
-“saved” message.
+Untitled Ctrl-S writes nothing and shows `failed: untitled`. There is no
+prompt.
 
 ## Steps
 
@@ -63,7 +64,7 @@ Use a throwaway file so you do not overwrite anything you care about.
    If that file did not exist, the buffer is empty but bound to
    `/tmp/aloemacs-demo.txt`. Type a short line, for example `demo`.
 
-3. **Save.** Press **Ctrl-S**. The screen does not change. Press
+3. **Save.** Press **Ctrl-S**. The echo row shows `saved:` and the bound path. Press
    Escape. In another terminal:
 
    ```sh

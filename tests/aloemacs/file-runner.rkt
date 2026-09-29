@@ -4,6 +4,7 @@
          racket/list
          racket/port
          racket/runtime-path
+         racket/string
          rackunit
          "../../aloe/host.rkt"
          "../../host/racket/aloemacs-run.rkt"
@@ -13,13 +14,16 @@
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 
 (define empty-frame
-  "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\r\n\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")
 
 (define loaded-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\r\n\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[1;1H\u001b[?25h")
 
 (define inserted-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\r\n\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/new\u001b[1;2H\u001b[?25h")
+
+(define saved-x-frame
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[4;1Hsaved: /\u001b[1;2H\u001b[?25h")
 
 (struct scripted-term
   (receiver remaining-keys key-calls size-calls events)
@@ -122,7 +126,8 @@
   (define escape-fs (make-fs-double "/cwd" (hash "/cwd" 'directory)))
   (run-aloemacs-with-hosts
    (scripted-term-receiver escape-term) escape-fs "new.txt")
-  (check-term-observations escape-term 1 2 (list empty-frame))
+  (check-term-observations escape-term 1 2
+                           (list (string-replace empty-frame "untitled" "/cwd/new")))
   (check-equal? (fs-send escape-fs 'kind "/cwd/new.txt") "missing")
   (check-equal? (fs-send escape-fs 'names "/cwd") '())
 
@@ -133,7 +138,8 @@
   (check-equal? (unbox (scripted-term-remaining-keys save-term)) '())
   (check-term-observations
    save-term 3 6
-   (list empty-frame inserted-x-frame inserted-x-frame))
+   (list (string-replace empty-frame "untitled" "/cwd/new")
+         inserted-x-frame saved-x-frame))
   (check-equal? (fs-send save-fs 'kind "/cwd/new.txt") "file")
   (check-equal? (fs-send save-fs 'read "/cwd/new.txt") "x")
   (check-equal? (fs-send save-fs 'names "/cwd") '("new.txt")))

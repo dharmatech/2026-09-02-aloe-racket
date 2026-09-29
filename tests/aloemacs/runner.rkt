@@ -33,13 +33,14 @@
         (Fs new fs-host)
         (if #t
             (Option None)
-            (Option Some (Path new "/typed-none")))))))
+            (Option Some (Path new "/typed-none")))
+        ""))))
 
 (define empty-frame
-  "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\r\n\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")
 
 (define x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\r\n\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;2H\u001b[?25h")
 
 (define (source-datums path)
   (call-with-input-file path
@@ -143,6 +144,7 @@
   (check-equal? (driver-eval! state '((aloemacs-editor point) column)) 0)
   (check-false (driver-eval! state '(aloemacs-editor quit)))
   (check-false (driver-eval! state '((aloemacs-editor path) present?)))
+  (check-equal? (driver-eval! state '(aloemacs-editor echo)) "")
   (check-equal? (driver-eval! state '(fs-host read "/cwd/kept.txt"))
                 "kept")
   (check-equal? (driver-eval! state '((fs-host names "/cwd") len)) 1)

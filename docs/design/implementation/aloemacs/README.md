@@ -62,11 +62,13 @@ design or implement a later layer in an earlier layer's conversation.
 | 5 | Index | [`index/`](index/) | **Implemented.** Spec and aloemacs-index 000–002. | 3–4 (editor + `Text` / File strings) |
 | 6 | Viewport | [`viewport/`](viewport/) | **Implemented.** Spec and aloemacs-viewport 000–002. | 5 (stored origin; reopen Loop §6) |
 | 7 | Undo | [`undo/`](undo/) | **Implemented.** Spec and aloemacs-undo 000. | 3–6 (edits + zipper sharing) |
+| 8 | Echo | [`echo/`](echo/) | **Implemented.** Spec and aloemacs-echo 000–001. | 4, 6 (path + text rectangle) |
 
 The first-product ladder is Text through File. Index, Viewport,
-and Undo are follow-ons: zipper lines, stored origin, persistent
-snapshots. The Scale charter stays withdrawn. Do not issue
-aloemacs-undo 001. The running program remains
+and Undo are follow-ons. Echo is the next **editor** growth: a
+reserved row for path and save. Safe cells and faster
+`split-lines` are later, separate explorations. The Scale
+charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
 ## Idiom cleanups
@@ -105,6 +107,7 @@ Easy to smuggle in. They are not.
 | Index | No-TTY Down + frame at the start **and** end of a many-line fixture |
 | Viewport | Down to last screen row, then Up: cursor row decreases, `top` holds |
 | Undo | Insert/newline/backspace then undo restores prior text and point |
+| Echo | Frame shows untitled or path; save success vs failure |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

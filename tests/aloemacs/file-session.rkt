@@ -81,13 +81,14 @@
      0
      (List empty)))
 
-(define (session-expression source line column quit [path #f])
+(define (session-expression source line column quit [path #f] [echo ""])
   `(AloemacsSession new
      ,(editor-expression source line column quit)
      (Fs new fs-host)
      ,(if path
           `(Option Some (Path new ,path))
-          no-path-expression)))
+          no-path-expression)
+     ,echo))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -106,6 +107,11 @@
   (check-not-exn
    (lambda () (driver-eval! state `(check ,actual ,expected)))
    (format "structural equality of ~s and ~s" actual expected)))
+
+(define (check-key-save state actual expected echo)
+  (for ([field (in-list '(editor fs path))])
+    (check-structurally-equal state `(,actual ,field) `(,expected ,field)))
+  (check-equal? (driver-eval! state `(,actual echo)) echo))
 
 (define (check-session state expression source line column quit path)
   (check-equal?
@@ -161,6 +167,7 @@
           '(((session editor) AloemacsEditor)
             ((session fs) (Fs FsHost))
             ((session path) (Option Path))
+            ((session echo) String)
             ((session text) Text)
             ((session point) Position)
             ((session quit) Bool)
@@ -408,7 +415,8 @@
      `(AloemacsSession new
         ((source editor) ,selector ,@arguments)
         (source fs)
-        (source path))))
+        (source path)
+        (source echo))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -426,7 +434,8 @@
      `(AloemacsSession new
         ((source editor) handle-key ,key)
         (source fs)
-        (source path))))
+        (source path)
+        (source echo))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))
@@ -440,21 +449,23 @@
   (define-session! state 'untitled "draft" 0 2 #f)
   (driver-eval! state '(define untitled-save-key
                          (untitled handle-key "save")))
-  (check-structurally-equal state 'untitled-save-key 'untitled)
+  (check-key-save state 'untitled-save-key 'untitled "failed")
 
   (define-session! state 'ineligible "draft" 0 2 #f "/cwd/dir")
   (driver-eval! state '(define ineligible-save-key
                          (ineligible handle-key "save")))
-  (check-structurally-equal state 'ineligible-save-key 'ineligible)
+  (check-key-save state 'ineligible-save-key 'ineligible "failed")
 
   (driver-eval! state '(fs-host write "/cwd/a.txt" "before-save-key"))
   (driver-eval! state '(define save-key-result
                          (source handle-key "save")))
-  (check-structurally-equal state 'save-key-result 'source)
+  (check-key-save state 'save-key-result 'source "saved")
   (check-equal? (raw-read state "/cwd/a.txt") "ab\ncd")
 
   (define expected-frame
-    (driver-eval! state '((source editor) frame 5 3)))
+    (string-append
+     (driver-eval! state '((source editor) frame 5 2))
+     "\u001b[?25l\u001b[3;1H/cwd/\u001b[2;2H\u001b[?25h"))
   (define source-before-frame
     (driver-eval! state '((source text) to-string)))
   (check-equal? (driver-eval! state '(source frame 5 3)) expected-frame)
