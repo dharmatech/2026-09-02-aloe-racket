@@ -24,6 +24,7 @@ either editor.
 |---|---|
 | This map, charters, specs, checkpoints | `docs/design/implementation/aloemacs/` |
 | High-level discussion continuation | [`discussion.md`](discussion.md) |
+| Upcoming explorations (ranked) | [`explorations.md`](explorations.md) |
 | Hands-on tour | [`demo.md`](demo.md) |
 | Editor program | `examples/aloemacs/` (promote to `apps/aloemacs/` only if it outgrows examples) |
 | General libraries the editor forces | `lib/` (`string.aloe`, later `text.aloe`) |
@@ -46,6 +47,7 @@ design or implement a later layer in an earlier layer's conversation.
 - Static first. No `Mirror`, no live `eval`, no hot reload, no
   config-as-running-image.
 - ASCII, one cell per character, until a later layer says otherwise.
+  Safe cells keeps this lock: a control paints as one space.
 - Host stays a typed injected capability. ANSI sequences are Aloe
   strings, not new Term methods, unless a slice proves otherwise.
 - Do not mix these checkpoints into `CHECKPOINTS.md` unless the
@@ -64,13 +66,15 @@ design or implement a later layer in an earlier layer's conversation.
 | 6 | Viewport | [`viewport/`](viewport/) | **Implemented.** Spec and aloemacs-viewport 000–002. | 5 (stored origin; reopen Loop §6) |
 | 7 | Undo | [`undo/`](undo/) | **Implemented.** Spec and aloemacs-undo 000. | 3–6 (edits + zipper sharing) |
 | 8 | Echo | [`echo/`](echo/) | **Implemented.** Spec and aloemacs-echo 000–001. | 4, 6 (path + text rectangle) |
+| 9 | Safe cells | [`safe-cells/`](safe-cells/) | **Implemented.** Spec and aloemacs-safe-cells 000. | 3, 8 (frame bytes + echo label) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
 `split-lines` / `to-string` is completed as a **language-library**
 series ([`../string-load-save/`](../string-load-save/)).
-Safe cells remain a later, separate display exploration. The
-Scale charter stays withdrawn. The running program remains
+**Safe cells** is implemented at [`safe-cells/`](safe-cells/).
+Ranked later work lives in [`explorations.md`](explorations.md). The Scale charter
+stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
 ## Related language work
@@ -119,6 +123,7 @@ Easy to smuggle in. They are not.
 | Viewport | Down to last screen row, then Up: cursor row decreases, `top` holds |
 | Undo | Insert/newline/backspace then undo restores prior text and point |
 | Echo | Frame shows untitled or path; save success vs failure |
+| Safe cells | No-TTY frame: ESC, tab, CR, and DEL in text and in the echo label display as spaces; save writes the original bytes |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

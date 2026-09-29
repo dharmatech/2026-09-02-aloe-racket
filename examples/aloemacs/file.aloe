@@ -91,7 +91,7 @@
                        "\u001b["
                        (rows text)
                        ";1H"
-                       (row take columns)
+                       (editor safe-cells (row take columns))
                        "\u001b["
                        (cursor-row text)
                        ";"

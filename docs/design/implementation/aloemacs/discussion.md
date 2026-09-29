@@ -20,8 +20,10 @@ The human reviews it and opens a **different** conversation for
 implement.
 
 string-load-save 000–001 is implemented. Do not reopen that
-series from this role, and do not write `spec.md` here. The next
-increment is whichever exploration the human names.
+series from this role, and do not write `spec.md` here. Ranked
+later work is [`explorations.md`](explorations.md). Safe cells
+is implemented at [`safe-cells/`](safe-cells/). The next increment
+is whichever exploration the human names.
 
 ## How this conversation works
 
@@ -46,7 +48,8 @@ layer is the topic; do not survey the whole tree on every turn.
 | Layers 1–8 (Text through Echo) | Implemented |
 | Idiom cleanups (line-length through visited-unchanged) | Implemented |
 | [`../string-load-save/`](../string-load-save/) | **Implemented.** 000–001 |
-| Safe cells (`ESC` / tab / `CR` on the TTY) | Later, separate display exploration |
+| Safe cells (`ESC` / tab / `CR` on the TTY) | **Implemented.** [`safe-cells/`](safe-cells/), checkpoint 000 |
+| Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
 | Program | `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt` |
@@ -82,7 +85,8 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, prefix `C-x`, minibuffer, search
+- Windows, prefix `C-x`, minibuffer, search (see
+  [`explorations.md`](explorations.md) for order)
 - Live `eval` / Mirror
 
 Chez Emacs (`/home/dharmatech/src/e`) and Legmacs
