@@ -102,6 +102,33 @@ Does not start the next checkpoint. Does not silently add adjacent
 features. Does not amend `SPEC.md` or a public API unless the
 checkpoint says so.
 
+## Host verification
+
+From the project root, tests are:
+
+```sh
+TMPDIR=/tmp raco test -y <paths>
+```
+
+`<paths>` is the checkpoint's test file, then any wider suite that
+checkpoint names. `-y` is required. It rebuilds Racket bytecode for
+changed `.rkt` modules and for modules that depend on them. A
+checkpoint that writes `raco test` without `-y` is still run with
+`-y`.
+
+`compiled/` is gitignored. Do not commit it.
+
+`./bin/aloe` and `racket host/racket/aloemacs-run.rkt` load bytecode
+and do not rebuild it. After a `.rkt` edit, run the test command, or:
+
+```sh
+raco make host/racket/aloemacs-run.rkt bin/aloe
+```
+
+before launching. `.aloe` edits do not need that rebuild. Do not put
+`raco make` on every launch. Do not add `-j` unless the checkpoint
+asks for it.
+
 ## Checkpoint size
 
 A checkpoint is one conversation of implementation.

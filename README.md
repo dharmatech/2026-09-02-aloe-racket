@@ -62,6 +62,34 @@ From the project directory, after loading the Racket path from your profile:
 The first command starts the REPL. Loading a file without `--quit` evaluates it
 and then opens the REPL with its definitions and classes still available.
 
+## Bytecode
+
+Racket bytecode is written under `compiled/` next to the sources and
+is gitignored. Refresh it before a launch when `.rkt` files have
+changed and you are not about to run the tests:
+
+```sh
+raco make host/racket/aloemacs-run.rkt bin/aloe
+```
+
+Tests refresh bytecode for the modules they load, including test-only
+modules the command above does not reach:
+
+```sh
+TMPDIR=/tmp raco test -y tests
+```
+
+A narrower path works the same way:
+
+```sh
+TMPDIR=/tmp raco test -y tests/aloemacs
+```
+
+`./bin/aloe` and `racket host/racket/aloemacs-run.rkt` load that
+bytecode and do not rebuild it. A launch, or a test run that omits
+`-y`, can load an old `.zo` of a module that was not itself edited,
+so the run does not match the sources.
+
 ## 0.1 goal
 
 Typecheck [examples/boids.aloe](examples/boids.aloe) and evaluate `(demo step)`.

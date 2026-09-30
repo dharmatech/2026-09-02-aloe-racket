@@ -6,6 +6,16 @@ This file is for implementing an approved checkpoint.
 
 - Implement one checkpoint at a time. Do not skip ahead to Boids.
 - Add tests in the same change. Run them. Stop when green.
+- Run tests as `TMPDIR=/tmp raco test -y <paths>` from the project
+  root. `-y` rebuilds bytecode for `.rkt` files that changed and for
+  modules that depend on them. Include `-y` even when the checkpoint
+  writes `raco test` without it. `TMPDIR=/tmp` is required for agent
+  runs.
+- Do not commit `compiled/`. It is gitignored.
+- `./bin/aloe` and `racket host/racket/aloemacs-run.rkt` load existing
+  bytecode and do not rebuild it. After a `.rkt` edit, run the test
+  command, or `raco make host/racket/aloemacs-run.rkt bin/aloe`,
+  before launching. Editing only `.aloe` files needs no rebuild.
 - Evaluation is send, not apply. Head of a list is the receiver. Second element is a literal selector.
 - `(f x)` does not call `f`. Function objects only run via `(f call x ...)`.
 - `let` = `((fn (names ...) body) call exprs ...)`.
