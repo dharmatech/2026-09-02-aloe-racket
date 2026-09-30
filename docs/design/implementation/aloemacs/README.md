@@ -100,6 +100,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | viewport-top | [`viewport-top/`](viewport-top/) | **Implemented.** aloemacs-viewport-top 000 |
 | next-lines | [`next-lines/`](next-lines/) | **Implemented.** aloemacs-next-lines 000 |
 | visited-unchanged | [`visited-unchanged/`](visited-unchanged/) | **Implemented.** aloemacs-visited-unchanged 000 |
+| safe-cell-scan | [`safe-cell-scan/`](safe-cell-scan/) | **Implemented.** aloemacs-safe-cell-scan 000 |
 
 ## Not in this map
 

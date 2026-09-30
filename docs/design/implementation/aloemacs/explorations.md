@@ -31,6 +31,7 @@ withdrawn.
 | Core | Text, Term, Loop, File, Index, Viewport, Undo, Echo | Implemented |
 | Language | `string-load-save` (`split-lines`, `joined-with`) | Implemented |
 | Idiom | line-length, int-min, viewport-top, next-lines, visited-unchanged | Implemented |
+| Idiom | safe-cell-scan ([`safe-cell-scan/`](safe-cell-scan/)) | Implemented. Standalone 000 |
 | Display | safe cells (text rows and echo label) | Implemented |
 
 ---
