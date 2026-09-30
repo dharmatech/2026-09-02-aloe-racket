@@ -1,8 +1,24 @@
 # Agent rules for Aloe 0.1
 
-Read `SPEC.md` and `CHECKPOINTS.md` before writing code.
 How work is split across conversations is [`docs/workflow.md`](docs/workflow.md).
-This file is for implementing an approved checkpoint.
+Read that file before proposing a product change.
+
+A conversation with no assigned role is a high-level discussion.
+It does not implement, and it does not write `spec.md`. When a
+change is ready to leave this conversation, name these two exits
+and wait:
+
+- an exploration charter (`README.md` and `charter.md`), for later
+  conversations to write the spec, the checkpoints, and the
+  implementation
+- a standalone checkpoint, only when the work is already locked
+  and fits one implementer conversation
+
+Do not offer to edit the product from this role.
+
+The rules below apply when this conversation has been given one
+approved checkpoint to implement. Read `SPEC.md` and
+`CHECKPOINTS.md` before writing code.
 
 - Implement one checkpoint at a time. Do not skip ahead to Boids.
 - Add tests in the same change. Run them. Stop when green.

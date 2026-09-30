@@ -46,6 +46,11 @@ open, a charter per project.
 
 This conversation does not write `spec.md` and does not implement.
 
+A new conversation that names no role is this role. When a change
+is ready to leave it, name a charter or a standalone checkpoint and
+wait. Do not offer to edit the product. A conversation that names a
+role follows that role.
+
 When the work is already locked (a vocabulary, a SPEC amendment, a
 small kernel lift), the high-level discussion may write a **brief**
 that goes straight to a checkpoint manager. That is the "Brief"
