@@ -1746,6 +1746,17 @@
        (unify-types! actual-type expected-type
                      "String joined-with argument type mismatch"))
      STRING]
+    [(find)
+     (unless (= (length arguments) 2)
+       (raise-type-error
+        "arity error for String find: expected 2 arguments, got ~a"
+        (length arguments)))
+     (for ([argument (in-list arguments)]
+           [expected-type (in-list (list STRING INT))])
+       (define actual-type (infer-expression argument environment expected-type))
+       (unify-types! actual-type expected-type
+                     "String find argument type mismatch"))
+     (type-from-sexpr '(Option Int) environment (make-hasheq))]
     [else
      (infer-defined-string-method selector arguments environment)]))
 

@@ -1377,6 +1377,34 @@
      (for ([piece (in-vector below-elements)])
        (copy-piece! piece))
      result]
+    [(find)
+     (unless (= (length arguments) 2)
+       (arity-error "String find" 2 (length arguments)))
+     (define pattern (car arguments))
+     (define start (cadr arguments))
+     (unless (string? pattern)
+       (error 'eval-aloe "String find expects a String pattern"))
+     (unless (exact-integer? start)
+       (error 'eval-aloe "String find expects an Int start"))
+     (define haystack-length (string-length receiver))
+     (define pattern-length (string-length pattern))
+     (define index
+       (if (zero? pattern-length)
+           (min (max start 0) haystack-length)
+           (for/first
+               ([candidate (in-range (max start 0)
+                                     (add1 (- haystack-length pattern-length)))]
+                #:when
+                (for/and ([offset (in-range pattern-length)])
+                  (char=? (string-ref receiver (+ candidate offset))
+                          (string-ref pattern offset))))
+             candidate)))
+     (define option-class (env-lookup environment 'Option))
+     (if index
+         (construct-instance option-class 'Some (list index))
+         (struct-copy instance-value
+                      (construct-instance option-class 'None '())
+                      [type-arguments (vector-immutable 'Int)]))]
     [else (send-to-string-method receiver selector arguments environment)]))
 
 (define (send-to-string-method receiver selector arguments environment)

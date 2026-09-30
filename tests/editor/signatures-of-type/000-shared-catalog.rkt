@@ -107,7 +107,8 @@
       (take (Int) String)
       (drop (Int) String)
       (split-lines () (List String))
-      (joined-with ((List String) String (List String)) String))))
+      (joined-with ((List String) String (List String)) String)
+      (find (String Int) (Option Int)))))
   (check-equal?
    (kernel-instance-signature-specs 'Symbol)
    (triples->specs

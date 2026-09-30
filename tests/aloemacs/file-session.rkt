@@ -88,7 +88,7 @@
      ,(if path
           `(Option Some (Path new ,path))
           no-path-expression)
-     ,echo))
+     ,echo #f "" (Position new 0 0) #f #f))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -416,7 +416,9 @@
         ((source editor) ,selector ,@arguments)
         (source fs)
         (source path)
-        (source echo))))
+        (source echo)
+        (source searching) (source query) (source origin)
+        (source wrapped) (source failing))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -435,7 +437,9 @@
         ((source editor) handle-key ,key)
         (source fs)
         (source path)
-        (source echo))))
+        (source echo)
+        (source searching) (source query) (source origin)
+        (source wrapped) (source failing))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

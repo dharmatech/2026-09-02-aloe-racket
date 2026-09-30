@@ -57,7 +57,7 @@ Recommended order after safe cells:
 
 | # | Exploration | Why this soon | First consumer |
 |---|---|---|---|
-| 1 | **Search** (incremental, reuse the echo row) | Daily reading; String/Text pressure; no minibuffer required if the query lives on the echo | A no-TTY test: type, search, point moves, wrap or fail is explicit |
+| 1 | **Search** (incremental, reuse the echo row) | **Chartered.** [`search/charter.md`](search/charter.md). Ctrl-F, query on the echo row, linear `String.find`. Ctrl-S stays save | A no-TTY test: type, search, point moves, wrap or fail is explicit |
 | 2 | **Mark, region, kill/yank** | Daily edit; kill-ring is an Aloe list of strings, not an OS clipboard yet | Kill a span, yank, undo restores text and point |
 | 3 | **Motion pack** | C-a / C-e, page up/down, beginning/end of buffer. Too thin as its own charter; attach to search or kill, or a standalone 000 | Existing frame goldens plus point |
 
@@ -158,8 +158,9 @@ Leave these until a slice is blocked by them.
 
 ## Lean after safe cells
 
-1. **Search** (Band 1) — reading is the daily case; echo can show
-   the query; still one buffer.
+1. **Search** (Band 1) — chartered at
+   [`search/charter.md`](search/charter.md). Echo shows the
+   query. Still one buffer.
 2. **Mark + kill/yank** (Band 1).
 3. **Commands + keymap as data** (Band 2), with existing keys as
    the first consumer and `C-x C-s` as the first prefix.

@@ -91,18 +91,19 @@
          (signature-spec 'split-lines '() '(List String))
          (signature-spec 'joined-with
                          '((List String) String (List String))
-                         'String)))
+                         'String)
+         (signature-spec 'find '(String Int) '(Option Int))))
   (check-equal? (kernel-class-object-signature-specs 'String) '())
   (define state (make-driver))
   (driver-eval! state '(define joined-mirror (Mirror of "|")))
   (driver-eval! state '(define joined-rows (joined-mirror signatures)))
-  (check-equal? (driver-eval! state '((joined-mirror messages) len)) 8)
-  (check-equal? (driver-eval! state '(joined-rows len)) 8)
+  (check-equal? (driver-eval! state '((joined-mirror messages) len)) 9)
+  (check-equal? (driver-eval! state '(joined-rows len)) 9)
   (check-equal?
-   (for/list ([index (in-range 8)])
+  (for/list ([index (in-range 9)])
      (driver-eval! state `((,(row-at index) selector) name)))
    '("=" "append" "len" "take" "drop" "split-lines"
-     "joined-with" "starts-with?"))
+     "joined-with" "find" "starts-with?"))
   (check-equal? (driver-eval! state `((,(row-at 6) params) len)) 3)
   (check-equal?
    (aloe-value->string (driver-eval! state `(,(row-at 6) params)))

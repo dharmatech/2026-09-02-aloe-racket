@@ -182,10 +182,12 @@ ALOE
   ((((((string-rows rest) rest) rest) rest) rest) first))
 (define string-joined-with-row
   (((((((string-rows rest) rest) rest) rest) rest) rest) first))
-(define string-starts-with-row
+(define string-find-row
   ((((((((string-rows rest) rest) rest) rest) rest) rest) rest) first))
-(define string-empty-row
+(define string-starts-with-row
   (((((((((string-rows rest) rest) rest) rest) rest) rest) rest) rest) first))
+(define string-empty-row
+  ((((((((((string-rows rest) rest) rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
    environment))
 
@@ -208,8 +210,8 @@ ALOE
   (void (eval-source empty-method-source environment))
   (void (define-string-reflection-rows! environment))
 
-  (check-equal? (eval-source "(string-messages len)" environment) 9)
-  (check-equal? (eval-source "(string-rows len)" environment) 9)
+  (check-equal? (eval-source "(string-messages len)" environment) 10)
+  (check-equal? (eval-source "(string-rows len)" environment) 10)
   (check-equal?
    (for/list ([row (in-list '(string-equal-row
                               string-append-row
@@ -218,10 +220,11 @@ ALOE
                               string-drop-row
                               string-split-lines-row
                               string-joined-with-row
+                              string-find-row
                               string-starts-with-row
                               string-empty-row))])
      (row-selector environment row))
-   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "starts-with?" "empty?"))
+   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "find" "starts-with?" "empty?"))
   (check-equal?
    (for/list ([row (in-list '(string-equal-row
                               string-append-row
@@ -230,10 +233,11 @@ ALOE
                               string-drop-row
                               string-split-lines-row
                               string-joined-with-row
+                              string-find-row
                               string-starts-with-row
                               string-empty-row))])
      (row-parameter-count environment row))
-   '(1 1 0 1 1 0 3 1 0))
+   '(1 1 0 1 1 0 3 2 1 0))
   (check-equal? (row-first-parameter environment 'string-equal-row)
                 "#<Symbol String>")
   (check-equal? (row-first-parameter environment 'string-append-row)
@@ -252,6 +256,7 @@ ALOE
                               string-drop-row
                               string-split-lines-row
                               string-joined-with-row
+                              string-find-row
                               string-starts-with-row
                               string-empty-row))])
      (row-return environment row))
@@ -262,6 +267,7 @@ ALOE
      "#<Symbol String>"
      "#<List #<Symbol List> #<Symbol String>>"
      "#<Symbol String>"
+     "#<List #<Symbol Option> #<Symbol Int>>"
      "#<Symbol Bool>"
      "#<Symbol Bool>"))
 
@@ -284,10 +290,10 @@ ALOE
   (define fresh-environment (make-top-level-env))
   (check-equal?
    (eval-source "(((Mirror of \"abc\") messages) len)" fresh-environment)
-   8)
+   9)
   (check-equal?
    (eval-source "(((Mirror of \"abc\") signatures) len)" fresh-environment)
-   8))
+   9))
 
 (test-case "exact invocation of a shadowed String selector runs its Aloe row"
   (define environment (make-top-level-env))
@@ -300,12 +306,12 @@ ALOE
 (define collision-mirror (Mirror of "abc"))
 (define collision-rows (collision-mirror signatures))
 (define aloe-len-row
-  (((((((((collision-rows rest) rest) rest) rest) rest) rest) rest) rest) first))
+  ((((((((((collision-rows rest) rest) rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
     environment))
   (check-equal? (eval-source "(\"abc\" len)" environment) 3)
   (check-equal? (checked-type "(\"abc\" len)") 'Int)
-  (check-equal? (eval-source "((collision-mirror messages) len)" environment) 8)
+  (check-equal? (eval-source "((collision-mirror messages) len)" environment) 9)
   (check-equal? (row-selector environment 'aloe-len-row) "len")
   (check-equal? (row-return environment 'aloe-len-row) "#<Symbol String>")
   (check-equal?

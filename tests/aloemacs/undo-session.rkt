@@ -33,7 +33,7 @@
           #f 0 0 (List empty))
         (Fs new fs-host)
         ,no-path
-        ""))))
+        "" #f "" (Position new 0 0) #f #f))))
 
 (define (step! state name expression)
   (driver-eval! state `(define ,name ,expression)))

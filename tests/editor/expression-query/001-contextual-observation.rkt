@@ -53,7 +53,8 @@
      (take (Int) String)
      (drop (Int) String)
      (split-lines () (List String))
-     (joined-with ((List String) String (List String)) String))))
+     (joined-with ((List String) String (List String)) String)
+     (find (String Int) (Option Int)))))
 
 (define list-int-rows
   (triples->specs

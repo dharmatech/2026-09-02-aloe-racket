@@ -35,7 +35,7 @@
        #f 0 0 (List empty))
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo))
+     ,echo #f "" (Position new 0 0) #f #f))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))

@@ -85,7 +85,8 @@
          (signature-spec 'split-lines '() '(List String))
          (signature-spec 'joined-with
                          '((List String) String (List String))
-                         'String)))
+                         'String)
+         (signature-spec 'find '(String Int) '(Option Int))))
   (check-equal? (kernel-class-object-signature-specs 'String) '())
 
   (define state (make-driver))

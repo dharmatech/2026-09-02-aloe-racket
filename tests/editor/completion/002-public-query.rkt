@@ -98,6 +98,7 @@
     (drop (Int) String)
     (split-lines () (List String))
     (joined-with ((List String) String (List String)) String)
+    (find (String Int) (Option Int))
     (starts-with? (String) Bool)))
 
 (define boid-triples
@@ -529,6 +530,7 @@
      "drop"
      "split-lines"
      "joined-with"
+     "find"
      "starts-with?"
      "leaky002"))
   (check-equal? (query-marked/result "(\"x\" leaky002|)") '())

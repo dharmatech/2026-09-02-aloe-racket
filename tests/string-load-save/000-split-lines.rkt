@@ -89,7 +89,8 @@
         (signature-spec 'split-lines '() '(List String))
         (signature-spec 'joined-with
                         '((List String) String (List String))
-                        'String)))
+                        'String)
+        (signature-spec 'find '(String Int) '(Option Int))))
 
 (define (row-at index)
   `(,(for/fold ([rows 'rows-000]) ([n (in-range index)])
@@ -102,12 +103,12 @@
   (define state (make-driver))
   (driver-eval! state '(define mirror-000 (Mirror of "a\nb")))
   (driver-eval! state '(define rows-000 (mirror-000 signatures)))
-  (check-equal? (driver-eval! state '((mirror-000 messages) len)) 8)
-  (check-equal? (driver-eval! state '(rows-000 len)) 8)
+  (check-equal? (driver-eval! state '((mirror-000 messages) len)) 9)
+  (check-equal? (driver-eval! state '(rows-000 len)) 9)
   (check-equal?
-   (for/list ([index (in-range 8)])
+   (for/list ([index (in-range 9)])
      (driver-eval! state `((,(row-at index) selector) name)))
-   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "starts-with?"))
+   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "find" "starts-with?"))
   (check-equal? (driver-eval! state `((,(row-at 5) params) len)) 0)
   (check-equal?
    (aloe-value->string (driver-eval! state `(,(row-at 5) return)))
@@ -118,7 +119,7 @@
    "#<List \"a\" \"b\">")
   (check-equal?
    (aloe-value->string (driver-eval! state '((Mirror of "String") messages)))
-   "#<List #<Symbol => #<Symbol append> #<Symbol len> #<Symbol take> #<Symbol drop> #<Symbol split-lines> #<Symbol joined-with> #<Symbol starts-with?>>")
+   "#<List #<Symbol => #<Symbol append> #<Symbol len> #<Symbol take> #<Symbol drop> #<Symbol split-lines> #<Symbol joined-with> #<Symbol find> ...>")
   (check-equal?
    (driver-eval! state '(((Mirror of String) messages) len))
    0))

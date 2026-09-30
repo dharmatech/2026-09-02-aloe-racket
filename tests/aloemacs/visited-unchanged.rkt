@@ -42,7 +42,7 @@
         editor
         (Fs new fs-host)
         (Option Some (Path new "/cwd/a.txt"))
-        "prior")))
+        "prior" #f "" (Position new 0 0) #f #f)))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -76,7 +76,7 @@
           (List empty))
         (Fs new fs-host)
         (Option Some (Path new "/cwd/a.txt"))
-        "prior")))
+        "prior" #f "" (Position new 0 0) #f #f)))
   (driver-eval!
    state
    '(define visited

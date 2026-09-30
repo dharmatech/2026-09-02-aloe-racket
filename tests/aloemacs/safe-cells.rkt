@@ -48,7 +48,7 @@
      ,(editor source 0)
      (Fs new fs-host)
      (Option Some (Path new ,path))
-     ,echo))
+     ,echo #f "" (Position new 0 0) #f #f))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

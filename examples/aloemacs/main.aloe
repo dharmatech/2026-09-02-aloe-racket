@@ -13,4 +13,9 @@
     (if #t
         (Option None)
         (Option Some (Path new "/typed-none")))
-    ""))
+    ""
+    #f
+    ""
+    (Position new 0 0)
+    #f
+    #f))

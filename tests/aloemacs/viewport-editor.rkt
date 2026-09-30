@@ -75,7 +75,7 @@
      ,editor
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ""))
+     "" #f "" (Position new 0 0) #f #f))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!

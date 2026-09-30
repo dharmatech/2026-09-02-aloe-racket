@@ -1,6 +1,6 @@
 # aloemacs safe cells specification
 
-**Status: Accepted for implementation.** This is local editor design, not
+**Status: Accepted.** Implemented as aloemacs-safe-cells 000. This is local editor design, not
 Aloe language law. This file is the complete design input for the checkpoint
 manager and implementer; they need not read the charter.
 `SPEC.md` governs Aloe syntax and evaluation.

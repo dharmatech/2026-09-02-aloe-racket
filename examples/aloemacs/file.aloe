@@ -1,19 +1,176 @@
 (load "editor.aloe")
 (load "../../lib/fs.aloe")
 
+(define-class AloemacsSearchScan
+  (fields)
+  (methods
+    (lines (focused Text) (remaining Int) (query String)
+           (Option Position)
+      (if (remaining <= 0)
+          (Option None)
+          (((focused current-line) find query 0) case
+            (Some (column)
+              (Option Some (Position new (focused focus-line) column)))
+            (None ()
+              (if (focused has-next?)
+                  (self lines (focused focus-down)
+                    (remaining - 1) query)
+                  (Option None))))))))
+
 (define-class (AloemacsSession H)
   (fields
     (editor AloemacsEditor)
     (fs (Fs H))
     (path (Option Path))
-    (echo String))
+    (echo String)
+    (searching Bool)
+    (query String)
+    (origin Position)
+    (wrapped Bool)
+    (failing Bool))
   (methods
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
         editor
         (self fs)
         (self path)
-        (self echo)))
+        (self echo)
+        (self searching)
+        (self query)
+        (self origin)
+        (self wrapped)
+        (self failing)))
+
+    (with-search (editor AloemacsEditor) (searching Bool)
+                 (query String) (origin Position)
+                 (wrapped Bool) (failing Bool) (AloemacsSession H)
+      (AloemacsSession new
+        editor (self fs) (self path) (self echo)
+        searching query origin wrapped failing))
+
+    (end-search () (AloemacsSession H)
+      (self with-search (self editor) #f "" (Position new 0 0) #f #f))
+
+    (search-hit (query String) (position Position) (wrapped Bool)
+                (AloemacsSession H)
+      (((self text) focus-at (position line)) case
+        (None () (self search-miss query))
+        (Some (focused)
+          (self with-search
+            ((self editor) with-text-and-point focused position)
+            #t query (self origin) wrapped #f))))
+
+    (search-miss (query String) (AloemacsSession H)
+      (((self text) focus-at ((self origin) line)) case
+        (None () (self with-search (self editor) #t query
+                    (self origin) #f #t))
+        (Some (focused)
+          (self with-search
+            ((self editor) with-text-and-point focused (self origin))
+            #t query (self origin) #f #t))))
+
+    (scan-wrap (start Position) (query String)
+               (prefix-found Bool) (prefix-position Position)
+               (AloemacsSession H)
+      (((self text) focus-at 0) case
+        (None () (self search-miss query))
+        (Some (first-line)
+          (((AloemacsSearchScan new) lines
+             first-line (start line) query) case
+            (Some (position) (self search-hit query position #t))
+            (None ()
+              (if prefix-found
+                  (self search-hit query prefix-position #t)
+                  (self search-miss query)))))))
+
+    (scan-after (focused Text) (start Position) (query String)
+                (prefix-found Bool) (prefix-position Position)
+                (AloemacsSession H)
+      (if (focused has-next?)
+          (((AloemacsSearchScan new) lines (focused focus-down)
+             ((((self text) lines) len) - ((start line) + 1)) query) case
+            (Some (position) (self search-hit query position #f))
+            (None () (self scan-wrap start query
+                       prefix-found prefix-position)))
+          (self scan-wrap start query prefix-found prefix-position)))
+
+    (seek-from (start Position) (query String) (AloemacsSession H)
+      (if ((query len) = 0)
+          (((self text) focus-at ((self origin) line)) case
+            (None () (self with-search (self editor) #t query
+                        (self origin) #f #f))
+            (Some (focused)
+              (self with-search
+                ((self editor) with-text-and-point focused (self origin))
+                #t query (self origin) #f #f)))
+          (((self text) focus-at (start line)) case
+            (None () (self search-miss query))
+            (Some (focused)
+              (let ((line (focused current-line)))
+                (let ((suffix (line drop (start column)))
+                      (prefix (line take
+                                (((start column) + (query len)) - 1))))
+                  (let ((combined ((suffix append "\n") append prefix)))
+                    ((combined find query 0) case
+                      (None ()
+                        (self scan-after focused start query
+                          #f (Position new 0 0)))
+                      (Some (index)
+                        (if (index < (suffix len))
+                            (self search-hit query
+                              (Position new (start line)
+                                ((start column) + index)) #f)
+                            (self scan-after focused start query
+                              #t (Position new (start line)
+                                   ((index - (suffix len)) - 1)))))))))))))
+
+    (search-key (key String) (AloemacsSession H)
+      (cond
+        ((key = "escape") (self end-search))
+        ((key = "return") (self end-search))
+        ((key = "backspace")
+         (self seek-from (self origin)
+           ((self query) take (((self query) len) - 1))))
+        ((key = "find")
+         (cond
+           (((self query) = "") (self unchanged))
+           ((self failing) (self unchanged))
+           ((self wrapped)
+            (self with-search (self editor) #t (self query)
+              (self origin) #t #t))
+           (else
+            (self seek-from
+              (Position new ((self point) line)
+                (((self point) column) + 1))
+              (self query)))))
+        (((key len) = 1)
+         (if (((self editor) safe-cells key) = key)
+             (self seek-from (self origin) ((self query) append key))
+             ((self end-search) idle-key key)))
+        (else ((self end-search) idle-key key))))
+
+    (idle-key (key String) (AloemacsSession H)
+      (cond
+        ((key = "find")
+         (self with-search (self editor) #t "" (self point) #f #f))
+        ((key = "save")
+         ((self save) case
+           (None ()
+             (AloemacsSession new
+               (self editor) (self fs) (self path) "failed"
+               (self searching) (self query) (self origin)
+               (self wrapped) (self failing)))
+           (Some (session)
+             (AloemacsSession new
+               (session editor) (session fs) (session path) "saved"
+               (session searching) (session query) (session origin)
+               (session wrapped) (session failing)))))
+        (else
+         (AloemacsSession new
+           ((self editor) handle-key key)
+           (self fs) (self path) ""
+           (self searching) (self query) (self origin)
+           (self wrapped) (self failing)))))
 
     (unchanged () (AloemacsSession H)
       self)
@@ -29,7 +186,7 @@
           (List empty))
         (self fs)
         (Option Some path)
-        ""))
+        "" #f "" (Position new 0 0) #f #f))
 
     (text () Text
       ((self editor) text))
@@ -76,12 +233,19 @@
                         (None () "untitled")
                         (Some (path) (path text)))))
                 (let ((row
-                        (cond
-                          (((self echo) = "saved")
-                            ("saved: " append label))
-                          (((self echo) = "failed")
-                            ("failed: " append label))
-                          (else label))))
+                        (if (self searching)
+                            (cond
+                              ((self failing)
+                               ("failing: " append (self query)))
+                              ((self wrapped)
+                               ("wrapped: " append (self query)))
+                              (else ("search: " append (self query))))
+                            (cond
+                              (((self echo) = "saved")
+                                ("saved: " append label))
+                              (((self echo) = "failed")
+                                ("failed: " append label))
+                              (else label)))))
                   (let ((cursor-row (((point line) - (editor scroll-row)) + 1))
                         (cursor-column
                           (((point column) - (editor scroll-col)) + 1)))
@@ -134,17 +298,5 @@
     (handle-key (key String) (AloemacsSession H)
       (cond
         ((self quit) (self unchanged))
-        ((key = "save")
-         ((self save) case
-           (None ()
-             (AloemacsSession new
-               (self editor) (self fs) (self path) "failed"))
-           (Some (session)
-             (AloemacsSession new
-               (session editor) (session fs) (session path) "saved"))))
-        (else
-         (AloemacsSession new
-           ((self editor) handle-key key)
-           (self fs)
-           (self path)
-           ""))))))
+        ((self searching) (self search-key key))
+        (else (self idle-key key))))))

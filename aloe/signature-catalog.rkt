@@ -55,7 +55,8 @@
         (signature-spec 'split-lines '() '(List String))
         (signature-spec 'joined-with
                         '((List String) String (List String))
-                        'String)))
+                        'String)
+        (signature-spec 'find '(String Int) '(Option Int))))
 
 (define symbol-instance-signatures
   (list (signature-spec 'name '() 'String)

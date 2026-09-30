@@ -34,7 +34,12 @@
         (if #t
             (Option None)
             (Option Some (Path new "/typed-none")))
-        ""))))
+        ""
+        #f
+        ""
+        (Position new 0 0)
+        #f
+        #f))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")

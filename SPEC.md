@@ -564,6 +564,7 @@ and otherwise a fresh type variable.
 | `(s drop n)` | suffix after a clamped number of characters | `String`, with `n : Int` |
 | `(s split-lines)` | LF-delimited pieces, including empty pieces | `(List String)` |
 | `(separator joined-with above current below)` | join the Text zipper pieces | `String`, with `above`, `below` : `(List String)` and `current` : `String` |
+| `(haystack find pattern start)` | first literal match at or after `start` | `(Option Int)`, with `pattern : String` and `start : Int` |
 
 `take` returns `""` when `n <= 0`, all of `s` when `n` is at least its
 length, and otherwise its first `n` characters. `drop` returns all of `s`
@@ -573,8 +574,13 @@ empty pieces, including the final piece after a trailing LF. CR, BOM, and
 Unicode characters are ordinary content. Positions use Racket character
 units. `starts-with?` is an Aloe method defined in `lib/string.aloe` and
 installed in default environments, parallel to List's Aloe-defined `fold`,
-`reverse`, and `map`. The seven kernel messages above remain primitive and take
+`reverse`, and `map`. The eight kernel messages above remain primitive and take
 precedence during ordinary dispatch.
+
+`find` compares characters in place, returning the least eligible index. A
+negative `start` acts as zero. An empty pattern returns the clamped start in
+`0..(haystack len)`; a nonempty pattern without a match returns `Option None`.
+Matching is literal and case-sensitive, and positions count Racket characters.
 
 `joined-with` copies `reverse(above), current, below` in that order, placing
 the receiver String between adjacent pieces. `above` stores its nearest

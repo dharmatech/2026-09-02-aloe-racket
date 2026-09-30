@@ -67,12 +67,14 @@ design or implement a later layer in an earlier layer's conversation.
 | 7 | Undo | [`undo/`](undo/) | **Implemented.** Spec and aloemacs-undo 000. | 3–6 (edits + zipper sharing) |
 | 8 | Echo | [`echo/`](echo/) | **Implemented.** Spec and aloemacs-echo 000–001. | 4, 6 (path + text rectangle) |
 | 9 | Safe cells | [`safe-cells/`](safe-cells/) | **Implemented.** Spec and aloemacs-safe-cells 000. | 3, 8 (frame bytes + echo label) |
+| 10 | Search | [`search/`](search/) | **Implemented.** aloemacs-search 000–001. | 4, 8, 9 (session keys, echo row, safe cells) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
 `split-lines` / `to-string` is completed as a **language-library**
 series ([`../string-load-save/`](../string-load-save/)).
 **Safe cells** is implemented at [`safe-cells/`](safe-cells/).
+**Search** is implemented at [`search/`](search/).
 Ranked later work lives in [`explorations.md`](explorations.md). The Scale charter
 stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
@@ -103,7 +105,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 
 Easy to smuggle in. They are not.
 
-- Windows, prefix keymaps, minibuffer, search, modes
+- Windows, prefix keymaps, minibuffer, modes
 - Mouse, paste, PTY, VT emulator, daemon, multi-head
 - Unicode clusters, `wcwidth`, grapheme width
 - `M-x` eval, Gel's `Mirror`, hot reload
@@ -124,6 +126,7 @@ Easy to smuggle in. They are not.
 | Undo | Insert/newline/backspace then undo restores prior text and point |
 | Echo | Frame shows untitled or path; save success vs failure |
 | Safe cells | No-TTY frame: ESC, tab, CR, and DEL in text and in the echo label display as spaces; save writes the original bytes |
+| Search | No-TTY: Ctrl-F, type a query, point moves; wrap and failure show on the echo; Escape restores the previous echo and does not quit |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

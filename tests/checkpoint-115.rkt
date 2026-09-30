@@ -143,8 +143,10 @@
   ((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) first))
 (define checkpoint-115-joined-with-row
   (((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) rest) first))
-(define checkpoint-115-starts-with-row
+(define checkpoint-115-find-row
   ((((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) rest) rest) first))
+(define checkpoint-115-starts-with-row
+  (((((((((checkpoint-115-string-rows rest) rest) rest) rest) rest) rest) rest) rest) first))
 ALOE
    environment))
 
@@ -157,10 +159,10 @@ ALOE
 
   (check-equal?
    (eval-source "(checkpoint-115-string-messages len)" environment)
-   8)
+   9)
   (check-equal?
    (eval-source "(checkpoint-115-string-rows len)" environment)
-   8)
+   9)
   (check-equal?
    (for/list ([row (in-list '(checkpoint-115-equal-row
                               checkpoint-115-append-row
@@ -169,9 +171,10 @@ ALOE
                               checkpoint-115-drop-row
                               checkpoint-115-split-lines-row
                               checkpoint-115-joined-with-row
+                              checkpoint-115-find-row
                               checkpoint-115-starts-with-row))])
      (row-selector environment row))
-   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "starts-with?"))
+   '("=" "append" "len" "take" "drop" "split-lines" "joined-with" "find" "starts-with?"))
   (check-equal?
    (eval-source "((checkpoint-115-starts-with-row params) len)" environment)
    1)

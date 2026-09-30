@@ -87,6 +87,7 @@
      (drop (Int) String)
      (split-lines () (List String))
      (joined-with ((List String) String (List String)) String)
+     (find (String Int) (Option Int))
      (starts-with? (String) Bool))))
 
 (define missing-export (gensym 'missing-export))
