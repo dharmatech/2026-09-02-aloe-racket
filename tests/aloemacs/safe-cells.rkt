@@ -30,7 +30,7 @@
   `(AloemacsEditor new
      (Text from-string ,source)
      (Position new 0 ,column)
-     #f 0 ,scroll (List empty)))
+     #f 0 ,scroll (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (editor-frame body row column)
   (string-append
@@ -48,7 +48,7 @@
      ,(editor source 0)
      (Fs new fs-host)
      (Option Some (Path new ,path))
-     ,echo #f "" (Position new 0 0) #f #f))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

@@ -30,10 +30,10 @@
       (AloemacsSession new
         (AloemacsEditor new
           (Text from-string "draft") (Position new 0 0)
-          #f 0 0 (List empty))
+          #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
         (Fs new fs-host)
         ,no-path
-        "" #f "" (Position new 0 0) #f #f))))
+        "" #f "" (Position new 0 0) #f #f (List empty)))))
 
 (define (step! state name expression)
   (driver-eval! state `(define ,name ,expression)))

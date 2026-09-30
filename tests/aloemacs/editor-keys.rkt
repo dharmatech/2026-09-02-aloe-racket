@@ -35,7 +35,7 @@
      ,quit
      0
      0
-     (List empty)))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!
@@ -91,7 +91,7 @@
   (check-exn #rx"unbound symbol: AloemacsEditor"
              (lambda () (driver-eval! fresh-state 'AloemacsEditor))))
 
-(test-case "AloemacsEditor has the exact six-field construction surface"
+(test-case "AloemacsEditor has the exact seven-field construction surface"
   (define state (make-driver))
   (load-editor! state)
   (define editor (editor-expression "abc" 0 2 #f))
@@ -103,43 +103,45 @@
             ((,editor quit) Bool)
             ((,editor scroll-row) Int)
             ((,editor scroll-col) Int)
-            ((,editor history) (List UndoFrame))))])
+            ((,editor history) (List UndoFrame))
+            ((,editor mark) (Option Position))))])
     (check-equal? (driver-type state (car entry)) (cadr entry)))
 
   (for ([datum
          (in-list
-          `((AloemacsEditor new)
-            (AloemacsEditor new (Text from-string "abc"))
+          `((AloemacsEditor new (if #t (Option None) (Option Some (Position new 0 0))))
+            (AloemacsEditor new (Text from-string "abc") (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
-              (Position new 0 2))
+              (Position new 0 2) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              #f)
+              #f (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
               #f
-              "fourth")
-            (AloemacsEditor new "abc" (Position new 0 2) #f 0 0 (List empty))
-            (AloemacsEditor new (Text from-string "abc") 2 #f 0 0 (List empty))
+              "fourth" 0 (List empty)
+              (if #t (Option None) (Option Some (Position new 0 0))))
+            (AloemacsEditor new "abc" (Position new 0 2) #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
+            (AloemacsEditor new (Text from-string "abc") 2 #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              0 0 0 (List empty))
+              0 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              #f "row" 0 (List empty))
+              #f "row" 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              #f 0 "column" (List empty))
+              #f 0 "column" (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new
               (Text from-string "abc")
               (Position new 0 2)
-              #f 0 0 0)
+              #f 0 0 0 (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor from-string
               (Text from-string "abc")
               (Position new 0 2)

@@ -62,7 +62,7 @@
     '(AloemacsEditor new
        (Text from-string "ab\nc")
        (Position new 0 1)
-       #f 0 0 (List empty)))
+       #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
   (check-exn
    exn:fail:aloe-type?
    (lambda ()

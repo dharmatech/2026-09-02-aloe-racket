@@ -32,10 +32,10 @@
      (AloemacsEditor new
        (Text from-string ,source)
        (Position new 0 0)
-       #f 0 0 (List empty))
+       #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))

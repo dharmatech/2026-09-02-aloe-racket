@@ -27,7 +27,7 @@
   `(AloemacsEditor new
      ,(focused-text source line)
      (Position new ,line ,column)
-     ,quit ,row ,col (List empty)))
+     ,quit ,row ,col (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (define-editor! state name source line column row col [quit #f])
   (driver-eval! state
@@ -67,13 +67,13 @@
     (check-equal? (checked-type state (car entry)) (cadr entry)))
   (for ([bad (in-list
               '((AloemacsEditor new (Text from-string "abc")
-                   (Position new 0 2) #f 0 0)
+                   (Position new 0 2) #f 0 0 (if #t (Option None) (Option Some (Position new 0 0))))
                 (AloemacsEditor new (Text from-string "abc")
-                   (Position new 0 2) #f 0 0 0)
+                   (Position new 0 2) #f 0 0 0 (if #t (Option None) (Option Some (Position new 0 0))))
                 (UndoFrame new (Text from-string "abc")
                    (Position new 0 2) 0)
                 ((AloemacsEditor new (Text from-string "abc")
-                   (Position new 0 2) #f 0 0 (List empty)) undo 1)))])
+                   (Position new 0 2) #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0)))) undo 1)))])
     (check-exn exn:fail:aloe-type? (lambda () (driver-eval! state bad)))))
 
 (test-case "each successful edit makes one reversible frame"

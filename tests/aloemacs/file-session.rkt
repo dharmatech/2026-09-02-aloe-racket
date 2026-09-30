@@ -79,7 +79,7 @@
      ,quit
      0
      0
-     (List empty)))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (session-expression source line column quit [path #f] [echo ""])
   `(AloemacsSession new
@@ -88,7 +88,7 @@
      ,(if path
           `(Option Some (Path new ,path))
           no-path-expression)
-     ,echo #f "" (Position new 0 0) #f #f))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -418,7 +418,7 @@
         (source path)
         (source echo)
         (source searching) (source query) (source origin)
-        (source wrapped) (source failing))))
+        (source wrapped) (source failing) (List empty))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -439,7 +439,7 @@
         (source path)
         (source echo)
         (source searching) (source query) (source origin)
-        (source wrapped) (source failing))))
+        (source wrapped) (source failing) (List empty))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

@@ -21,11 +21,11 @@ implement.
 
 string-load-save 000–001 is implemented. Do not reopen that
 series from this role, and do not write `spec.md` here. Ranked
-later work is [`explorations.md`](explorations.md). Safe cells
-is implemented at [`safe-cells/`](safe-cells/). Search is
-chartered at [`search/charter.md`](search/charter.md). The human
-reviews that charter and opens a designer conversation. Do not
-write that `spec.md` here.
+later work is [`explorations.md`](explorations.md). Layers 1–10
+are implemented, including search at [`search/`](search/).
+Kill is chartered at [`kill/charter.md`](kill/charter.md). The
+human reviews that charter and opens a designer conversation.
+Do not write that `spec.md` here.
 
 ## How this conversation works
 
@@ -47,11 +47,13 @@ layer is the topic; do not survey the whole tree on every turn.
 
 | Item | State |
 |---|---|
-| Layers 1–9 (Text through Safe cells) | Implemented |
-| Idiom cleanups (line-length through visited-unchanged) | Implemented |
+| Layers 1–10 (Text through Search) | Implemented |
+| Idiom cleanups (line-length through safe-cell-scan) | Implemented |
+| safe-cell-controls | **Ready to implement.** Standalone 000 |
 | [`../string-load-save/`](../string-load-save/) | **Implemented.** 000–001 |
 | Safe cells (`ESC` / tab / `CR` on the TTY) | **Implemented.** [`safe-cells/`](safe-cells/), checkpoint 000 |
-| Search (incremental, echo row) | **Charter written.** [`search/charter.md`](search/charter.md). Spec not started |
+| Search (incremental, echo row) | **Implemented.** aloemacs-search 000–001 |
+| Kill (mark, kill, kill-line, yank) | **Charter written.** [`kill/charter.md`](kill/charter.md). Spec not started |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -88,7 +90,7 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, prefix `C-x`, minibuffer, search (see
+- Windows, prefix `C-x`, minibuffer (see
   [`explorations.md`](explorations.md) for order)
 - Live `eval` / Mirror
 

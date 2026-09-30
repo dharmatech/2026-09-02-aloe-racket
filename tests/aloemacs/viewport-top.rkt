@@ -19,7 +19,7 @@
      #f
      ,scroll-row
      0
-     (List empty)))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (frame body row column)
   (string-append

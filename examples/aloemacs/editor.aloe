@@ -19,7 +19,8 @@
     (quit Bool)
     (scroll-row Int)
     (scroll-col Int)
-    (history (List UndoFrame)))
+    (history (List UndoFrame))
+    (mark (Option Position)))
   (methods
     (fit-origin (point Int) (origin Int) (size Int) Int
       ((if (point < origin)
@@ -36,7 +37,8 @@
           (self quit)
           (self fit-origin (point line) (self scroll-row) rows)
           (self fit-origin (point column) (self scroll-col) columns)
-          (self history))))
+          (self history)
+          (self mark))))
 
     (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
       ((List of
@@ -96,6 +98,34 @@
     (unchanged () AloemacsEditor
       self)
 
+    (with-mark (mark (Option Position)) AloemacsEditor
+      (AloemacsEditor new
+        (self text)
+        (self point)
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)
+        (self history)
+        mark))
+
+    (clear-mark () AloemacsEditor
+      (AloemacsEditor new
+        (self text)
+        (self point)
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)
+        (self history)
+        (Option None)))
+
+    (keep-valid-mark () AloemacsEditor
+      ((self mark) case
+        (None () self)
+        (Some (mark)
+          (if ((self text) valid-position? mark)
+              self
+              (self clear-mark)))))
+
     (with-text-and-point (text Text) (point Position) AloemacsEditor
       (AloemacsEditor new
         text
@@ -103,7 +133,8 @@
         (self quit)
         (self scroll-row)
         (self scroll-col)
-        (self history)))
+        (self history)
+        (self mark)))
 
     (from-edit (result EditResult) AloemacsEditor
       (AloemacsEditor new
@@ -117,7 +148,8 @@
             (self text)
             (self point)
             (self scroll-row)
-            (self scroll-col)))))
+            (self scroll-col)))
+        (self mark)))
 
     (undo () AloemacsEditor
       (if ((self history) empty?)
@@ -129,7 +161,8 @@
               (self quit)
               (frame scroll-row)
               (frame scroll-col)
-              ((self history) rest)))))
+              ((self history) rest)
+              (self mark)))))
 
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
@@ -247,7 +280,8 @@
         #t
         (self scroll-row)
         (self scroll-col)
-        (self history)))
+        (self history)
+        (self mark)))
 
     (handle-key (key String) AloemacsEditor
       (cond

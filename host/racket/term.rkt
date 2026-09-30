@@ -51,6 +51,32 @@
        (or (not (tkeymsg-char message))
            (eqv? (tkeymsg-char message) #\z))))
 
+(define (plain-ctrl-w-key? message)
+  (and (eqv? (tkeymsg-key message) #\w)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) #\w))))
+
+(define (plain-ctrl-y-key? message)
+  (and (eqv? (tkeymsg-key message) #\y)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) #\y))))
+
+(define (plain-ctrl-k-key? message)
+  (and (eqv? (tkeymsg-key message) #\k)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) #\k))))
+
+(define (plain-ctrl-space-key? message)
+  (define key (tkeymsg-key message))
+  (and (or (eqv? key #\space)
+           (eqv? key #\`))
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) key))))
+
 (define (printable-character? character)
   (or (char-graphic? character)
       (char=? character #\space)))
@@ -67,6 +93,10 @@
     [(plain-ctrl-s-key? message) "save"]
     [(plain-ctrl-f-key? message) "find"]
     [(plain-ctrl-z-key? message) "undo"]
+    [(plain-ctrl-w-key? message) "kill"]
+    [(plain-ctrl-y-key? message) "yank"]
+    [(plain-ctrl-k-key? message) "kill-line"]
+    [(plain-ctrl-space-key? message) "mark"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))

@@ -176,6 +176,35 @@
 
 (define-methods Text
   (methods
+    (excerpt (span Span) (Option String)
+      (let ((indexed (self indexed-value)))
+        (if (indexed valid-span? span)
+            (let ((start (span start))
+                  (end (span end)))
+              ((indexed focus-at (start line)) case
+                (None () (Option None))
+                (Some (at-start)
+                  (if ((start line) = (end line))
+                      (Option Some
+                        (((at-start current-line) drop (start column))
+                          take ((end column) - (start column))))
+                      ((at-start focus-at (end line)) case
+                        (None () (Option None))
+                        (Some (at-end)
+                          (let ((beginning
+                                  ((at-start current-line) drop (start column)))
+                                (interior
+                                  ((at-start focus-down) next-lines
+                                    (((end line) - (start line)) - 1))))
+                            (Option Some
+                              ((interior fold
+                                 (beginning append "\n")
+                                 (fn (result line)
+                                   ((result append line) append "\n")))
+                                append
+                                ((at-end current-line) take (end column)))))))))))
+            (Option None))))
+
     (replace-pieces
       (pieces (List String))
       (prefix String)

@@ -8,7 +8,8 @@
       #f
       0
       0
-      (List empty))
+      (List empty)
+      (if #t (Option None) (Option Some (Position new 0 0))))
     (Fs new fs-host)
     (if #t
         (Option None)
@@ -18,4 +19,5 @@
     ""
     (Position new 0 0)
     #f
-    #f))
+    #f
+    (List empty)))

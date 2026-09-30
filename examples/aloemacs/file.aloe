@@ -27,7 +27,8 @@
     (query String)
     (origin Position)
     (wrapped Bool)
-    (failing Bool))
+    (failing Bool)
+    (kill-ring (List String)))
   (methods
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
@@ -39,14 +40,79 @@
         (self query)
         (self origin)
         (self wrapped)
-        (self failing)))
+        (self failing)
+        (self kill-ring)))
+
+    (with-kill-state (editor AloemacsEditor) (kill-ring (List String))
+                     (AloemacsSession H)
+      (AloemacsSession new
+        editor (self fs) (self path) ""
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) kill-ring))
 
     (with-search (editor AloemacsEditor) (searching Bool)
                  (query String) (origin Position)
                  (wrapped Bool) (failing Bool) (AloemacsSession H)
       (AloemacsSession new
         editor (self fs) (self path) (self echo)
-        searching query origin wrapped failing))
+        searching query origin wrapped failing (self kill-ring)))
+
+    (set-mark () (AloemacsSession H)
+      (self with-kill-state
+        ((self editor) with-mark (Option Some (self point)))
+        (self kill-ring)))
+
+    (kill-span (span Span) (clear-mark Bool) (AloemacsSession H)
+      (((self text) excerpt span) case
+        (None () (self with-kill-state (self editor) (self kill-ring)))
+        (Some (excerpt)
+          (if (excerpt = "")
+              (self with-kill-state (self editor) (self kill-ring))
+              (((self text) delete span) case
+                (None () (self with-kill-state (self editor) (self kill-ring)))
+                (Some (result)
+                  (let ((edited ((self editor) from-edit result)))
+                    (self with-kill-state
+                      (if clear-mark
+                          (edited clear-mark)
+                          (edited keep-valid-mark))
+                      ((self kill-ring) cons excerpt)))))))))
+
+    (kill () (AloemacsSession H)
+      (((self editor) mark) case
+        (None () (self with-kill-state (self editor) (self kill-ring)))
+        (Some (mark)
+          (let ((point (self point)))
+            (if (mark before? point)
+                (self kill-span (Span new mark point) #t)
+                (self kill-span (Span new point mark) #t))))))
+
+    (kill-line () (AloemacsSession H)
+      (let ((point (self point)))
+        (((self text) focus-at (point line)) case
+          (None () (self with-kill-state (self editor) (self kill-ring)))
+          (Some (focused)
+            (let ((length (focused line-length))
+                  (column (point column)))
+              (if (column < length)
+                  (self kill-span
+                    (Span new point (Position new (point line) length)) #f)
+                  (if (column = length)
+                      (if (focused has-next?)
+                          (self kill-span
+                            (Span new point
+                              (Position new ((point line) + 1) 0)) #f)
+                          (self with-kill-state (self editor) (self kill-ring)))
+                      (self with-kill-state (self editor) (self kill-ring)))))))))
+
+    (yank () (AloemacsSession H)
+      (if ((self kill-ring) empty?)
+          (self with-kill-state (self editor) (self kill-ring))
+          (if ((self text) valid-position? (self point))
+              (self with-kill-state
+                (((self editor) insert ((self kill-ring) first)) keep-valid-mark)
+                (self kill-ring))
+              (self with-kill-state (self editor) (self kill-ring)))))
 
     (end-search () (AloemacsSession H)
       (self with-search (self editor) #f "" (Position new 0 0) #f #f))
@@ -151,6 +217,10 @@
 
     (idle-key (key String) (AloemacsSession H)
       (cond
+        ((key = "mark") (self set-mark))
+        ((key = "kill") (self kill))
+        ((key = "kill-line") (self kill-line))
+        ((key = "yank") (self yank))
         ((key = "find")
          (self with-search (self editor) #t "" (self point) #f #f))
         ((key = "save")
@@ -159,18 +229,19 @@
              (AloemacsSession new
                (self editor) (self fs) (self path) "failed"
                (self searching) (self query) (self origin)
-               (self wrapped) (self failing)))
+               (self wrapped) (self failing) (self kill-ring)))
            (Some (session)
              (AloemacsSession new
                (session editor) (session fs) (session path) "saved"
                (session searching) (session query) (session origin)
-               (session wrapped) (session failing)))))
+               (session wrapped) (session failing)
+               (session kill-ring)))))
         (else
          (AloemacsSession new
            ((self editor) handle-key key)
            (self fs) (self path) ""
            (self searching) (self query) (self origin)
-           (self wrapped) (self failing)))))
+           (self wrapped) (self failing) (self kill-ring)))))
 
     (unchanged () (AloemacsSession H)
       self)
@@ -183,10 +254,11 @@
           #f
           0
           0
-          (List empty))
+          (List empty)
+          (if #t (Option None) (Option Some (Position new 0 0))))
         (self fs)
         (Option Some path)
-        "" #f "" (Position new 0 0) #f #f))
+        "" #f "" (Position new 0 0) #f #f (List empty)))
 
     (text () Text
       ((self editor) text))

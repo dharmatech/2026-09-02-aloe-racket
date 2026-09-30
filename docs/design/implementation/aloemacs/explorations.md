@@ -5,6 +5,10 @@ checkpoint. The human picks one increment; a later conversation
 writes that increment's charter. Child conversations do not start
 the next band on their own.
 
+Search is implemented (aloemacs-search 000–001). Mark, region,
+kill, and yank is chartered at [`kill/charter.md`](kill/charter.md).
+The designer writes `spec.md` from that charter.
+
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
 `handle-key`. Chez Emacs, Legmacs, and GNU Emacs are seam
@@ -22,9 +26,9 @@ Process: [`docs/workflow.md`](../../../workflow.md). Map:
 ## Already built
 
 The one-buffer machine: visit a path, edit, scroll, save, undo,
-quit, echo row. Text zipper, stored viewport, snapshot undo,
-linear load/save, safe control display. Idiom cleanups on Text/Int. Scale charter
-withdrawn.
+quit, echo row, incremental search. Text zipper, stored viewport,
+snapshot undo, linear load/save, safe control display. Idiom
+cleanups on Text and Int. Scale charter withdrawn.
 
 | Band | What | State |
 |---|---|---|
@@ -32,7 +36,9 @@ withdrawn.
 | Language | `string-load-save` (`split-lines`, `joined-with`) | Implemented |
 | Idiom | line-length, int-min, viewport-top, next-lines, visited-unchanged | Implemented |
 | Idiom | safe-cell-scan ([`safe-cell-scan/`](safe-cell-scan/)) | Implemented. Standalone 000 |
+| Idiom | safe-cell-controls ([`safe-cell-controls/`](safe-cell-controls/)) | Ready to implement. Standalone 000 |
 | Display | safe cells (text rows and echo label) | Implemented |
+| Search | Ctrl-F, query on the echo row ([`search/`](search/)) | Implemented. aloemacs-search 000–001 |
 
 ---
 
@@ -54,13 +60,14 @@ Still one buffer, still allowed to extend `handle-key`. These
 make the core *usable* for sketching and reading. They are
 deliberately small. They are not windows, modes, or M-x.
 
-Recommended order after safe cells:
+Search is implemented at [`search/`](search/). Item 2 is
+chartered at [`kill/charter.md`](kill/charter.md).
 
 | # | Exploration | Why this soon | First consumer |
 |---|---|---|---|
-| 1 | **Search** (incremental, reuse the echo row) | **Chartered.** [`search/charter.md`](search/charter.md). Ctrl-F, query on the echo row, linear `String.find`. Ctrl-S stays save | A no-TTY test: type, search, point moves, wrap or fail is explicit |
-| 2 | **Mark, region, kill/yank** | Daily edit; kill-ring is an Aloe list of strings, not an OS clipboard yet | Kill a span, yank, undo restores text and point |
-| 3 | **Motion pack** | C-a / C-e, page up/down, beginning/end of buffer. Too thin as its own charter; attach to search or kill, or a standalone 000 | Existing frame goldens plus point |
+| 1 | **Search** (incremental, reuse the echo row) | **Implemented.** aloemacs-search 000–001 at [`search/`](search/). Ctrl-F, query on the echo row, linear `String.find`. Ctrl-S stays save | A no-TTY test: type, search, point moves, wrap or fail is explicit |
+| 2 | **Mark, region, kill/yank** | **Chartered.** [`kill/charter.md`](kill/charter.md). Mark, kill the span, kill-line, yank. The ring is an Aloe list of strings. The host clipboard stays later | Kill a span, yank, undo restores text and point |
+| 3 | **Motion pack** | C-a / C-e, page up/down, beginning/end of buffer. Too thin as its own charter. Attach it to the kill charter, or write a standalone 000 | Existing frame goldens plus point |
 
 Page-up/down alone is not a layer. Paste from the host clipboard
 waits for a later capability; the kill-ring can be internal
@@ -157,12 +164,13 @@ Leave these until a slice is blocked by them.
 
 ---
 
-## Lean after safe cells
+## Lean from here
 
-1. **Search** (Band 1) — chartered at
-   [`search/charter.md`](search/charter.md). Echo shows the
-   query. Still one buffer.
-2. **Mark + kill/yank** (Band 1).
+1. **Search** (Band 1) — implemented at [`search/`](search/).
+   aloemacs-search 000–001. Echo shows the query. Still one
+   buffer.
+2. **Mark + kill/yank** (Band 1) — chartered at
+   [`kill/charter.md`](kill/charter.md).
 3. **Commands + keymap as data** (Band 2), with existing keys as
    the first consumer and `C-x C-s` as the first prefix.
 4. **Buffer**, then **minibuffer**, then find-file / switch-buffer.
@@ -171,7 +179,6 @@ Leave these until a slice is blocked by them.
 7. Folding, then outline/notes, then a directory browser.
 8. LSP, then live eval, each with its own charter.
 
-The human may swap search and kill, or attach the motion pack to
-whichever Band 1 charter comes first. The hinge that should not
-slide later is Band 2 before windows, modes, org, dired, or M-x
-as a hardcoded dispatcher.
+The motion pack may attach to the kill charter, or stay a
+standalone 000. The hinge that stays put is Band 2 before
+windows, modes, org, dired, or M-x as a hardcoded dispatcher.

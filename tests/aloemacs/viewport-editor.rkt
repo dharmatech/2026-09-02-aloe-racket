@@ -27,7 +27,7 @@
      ,quit
      ,scroll-row
      ,scroll-col
-     (List empty)))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
 
 (define (define-editor! state name source line column quit scroll-row scroll-col)
   (driver-eval!
@@ -75,7 +75,7 @@
      ,editor
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     "" #f "" (Position new 0 0) #f #f))
+     "" #f "" (Position new 0 0) #f #f (List empty)))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -105,15 +105,15 @@
   (for ([datum
          (in-list
           `((AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f)
+              (Position new 0 2) #f (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f 0)
+              (Position new 0 2) #f 0 (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f 0 0 0)
+              (Position new 0 2) #f 0 0 0 (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f "row" 0 (List empty))
+              (Position new 0 2) #f "row" 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (AloemacsEditor new (Text from-string "abc")
-              (Position new 0 2) #f 0 "column" (List empty))
+              (Position new 0 2) #f 0 "column" (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
             (,editor ensure-visible)
             (,editor ensure-visible 4)
             (,editor ensure-visible 4 2 1)
@@ -123,9 +123,9 @@
             (,session ensure-visible #t 2)
             (,session scroll-row)
             (,session scroll-col)
-            (AloemacsSession new ,editor (Fs new fs-host))
-            (AloemacsSession new ,editor (Fs new fs-host) "path")
-            (AloemacsSession new ,editor (Fs new fs-host) ,no-path 0)))])
+            (AloemacsSession new ,editor (Fs new fs-host) (List empty))
+            (AloemacsSession new ,editor (Fs new fs-host) "path" (List empty))
+            (AloemacsSession new ,editor (Fs new fs-host) ,no-path 0 (List empty))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

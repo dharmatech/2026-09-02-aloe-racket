@@ -26,10 +26,10 @@
   `(AloemacsSession new
      (AloemacsEditor new
        (Text from-string ,source) (Position new ,line ,column)
-       #f 0 0 (List empty))
+       #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -86,7 +86,7 @@
                       '(AloemacsSession new
                          (aloemacs-editor editor) (aloemacs-editor fs)
                          (aloemacs-editor path) "" #f ""
-                         (Position new 0 0) #f))))
+                         (Position new 0 0) #f (List empty)))))
   (define! state 'base (session "abc\ndef" 1 1 "saved"))
   (step! state 'active 'base "find")
   (check-equal? (search-state state 'active)
@@ -230,7 +230,7 @@
   (define! state 'sanitized
     '(AloemacsSession new
        (base editor) (base fs) (base path) "saved"
-       #t "a\u001b" (Position new 0 0) #f #f))
+       #t "a\u001b" (Position new 0 0) #f #f (List empty)))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a "))
   (step! state 'exit 'failed "return")

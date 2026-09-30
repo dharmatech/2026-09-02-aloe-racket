@@ -20,7 +20,7 @@
       (AloemacsEditor new
         (Text from-string ,source)
         (Position new 0 0)
-        #f 0 0 (List empty))))
+        #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
 
   (define frame (driver-eval! state '(editor frame 80 24)))
   (check-equal?
