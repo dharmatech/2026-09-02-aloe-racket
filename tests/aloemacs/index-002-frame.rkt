@@ -29,7 +29,7 @@
         ,quit
         0
         0
-        (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))))
+        (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))))
 
 (define (fit-editor! state name source columns rows)
   (driver-eval!
@@ -101,7 +101,7 @@
       (AloemacsEditor new
         (Text from-string ,source)
         (Position new 2 1)
-        #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+        #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (define expected (frame "aa\r\nbb\r\ncc" 3 2))
   (for ([name (in-list '(focused misfocused cold))])
     (check-equal? (driver-eval! state `(,name frame 5 3)) expected))
@@ -115,5 +115,5 @@
        (AloemacsEditor new
          (Text from-string ,source)
          (Position new 2 1)
-         #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+         #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
    (driver-eval! state 'cold)))

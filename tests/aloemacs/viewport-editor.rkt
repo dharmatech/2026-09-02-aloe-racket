@@ -27,7 +27,7 @@
      ,quit
      ,scroll-row
      ,scroll-col
-     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (define-editor! state name source line column quit scroll-row scroll-col)
   (driver-eval!

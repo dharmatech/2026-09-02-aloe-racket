@@ -30,7 +30,7 @@
   `(AloemacsSession new
     (AloemacsEditor new (Text from-string ,source)
                         (Position new ,line ,column) #f
-                        ,scroll-row ,scroll-col (List empty) ,mark)
+                        ,scroll-row ,scroll-col (List empty) ,mark 0)
     (Fs new fs-host) ,path ,echo #f "" (Position new 0 0) #f #f ,ring))
 
 (define (ev st expr) (driver-eval! st expr))

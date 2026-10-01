@@ -77,6 +77,12 @@
        (or (not (tkeymsg-char message))
            (eqv? (tkeymsg-char message) key))))
 
+(define (plain-ctrl-letter-key? message letter)
+  (and (eqv? (tkeymsg-key message) letter)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) letter))))
+
 (define (printable-character? character)
   (or (char-graphic? character)
       (char=? character #\space)))
@@ -97,6 +103,14 @@
     [(plain-ctrl-y-key? message) "yank"]
     [(plain-ctrl-k-key? message) "kill-line"]
     [(plain-ctrl-space-key? message) "mark"]
+    [(plain-ctrl-letter-key? message #\a) "line-start"]
+    [(plain-ctrl-letter-key? message #\e) "line-end"]
+    [(and (eq? key 'home) (equal? (tkeymsg-mods message) '())) "line-start"]
+    [(and (eq? key 'end) (equal? (tkeymsg-mods message) '())) "line-end"]
+    [(and (eq? key 'home) (equal? (tkeymsg-mods message) '(ctrl))) "buffer-start"]
+    [(and (eq? key 'end) (equal? (tkeymsg-mods message) '(ctrl))) "buffer-end"]
+    [(and (eq? key 'prior) (equal? (tkeymsg-mods message) '())) "page-up"]
+    [(and (eq? key 'next) (equal? (tkeymsg-mods message) '())) "page-down"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))

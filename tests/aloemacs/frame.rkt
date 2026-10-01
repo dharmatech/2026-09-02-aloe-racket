@@ -34,7 +34,7 @@
      ,quit
      0
      0
-     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!

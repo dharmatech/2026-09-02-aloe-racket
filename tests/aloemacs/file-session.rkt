@@ -79,7 +79,7 @@
      ,quit
      0
      0
-     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (session-expression source line column quit [path #f] [echo ""])
   `(AloemacsSession new

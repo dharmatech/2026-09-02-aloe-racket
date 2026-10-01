@@ -35,7 +35,7 @@
      ,quit
      0
      0
-     (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (define-editor! state name source line column quit)
   (driver-eval!
@@ -91,7 +91,7 @@
   (check-exn #rx"unbound symbol: AloemacsEditor"
              (lambda () (driver-eval! fresh-state 'AloemacsEditor))))
 
-(test-case "AloemacsEditor has the exact seven-field construction surface"
+(test-case "AloemacsEditor has the exact eight-field construction surface"
   (define state (make-driver))
   (load-editor! state)
   (define editor (editor-expression "abc" 0 2 #f))
@@ -104,7 +104,8 @@
             ((,editor scroll-row) Int)
             ((,editor scroll-col) Int)
             ((,editor history) (List UndoFrame))
-            ((,editor mark) (Option Position))))])
+            ((,editor mark) (Option Position))
+            ((,editor text-rows) Int)))])
     (check-equal? (driver-type state (car entry)) (cadr entry)))
 
   (for ([datum

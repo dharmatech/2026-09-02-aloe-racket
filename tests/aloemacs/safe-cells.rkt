@@ -30,7 +30,7 @@
   `(AloemacsEditor new
      (Text from-string ,source)
      (Position new 0 ,column)
-     #f 0 ,scroll (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     #f 0 ,scroll (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (editor-frame body row column)
   (string-append

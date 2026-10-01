@@ -65,12 +65,12 @@
    state
    '(define top-0
       (AloemacsEditor new top-text (Position new 0 0) #f 0 0
-        (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+        (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (driver-eval!
    state
    '(define bottom-0
       (AloemacsEditor new bottom-text (Position new 9000 0) #f 0 0
-        (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+        (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (check-equal? (driver-eval! state '((top-0 text) focus-line)) 0)
   (check-equal? (driver-eval! state '((bottom-0 text) focus-line)) 9000)
   (measure-case state 'top 0)

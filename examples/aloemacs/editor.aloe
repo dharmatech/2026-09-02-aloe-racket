@@ -20,7 +20,8 @@
     (scroll-row Int)
     (scroll-col Int)
     (history (List UndoFrame))
-    (mark (Option Position)))
+    (mark (Option Position))
+    (text-rows Int))
   (methods
     (fit-origin (point Int) (origin Int) (size Int) Int
       ((if (point < origin)
@@ -38,7 +39,8 @@
           (self fit-origin (point line) (self scroll-row) rows)
           (self fit-origin (point column) (self scroll-col) columns)
           (self history)
-          (self mark))))
+          (self mark)
+          rows)))
 
     (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
       ((List of
@@ -106,7 +108,8 @@
         (self scroll-row)
         (self scroll-col)
         (self history)
-        mark))
+        mark
+        (self text-rows)))
 
     (clear-mark () AloemacsEditor
       (AloemacsEditor new
@@ -116,7 +119,8 @@
         (self scroll-row)
         (self scroll-col)
         (self history)
-        (Option None)))
+        (Option None)
+        (self text-rows)))
 
     (keep-valid-mark () AloemacsEditor
       ((self mark) case
@@ -134,7 +138,8 @@
         (self scroll-row)
         (self scroll-col)
         (self history)
-        (self mark)))
+        (self mark)
+        (self text-rows)))
 
     (from-edit (result EditResult) AloemacsEditor
       (AloemacsEditor new
@@ -149,7 +154,8 @@
             (self point)
             (self scroll-row)
             (self scroll-col)))
-        (self mark)))
+        (self mark)
+        (self text-rows)))
 
     (undo () AloemacsEditor
       (if ((self history) empty?)
@@ -162,7 +168,8 @@
               (frame scroll-row)
               (frame scroll-col)
               ((self history) rest)
-              (self mark)))))
+              (self mark)
+              (self text-rows)))))
 
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
@@ -273,6 +280,77 @@
                       ((point column) min (next line-length)))))
                 (self unchanged))))))
 
+    (at-focused (focused Text) (column Int) AloemacsEditor
+      (let ((destination
+             (Position new (focused focus-line)
+               (column min (focused line-length)))))
+        (if ((self point) = destination)
+            (self unchanged)
+            (self with-text-and-point focused destination))))
+
+    (line-start () AloemacsEditor
+      (((self text) focus-at ((self point) line)) case
+        (None () (self unchanged))
+        (Some (focused) (self at-focused focused 0))))
+
+    (line-end () AloemacsEditor
+      (((self text) focus-at ((self point) line)) case
+        (None () (self unchanged))
+        (Some (focused) (self at-focused focused (focused line-length)))))
+
+    (focus-up-by (focused Text) (remaining Int) Text
+      (if (remaining <= 0)
+          focused
+          (if (focused has-previous?)
+              (self focus-up-by (focused focus-up) (remaining - 1))
+              focused)))
+
+    (focus-down-by (focused Text) (remaining Int) Text
+      (if (remaining <= 0)
+          focused
+          (if (focused has-next?)
+              (self focus-down-by (focused focus-down) (remaining - 1))
+              focused)))
+
+    (focus-end (focused Text) Text
+      (if (focused has-next?)
+          (self focus-end (focused focus-down))
+          focused))
+
+    (page-distance () Int
+      (if ((self text-rows) >= 2)
+          ((self text-rows) - 1)
+          (self text-rows)))
+
+    (page-up () AloemacsEditor
+      (if ((self page-distance) <= 0)
+          (self unchanged)
+          (((self text) focus-at ((self point) line)) case
+            (None () (self unchanged))
+            (Some (focused)
+              (self at-focused
+                (self focus-up-by focused (self page-distance))
+                ((self point) column))))))
+
+    (page-down () AloemacsEditor
+      (if ((self page-distance) <= 0)
+          (self unchanged)
+          (((self text) focus-at ((self point) line)) case
+            (None () (self unchanged))
+            (Some (focused)
+              (self at-focused
+                (self focus-down-by focused (self page-distance))
+                ((self point) column))))))
+
+    (buffer-start () AloemacsEditor
+      (((self text) focus-at 0) case
+        (None () (self unchanged))
+        (Some (focused) (self at-focused focused 0))))
+
+    (buffer-end () AloemacsEditor
+      (let ((last (self focus-end ((self text) indexed-value))))
+        (self at-focused last (last line-length))))
+
     (request-quit () AloemacsEditor
       (AloemacsEditor new
         (self text)
@@ -281,7 +359,8 @@
         (self scroll-row)
         (self scroll-col)
         (self history)
-        (self mark)))
+        (self mark)
+        (self text-rows)))
 
     (handle-key (key String) AloemacsEditor
       (cond
@@ -292,6 +371,12 @@
         ((key = "right") (self move-right))
         ((key = "up") (self move-up))
         ((key = "down") (self move-down))
+        ((key = "line-start") (self line-start))
+        ((key = "line-end") (self line-end))
+        ((key = "page-up") (self page-up))
+        ((key = "page-down") (self page-down))
+        ((key = "buffer-start") (self buffer-start))
+        ((key = "buffer-end") (self buffer-end))
         ((key = "escape") (self request-quit))
         ((key = "undo") (self undo))
         (((key len) = 1) (self insert key))

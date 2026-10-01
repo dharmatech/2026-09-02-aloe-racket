@@ -19,7 +19,7 @@
                    (AloemacsEditor new
                      (Text from-string "ab\nc")
                      (Position new 0 2)
-                     #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+                     #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (check-exn exn:fail:aloe-type?
              (lambda () (driver-eval! state '(editor clamp-column 2 (editor text)))))
   (check-exn exn:fail:aloe-type?
@@ -32,7 +32,7 @@
                    (AloemacsEditor new
                      (Text from-string "ab\nc")
                      (Position new 0 2)
-                     #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+                     #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (driver-eval! state '(define second (first move-down)))
   (check-equal? (driver-eval! state '((second point) line)) 1)
   (check-equal? (driver-eval! state '((second point) column)) 1)
@@ -47,7 +47,7 @@
                    (AloemacsEditor new
                      (Text from-string "ab\nc")
                      (Position new 0 0)
-                     #f -5 -5 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))))
+                     #f -5 -5 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (driver-eval! state '(define visible (editor ensure-visible 3 3)))
   (check-equal? (driver-eval! state '(visible scroll-row)) 0)
   (check-equal? (driver-eval! state '(visible scroll-col)) 0))

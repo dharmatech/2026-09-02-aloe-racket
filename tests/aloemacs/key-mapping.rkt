@@ -44,7 +44,7 @@
    "z"))
 
 (test-case "unknown named keys remain Aloe strings"
-  (check-equal? (tkeymsg->aloe-key (make-tkeymsg 'home)) "home"))
+  (check-equal? (tkeymsg->aloe-key (make-tkeymsg 'f1)) "f1"))
 
 (test-case "unsupported non-printable characters remain errors"
   (check-exn

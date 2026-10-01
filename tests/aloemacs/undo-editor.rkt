@@ -27,7 +27,7 @@
   `(AloemacsEditor new
      ,(focused-text source line)
      (Position new ,line ,column)
-     ,quit ,row ,col (List empty) (if #t (Option None) (Option Some (Position new 0 0)))))
+     ,quit ,row ,col (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0))
 
 (define (define-editor! state name source line column row col [quit #f])
   (driver-eval! state
@@ -49,7 +49,7 @@
   (check-equal? (driver-eval! state `(,name quit)) quit)
   (check-equal? (driver-eval! state `((,name history) len)) history-len))
 
-(test-case "UndoFrame and six-field editor are checked"
+(test-case "UndoFrame and eight-field editor are checked"
   (define state (make-editor-state))
   (define editor (editor-expr "abc" 0 2 0 0))
   (define frame
@@ -169,7 +169,9 @@
   (step! state 'fitted 'moved 'ensure-visible 1 1)
   (check-equal? (driver-eval! state '(fitted scroll-row)) 0)
   (step! state 'restored 'fitted 'undo)
-  (equal-aloe state 'restored 'source)
+  (for ([field (in-list '(text point quit scroll-row scroll-col history mark))])
+    (equal-aloe state `(restored ,field) `(source ,field)))
+  (check-equal? (driver-eval! state '(restored text-rows)) 1)
   (check-editor state 'source "abc\nwxyz\npq" 1 3 1 2 #f 0)
   (check-equal? (driver-eval! state '((source text) focus-line)) 1)
   (check-equal? (driver-eval! state '((restored text) focus-line)) 1))

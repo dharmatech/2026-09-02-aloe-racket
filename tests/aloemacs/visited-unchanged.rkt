@@ -34,7 +34,7 @@
             (Text from-string "old")
             (Position new 0 0)
             4
-            5)) (if #t (Option None) (Option Some (Position new 0 0))))))
+            5)) (if #t (Option None) (Option Some (Position new 0 0))) 0)))
   (driver-eval!
    state
    '(define session
@@ -73,7 +73,7 @@
           #f
           0
           0
-          (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
+          (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
         (Fs new fs-host)
         (Option Some (Path new "/cwd/a.txt"))
         "prior" #f "" (Position new 0 0) #f #f (List empty))))

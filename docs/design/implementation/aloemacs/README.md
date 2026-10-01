@@ -68,7 +68,8 @@ design or implement a later layer in an earlier layer's conversation.
 | 8 | Echo | [`echo/`](echo/) | **Implemented.** Spec and aloemacs-echo 000–001. | 4, 6 (path + text rectangle) |
 | 9 | Safe cells | [`safe-cells/`](safe-cells/) | **Implemented.** Spec and aloemacs-safe-cells 000. | 3, 8 (frame bytes + echo label) |
 | 10 | Search | [`search/`](search/) | **Implemented.** aloemacs-search 000–001. | 4, 8, 9 (session keys, echo row, safe cells) |
-| 11 | Kill | [`kill/`](kill/) | **Draft spec written.** Awaiting review. | 7, 10 (undo frames, session keys) |
+| 11 | Kill | [`kill/`](kill/) | **Implemented.** aloemacs-kill 000–002. | 7, 10 (undo frames, session keys) |
+| 12 | Motion | [`motion/`](motion/) | **Ready to implement.** aloemacs-motion 000. | 6, 11 (fitted rows, editor keys) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -76,8 +77,9 @@ and Undo are follow-ons. Echo is implemented. Faster
 series ([`../string-load-save/`](../string-load-save/)).
 **Safe cells** is implemented at [`safe-cells/`](safe-cells/).
 **Search** is implemented at [`search/`](search/).
-**Kill** has a draft [`spec.md`](kill/spec.md) from
-[`kill/charter.md`](kill/charter.md), awaiting review.
+**Kill** is implemented at [`kill/`](kill/). aloemacs-kill 000–002.
+**Motion** is a standalone checkpoint at
+[`motion/checkpoints/000-motion-pack.md`](motion/checkpoints/000-motion-pack.md).
 Ranked later work lives in [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
@@ -133,6 +135,7 @@ Easy to smuggle in. They are not.
 | Safe cells | No-TTY frame: ESC, tab, CR, and DEL in text and in the echo label display as spaces; save writes the original bytes |
 | Search | No-TTY: Ctrl-F, type a query, point moves; wrap and failure show on the echo; Escape restores the previous echo and does not quit |
 | Kill | No-TTY: set a mark, move, kill; the ring holds the string; undo restores text and point; yank inserts it again. Kill-line with no mark. Yank on an empty ring leaves the text alone |
+| Motion | No-TTY: line start and end, page-down after a fit, buffer start and end. Undo history stays |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

@@ -30,7 +30,7 @@
       (AloemacsSession new
         (AloemacsEditor new
           (Text from-string "draft") (Position new 0 0)
-          #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))))
+          #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
         (Fs new fs-host)
         ,no-path
         "" #f "" (Position new 0 0) #f #f (List empty)))))
