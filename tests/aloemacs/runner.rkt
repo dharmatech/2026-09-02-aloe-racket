@@ -39,7 +39,8 @@
         ""
         (Position new 0 0)
         #f
-        #f (List empty)))))
+        #f (List empty)
+        (if #t (Option None) (Option Some aloemacs-global-keymap))))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")
@@ -149,6 +150,7 @@
   (check-equal? (driver-eval! state '((aloemacs-editor point) column)) 0)
   (check-false (driver-eval! state '(aloemacs-editor quit)))
   (check-false (driver-eval! state '((aloemacs-editor path) present?)))
+  (check-false (driver-eval! state '((aloemacs-editor pending) present?)))
   (check-equal? (driver-eval! state '(aloemacs-editor echo)) "")
   (check-equal? (driver-eval! state '(fs-host read "/cwd/kept.txt"))
                 "kept")

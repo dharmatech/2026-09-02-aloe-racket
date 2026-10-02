@@ -88,7 +88,8 @@
      ,(if path
           `(Option Some (Path new ,path))
           no-path-expression)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -418,7 +419,7 @@
         (source path)
         (source echo)
         (source searching) (source query) (source origin)
-        (source wrapped) (source failing) (List empty))))
+        (source wrapped) (source failing) (List empty) (source pending))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -439,7 +440,7 @@
         (source path)
         (source echo)
         (source searching) (source query) (source origin)
-        (source wrapped) (source failing) (List empty))))
+        (source wrapped) (source failing) (List empty) (source pending))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

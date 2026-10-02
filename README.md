@@ -19,6 +19,10 @@ The core stays small on purpose. Libraries and programs grow the rest
 
 `ALOE = Scheme + Smalltalk + Types`
 
+Demo of code completion in vscode:
+
+https://www.youtube.com/watch?v=YuIjug7elPY
+
 ## Status
 
 Aloe remains an exploratory prototype. Local `main` includes the language and

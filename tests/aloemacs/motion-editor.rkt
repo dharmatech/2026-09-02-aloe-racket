@@ -101,7 +101,8 @@
                                (Fs new fs-host)
                                (if #t (Option None) (Option Some (Path new "/unused")))
                                "saved" #f ""
-                               (Position new 0 0) #f #f (List empty)))
+                               (Position new 0 0) #f #f (List empty)
+                               (if #t (Option None) (Option Some aloemacs-global-keymap))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))
   (check-equal? (driver-eval! st '(paged echo)) "")

@@ -29,7 +29,8 @@
        #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -230,7 +231,8 @@
   (define! state 'sanitized
     '(AloemacsSession new
        (base editor) (base fs) (base path) "saved"
-       #t "a\u001b" (Position new 0 0) #f #f (List empty)))
+       #t "a\u001b" (Position new 0 0) #f #f (List empty)
+       (if #t (Option None) (Option Some aloemacs-global-keymap))))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a "))
   (step! state 'exit 'failed "return")

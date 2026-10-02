@@ -1,6 +1,86 @@
 (load "editor.aloe")
 (load "../../lib/fs.aloe")
 
+(define-class AloemacsCommand
+  (constructors
+    (Newline (fields))
+    (BackwardDelete (fields))
+    (MoveLeft (fields))
+    (MoveRight (fields))
+    (MoveUp (fields))
+    (MoveDown (fields))
+    (LineStart (fields))
+    (LineEnd (fields))
+    (PageUp (fields))
+    (PageDown (fields))
+    (BufferStart (fields))
+    (BufferEnd (fields))
+    (RequestQuit (fields))
+    (Undo (fields))
+    (SetMark (fields))
+    (Kill (fields))
+    (KillLine (fields))
+    (Yank (fields))
+    (Find (fields))
+    (Save (fields))
+    (SelfInsert (fields)))
+  (methods
+    (name () String
+      (self case
+        (Newline () "newline")
+        (BackwardDelete () "backward-delete")
+        (MoveLeft () "move-left")
+        (MoveRight () "move-right")
+        (MoveUp () "move-up")
+        (MoveDown () "move-down")
+        (LineStart () "line-start")
+        (LineEnd () "line-end")
+        (PageUp () "page-up")
+        (PageDown () "page-down")
+        (BufferStart () "buffer-start")
+        (BufferEnd () "buffer-end")
+        (RequestQuit () "request-quit")
+        (Undo () "undo")
+        (SetMark () "set-mark")
+        (Kill () "kill")
+        (KillLine () "kill-line")
+        (Yank () "yank")
+        (Find () "find")
+        (Save () "save")
+        (SelfInsert () "self-insert")))))
+
+(define-class (AloemacsKeymap B)
+  (fields
+    (bindings (List B))
+    (default (Option AloemacsCommand)))
+  (methods
+    (lookup (key String) (Option B)
+      (self lookup-in (self bindings) key))
+
+    (lookup-in (bindings (List B)) (key String) (Option B)
+      (bindings fold
+        (Option None)
+        (fn (found binding)
+          (found case
+            (Some (first) (Option Some first))
+            (None ()
+              (if ((binding key) = key)
+                  (Option Some binding)
+                  (Option None)))))))))
+
+(define-class AloemacsBinding
+  (constructors
+    (Command (fields (key String) (command AloemacsCommand)))
+    (Prefix
+      (fields
+        (key String)
+        (map (AloemacsKeymap AloemacsBinding)))))
+  (methods
+    (key () String
+      (self case
+        (Command (key command) key)
+        (Prefix (key map) key)))))
+
 (define-class AloemacsSearchScan
   (fields)
   (methods
@@ -28,7 +108,8 @@
     (origin Position)
     (wrapped Bool)
     (failing Bool)
-    (kill-ring (List String)))
+    (kill-ring (List String))
+    (pending (Option (AloemacsKeymap AloemacsBinding))))
   (methods
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
@@ -41,21 +122,48 @@
         (self origin)
         (self wrapped)
         (self failing)
-        (self kill-ring)))
+        (self kill-ring)
+        (self pending)))
 
     (with-kill-state (editor AloemacsEditor) (kill-ring (List String))
                      (AloemacsSession H)
       (AloemacsSession new
         editor (self fs) (self path) ""
         (self searching) (self query) (self origin)
-        (self wrapped) (self failing) kill-ring))
+        (self wrapped) (self failing) kill-ring (self pending)))
 
     (with-search (editor AloemacsEditor) (searching Bool)
                  (query String) (origin Position)
                  (wrapped Bool) (failing Bool) (AloemacsSession H)
       (AloemacsSession new
         editor (self fs) (self path) (self echo)
-        searching query origin wrapped failing (self kill-ring)))
+        searching query origin wrapped failing (self kill-ring) (self pending)))
+
+    (with-echo (token String) (AloemacsSession H)
+      (AloemacsSession new
+        (self editor) (self fs) (self path) token
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (self pending)))
+
+    (with-prefix (map (AloemacsKeymap AloemacsBinding)) (AloemacsSession H)
+      (AloemacsSession new
+        (self editor) (self fs) (self path) ""
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (Option Some map)))
+
+    (clear-prefix () (AloemacsSession H)
+      (AloemacsSession new
+        (self editor) (self fs) (self path) (self echo)
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (Option None)))
+
+    (find () (AloemacsSession H)
+      (self with-search (self editor) #t "" (self point) #f #f))
+
+    (save-key () (AloemacsSession H)
+      ((self save) case
+        (None () (self with-echo "failed"))
+        (Some (session) (session with-echo "saved"))))
 
     (set-mark () (AloemacsSession H)
       (self with-kill-state
@@ -216,32 +324,52 @@
         (else ((self end-search) idle-key key))))
 
     (idle-key (key String) (AloemacsSession H)
-      (cond
-        ((key = "mark") (self set-mark))
-        ((key = "kill") (self kill))
-        ((key = "kill-line") (self kill-line))
-        ((key = "yank") (self yank))
-        ((key = "find")
-         (self with-search (self editor) #t "" (self point) #f #f))
-        ((key = "save")
-         ((self save) case
-           (None ()
-             (AloemacsSession new
-               (self editor) (self fs) (self path) "failed"
-               (self searching) (self query) (self origin)
-               (self wrapped) (self failing) (self kill-ring)))
-           (Some (session)
-             (AloemacsSession new
-               (session editor) (session fs) (session path) "saved"
-               (session searching) (session query) (session origin)
-               (session wrapped) (session failing)
-               (session kill-ring)))))
-        (else
-         (AloemacsSession new
-           ((self editor) handle-key key)
-           (self fs) (self path) ""
-           (self searching) (self query) (self origin)
-           (self wrapped) (self failing) (self kill-ring)))))
+      (let ((map
+              ((self pending) case
+                (None () aloemacs-global-keymap)
+                (Some (map) map))))
+        ((map lookup key) case
+          (Some (binding)
+            (binding case
+              (Command (bound-key command)
+                ((self pending) case
+                  (None () (self execute-command command key))
+                  (Some (map)
+                    ((self clear-prefix) execute-command command key))))
+              (Prefix (bound-key next-map) (self with-prefix next-map))))
+          (None ()
+            ((self pending) case
+              (Some (map) ((self clear-prefix) with-echo ""))
+              (None ()
+                (if ((key len) = 1)
+                    ((map default) case
+                      (Some (command) (self execute-command command key))
+                      (None () (self with-echo "")))
+                    (self with-echo ""))))))))
+
+    (execute-command (command AloemacsCommand) (key String) (AloemacsSession H)
+      (command case
+        (Newline () ((self newline) with-echo ""))
+        (BackwardDelete () ((self backward-delete) with-echo ""))
+        (MoveLeft () ((self move-left) with-echo ""))
+        (MoveRight () ((self move-right) with-echo ""))
+        (MoveUp () ((self move-up) with-echo ""))
+        (MoveDown () ((self move-down) with-echo ""))
+        (LineStart () ((self line-start) with-echo ""))
+        (LineEnd () ((self line-end) with-echo ""))
+        (PageUp () ((self page-up) with-echo ""))
+        (PageDown () ((self page-down) with-echo ""))
+        (BufferStart () ((self buffer-start) with-echo ""))
+        (BufferEnd () ((self buffer-end) with-echo ""))
+        (RequestQuit () ((self request-quit) with-echo ""))
+        (Undo () ((self undo) with-echo ""))
+        (SetMark () (self set-mark))
+        (Kill () (self kill))
+        (KillLine () (self kill-line))
+        (Yank () (self yank))
+        (Find () (self find))
+        (Save () (self save-key))
+        (SelfInsert () ((self insert key) with-echo ""))))
 
     (unchanged () (AloemacsSession H)
       self)
@@ -259,7 +387,7 @@
           0)
         (self fs)
         (Option Some path)
-        "" #f "" (Position new 0 0) #f #f (List empty)))
+        "" #f "" (Position new 0 0) #f #f (List empty) (Option None)))
 
     (text () Text
       ((self editor) text))
@@ -290,6 +418,27 @@
 
     (move-down () (AloemacsSession H)
       (self with-editor ((self editor) move-down)))
+
+    (line-start () (AloemacsSession H)
+      (self with-editor ((self editor) line-start)))
+
+    (line-end () (AloemacsSession H)
+      (self with-editor ((self editor) line-end)))
+
+    (page-up () (AloemacsSession H)
+      (self with-editor ((self editor) page-up)))
+
+    (page-down () (AloemacsSession H)
+      (self with-editor ((self editor) page-down)))
+
+    (buffer-start () (AloemacsSession H)
+      (self with-editor ((self editor) buffer-start)))
+
+    (buffer-end () (AloemacsSession H)
+      (self with-editor ((self editor) buffer-end)))
+
+    (undo () (AloemacsSession H)
+      (self with-editor ((self editor) undo)))
 
     (request-quit () (AloemacsSession H)
       (self with-editor ((self editor) request-quit)))
@@ -373,3 +522,40 @@
         ((self quit) (self unchanged))
         ((self searching) (self search-key key))
         (else (self idle-key key))))))
+
+(define aloemacs-self-insert-command (AloemacsCommand SelfInsert))
+(define aloemacs-save-command (AloemacsCommand Save))
+
+(define aloemacs-ctrl-x-keymap
+  (AloemacsKeymap new
+    (List of
+      (AloemacsBinding Command "save" aloemacs-save-command))
+    (if #t
+        (Option None)
+        (Option Some aloemacs-self-insert-command))))
+
+(define aloemacs-global-keymap
+  (AloemacsKeymap new
+    (List of
+      (AloemacsBinding Command "return" (AloemacsCommand Newline))
+      (AloemacsBinding Command "backspace" (AloemacsCommand BackwardDelete))
+      (AloemacsBinding Command "left" (AloemacsCommand MoveLeft))
+      (AloemacsBinding Command "right" (AloemacsCommand MoveRight))
+      (AloemacsBinding Command "up" (AloemacsCommand MoveUp))
+      (AloemacsBinding Command "down" (AloemacsCommand MoveDown))
+      (AloemacsBinding Command "line-start" (AloemacsCommand LineStart))
+      (AloemacsBinding Command "line-end" (AloemacsCommand LineEnd))
+      (AloemacsBinding Command "page-up" (AloemacsCommand PageUp))
+      (AloemacsBinding Command "page-down" (AloemacsCommand PageDown))
+      (AloemacsBinding Command "buffer-start" (AloemacsCommand BufferStart))
+      (AloemacsBinding Command "buffer-end" (AloemacsCommand BufferEnd))
+      (AloemacsBinding Command "escape" (AloemacsCommand RequestQuit))
+      (AloemacsBinding Command "undo" (AloemacsCommand Undo))
+      (AloemacsBinding Command "mark" (AloemacsCommand SetMark))
+      (AloemacsBinding Command "kill" (AloemacsCommand Kill))
+      (AloemacsBinding Command "kill-line" (AloemacsCommand KillLine))
+      (AloemacsBinding Command "yank" (AloemacsCommand Yank))
+      (AloemacsBinding Command "find" (AloemacsCommand Find))
+      (AloemacsBinding Command "save" aloemacs-save-command)
+      (AloemacsBinding Prefix "ctrl-x" aloemacs-ctrl-x-keymap))
+    (Option Some aloemacs-self-insert-command)))

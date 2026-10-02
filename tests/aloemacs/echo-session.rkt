@@ -35,7 +35,8 @@
        #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
      (Fs new fs-host)
      ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))

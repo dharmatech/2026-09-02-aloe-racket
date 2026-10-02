@@ -42,7 +42,8 @@
         editor
         (Fs new fs-host)
         (Option Some (Path new "/cwd/a.txt"))
-        "prior" #f "" (Position new 0 0) #f #f (List empty))))
+        "prior" #f "" (Position new 0 0) #f #f (List empty)
+        (if #t (Option None) (Option Some aloemacs-global-keymap)))))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -76,7 +77,8 @@
           (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
         (Fs new fs-host)
         (Option Some (Path new "/cwd/a.txt"))
-        "prior" #f "" (Position new 0 0) #f #f (List empty))))
+        "prior" #f "" (Position new 0 0) #f #f (List empty)
+        (if #t (Option None) (Option Some aloemacs-global-keymap)))))
   (driver-eval!
    state
    '(define visited

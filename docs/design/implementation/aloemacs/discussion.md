@@ -21,11 +21,12 @@ implement.
 
 string-load-save 000–001 is implemented. Do not reopen that
 series from this role, and do not write `spec.md` here. Ranked
-later work is [`explorations.md`](explorations.md). Layers 1–11
+later work is [`explorations.md`](explorations.md). Layers 1–12
 are implemented, including search at [`search/`](search/) and
-kill at [`kill/`](kill/). Motion is a standalone checkpoint at
-[`motion/checkpoints/000-motion-pack.md`](motion/checkpoints/000-motion-pack.md).
-Do not implement it here, and do not write a `spec.md` here.
+kill at [`kill/`](kill/) and motion at [`motion/`](motion/).
+Keymap is implemented and accepted at [`keymap/`](keymap/),
+aloemacs-keymap 000–001. Do not reopen that series or write its `spec.md`
+here.
 
 ## How this conversation works
 
@@ -47,14 +48,15 @@ layer is the topic; do not survey the whole tree on every turn.
 
 | Item | State |
 |---|---|
-| Layers 1–11 (Text through Kill) | Implemented |
+| Layers 1–12 (Text through Motion) | Implemented |
 | Idiom cleanups (line-length through safe-cell-scan) | Implemented |
 | safe-cell-controls | **Ready to implement.** Standalone 000 |
 | [`../string-load-save/`](../string-load-save/) | **Implemented.** 000–001 |
 | Safe cells (`ESC` / tab / `CR` on the TTY) | **Implemented.** [`safe-cells/`](safe-cells/), checkpoint 000 |
 | Search (incremental, echo row) | **Implemented.** aloemacs-search 000–001 |
 | Kill (mark, kill, kill-line, yank) | **Implemented.** aloemacs-kill 000–002 |
-| Motion (line, page, buffer) | **Ready to implement.** Standalone 000 |
+| Motion (line, page, buffer) | **Implemented.** aloemacs-motion 000 |
+| Keymap (commands as values, `C-x C-s`) | **Implemented and accepted.** aloemacs-keymap 000–001 at [`keymap/`](keymap/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -91,7 +93,7 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, prefix `C-x`, minibuffer (see
+- Windows, the minibuffer, extra buffers, and M-x (see
   [`explorations.md`](explorations.md) for order)
 - Live `eval` / Mirror
 

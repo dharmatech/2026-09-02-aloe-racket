@@ -21,4 +21,7 @@
     (Position new 0 0)
     #f
     #f
-    (List empty)))
+    (List empty)
+    (if #t
+        (Option None)
+        (Option Some aloemacs-global-keymap))))

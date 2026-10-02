@@ -48,7 +48,8 @@
      ,(editor source 0)
      (Fs new fs-host)
      (Option Some (Path new ,path))
-     ,echo #f "" (Position new 0 0) #f #f (List empty)))
+     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

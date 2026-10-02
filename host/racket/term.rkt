@@ -39,6 +39,12 @@
        (or (not (tkeymsg-char message))
            (eqv? (tkeymsg-char message) #\s))))
 
+(define (plain-ctrl-x-key? message)
+  (and (eqv? (tkeymsg-key message) #\x)
+       (equal? (tkeymsg-mods message) '(ctrl))
+       (or (not (tkeymsg-char message))
+           (eqv? (tkeymsg-char message) #\x))))
+
 (define (plain-ctrl-f-key? message)
   (and (eqv? (tkeymsg-key message) #\f)
        (equal? (tkeymsg-mods message) '(ctrl))
@@ -97,6 +103,7 @@
     [(escape-key? key) "escape"]
     [(backspace-key? message) "backspace"]
     [(plain-ctrl-s-key? message) "save"]
+    [(plain-ctrl-x-key? message) "ctrl-x"]
     [(plain-ctrl-f-key? message) "find"]
     [(plain-ctrl-z-key? message) "undo"]
     [(plain-ctrl-w-key? message) "kill"]

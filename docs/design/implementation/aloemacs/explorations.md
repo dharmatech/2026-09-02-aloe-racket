@@ -7,8 +7,8 @@ the next band on their own.
 
 Search is implemented (aloemacs-search 000–001). Mark, region,
 kill, and yank is implemented (aloemacs-kill 000–002). The motion
-pack is a standalone checkpoint at
-[`motion/checkpoints/000-motion-pack.md`](motion/checkpoints/000-motion-pack.md).
+pack is implemented (aloemacs-motion 000). Commands and keymap are
+implemented and accepted (aloemacs-keymap 000–001) at [`keymap/`](keymap/).
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -63,15 +63,14 @@ Still one buffer, still allowed to extend `handle-key`. These
 make the core *usable* for sketching and reading. They are
 deliberately small. They are not windows, modes, or M-x.
 
-Search and kill are implemented. The motion pack is ready to
-implement at
-[`motion/checkpoints/000-motion-pack.md`](motion/checkpoints/000-motion-pack.md).
+Search, kill, and the motion pack are implemented. The Band 2
+keymap is implemented and accepted at [`keymap/`](keymap/).
 
 | # | Exploration | Why this soon | First consumer |
 |---|---|---|---|
 | 1 | **Search** (incremental, reuse the echo row) | **Implemented.** aloemacs-search 000–001 at [`search/`](search/). Ctrl-F, query on the echo row, linear `String.find`. Ctrl-S stays save | A no-TTY test: type, search, point moves, wrap or fail is explicit |
 | 2 | **Mark, region, kill/yank** | **Implemented.** aloemacs-kill 000–002 at [`kill/`](kill/). Mark, kill the span, kill-line, yank. The ring is an Aloe list of strings. The host clipboard stays later | Kill a span, yank, undo restores text and point |
-| 3 | **Motion pack** | **Ready to implement.** Standalone [`motion/checkpoints/000-motion-pack.md`](motion/checkpoints/000-motion-pack.md). Ctrl-A / Ctrl-E, Home / End, Page Up / Page Down, Ctrl-Home / Ctrl-End | Existing frame goldens plus point |
+| 3 | **Motion pack** | **Implemented.** aloemacs-motion 000 at [`motion/`](motion/). Ctrl-A / Ctrl-E, Home / End, Page Up / Page Down, Ctrl-Home / Ctrl-End | Existing frame goldens plus point |
 
 Page-up/down alone is not a layer. Paste from the host clipboard
 waits for a later capability; the kill-ring can be internal
@@ -90,15 +89,17 @@ language modes, and M-x are libraries.
 
 | # | Exploration | Why it is core | Depends on |
 |---|---|---|---|
-| 4 | **Commands as objects** | A command is a named value `(Editor → Editor)` (or session), not a clause. M-x and keymaps have something to point at | Band 1 crowding, or C-x / M-x as the first extra binding |
-| 5 | **Keymap as data** | Nested maps, prefix keys, self-insert as a default. First consumer: the keys we already have, plus one prefix (`C-x C-s` is enough) | Commands |
+| 4 | **Commands as objects** | **Implemented and accepted** with item 5 at [`keymap/`](keymap/), aloemacs-keymap 000–001. A command is a named value; the session executes it. M-x stays later | Band 1 crowding |
+| 5 | **Keymap as data** | **Implemented and accepted.** Immutable maps dispatch existing keys and one prefix: `C-x C-s`. Pending misses cancel and consume the key | Commands |
 | 6 | **Buffer as an object** | Named Text + point + undo + optional path. Session holds a list and a current buffer. Switch and kill-buffer in one window | File session, commands |
 | 7 | **Minibuffer** | A prompt that is a small editable buffer (or a window onto one), not a second ad-hoc string field. Completing-read can stay tiny | Buffer, echo, keymap |
 | 8 | **Find-file / save-as / switch-buffer as commands** | These are the first *uses* of the minibuffer. They are not a directory UI | Minibuffer, Fs |
 
 GNU-like keys (`C-x C-f`, `C-x C-s`, `C-x b`, `M-x`) are welcome
 here as bindings of those commands. The implementation stays
-data.
+data. `C-x C-s` is implemented by the keymap series.
+`C-x C-f`, `C-x b`, and `M-x` wait for the buffer, the
+minibuffer, and M-x.
 
 ---
 
@@ -175,14 +176,15 @@ Leave these until a slice is blocked by them.
    buffer.
 2. **Mark + kill/yank** (Band 1) — implemented at
    [`kill/`](kill/). aloemacs-kill 000–002.
-3. **Commands + keymap as data** (Band 2), with existing keys as
-   the first consumer and `C-x C-s` as the first prefix.
+3. **Commands + keymap as data** (Band 2) — implemented and accepted at
+   [`keymap/`](keymap/), aloemacs-keymap 000–001. Existing keys are the
+   first consumer, and `C-x C-s` is the first prefix.
 4. **Buffer**, then **minibuffer**, then find-file / switch-buffer.
 5. **Windows + lock**.
 6. **Faces**, then highlighting, then modes as libraries.
 7. Folding, then outline/notes, then a directory browser.
 8. LSP, then live eval, each with its own charter.
 
-The motion pack is aloemacs-motion 000, ready to implement. The
-hinge that stays put is Band 2 before
+The motion pack is implemented (aloemacs-motion 000). The hinge
+that stays put is Band 2 before
 windows, modes, org, dired, or M-x as a hardcoded dispatcher.
