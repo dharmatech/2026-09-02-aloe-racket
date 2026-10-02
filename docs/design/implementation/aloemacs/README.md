@@ -109,6 +109,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | visited-unchanged | [`visited-unchanged/`](visited-unchanged/) | **Implemented.** aloemacs-visited-unchanged 000 |
 | safe-cell-scan | [`safe-cell-scan/`](safe-cell-scan/) | **Implemented.** aloemacs-safe-cell-scan 000 |
 | safe-cell-controls | [`safe-cell-controls/`](safe-cell-controls/) | **Ready to implement.** aloemacs-safe-cell-controls 000 |
+| runner-check | [`runner-check/`](runner-check/) | **Ready to implement.** aloemacs-runner-check 000 |
 
 ## Not in this map
 

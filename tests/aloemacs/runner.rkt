@@ -214,6 +214,7 @@
             "driver-inject-host!"
             "driver-load-file!"
             "driver-eval!"
+            "driver-prepare!"
             "call-with-tty-term-receiver"
             "make-fs-receiver"
             "run-aloemacs-with-hosts"))])

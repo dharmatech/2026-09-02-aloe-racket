@@ -8,7 +8,8 @@
                   make-driver
                   driver-inject-host!
                   driver-load-file!
-                  driver-eval!)
+                  driver-eval!
+                  driver-prepare!)
          "term.rkt"
          "fs.rkt")
 
@@ -38,23 +39,40 @@
         (aloemacs-startup-visit case
           (None () aloemacs-editor)
           (Some (session) session)))))
-  (let loop ()
-    (define columns (driver-eval! state '(term columns)))
-    (define rows (driver-eval! state '(term rows)))
-    (driver-eval!
-     state
-     `(define aloemacs-editor
-        (aloemacs-editor ensure-visible ,columns ,rows)))
-    (driver-eval!
-     state
-     `(term write
-        (aloemacs-editor frame ,columns ,rows)))
-    (driver-eval!
+  (define read-columns (driver-prepare! state '(term columns)))
+  (define read-rows (driver-prepare! state '(term rows)))
+  (define (prepare-viewport columns rows)
+    (values
+     (driver-prepare!
+      state
+      `(define aloemacs-editor
+         (aloemacs-editor ensure-visible ,columns ,rows)))
+     (driver-prepare!
+      state
+      `(term write
+         (aloemacs-editor frame ,columns ,rows)))))
+  (define handle-key
+    (driver-prepare!
      state
      '(define aloemacs-editor
-        (aloemacs-editor handle-key (term read-key))))
-    (unless (driver-eval! state '(aloemacs-editor quit))
-      (loop))))
+        (aloemacs-editor handle-key (term read-key)))))
+  (define quit? (driver-prepare! state '(aloemacs-editor quit)))
+  (let loop ([previous-columns #f]
+             [previous-rows #f]
+             [previous-fit #f]
+             [previous-frame #f])
+    (define columns (read-columns))
+    (define rows (read-rows))
+    (define-values (fit frame)
+      (if (and (equal? columns previous-columns)
+               (equal? rows previous-rows))
+          (values previous-fit previous-frame)
+          (prepare-viewport columns rows)))
+    (fit)
+    (frame)
+    (handle-key)
+    (unless (quit?)
+      (loop columns rows fit frame))))
 
 (define (run-aloemacs-with-term term [path #f])
   (define fs-host (make-fs-receiver))

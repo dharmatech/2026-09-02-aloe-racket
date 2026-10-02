@@ -39,6 +39,7 @@ cleanups on Text and Int. Scale charter withdrawn.
 | Idiom | line-length, int-min, viewport-top, next-lines, visited-unchanged | Implemented |
 | Idiom | safe-cell-scan ([`safe-cell-scan/`](safe-cell-scan/)) | Implemented. Standalone 000 |
 | Idiom | safe-cell-controls ([`safe-cell-controls/`](safe-cell-controls/)) | Ready to implement. Standalone 000 |
+| Idiom | runner-check ([`runner-check/`](runner-check/)) | Ready to implement. Standalone 000 |
 | Display | safe cells (text rows and echo label) | Implemented |
 | Search | Ctrl-F, query on the echo row ([`search/`](search/)) | Implemented. aloemacs-search 000–001 |
 | Kill | Mark, kill, kill-line, yank ([`kill/`](kill/)) | Implemented. aloemacs-kill 000–002 |

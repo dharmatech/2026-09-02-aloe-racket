@@ -16,6 +16,8 @@
          make-driver
          driver-inject-host!
          driver-eval!
+         driver-prepare!
+         current-driver-prepare-counter
          driver-load-port!
          driver-load-file!
          aloe-value->string
@@ -72,6 +74,19 @@
   (define expression (parse-datum datum))
   (type-of expression (driver-type-environment state))
   (eval-expr expression (driver-runtime-environment state)))
+
+(define current-driver-prepare-counter (make-parameter #f))
+
+;; Preparation checks without running. Reuse requires compatible bindings and
+;; unchanged classes, methods, and loaded files; each run sees current values.
+(define (driver-prepare! state datum)
+  (define counter (current-driver-prepare-counter))
+  (when (and (box? counter) (exact-integer? (unbox counter)))
+    (set-box! counter (add1 (unbox counter))))
+  (define expression (parse-datum datum))
+  (type-of expression (driver-type-environment state))
+  (lambda ()
+    (eval-expr expression (driver-runtime-environment state))))
 
 (define (write-aloe-result value
                            [output (current-output-port)]
