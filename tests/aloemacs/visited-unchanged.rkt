@@ -39,10 +39,20 @@
    state
    '(define session
       (AloemacsSession new
-        editor
+        (AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            editor
+            (Option Some (Path new "/cwd/a.txt")))
+          (List empty))
         (Fs new fs-host)
-        (Option Some (Path new "/cwd/a.txt"))
-        "prior" #f "" (Position new 0 0) #f #f (List empty)
+        "prior"
+        #f
+        ""
+        (Position new 0 0)
+        #f
+        #f
+        (List empty)
         (if #t (Option None) (Option Some aloemacs-global-keymap)))))
 
   (check-not-exn
@@ -68,16 +78,26 @@
    state
    '(define source
       (AloemacsSession new
-        (AloemacsEditor new
-          (Text from-string "before")
-          (Position new 0 0)
-          #f
-          0
-          0
-          (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+        (AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            (AloemacsEditor new
+              (Text from-string "before")
+              (Position new 0 0)
+              #f
+              0
+              0
+              (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+            (Option Some (Path new "/cwd/a.txt")))
+          (List empty))
         (Fs new fs-host)
-        (Option Some (Path new "/cwd/a.txt"))
-        "prior" #f "" (Position new 0 0) #f #f (List empty)
+        "prior"
+        #f
+        ""
+        (Position new 0 0)
+        #f
+        #f
+        (List empty)
         (if #t (Option None) (Option Some aloemacs-global-keymap)))))
   (driver-eval!
    state

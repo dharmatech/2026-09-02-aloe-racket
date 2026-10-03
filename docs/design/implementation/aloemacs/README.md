@@ -71,6 +71,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 11 | Kill | [`kill/`](kill/) | **Implemented.** aloemacs-kill 000–002. | 7, 10 (undo frames, session keys) |
 | 12 | Motion | [`motion/`](motion/) | **Implemented.** aloemacs-motion 000. | 6, 11 (fitted rows, editor keys) |
 | 13 | Keymap | [`keymap/`](keymap/) | **Implemented and accepted.** aloemacs-keymap 000–001. | 4, 8, 10–12 (session dispatch, echo, search, kill, motion) |
+| 14 | Buffer | [`buffer/`](buffer/) | **Implemented and accepted.** aloemacs-buffer 000–001. | 4, 13 (file session, commands) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -82,7 +83,9 @@ series ([`../string-load-save/`](../string-load-save/)).
 **Motion** is implemented at [`motion/`](motion/). aloemacs-motion 000.
 **Keymap** is implemented and accepted at [`keymap/`](keymap/).
 aloemacs-keymap 000–001 uses session `execute-command` and adds `C-x C-s`.
-Ranked later work lives in [`explorations.md`](explorations.md).
+**Buffer** is implemented and accepted at [`buffer/`](buffer/).
+aloemacs-buffer 000–001. Ranked later work lives in
+[`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
@@ -108,14 +111,14 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | next-lines | [`next-lines/`](next-lines/) | **Implemented.** aloemacs-next-lines 000 |
 | visited-unchanged | [`visited-unchanged/`](visited-unchanged/) | **Implemented.** aloemacs-visited-unchanged 000 |
 | safe-cell-scan | [`safe-cell-scan/`](safe-cell-scan/) | **Implemented.** aloemacs-safe-cell-scan 000 |
-| safe-cell-controls | [`safe-cell-controls/`](safe-cell-controls/) | **Ready to implement.** aloemacs-safe-cell-controls 000 |
-| runner-check | [`runner-check/`](runner-check/) | **Ready to implement.** aloemacs-runner-check 000 |
+| safe-cell-controls | [`safe-cell-controls/`](safe-cell-controls/) | **Implemented.** aloemacs-safe-cell-controls 000 |
+| runner-check | [`runner-check/`](runner-check/) | **Implemented.** aloemacs-runner-check 000 |
 
 ## Not in this map
 
 Easy to smuggle in. They are not.
 
-- Windows, the minibuffer, extra buffers, and modes
+- Windows, the minibuffer, find-file, a buffer menu, and modes
 - Mouse, paste, PTY, VT emulator, daemon, multi-head
 - Unicode clusters, `wcwidth`, grapheme width
 - `M-x` eval, Gel's `Mirror`, hot reload
@@ -140,6 +143,7 @@ Easy to smuggle in. They are not.
 | Kill | No-TTY: set a mark, move, kill; the ring holds the string; undo restores text and point; yank inserts it again. Kill-line with no mark. Yank on an empty ring leaves the text alone |
 | Motion | No-TTY: line start and end, page-down after a fit, buffer start and end. Undo history stays |
 | Keymap | No-TTY: the existing idle keys still insert, move, save, search, kill, and quit. `C-x C-s` saves. `C-x` then any other key leaves the buffer unchanged. A plain `x` still inserts |
+| Buffer | No-TTY: two buffers, switch shows the other text and that buffer's path or `untitled`. Kill leaves a current buffer. Save writes the current path. Undo, mark, and scroll survive a round trip. Existing keys still behave on the current buffer |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

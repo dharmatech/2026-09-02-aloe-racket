@@ -72,10 +72,20 @@
 
 (define (session-expression editor path)
   `(AloemacsSession new
-     ,editor
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,editor
+         ,(if path `(Option Some (Path new ,path)) no-path))
+       (List empty))
      (Fs new fs-host)
-     ,(if path `(Option Some (Path new ,path)) no-path)
-     "" #f "" (Position new 0 0) #f #f (List empty)
+     ""
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define-from-option! state name expression fallback)
@@ -125,11 +135,37 @@
             (,session scroll-row)
             (,session scroll-col)
             (AloemacsSession new ,editor (Fs new fs-host) (List empty))
-            (AloemacsSession new ,editor (Fs new fs-host) "path"
-              "" #f "" (Position new 0 0) #f #f (List empty)
+            (AloemacsSession new
+              (AloemacsBuffers new
+                (List empty)
+                (AloemacsBuffer new
+                  ,editor
+                  "path")
+                (List empty))
+              (Fs new fs-host)
+              ""
+              #f
+              ""
+              (Position new 0 0)
+              #f
+              #f
+              (List empty)
               (if #t (Option None) (Option Some aloemacs-global-keymap)))
-            (AloemacsSession new ,editor (Fs new fs-host) ,no-path
-              0 #f "" (Position new 0 0) #f #f (List empty)
+            (AloemacsSession new
+              (AloemacsBuffers new
+                (List empty)
+                (AloemacsBuffer new
+                  ,editor
+                  ,no-path)
+                (List empty))
+              (Fs new fs-host)
+              0
+              #f
+              ""
+              (Position new 0 0)
+              #f
+              #f
+              (List empty)
               (if #t (Option None) (Option Some aloemacs-global-keymap)))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))

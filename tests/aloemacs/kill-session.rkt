@@ -28,11 +28,23 @@
                  #:scroll-row [scroll-row 0] #:scroll-col [scroll-col 0]
                  #:path [path no-path])
   `(AloemacsSession new
-    (AloemacsEditor new (Text from-string ,source)
-                        (Position new ,line ,column) #f
-                        ,scroll-row ,scroll-col (List empty) ,mark 0)
-    (Fs new fs-host) ,path ,echo #f "" (Position new 0 0) #f #f ,ring
-    (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new (Text from-string ,source)
+                             (Position new ,line ,column) #f
+                             ,scroll-row ,scroll-col (List empty) ,mark 0)
+         ,path)
+       (List empty))
+     (Fs new fs-host)
+     ,echo
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     ,ring
+     (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -73,10 +85,21 @@
                                       "wrong"))))
   (check-exn exn:fail:aloe-type?
              (lambda () (ev st '(AloemacsSession new
-                                   (aloemacs-editor editor) (aloemacs-editor fs)
-                                   (aloemacs-editor path) "" #f ""
-                                   (Position new 0 0) #f #f "wrong"
-                                   (if #t (Option None) (Option Some aloemacs-global-keymap))))))
+                                  (AloemacsBuffers new
+                                    (List empty)
+                                    (AloemacsBuffer new
+                                      (aloemacs-editor editor)
+                                      (aloemacs-editor path))
+                                    (List empty))
+                                  (aloemacs-editor fs)
+                                  ""
+                                  #f
+                                  ""
+                                  (Position new 0 0)
+                                  #f
+                                  #f
+                                  "wrong"
+                                  (if #t (Option None) (Option Some aloemacs-global-keymap))))))
   (def! st 'base (session "ab\ncd" 0 0))
   (key! st 'marked 'base "mark")
   (check-equal? (mark-position st 'marked) "0:0")

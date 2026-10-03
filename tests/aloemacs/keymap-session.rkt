@@ -38,12 +38,16 @@
     ("find" Find "find" find)
     ("save" Save "save" save-key)))
 (define commands (append rows '(("x" SelfInsert "self-insert" insert))))
+;; Commands grow independently of the unchanged production binding table.
+(define command-inventory
+  (append commands '(("" SwitchBuffer "switch-buffer" switch-buffer)
+                     ("" KillBuffer "kill-buffer" kill-buffer))))
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default
   '(if #t (Option None) (Option Some (AloemacsCommand SelfInsert))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define session-fields '(editor fs path echo searching query origin wrapped failing kill-ring pending))
+(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -102,22 +106,59 @@
                  #:path [path '(Option Some (Path new "/cwd/a.txt"))]
                  #:host [host 'fs-host] #:pending [pending no-pending])
   `(AloemacsSession new
-     (AloemacsEditor new (Text from-string ,source) (Position new ,line ,column)
-                        #f 2 3 ,history ,mark 0)
-     (Fs new ,host) ,path ,echo #f "" (Position new 4 2) #t #t ,ring ,pending))
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new (Text from-string ,source) (Position new ,line ,column)
+                             #f 2 3 ,history ,mark 0)
+         ,path)
+       (List empty))
+     (Fs new ,host)
+     ,echo
+     #f
+     ""
+     (Position new 4 2)
+     #t
+     #t
+     ,ring
+     ,pending))
 
 ;; Build expected echo results without using the new with-echo helper.
 (define (token s echo)
   `(AloemacsSession new
-     (,s editor) (,s fs) (,s path) ,echo
-     (,s searching) (,s query) (,s origin) (,s wrapped) (,s failing) (,s kill-ring)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (,s editor)
+         (,s path))
+       (List empty))
+     (,s fs)
+     ,echo
+     (,s searching)
+     (,s query)
+     (,s origin)
+     (,s wrapped)
+     (,s failing)
+     (,s kill-ring)
      (,s pending)))
 
 ;; Independent expected-value construction for prefix installation/clearing.
 (define (prefix-state s pending [echo `(,s echo)])
   `(AloemacsSession new
-     (,s editor) (,s fs) (,s path) ,echo
-     (,s searching) (,s query) (,s origin) (,s wrapped) (,s failing) (,s kill-ring)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (,s editor)
+         (,s path))
+       (List empty))
+     (,s fs)
+     ,echo
+     (,s searching)
+     (,s query)
+     (,s origin)
+     (,s wrapped)
+     (,s failing)
+     (,s kill-ring)
      ,pending))
 
 (define (expected s row)
@@ -137,7 +178,7 @@
 (define (same-session st actual expected)
   ;; Whole-value equality includes constructor payloads and actual UndoFrames.
   (same st actual expected)
-  (for ([field (in-list session-fields)])
+  (for ([field (in-list (append session-fields '(current-buffer editor path)))])
     (same st `(,actual ,field) `(,expected ,field)))
   (for ([field (in-list editor-fields)])
     (same st `((,actual editor) ,field) `((,expected editor) ,field)))
@@ -181,7 +222,21 @@
 
 (test-case "exact command names, bindings, default, and pure application lookup"
   (define st (loaded))
-  (for ([row (in-list commands)])
+  (define datums
+    (call-with-input-file file-path
+      (lambda (in)
+        (let loop ([result '()])
+          (define datum (read in))
+          (if (eof-object? datum) (reverse result) (loop (cons datum result)))))))
+  (define command-class
+    (findf (lambda (datum) (and (eq? (car datum) 'define-class)
+                               (eq? (cadr datum) 'AloemacsCommand))) datums))
+  (check-equal? (caddr command-class)
+    `(constructors ,@(for/list ([row (in-list command-inventory)])
+                      `(,(second row) (fields)))))
+  (check-equal? (map (lambda (method) (drop-right method 1)) (cdr (cadddr command-class)))
+                '((name () String)))
+  (for ([row (in-list command-inventory)])
     (check-equal? (ev st `((AloemacsCommand ,(second row)) name)) (third row))
     (check-equal? (type st `((AloemacsCommand ,(second row)) name)) 'String))
   (same st 'aloemacs-self-insert-command '(AloemacsCommand SelfInsert))
@@ -212,7 +267,8 @@
     (check-equal? (ev st `(,binding key)) (first row))
     (check-equal? (type st `(,binding key)) 'String)
     (same st `(aloemacs-global-keymap lookup ,(first row)) `(Option Some ,binding)))
-  (for ([key (in-list '("" "x" "s" "q" " " "unknown" "newline"))])
+  (for ([key (in-list '("" "x" "s" "q" " " "unknown" "newline"
+                          "switch-buffer" "kill-buffer"))])
     (check-equal? (type st `(aloemacs-global-keymap lookup ,key))
                   '(Option AloemacsBinding))
     (check-false (ev st `((aloemacs-global-keymap lookup ,key) present?)))))
@@ -266,12 +322,27 @@
   (attach-fs! st 'other-fs 'OtherFs)
   (def! st 'other (session "abc" 0 1 #:host 'other-fs))
   (for ([s (in-list '(base other))] [h (in-list '(FsHost OtherFs))])
-    (for ([row (in-list commands)])
+    (for ([row (in-list command-inventory)])
       (check-equal? (type st `(,s execute-command (AloemacsCommand ,(second row)) "x"))
                     `(AloemacsSession ,h)))
     (for ([selector (in-list '(line-start line-end page-up page-down
-                              buffer-start buffer-end undo find save-key))])
+                              buffer-start buffer-end undo find save-key
+                              switch-buffer kill-buffer))])
       (check-equal? (type st `(,s ,selector)) `(AloemacsSession ,h)))
+    (for ([send (in-list '((add-buffer "new") (add-buffer "new" (Path new "relative"))))])
+      (check-equal? (type st `(,s ,@send)) `(AloemacsSession ,h)))
+    (for ([constructor '(SwitchBuffer KillBuffer)])
+      (define expected-buffers
+        (if (eq? constructor 'SwitchBuffer) `(,s buffers)
+            `(AloemacsBuffers new (List empty)
+               (AloemacsBuffer new
+                 (AloemacsEditor new ((Text from-string "") indexed-value)
+                   (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
+                 ,no-path)
+               (List empty))))
+      (same-session st `(,s execute-command (AloemacsCommand ,constructor) "x")
+        `(AloemacsSession new ,expected-buffers (,s fs) "" #f ""
+           (Position new 0 0) #f #f (,s kill-ring) ,no-pending)))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
     (check-equal? (type st `(,s with-prefix aloemacs-ctrl-x-keymap))
@@ -594,10 +665,22 @@
                       (None () armed) (Some (session) session)))
     (same-session st 'result
       `(AloemacsSession new
-         (AloemacsEditor new ((Text from-string ,contents) indexed-value)
-                            (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
-         (armed fs) (Option Some (Path new ,(string-append "/cwd/" path)))
-         "" #f "" (Position new 0 0) #f #f (List empty) ,no-pending))
+         (AloemacsBuffers new
+           (List empty)
+           (AloemacsBuffer new
+             (AloemacsEditor new ((Text from-string ,contents) indexed-value)
+                                 (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
+             (Option Some (Path new ,(string-append "/cwd/" path))))
+           (List empty))
+         (armed fs)
+         ""
+         #f
+         ""
+         (Position new 0 0)
+         #f
+         #f
+         (List empty)
+         ,no-pending))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))
   (same-session st '((armed visit (Path new "dir")) case

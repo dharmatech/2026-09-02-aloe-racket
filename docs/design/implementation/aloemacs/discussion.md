@@ -50,13 +50,15 @@ layer is the topic; do not survey the whole tree on every turn.
 |---|---|
 | Layers 1–12 (Text through Motion) | Implemented |
 | Idiom cleanups (line-length through safe-cell-scan) | Implemented |
-| safe-cell-controls | **Ready to implement.** Standalone 000 |
+| runner-check | **Implemented.** Standalone 000. Down-cycle median 0.55 ms |
+| safe-cell-controls | **Implemented.** Standalone 000 |
 | [`../string-load-save/`](../string-load-save/) | **Implemented.** 000–001 |
 | Safe cells (`ESC` / tab / `CR` on the TTY) | **Implemented.** [`safe-cells/`](safe-cells/), checkpoint 000 |
 | Search (incremental, echo row) | **Implemented.** aloemacs-search 000–001 |
 | Kill (mark, kill, kill-line, yank) | **Implemented.** aloemacs-kill 000–002 |
 | Motion (line, page, buffer) | **Implemented.** aloemacs-motion 000 |
 | Keymap (commands as values, `C-x C-s`) | **Implemented and accepted.** aloemacs-keymap 000–001 at [`keymap/`](keymap/) |
+| Buffer | **Implemented and accepted.** aloemacs-buffer 000–001 at [`buffer/`](buffer/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -93,8 +95,9 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, the minibuffer, extra buffers, and M-x (see
-  [`explorations.md`](explorations.md) for order)
+- Windows, the minibuffer, find-file, save-as, and M-x (see
+  [`explorations.md`](explorations.md) for order). The buffer
+  series is implemented and accepted at [`buffer/`](buffer/)
 - Live `eval` / Mirror
 
 Chez Emacs (`/home/dharmatech/src/e`) and Legmacs

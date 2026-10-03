@@ -2,19 +2,23 @@
 
 (define aloemacs-editor
   (AloemacsSession new
-    (AloemacsEditor new
-      (Text from-string "")
-      (Position new 0 0)
-      #f
-      0
-      0
+    (AloemacsBuffers new
       (List empty)
-      (if #t (Option None) (Option Some (Position new 0 0)))
-      0)
+      (AloemacsBuffer new
+        (AloemacsEditor new
+          (Text from-string "")
+          (Position new 0 0)
+          #f
+          0
+          0
+          (List empty)
+          (if #t (Option None) (Option Some (Position new 0 0)))
+          0)
+        (if #t
+            (Option None)
+            (Option Some (Path new "/typed-none"))))
+      (List empty))
     (Fs new fs-host)
-    (if #t
-        (Option None)
-        (Option Some (Path new "/typed-none")))
     ""
     #f
     ""

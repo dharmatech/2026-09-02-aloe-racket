@@ -83,12 +83,22 @@
 
 (define (session-expression source line column quit [path #f] [echo ""])
   `(AloemacsSession new
-     ,(editor-expression source line column quit)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,(editor-expression source line column quit)
+         ,(if path
+               `(Option Some (Path new ,path))
+               no-path-expression))
+       (List empty))
      (Fs new fs-host)
-     ,(if path
-          `(Option Some (Path new ,path))
-          no-path-expression)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     ,echo
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define-session! state name source line column quit [path #f])
@@ -110,7 +120,7 @@
    (format "structural equality of ~s and ~s" actual expected)))
 
 (define (check-key-save state actual expected echo)
-  (for ([field (in-list '(editor fs path))])
+  (for ([field (in-list '(buffers current-buffer editor fs path))])
     (check-structurally-equal state `(,actual ,field) `(,expected ,field)))
   (check-equal? (driver-eval! state `(,actual echo)) echo))
 
@@ -165,7 +175,9 @@
   (check-equal? (driver-type state 'session) '(AloemacsSession FsHost))
   (for ([entry
          (in-list
-          '(((session editor) AloemacsEditor)
+          '(((session buffers) AloemacsBuffers)
+            ((session current-buffer) AloemacsBuffer)
+            ((session editor) AloemacsEditor)
             ((session fs) (Fs FsHost))
             ((session path) (Option Path))
             ((session echo) String)
@@ -205,8 +217,7 @@
             (session visit (Path new "a.txt") (Path new "b.txt"))
             (session save 1)
             (session dirty)
-            (session encoding)
-            (session buffers)))])
+            (session encoding)))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum))))
 
@@ -414,12 +425,21 @@
      state
      `(source ,selector ,@arguments)
      `(AloemacsSession new
-        ((source editor) ,selector ,@arguments)
+        (AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            ((source editor) ,selector ,@arguments)
+            (source path))
+          (List empty))
         (source fs)
-        (source path)
         (source echo)
-        (source searching) (source query) (source origin)
-        (source wrapped) (source failing) (List empty) (source pending))))
+        (source searching)
+        (source query)
+        (source origin)
+        (source wrapped)
+        (source failing)
+        (List empty)
+        (source pending))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -435,12 +455,21 @@
      state
      `(source handle-key ,key)
      `(AloemacsSession new
-        ((source editor) handle-key ,key)
+        (AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            ((source editor) handle-key ,key)
+            (source path))
+          (List empty))
         (source fs)
-        (source path)
         (source echo)
-        (source searching) (source query) (source origin)
-        (source wrapped) (source failing) (List empty) (source pending))))
+        (source searching)
+        (source query)
+        (source origin)
+        (source wrapped)
+        (source failing)
+        (List empty)
+        (source pending))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

@@ -97,12 +97,22 @@
 (test-case "session clears echo, ends search, and ignores motion after quit"
   (define st (state))
   (step! st 'base
-         `(AloemacsSession new ,(editor "abc\ndef" 1 2)
-                               (Fs new fs-host)
-                               (if #t (Option None) (Option Some (Path new "/unused")))
-                               "saved" #f ""
-                               (Position new 0 0) #f #f (List empty)
-                               (if #t (Option None) (Option Some aloemacs-global-keymap))))
+         `(AloemacsSession new
+            (AloemacsBuffers new
+              (List empty)
+              (AloemacsBuffer new
+                ,(editor "abc\ndef" 1 2)
+                (if #t (Option None) (Option Some (Path new "/unused"))))
+              (List empty))
+            (Fs new fs-host)
+            "saved"
+            #f
+            ""
+            (Position new 0 0)
+            #f
+            #f
+            (List empty)
+            (if #t (Option None) (Option Some aloemacs-global-keymap))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))
   (check-equal? (driver-eval! st '(paged echo)) "")

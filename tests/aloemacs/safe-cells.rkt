@@ -45,10 +45,20 @@
 
 (define (session source path echo)
   `(AloemacsSession new
-     ,(editor source 0)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,(editor source 0)
+         (Option Some (Path new ,path)))
+       (List empty))
      (Fs new fs-host)
-     (Option Some (Path new ,path))
-     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     ,echo
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"

@@ -28,12 +28,22 @@
    state
    `(define source
       (AloemacsSession new
-        (AloemacsEditor new
-          (Text from-string "draft") (Position new 0 0)
-          #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+        (AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            (AloemacsEditor new
+              (Text from-string "draft") (Position new 0 0)
+              #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+            ,no-path)
+          (List empty))
         (Fs new fs-host)
-        ,no-path
-        "" #f "" (Position new 0 0) #f #f (List empty)
+        ""
+        #f
+        ""
+        (Position new 0 0)
+        #f
+        #f
+        (List empty)
         (if #t (Option None) (Option Some aloemacs-global-keymap))))))
 
 (define (step! state name expression)

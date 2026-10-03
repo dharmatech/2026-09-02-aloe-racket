@@ -11,7 +11,7 @@
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default '(if #t (Option None) (Option Some aloemacs-self-insert-command)))
-(define session-fields '(editor fs path echo searching query origin wrapped failing kill-ring pending))
+(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -20,7 +20,7 @@
   (check-not-exn (lambda () (ev st `(check ,actual ,expected)))))
 (define (same-session st actual expected)
   (same st actual expected)
-  (for ([field (in-list session-fields)])
+  (for ([field (in-list (append session-fields '(current-buffer editor path)))])
     (same st `(,actual ,field) `(,expected ,field)))
   (for ([field (in-list editor-fields)])
     (same st `((,actual editor) ,field) `((,expected editor) ,field)))
@@ -30,18 +30,42 @@
 ;; Expected construction is independent of with-prefix/clear-prefix/dispatch.
 (define (rebuild s pending echo [editor `(,s editor)])
   `(AloemacsSession new
-     ,editor (,s fs) (,s path) ,echo
-     (,s searching) (,s query) (,s origin) (,s wrapped) (,s failing) (,s kill-ring)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,editor
+         (,s path))
+       (List empty))
+     (,s fs)
+     ,echo
+     (,s searching)
+     (,s query)
+     (,s origin)
+     (,s wrapped)
+     (,s failing)
+     (,s kill-ring)
      ,pending))
 
 (define (fixture [path '(Option Some (Path new "/cwd/a.txt"))] [echo "saved"])
   `(AloemacsSession new
-     (AloemacsEditor new
-       (Text from-string "ababa\nsecond\nababa\nfourth\nfifth")
-       (Position new 2 3) #f 2 2 (List empty)
-       (Option Some (Position new 1 1)) 3)
-     (Fs new fs-host) ,path ,echo #f "old query" (Position new 4 2) #t #t
-     (List of "Z\nY" "older") ,no-pending))
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new
+            (Text from-string "ababa\nsecond\nababa\nfourth\nfifth")
+            (Position new 2 3) #f 2 2 (List empty)
+            (Option Some (Position new 1 1)) 3)
+         ,path)
+       (List empty))
+     (Fs new fs-host)
+     ,echo
+     #f
+     "old query"
+     (Position new 4 2)
+     #t
+     #t
+     (List of "Z\nY" "older")
+     ,no-pending))
 
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
@@ -127,11 +151,23 @@
   (define-values (st calls) (state))
   (def! st 'base
     `(AloemacsSession new
-       (AloemacsEditor new (Text from-string "\uFEFFλ\r\nb\n")
-                          (Position new 1 0) #f 0 0 (List empty)
-                          (if #t (Option None) (Option Some (Position new 0 0))) 0)
-       (Fs new fs-host) (Option Some (Path new "/cwd/a.txt"))
-       "saved" #f "" (Position new 0 0) #f #f (List empty) ,no-pending))
+       (AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (AloemacsEditor new (Text from-string "\uFEFFλ\r\nb\n")
+                               (Position new 1 0) #f 0 0 (List empty)
+                               (if #t (Option None) (Option Some (Position new 0 0))) 0)
+           (Option Some (Path new "/cwd/a.txt")))
+         (List empty))
+       (Fs new fs-host)
+       "saved"
+       #f
+       ""
+       (Position new 0 0)
+       #f
+       #f
+       (List empty)
+       ,no-pending))
   (def! st 'result '((base handle-key "ctrl-x") handle-key "save"))
   (check-equal? (writes calls) '((write "/cwd/a.txt" "\uFEFFλ\r\nb\n")))
   (same-session st 'result (rebuild 'base no-pending "saved"))
@@ -239,11 +275,23 @@
   (define-values (st calls) (state))
   (def! st 'base
     `(AloemacsSession new
-       (AloemacsEditor new (Text from-string "a\u001bb\nsecond")
-                          (Position new 0 2) #f 0 0 (List empty)
-                          (Option Some (Position new 0 0)) 0)
-       (Fs new fs-host) (Option Some (Path new "/cwd/a.txt"))
-       "failed" #f "" (Position new 0 0) #f #f (List of "ring") ,no-pending))
+       (AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (AloemacsEditor new (Text from-string "a\u001bb\nsecond")
+                               (Position new 0 2) #f 0 0 (List empty)
+                               (Option Some (Position new 0 0)) 0)
+           (Option Some (Path new "/cwd/a.txt")))
+         (List empty))
+       (Fs new fs-host)
+       "failed"
+       #f
+       ""
+       (Position new 0 0)
+       #f
+       #f
+       (List of "ring")
+       ,no-pending))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
                 (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))

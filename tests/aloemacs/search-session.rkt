@@ -24,12 +24,22 @@
 
 (define (session source line column [echo ""] [path #f])
   `(AloemacsSession new
-     (AloemacsEditor new
-       (Text from-string ,source) (Position new ,line ,column)
-       #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new
+            (Text from-string ,source) (Position new ,line ,column)
+            #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+         ,(if path `(Option Some (Path new ,path)) no-path))
+       (List empty))
      (Fs new fs-host)
-     ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     ,echo
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define! state name expression)
@@ -230,8 +240,20 @@
                 (value state '((failed editor) frame 8 1)))
   (define! state 'sanitized
     '(AloemacsSession new
-       (base editor) (base fs) (base path) "saved"
-       #t "a\u001b" (Position new 0 0) #f #f (List empty)
+       (AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (base editor)
+           (base path))
+         (List empty))
+       (base fs)
+       "saved"
+       #t
+       "a\u001b"
+       (Position new 0 0)
+       #f
+       #f
+       (List empty)
        (if #t (Option None) (Option Some aloemacs-global-keymap))))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a "))

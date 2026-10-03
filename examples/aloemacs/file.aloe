@@ -1,6 +1,76 @@
 (load "editor.aloe")
 (load "../../lib/fs.aloe")
 
+(define-class AloemacsBuffer
+  (fields
+    (editor AloemacsEditor)
+    (path (Option Path)))
+  (methods
+    (name () String
+      ((self path) case
+        (None () "untitled")
+        (Some (path) (path text))))
+
+    (with-editor (editor AloemacsEditor) AloemacsBuffer
+      (AloemacsBuffer new editor (self path)))))
+
+(define-class AloemacsBuffers
+  (fields
+    (before (List AloemacsBuffer))
+    (current-buffer AloemacsBuffer)
+    (after (List AloemacsBuffer)))
+  (methods
+    (with-current-buffer (buffer AloemacsBuffer) AloemacsBuffers
+      (AloemacsBuffers new (self before) buffer (self after)))
+
+    (focus-next () AloemacsBuffers
+      (if ((self after) empty?)
+          (if ((self before) empty?)
+              self
+              ;; Consing current guarantees a nonempty reversal.
+              (let ((forward
+                      (((self before) cons (self current-buffer)) reverse)))
+                (AloemacsBuffers new
+                  (List empty) (forward first) (forward rest))))
+          (AloemacsBuffers new
+            ((self before) cons (self current-buffer))
+            ((self after) first) ((self after) rest))))
+
+    (focus-previous () AloemacsBuffers
+      (if ((self before) empty?)
+          (if ((self after) empty?)
+              self
+              ;; Consing current guarantees a nonempty reversal.
+              (let ((backward
+                      (((self after) cons (self current-buffer)) reverse)))
+                (AloemacsBuffers new
+                  (backward rest) (backward first) (List empty))))
+          (AloemacsBuffers new
+            ((self before) rest) ((self before) first)
+            ((self after) cons (self current-buffer)))))
+
+    (insert-after (buffer AloemacsBuffer) AloemacsBuffers
+      (AloemacsBuffers new
+        ((self before) cons (self current-buffer)) buffer (self after)))
+
+    (remove-current () AloemacsBuffers
+      (if ((self after) empty?)
+          (if ((self before) empty?)
+              (AloemacsBuffers new
+                (List empty)
+                (AloemacsBuffer new
+                  (AloemacsEditor new
+                    ((Text from-string "") indexed-value)
+                    (Position new 0 0) #f 0 0 (List empty)
+                    (if #t (Option None) (Option Some (Position new 0 0)))
+                    0)
+                  (Option None))
+                (List empty))
+              (AloemacsBuffers new
+                ((self before) rest) ((self before) first) (List empty)))
+          (AloemacsBuffers new
+            (self before) ((self after) first) ((self after) rest))))))
+
 (define-class AloemacsCommand
   (constructors
     (Newline (fields))
@@ -23,7 +93,9 @@
     (Yank (fields))
     (Find (fields))
     (Save (fields))
-    (SelfInsert (fields)))
+    (SelfInsert (fields))
+    (SwitchBuffer (fields))
+    (KillBuffer (fields)))
   (methods
     (name () String
       (self case
@@ -47,7 +119,9 @@
         (Yank () "yank")
         (Find () "find")
         (Save () "save")
-        (SelfInsert () "self-insert")))))
+        (SelfInsert () "self-insert")
+        (SwitchBuffer () "switch-buffer")
+        (KillBuffer () "kill-buffer")))))
 
 (define-class (AloemacsKeymap B)
   (fields
@@ -99,9 +173,8 @@
 
 (define-class (AloemacsSession H)
   (fields
-    (editor AloemacsEditor)
+    (buffers AloemacsBuffers)
     (fs (Fs H))
-    (path (Option Path))
     (echo String)
     (searching Bool)
     (query String)
@@ -111,11 +184,62 @@
     (kill-ring (List String))
     (pending (Option (AloemacsKeymap AloemacsBinding))))
   (methods
+    (current-buffer () AloemacsBuffer
+      ((self buffers) current-buffer))
+
+    (editor () AloemacsEditor
+      ((self current-buffer) editor))
+
+    (path () (Option Path)
+      ((self current-buffer) path))
+
+    (add-buffer (contents String) (AloemacsSession H)
+      (let ((session (self end-search)))
+        (AloemacsSession new
+          ((session buffers) insert-after
+            (AloemacsBuffer new
+              (AloemacsEditor new
+                ((Text from-string contents) indexed-value)
+                (Position new 0 0) #f 0 0 (List empty)
+                (if #t (Option None) (Option Some (Position new 0 0)))
+                0)
+              (Option None)))
+          (session fs) "" #f "" (Position new 0 0) #f #f
+          (session kill-ring) (Option None))))
+
+    (add-buffer (contents String) (path Path) (AloemacsSession H)
+      (let ((session (self end-search)))
+        (AloemacsSession new
+          ((session buffers) insert-after
+            (AloemacsBuffer new
+              (AloemacsEditor new
+                ((Text from-string contents) indexed-value)
+                (Position new 0 0) #f 0 0 (List empty)
+                (if #t (Option None) (Option Some (Position new 0 0)))
+                0)
+              (Option Some path)))
+          (session fs) "" #f "" (Position new 0 0) #f #f
+          (session kill-ring) (Option None))))
+
+    (switch-buffer () (AloemacsSession H)
+      (let ((session (self end-search)))
+        (AloemacsSession new
+          ((session buffers) focus-next)
+          (session fs) "" #f "" (Position new 0 0) #f #f
+          (session kill-ring) (Option None))))
+
+    (kill-buffer () (AloemacsSession H)
+      (let ((session (self end-search)))
+        (AloemacsSession new
+          ((session buffers) remove-current)
+          (session fs) "" #f "" (Position new 0 0) #f #f
+          (session kill-ring) (Option None))))
+
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
-        editor
+        ((self buffers) with-current-buffer
+          ((self current-buffer) with-editor editor))
         (self fs)
-        (self path)
         (self echo)
         (self searching)
         (self query)
@@ -128,7 +252,9 @@
     (with-kill-state (editor AloemacsEditor) (kill-ring (List String))
                      (AloemacsSession H)
       (AloemacsSession new
-        editor (self fs) (self path) ""
+        ((self buffers) with-current-buffer
+          ((self current-buffer) with-editor editor))
+        (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) kill-ring (self pending)))
 
@@ -136,24 +262,26 @@
                  (query String) (origin Position)
                  (wrapped Bool) (failing Bool) (AloemacsSession H)
       (AloemacsSession new
-        editor (self fs) (self path) (self echo)
+        ((self buffers) with-current-buffer
+          ((self current-buffer) with-editor editor))
+        (self fs) (self echo)
         searching query origin wrapped failing (self kill-ring) (self pending)))
 
     (with-echo (token String) (AloemacsSession H)
       (AloemacsSession new
-        (self editor) (self fs) (self path) token
+        (self buffers) (self fs) token
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)))
 
     (with-prefix (map (AloemacsKeymap AloemacsBinding)) (AloemacsSession H)
       (AloemacsSession new
-        (self editor) (self fs) (self path) ""
+        (self buffers) (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option Some map)))
 
     (clear-prefix () (AloemacsSession H)
       (AloemacsSession new
-        (self editor) (self fs) (self path) (self echo)
+        (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option None)))
 
@@ -369,24 +497,28 @@
         (Yank () (self yank))
         (Find () (self find))
         (Save () (self save-key))
-        (SelfInsert () ((self insert key) with-echo ""))))
+        (SelfInsert () ((self insert key) with-echo ""))
+        (SwitchBuffer () (self switch-buffer))
+        (KillBuffer () (self kill-buffer))))
 
     (unchanged () (AloemacsSession H)
       self)
 
     (visited (contents String) (path Path) (AloemacsSession H)
       (AloemacsSession new
-        (AloemacsEditor new
-          ((Text from-string contents) indexed-value)
-          (Position new 0 0)
-          #f
-          0
-          0
-          (List empty)
-          (if #t (Option None) (Option Some (Position new 0 0)))
-          0)
+        ((self buffers) with-current-buffer
+          (AloemacsBuffer new
+            (AloemacsEditor new
+              ((Text from-string contents) indexed-value)
+              (Position new 0 0)
+              #f
+              0
+              0
+              (List empty)
+              (if #t (Option None) (Option Some (Position new 0 0)))
+              0)
+            (Option Some path)))
         (self fs)
-        (Option Some path)
         "" #f "" (Position new 0 0) #f #f (List empty) (Option None)))
 
     (text () Text

@@ -38,8 +38,8 @@ cleanups on Text and Int. Scale charter withdrawn.
 | Language | `string-load-save` (`split-lines`, `joined-with`) | Implemented |
 | Idiom | line-length, int-min, viewport-top, next-lines, visited-unchanged | Implemented |
 | Idiom | safe-cell-scan ([`safe-cell-scan/`](safe-cell-scan/)) | Implemented. Standalone 000 |
-| Idiom | safe-cell-controls ([`safe-cell-controls/`](safe-cell-controls/)) | Ready to implement. Standalone 000 |
-| Idiom | runner-check ([`runner-check/`](runner-check/)) | Ready to implement. Standalone 000 |
+| Idiom | safe-cell-controls ([`safe-cell-controls/`](safe-cell-controls/)) | Implemented. Standalone 000 |
+| Idiom | runner-check ([`runner-check/`](runner-check/)) | Implemented. Standalone 000 |
 | Display | safe cells (text rows and echo label) | Implemented |
 | Search | Ctrl-F, query on the echo row ([`search/`](search/)) | Implemented. aloemacs-search 000–001 |
 | Kill | Mark, kill, kill-line, yank ([`kill/`](kill/)) | Implemented. aloemacs-kill 000–002 |
@@ -92,7 +92,7 @@ language modes, and M-x are libraries.
 |---|---|---|---|
 | 4 | **Commands as objects** | **Implemented and accepted** with item 5 at [`keymap/`](keymap/), aloemacs-keymap 000–001. A command is a named value; the session executes it. M-x stays later | Band 1 crowding |
 | 5 | **Keymap as data** | **Implemented and accepted.** Immutable maps dispatch existing keys and one prefix: `C-x C-s`. Pending misses cancel and consume the key | Commands |
-| 6 | **Buffer as an object** | Named Text + point + undo + optional path. Session holds a list and a current buffer. Switch and kill-buffer in one window | File session, commands |
+| 6 | **Buffer as an object** | **Implemented and accepted** at [`buffer/`](buffer/), aloemacs-buffer 000–001. A buffer holds the editor and optional path; the session holds a nonempty zipper. Addition, switch, and kill-buffer are checked sends in one window, with no new key binding | File session, commands |
 | 7 | **Minibuffer** | A prompt that is a small editable buffer (or a window onto one), not a second ad-hoc string field. Completing-read can stay tiny | Buffer, echo, keymap |
 | 8 | **Find-file / save-as / switch-buffer as commands** | These are the first *uses* of the minibuffer. They are not a directory UI | Minibuffer, Fs |
 
@@ -180,7 +180,9 @@ Leave these until a slice is blocked by them.
 3. **Commands + keymap as data** (Band 2) — implemented and accepted at
    [`keymap/`](keymap/), aloemacs-keymap 000–001. Existing keys are the
    first consumer, and `C-x C-s` is the first prefix.
-4. **Buffer**, then **minibuffer**, then find-file / switch-buffer.
+4. **Buffer** — implemented and accepted at [`buffer/`](buffer/),
+   aloemacs-buffer 000–001. Then **minibuffer**, then find-file /
+   prompted buffer selection.
 5. **Windows + lock**.
 6. **Faces**, then highlighting, then modes as libraries.
 7. Folding, then outline/notes, then a directory browser.

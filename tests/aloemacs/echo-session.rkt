@@ -29,13 +29,23 @@
 
 (define (session source path echo)
   `(AloemacsSession new
-     (AloemacsEditor new
-       (Text from-string ,source)
-       (Position new 0 0)
-       #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+     (AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new
+            (Text from-string ,source)
+            (Position new 0 0)
+            #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+         ,(if path `(Option Some (Path new ,path)) no-path))
+       (List empty))
      (Fs new fs-host)
-     ,(if path `(Option Some (Path new ,path)) no-path)
-     ,echo #f "" (Position new 0 0) #f #f (List empty)
+     ,echo
+     #f
+     ""
+     (Position new 0 0)
+     #f
+     #f
+     (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))))
 
 (define (define! state name expression)
@@ -53,7 +63,7 @@
    (lambda () (value state `(check ,left ,right)))))
 
 (define (same-payload state actual expected)
-  (for ([field (in-list '(editor fs path))])
+  (for ([field (in-list '(buffers current-buffer editor fs path))])
     (same state `(,actual ,field) `(,expected ,field)))
   (check-equal? (value state `((,actual editor) scroll-row))
                 (value state `((,expected editor) scroll-row)))
