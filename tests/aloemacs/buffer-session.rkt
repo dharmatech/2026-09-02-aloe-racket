@@ -64,7 +64,8 @@
   `(AloemacsSession new ,buffers (Fs new fs-host) ,echo ,searching ,query ,origin
                        ,wrapped ,failing ,ring ,pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 ;; Expectations explicitly rebuild all fields. They never invoke the selection
 ;; methods, collection transitions, or execute-command being tested.
@@ -72,7 +73,8 @@
   `(AloemacsSession new ,buffers (,s fs) "" #f "" (Position new 0 0)
                        #f #f ,ring ,no-pending
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
@@ -81,7 +83,8 @@
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin ,wrapped
                        ,failing ,ring ,pending
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 (define (with-editor s editor)
   (rebuild s #:buffers
     `(AloemacsBuffers new ((,s buffers) before)
@@ -91,7 +94,7 @@
   (def! st 'comparison-expected expected)
   (same st 'comparison-actual 'comparison-expected)
   (for ([field '(buffers fs echo searching query origin wrapped failing kill-ring
-                        pending prompt last-submission current-buffer editor path text point quit)])
+                        pending prompt last-submission waiting-command current-buffer editor path text point quit)])
     (same st `(comparison-actual ,field) `(comparison-expected ,field)))
   (for ([field '(before current-buffer after)])
     (same st `((comparison-actual buffers) ,field) `((comparison-expected buffers) ,field))))
@@ -504,7 +507,10 @@
               (AloemacsBinding Prefix "ctrl-x" aloemacs-ctrl-x-keymap)))
   (same st '(aloemacs-global-keymap default) '(Option Some (AloemacsCommand SelfInsert)))
   (same st '(aloemacs-ctrl-x-keymap bindings)
-        '(List of (AloemacsBinding Command "save" aloemacs-save-command)))
+        '(List of (AloemacsBinding Command "save" aloemacs-save-command)
+                  (AloemacsBinding Command "find" (AloemacsCommand FindFile))
+                  (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
+                  (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
   (same st '(aloemacs-ctrl-x-keymap default) no-default)
   (def! st 'idle (rebuild 'base #:pending no-pending))
   (for ([key '("switch-buffer" "kill-buffer")])

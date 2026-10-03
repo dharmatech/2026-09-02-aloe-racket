@@ -41,14 +41,17 @@
 ;; Commands grow independently of the unchanged production binding table.
 (define command-inventory
   (append commands '(("" SwitchBuffer "switch-buffer" switch-buffer)
-                     ("" KillBuffer "kill-buffer" kill-buffer))))
+                     ("" KillBuffer "kill-buffer" kill-buffer)
+                     ("" FindFile "find-file" start-command-prompt)
+                     ("" SaveAs "save-as" start-command-prompt)
+                     ("" SelectBuffer "select-buffer" start-command-prompt))))
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default
   '(if #t (Option None) (Option Some (AloemacsCommand SelfInsert))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
-                                prompt last-submission))
+                                prompt last-submission waiting-command))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -124,7 +127,8 @@
      ,ring
      ,pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 ;; Build expected echo results without using the new with-echo helper.
 (define (token s echo)
@@ -145,7 +149,8 @@
      (,s kill-ring)
      (,s pending)
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 
 ;; Independent expected-value construction for prefix installation/clearing.
 (define (prefix-state s pending [echo `(,s echo)])
@@ -166,7 +171,8 @@
      (,s kill-ring)
      ,pending
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 
 (define (expected s row)
   (define selector (fourth row))
@@ -256,7 +262,10 @@
   (same st '(aloemacs-global-keymap default)
         '(Option Some (AloemacsCommand SelfInsert)))
   (same st '(aloemacs-ctrl-x-keymap bindings)
-        '(List of (AloemacsBinding Command "save" aloemacs-save-command)))
+        '(List of (AloemacsBinding Command "save" aloemacs-save-command)
+                  (AloemacsBinding Command "find" (AloemacsCommand FindFile))
+                  (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
+                  (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
   (same st '(aloemacs-ctrl-x-keymap default) no-default)
   (same st '(aloemacs-ctrl-x-keymap lookup "save")
         '(aloemacs-global-keymap lookup "save"))
@@ -351,7 +360,8 @@
         `(AloemacsSession new ,expected-buffers (,s fs) "" #f ""
            (Position new 0 0) #f #f (,s kill-ring) ,no-pending
            (,s prompt)
-           (,s last-submission))))
+           (,s last-submission)
+           (,s waiting-command))))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
     (check-equal? (type st `(,s with-prefix aloemacs-ctrl-x-keymap))
@@ -691,7 +701,8 @@
          (List empty)
          ,no-pending
          (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-         (armed last-submission)))
+         (armed last-submission)
+         (armed waiting-command)))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))
   (same-session st '((armed visit (Path new "dir")) case

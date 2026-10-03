@@ -63,7 +63,8 @@
 (define (session buffers)
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #f "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
-     ,no-pending ,no-prompt ,no-submission))
+     ,no-pending ,no-prompt ,no-submission
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 ;; Expectations use only constructors and reads, never the transition under test.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -73,7 +74,8 @@
                  #:pending [pending `(,s pending)] #:prompt [line `(,s prompt)]
                  #:submission [submission `(,s last-submission)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
-     ,wrapped ,failing ,ring ,pending ,line ,submission))
+     ,wrapped ,failing ,ring ,pending ,line ,submission
+     (,s waiting-command)))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,new-editor ,path) ((,s buffers) after)))
@@ -103,7 +105,7 @@
   (def! st 'source (session (zipper '(a b c) 1))))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission))
+            prompt last-submission waiting-command))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 (define (same-session st actual expected)
   (def! st 'comparison-actual actual)
@@ -484,7 +486,7 @@
   (check-equal? (effects calls 'write)
     '((write "/cwd/b.txt" "first\nsecond\nthird-long\nfourth\nfifth")))
   (set-box! calls '())
-  (for ([key '("escape" "find" "x" "ctrl-x" "unknown")])
+  (for ([key '("escape" "x" "ctrl-x" "unknown")])
     (same-session st `(armed handle-key ,key) (rebuild 'answered #:echo "")))
   (same-session st '(answered switch-buffer) (reset 'answered (zipper '(a b c) 2)))
   (same-session st '(answered kill-buffer) (reset 'answered (zipper '(a c) 1)))

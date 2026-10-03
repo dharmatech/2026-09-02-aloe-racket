@@ -28,8 +28,11 @@ Keymap is implemented and accepted at [`keymap/`](keymap/),
 aloemacs-keymap 000–001. The buffer series is implemented and
 accepted at [`buffer/`](buffer/), aloemacs-buffer 000–001. The
 minibuffer series is implemented and accepted at
-[`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001.
-Do not reopen those series or write their `spec.md` here.
+[`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001. The
+prompt-command series is implemented and accepted at
+[`prompt-commands/`](prompt-commands/), aloemacs-prompt-commands
+000–002. Do not reopen those
+series, and do not write the prompt-command `spec.md` here.
 
 ## How this conversation works
 
@@ -63,6 +66,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Keymap (commands as values, `C-x C-s`) | **Implemented and accepted.** aloemacs-keymap 000–001 at [`keymap/`](keymap/) |
 | Buffer | **Implemented and accepted.** aloemacs-buffer 000–001 at [`buffer/`](buffer/) |
 | Minibuffer | **Implemented and accepted.** aloemacs-minibuffer 000–001 at [`minibuffer/`](minibuffer/) |
+| Prompt commands | **Implemented and accepted.** aloemacs-prompt-commands 000–002 at [`prompt-commands/`](prompt-commands/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -99,10 +103,9 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, find-file, save-as, named switch-buffer, and M-x
-  (see [`explorations.md`](explorations.md) for order). The
-  minibuffer series is implemented and accepted at
-  [`minibuffer/`](minibuffer/)
+- Windows and M-x (see [`explorations.md`](explorations.md)
+  for order). The prompt-command series is implemented and accepted at
+  [`prompt-commands/`](prompt-commands/)
 - Live `eval` / Mirror
 
 Chez Emacs (`/home/dharmatech/src/e`) and Legmacs

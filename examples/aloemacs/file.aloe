@@ -56,7 +56,10 @@
         (Some (path) (path text))))
 
     (with-editor (editor AloemacsEditor) AloemacsBuffer
-      (AloemacsBuffer new editor (self path)))))
+      (AloemacsBuffer new editor (self path)))
+
+    (with-path (path Path) AloemacsBuffer
+      (AloemacsBuffer new (self editor) (Option Some path)))))
 
 (define-class AloemacsBuffers
   (fields
@@ -66,6 +69,21 @@
   (methods
     (with-current-buffer (buffer AloemacsBuffer) AloemacsBuffers
       (AloemacsBuffers new (self before) buffer (self after)))
+
+    (find-name (name String) (Option AloemacsBuffers)
+      (if (name = "")
+          (Option None)
+          (self find-name-in name
+            ((1 + ((self before) len)) + ((self after) len)))))
+
+    (find-name-in (name String) (remaining Int) (Option AloemacsBuffers)
+      (if (remaining <= 0)
+          (Option None)
+          (if (((self current-buffer) name) = name)
+              (Option Some self)
+              (if (remaining > 1)
+                  ((self focus-next) find-name-in name (remaining - 1))
+                  (Option None)))))
 
     (focus-next () AloemacsBuffers
       (if ((self after) empty?)
@@ -139,7 +157,10 @@
     (Save (fields))
     (SelfInsert (fields))
     (SwitchBuffer (fields))
-    (KillBuffer (fields)))
+    (KillBuffer (fields))
+    (FindFile (fields))
+    (SaveAs (fields))
+    (SelectBuffer (fields)))
   (methods
     (name () String
       (self case
@@ -165,7 +186,10 @@
         (Save () "save")
         (SelfInsert () "self-insert")
         (SwitchBuffer () "switch-buffer")
-        (KillBuffer () "kill-buffer")))))
+        (KillBuffer () "kill-buffer")
+        (FindFile () "find-file")
+        (SaveAs () "save-as")
+        (SelectBuffer () "select-buffer")))))
 
 (define-class (AloemacsKeymap B)
   (fields
@@ -228,7 +252,8 @@
     (kill-ring (List String))
     (pending (Option (AloemacsKeymap AloemacsBinding)))
     (prompt (Option AloemacsPrompt))
-    (last-submission (Option String)))
+    (last-submission (Option String))
+    (waiting-command (Option AloemacsCommand)))
   (methods
     (current-buffer () AloemacsBuffer
       ((self buffers) current-buffer))
@@ -238,6 +263,15 @@
 
     (path () (Option Path)
       ((self current-buffer) path))
+
+    (with-current-path (path Path) (AloemacsSession H)
+      (AloemacsSession new
+        ((self buffers) with-current-buffer
+          ((self current-buffer) with-path path))
+        (self fs) (self echo)
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (self pending)
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (start-prompt (label String) (AloemacsSession H)
       (cond
@@ -252,27 +286,67 @@
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (Option Some prompt) (self last-submission)))
+        (Option Some prompt) (self last-submission) (self waiting-command)))
+
+    (with-waiting-command (command AloemacsCommand) (AloemacsSession H)
+      (AloemacsSession new
+        (self buffers) (self fs) (self echo)
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (self pending)
+        (self prompt) (self last-submission) (Option Some command)))
+
+    (clear-waiting-command () (AloemacsSession H)
+      (AloemacsSession new
+        (self buffers) (self fs) (self echo)
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (self pending)
+        (self prompt) (self last-submission) (Option None)))
+
+    (start-command-prompt (command AloemacsCommand) (label String)
+                          (AloemacsSession H)
+      (cond
+        ((self quit) self)
+        ((self searching) self)
+        (((self pending) present?) self)
+        (((self prompt) present?) self)
+        (else ((self start-prompt label) with-waiting-command command))))
+
+    (run-submitted-command () (AloemacsSession H)
+      ((self waiting-command) case
+        (None () self)
+        (Some (command)
+          (((self last-submission) case
+            (None () self)
+            (Some (submitted)
+              (command case
+                (FindFile () (self find-file-submitted submitted))
+                (SaveAs () (self save-as-submitted submitted))
+                (SelectBuffer () (self select-buffer-submitted submitted))
+                (else self))))
+           clear-waiting-command))))
 
     (submit-prompt () (AloemacsSession H)
       ((self prompt) case
         (None () self)
         (Some (prompt)
-          (AloemacsSession new
+          ((AloemacsSession new
             (self buffers) (self fs) (self echo)
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
-            (Option None) (Option Some (prompt text))))))
+            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+            (Option Some (prompt text)) (self waiting-command))
+           run-submitted-command))))
 
     (cancel-prompt () (AloemacsSession H)
-      ((self prompt) case
-        (None () self)
-        (Some (prompt)
+      (if ((self prompt) present?)
           (AloemacsSession new
             (self buffers) (self fs) (self echo)
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
-            (Option None) (self last-submission)))))
+            (Option None) (self last-submission) (Option None))
+          ((self waiting-command) case
+            (None () self)
+            (Some (command) (self clear-waiting-command)))))
 
     (prompt-key (key String) (AloemacsSession H)
       ((self prompt) case
@@ -305,7 +379,7 @@
               (Option None)))
           (session fs) "" #f "" (Position new 0 0) #f #f
           (session kill-ring) (Option None)
-          (session prompt) (session last-submission))))
+          (session prompt) (session last-submission) (session waiting-command))))
 
     (add-buffer (contents String) (path Path) (AloemacsSession H)
       (let ((session (self end-search)))
@@ -320,7 +394,7 @@
               (Option Some path)))
           (session fs) "" #f "" (Position new 0 0) #f #f
           (session kill-ring) (Option None)
-          (session prompt) (session last-submission))))
+          (session prompt) (session last-submission) (session waiting-command))))
 
     (switch-buffer () (AloemacsSession H)
       (let ((session (self end-search)))
@@ -328,7 +402,7 @@
           ((session buffers) focus-next)
           (session fs) "" #f "" (Position new 0 0) #f #f
           (session kill-ring) (Option None)
-          (session prompt) (session last-submission))))
+          (session prompt) (session last-submission) (session waiting-command))))
 
     (kill-buffer () (AloemacsSession H)
       (let ((session (self end-search)))
@@ -336,7 +410,13 @@
           ((session buffers) remove-current)
           (session fs) "" #f "" (Position new 0 0) #f #f
           (session kill-ring) (Option None)
-          (session prompt) (session last-submission))))
+          (session prompt) (session last-submission) (session waiting-command))))
+
+    (selected-buffers (buffers AloemacsBuffers) (AloemacsSession H)
+      (AloemacsSession new
+        buffers (self fs) "" #f "" (Position new 0 0) #f #f
+        (self kill-ring) (Option None)
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
@@ -352,7 +432,8 @@
         (self kill-ring)
         (self pending)
         (self prompt)
-        (self last-submission)))
+        (self last-submission)
+        (self waiting-command)))
 
     (with-kill-state (editor AloemacsEditor) (kill-ring (List String))
                      (AloemacsSession H)
@@ -362,7 +443,7 @@
         (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) kill-ring (self pending)
-        (self prompt) (self last-submission)))
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (with-search (editor AloemacsEditor) (searching Bool)
                  (query String) (origin Position)
@@ -372,28 +453,28 @@
           ((self current-buffer) with-editor editor))
         (self fs) (self echo)
         searching query origin wrapped failing (self kill-ring) (self pending)
-        (self prompt) (self last-submission)))
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (with-echo (token String) (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) token
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (self prompt) (self last-submission)))
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (with-prefix (map (AloemacsKeymap AloemacsBinding)) (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option Some map)
-        (self prompt) (self last-submission)))
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (clear-prefix () (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option None)
-        (self prompt) (self last-submission)))
+        (self prompt) (self last-submission) (self waiting-command)))
 
     (find () (AloemacsSession H)
       (self with-search (self editor) #t "" (self point) #f #f))
@@ -609,7 +690,10 @@
         (Save () (self save-key))
         (SelfInsert () ((self insert key) with-echo ""))
         (SwitchBuffer () (self switch-buffer))
-        (KillBuffer () (self kill-buffer))))
+        (KillBuffer () (self kill-buffer))
+        (FindFile () (self start-command-prompt command "Find file: "))
+        (SaveAs () (self start-command-prompt command "Save as: "))
+        (SelectBuffer () (self start-command-prompt command "Buffer: "))))
 
     (unchanged () (AloemacsSession H)
       self)
@@ -630,7 +714,7 @@
             (Option Some path)))
         (self fs)
         "" #f "" (Position new 0 0) #f #f (List empty) (Option None)
-        (Option None) (self last-submission)))
+        (Option None) (self last-submission) (Option None)))
 
     (text () Text
       ((self editor) text))
@@ -744,21 +828,46 @@
         ((self editor) ensure-visible columns
           (if (rows >= 2) (rows - 1) rows))))
 
+    (file-contents (path Path) (Option String)
+      (((self fs) inspect path) case
+        (None () (Option Some ""))
+        (Some (entry)
+          (entry case
+            (RegularFile (file) ((self fs) read path))
+            (Directory (directory) (Option None))
+            (SymbolicLink (link) (Option None))
+            (Other (other kind) (Option None))))))
+
     (visit (path Path) (Option (AloemacsSession H))
       (let ((resolved ((self fs) path (path text))))
-        (((self fs) inspect resolved) case
-          (None ()
-            (Option Some (self visited "" resolved)))
-          (Some (entry)
-            (entry case
-              (RegularFile (file)
-                (((self fs) read resolved) case
-                  (None () (Option None))
-                  (Some (contents)
-                    (Option Some (self visited contents resolved)))))
-              (Directory (directory) (Option None))
-              (SymbolicLink (link) (Option None))
-              (Other (other kind) (Option None)))))))
+        ((self file-contents resolved) case
+          (None () (Option None))
+          (Some (contents) (Option Some (self visited contents resolved))))))
+
+    (find-file-submitted (submitted String) (AloemacsSession H)
+      (if (submitted = "")
+          (self with-echo "failed")
+          (let ((resolved ((self fs) path submitted)))
+            (((self buffers) find-name (resolved text)) case
+              (Some (buffers) (self selected-buffers buffers))
+              (None ()
+                ((self file-contents resolved) case
+                  (Some (contents) (self add-buffer contents resolved))
+                  (None () (self with-echo "failed"))))))))
+
+    (save-as-submitted (submitted String) (AloemacsSession H)
+      (if (submitted = "")
+          (self with-echo "failed")
+          (let ((resolved ((self fs) path submitted)))
+            (((self fs) write resolved ((self text) to-string)) case
+              (None () (self with-echo "failed"))
+              (Some (contents)
+                ((self with-current-path resolved) with-echo "saved"))))))
+
+    (select-buffer-submitted (submitted String) (AloemacsSession H)
+      (((self buffers) find-name submitted) case
+        (Some (buffers) (self selected-buffers buffers))
+        (None () (self with-echo "failed"))))
 
     (save () (Option (AloemacsSession H))
       ((self path) case
@@ -781,7 +890,10 @@
 (define aloemacs-ctrl-x-keymap
   (AloemacsKeymap new
     (List of
-      (AloemacsBinding Command "save" aloemacs-save-command))
+      (AloemacsBinding Command "save" aloemacs-save-command)
+      (AloemacsBinding Command "find" (AloemacsCommand FindFile))
+      (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
+      (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer)))
     (if #t
         (Option None)
         (Option Some aloemacs-self-insert-command))))

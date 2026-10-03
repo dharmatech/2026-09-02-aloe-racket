@@ -73,6 +73,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 13 | Keymap | [`keymap/`](keymap/) | **Implemented and accepted.** aloemacs-keymap 000–001. | 4, 8, 10–12 (session dispatch, echo, search, kill, motion) |
 | 14 | Buffer | [`buffer/`](buffer/) | **Implemented and accepted.** aloemacs-buffer 000–001. | 4, 13 (file session, commands) |
 | 15 | Minibuffer | [`minibuffer/`](minibuffer/) | **Implemented and accepted.** aloemacs-minibuffer 000–001. | 8–10, 13–14 (echo row, safe cells, search, keymap, buffer) |
+| 16 | Prompt commands | [`prompt-commands/`](prompt-commands/) | **Implemented and accepted.** aloemacs-prompt-commands 000–002. | 4, 13–15 (Fs, keymap, buffer, minibuffer) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -87,7 +88,10 @@ aloemacs-keymap 000–001 uses session `execute-command` and adds `C-x C-s`.
 **Buffer** is implemented and accepted at [`buffer/`](buffer/).
 aloemacs-buffer 000–001. **Minibuffer** is implemented and accepted at
 [`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001.
-Ranked later work lives in [`explorations.md`](explorations.md).
+**Prompt commands** are implemented and accepted at
+[`prompt-commands/`](prompt-commands/), aloemacs-prompt-commands
+000–002. Ranked later work lives in
+[`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
@@ -120,7 +124,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 
 Easy to smuggle in. They are not.
 
-- Windows, find-file, save-as, a buffer menu, and modes
+- Windows, a buffer menu, and modes
 - Mouse, paste, PTY, VT emulator, daemon, multi-head
 - Unicode clusters, `wcwidth`, grapheme width
 - `M-x` eval, Gel's `Mirror`, hot reload
@@ -144,9 +148,10 @@ Easy to smuggle in. They are not.
 | Search | No-TTY: Ctrl-F, type a query, point moves; wrap and failure show on the echo; Escape restores the previous echo and does not quit |
 | Kill | No-TTY: set a mark, move, kill; the ring holds the string; undo restores text and point; yank inserts it again. Kill-line with no mark. Yank on an empty ring leaves the text alone |
 | Motion | No-TTY: line start and end, page-down after a fit, buffer start and end. Undo history stays |
-| Keymap | No-TTY: the existing idle keys still insert, move, save, search, kill, and quit. `C-x C-s` saves. `C-x` then any other key leaves the buffer unchanged. A plain `x` still inserts |
+| Keymap | No-TTY: the existing idle keys still insert, move, save, search, kill, and quit. `C-x C-s` saves. An unbound `C-x` second key is consumed and leaves the buffer unchanged. A plain `x` still inserts |
 | Buffer | No-TTY: two buffers, switch shows the other text and that buffer's path or `untitled`. Kill leaves a current buffer. Save writes the current path. Undo, mark, and scroll survive a round trip. Existing keys still behave on the current buffer |
 | Minibuffer | No-TTY: start a prompt, type, submit, and read the string back. Cancel leaves the buffer and the previous submission. While the prompt is active the cursor sits on the echo row; when it ends, the cursor returns to the text. The current buffer's text, point, undo, path, and name stay |
+| Prompt commands | No-TTY: `C-x C-f` opens a path and leaves the previous buffer in the zipper. `C-x C-w` writes the current text and binds the path. `C-x b` selects a buffer by its exact name. A refused path, a missed name, and Escape leave the buffers as they were |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

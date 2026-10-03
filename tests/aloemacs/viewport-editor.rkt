@@ -88,7 +88,8 @@
      (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -154,7 +155,8 @@
               (List empty)
               (if #t (Option None) (Option Some aloemacs-global-keymap))
               (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-              (if #t (Option None) (Option Some "")))
+              (if #t (Option None) (Option Some ""))
+              (if #t (Option None) (Option Some (AloemacsCommand FindFile))))
             (AloemacsSession new
               (AloemacsBuffers new
                 (List empty)
@@ -172,7 +174,8 @@
               (List empty)
               (if #t (Option None) (Option Some aloemacs-global-keymap))
               (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-              (if #t (Option None) (Option Some "")))))])
+              (if #t (Option None) (Option Some ""))
+              (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

@@ -12,7 +12,7 @@
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default '(if #t (Option None) (Option Some aloemacs-self-insert-command)))
 (define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
-                                prompt last-submission))
+                                prompt last-submission waiting-command))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -47,7 +47,8 @@
      (,s kill-ring)
      ,pending
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 
 (define (fixture [path '(Option Some (Path new "/cwd/a.txt"))] [echo "saved"])
   `(AloemacsSession new
@@ -70,7 +71,8 @@
      (List of "Z\nY" "older")
      ,no-pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
@@ -174,7 +176,8 @@
        (List empty)
        ,no-pending
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-       (if #t (Option None) (Option Some ""))))
+       (if #t (Option None) (Option Some ""))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
   (def! st 'result '((base handle-key "ctrl-x") handle-key "save"))
   (check-equal? (writes calls) '((write "/cwd/a.txt" "\uFEFFλ\r\nb\n")))
   (same-session st 'result (rebuild 'base no-pending "saved"))
@@ -186,14 +189,28 @@
   (check-equal? (length (writes failures)) 1)
   (same failing '(armed pending) '(Option Some aloemacs-ctrl-x-keymap)))
 
-(test-case "every non-save second key is consumed once; the following key dispatches globally"
+(test-case "prefix prompt commands clear pending and start a waiting command without effects"
+  (define-values (st calls) (state))
+  (rich! st)
+  (def! st 'armed '(base handle-key "ctrl-x"))
+  (for ([key '("find" "kill" "b")] [label '("Find file: " "Save as: " "Buffer: ")]
+        [command '(FindFile SaveAs SelectBuffer)])
+    (same-session st `(armed handle-key ,key)
+      `(AloemacsSession new
+         (base buffers) (base fs) "" (base searching) (base query) (base origin)
+         (base wrapped) (base failing) (base kill-ring) ,no-pending
+         (Option Some (AloemacsPrompt new ,label "" 0))
+         (base last-submission) (Option Some (AloemacsCommand ,command)))))
+  (check-equal? (unbox calls) '()))
+
+(test-case "every unbound second key is consumed once; the following key dispatches globally"
   (define-values (st calls) (state))
   (rich! st)
   (define original (ev st 'base))
   (def! st 'armed '(base handle-key "ctrl-x"))
   (define armed (ev st 'armed))
-  (for ([key (in-list '("x" "s" "left" "escape" "find" "undo" "return" "mark"
-                        "unknown" "" "ctrl-x" "kill" "kill-line" "yank"))])
+  (for ([key (in-list '("x" "s" "left" "escape" "undo" "return" "mark"
+                        "unknown" "" "ctrl-x" "kill-line" "yank"))])
     (set-box! calls '())
     (def! st 'cancel `(armed handle-key ,key))
     (same-session st 'cancel (rebuild 'base no-pending ""))
@@ -300,7 +317,8 @@
        (List of "ring")
        ,no-pending
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-       (if #t (Option None) (Option Some ""))))
+       (if #t (Option None) (Option Some ""))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
                 (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))

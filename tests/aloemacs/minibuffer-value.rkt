@@ -18,7 +18,7 @@
 (define submitted '(Option Some "previous\tanswer"))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission))
+            prompt last-submission waiting-command))
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
 (define (type st expr)
@@ -76,7 +76,8 @@
 (define (session buffers #:prompt [prompt active] #:submission [submission submitted]
                  #:pending [pending '(Option Some aloemacs-ctrl-x-keymap)])
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #t "old query"
-     (Position new 4 2) #t #t (List of "newest" "older") ,pending ,prompt ,submission))
+     (Position new 4 2) #t #t (List of "newest" "older") ,pending ,prompt ,submission
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 ;; All expectations rebuild independently of production session helpers.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -86,7 +87,8 @@
                  #:pending [pending `(,s pending)] #:prompt [prompt `(,s prompt)]
                  #:submission [submission `(,s last-submission)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
-     ,wrapped ,failing ,ring ,pending ,prompt ,submission))
+     ,wrapped ,failing ,ring ,pending ,prompt ,submission
+     (,s waiting-command)))
 (define (replace-current s editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,editor ,path) ((,s buffers) after)))
@@ -145,7 +147,7 @@
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
              (query String) (origin Position) (wrapped Bool) (failing Bool)
              (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
-             (prompt (Option AloemacsPrompt)) (last-submission (Option String)))))
+             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand)))))
 
 (test-case "two fresh checked loads have no output, capability, or host effects"
   (for ([i (in-range 2)])
@@ -255,7 +257,7 @@
     (check-false (ev st '(((edited text) find "\n" 0) present?)))
     (check-equal? (ev st 'p) original)))
 
-(test-case "twelve-field constructor, pure Option reads, and lawful cold startup"
+(test-case "thirteen-field constructor, pure Option reads, and lawful cold startup"
   (define-values (st calls) (state))
   (rich! st)
   (check-equal? (type st '(source prompt)) '(Option AloemacsPrompt))
@@ -264,8 +266,10 @@
   (define fixture (session (zipper '(a b c) 1)))
   (for ([bad (list (drop-right fixture 2) (drop-right fixture 1)
                    (append fixture '(0))
-                   (append (take fixture 12) (list '(Option Some "wrong") submitted))
-                   (append (take fixture 13) (list '(Option Some 1)))
+                   (append (take fixture 12) (list '(Option Some "wrong") submitted)
+                           (take-right fixture 1))
+                   (append (take fixture 13) (list '(Option Some 1))
+                           (take-right fixture 1))
                    '(source prompt 0) '(source last-submission 0)
                    '(1 prompt) '("x" last-submission))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st bad))))
@@ -285,7 +289,8 @@
     `(AloemacsSession new
        ,(zipper (list `(AloemacsBuffer new ,(editor "" '(Position new 0 0) #t) ,no-path)) 0)
        (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty)
-       ,no-pending ,no-prompt ,no-submission))
+       ,no-pending ,no-prompt ,no-submission
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
   (check-false (ev startup '((aloemacs-editor prompt) present?)))
   (check-false (ev startup '((aloemacs-editor last-submission) present?)))
   (check-equal? (unbox startup-calls) '())

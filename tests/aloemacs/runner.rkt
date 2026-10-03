@@ -47,7 +47,8 @@
         (List empty)
         (if #t (Option None) (Option Some aloemacs-global-keymap))
         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-        (if #t (Option None) (Option Some ""))))))
+        (if #t (Option None) (Option Some ""))
+        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")
@@ -160,6 +161,7 @@
   (check-false (driver-eval! state '((aloemacs-editor pending) present?)))
   (check-false (driver-eval! state '((aloemacs-editor prompt) present?)))
   (check-false (driver-eval! state '((aloemacs-editor last-submission) present?)))
+  (check-false (driver-eval! state '((aloemacs-editor waiting-command) present?)))
   (check-equal? (driver-eval! state '(aloemacs-editor echo)) "")
   (check-equal? (driver-eval! state '(fs-host read "/cwd/kept.txt"))
                 "kept")

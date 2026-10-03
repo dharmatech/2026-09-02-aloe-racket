@@ -101,7 +101,8 @@
      (List empty)
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -443,7 +444,8 @@
         (List empty)
         (source pending)
         (source prompt)
-        (source last-submission))))
+        (source last-submission)
+        (source waiting-command))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -475,7 +477,8 @@
         (List empty)
         (source pending)
         (source prompt)
-        (source last-submission))))
+        (source last-submission)
+        (source waiting-command))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

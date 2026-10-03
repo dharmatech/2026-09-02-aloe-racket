@@ -19,7 +19,7 @@
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission))
+            prompt last-submission waiting-command))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -40,7 +40,8 @@
   `(AloemacsSession new ,(singleton (editor contents indexed?) path)
      (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty) ,no-pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-     (if #t (Option None) (Option Some ""))))
+     (if #t (Option None) (Option Some ""))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
 
 ;; Independent full-value reconstruction; no production rebuild/dispatcher is
 ;; used to construct expectations. Every session fixture is a singleton.
@@ -52,7 +53,8 @@
   `(AloemacsSession new ,(singleton editor path) (,s fs) ,echo ,searching ,query
      ,origin ,wrapped ,failing ,ring ,pending
      (,s prompt)
-     (,s last-submission)))
+     (,s last-submission)
+     (,s waiting-command)))
 (define (same-session st actual expected)
   (same st actual expected)
   (for ([field (in-list (append session-fields '(current-buffer editor path)))])
@@ -114,7 +116,8 @@
        (Fs new fs-host) "saved" #t "old query" (Position new 4 2) #t #t
        (List of "newest" "older") (Option Some aloemacs-ctrl-x-keymap)
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-       (if #t (Option None) (Option Some "")))))
+       (if #t (Option None) (Option Some ""))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))
 
 (test-case "exact stored ownership, class order, and new method signatures"
   (define datums
@@ -137,9 +140,12 @@
     '(fields (before (List AloemacsBuffer)) (current-buffer AloemacsBuffer)
              (after (List AloemacsBuffer))))
   (check-equal? (map (lambda (method) (drop-right method 1)) (cdr (cadddr buffer)))
-    '((name () String) (with-editor (editor AloemacsEditor) AloemacsBuffer)))
+    '((name () String) (with-editor (editor AloemacsEditor) AloemacsBuffer)
+      (with-path (path Path) AloemacsBuffer)))
   (check-equal? (map (lambda (method) (drop-right method 1)) (cdr (cadddr buffers)))
     '((with-current-buffer (buffer AloemacsBuffer) AloemacsBuffers)
+      (find-name (name String) (Option AloemacsBuffers))
+      (find-name-in (name String) (remaining Int) (Option AloemacsBuffers))
       (focus-next () AloemacsBuffers)
       (focus-previous () AloemacsBuffers)
       (insert-after (buffer AloemacsBuffer) AloemacsBuffers)
@@ -148,7 +154,7 @@
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
              (query String) (origin Position) (wrapped Bool) (failing Bool)
              (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
-             (prompt (Option AloemacsPrompt)) (last-submission (Option String))))
+             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand))))
   (for ([signature (in-list '((current-buffer () AloemacsBuffer)
                               (editor () AloemacsEditor) (path () (Option Path))))])
     (define method (assq (car signature) (cdr (cadddr session))))
@@ -213,14 +219,16 @@
           (list `(AloemacsSession new old-editor (source fs) "" #f "" (Position new 0 0)
                                   #f #f (List empty) ,no-pending
                    (source prompt)
-                   (source last-submission))
+                   (source last-submission)
+                   (source waiting-command))
                 `(AloemacsSession new (source current-buffer) (source fs) "" #f ""
                                   (Position new 0 0) #f #f (List empty) ,no-pending
                    (source prompt)
-                   (source last-submission))
+                   (source last-submission)
+                   (source waiting-command))
                 `(AloemacsSession new (source buffers) (source fs) "" #f "" (Position new 0 0)
                                   #f #f (List empty) ,no-pending
-                                  (source prompt) (source last-submission) 0))))])
+                                  (source prompt) (source last-submission) (source waiting-command) 0))))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st datum)) (format "reject ~s" datum)))
   (check-equal? (unbox calls) '()))
 
