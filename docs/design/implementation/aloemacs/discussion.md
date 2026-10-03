@@ -25,8 +25,9 @@ later work is [`explorations.md`](explorations.md). Layers 1–12
 are implemented, including search at [`search/`](search/) and
 kill at [`kill/`](kill/) and motion at [`motion/`](motion/).
 Keymap is implemented and accepted at [`keymap/`](keymap/),
-aloemacs-keymap 000–001. Do not reopen that series or write its `spec.md`
-here.
+aloemacs-keymap 000–001. The buffer series is implemented and
+accepted at [`buffer/`](buffer/), aloemacs-buffer 000–001. Do not
+reopen those series or write their `spec.md` here.
 
 ## How this conversation works
 

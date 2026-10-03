@@ -9,6 +9,8 @@ Search is implemented (aloemacs-search 000–001). Mark, region,
 kill, and yank is implemented (aloemacs-kill 000–002). The motion
 pack is implemented (aloemacs-motion 000). Commands and keymap are
 implemented and accepted (aloemacs-keymap 000–001) at [`keymap/`](keymap/).
+The buffer series is implemented and accepted (aloemacs-buffer 000–001)
+at [`buffer/`](buffer/).
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -26,11 +28,12 @@ Process: [`docs/workflow.md`](../../../workflow.md). Map:
 
 ## Already built
 
-The one-buffer machine: visit a path, edit, scroll, save, undo,
-quit, echo row, incremental search, mark, kill, and yank. Text
-zipper, stored viewport, snapshot undo, linear load/save, safe
-control display. Idiom
-cleanups on Text and Int. Scale charter withdrawn.
+One window: visit a path, edit, scroll, save, undo, quit, echo
+row, incremental search, mark, kill, and yank. The session holds
+a zipper of buffers. Switch and kill-buffer are sends, with no
+new key. Text zipper, stored viewport, snapshot undo, linear
+load/save, safe control display. Idiom cleanups on Text and Int.
+Scale charter withdrawn.
 
 | Band | What | State |
 |---|---|---|

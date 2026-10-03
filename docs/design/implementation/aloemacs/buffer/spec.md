@@ -1,6 +1,8 @@
 # aloemacs buffer specification
 
-**Status: Accepted for checkpoint work.** This file is the complete design input
+**Status: Accepted.** aloemacs-buffer 000 and 001 are implemented,
+reviewed, and accepted as the completed series. There is no 002.
+This file is the complete design input
 for the **aloemacs-buffer** checkpoint manager and implementers. They do
 not need the charter or the design conversation. After human acceptance,
 this file is their design authority. It is application design;
