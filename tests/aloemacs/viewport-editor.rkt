@@ -86,7 +86,9 @@
      #f
      #f
      (List empty)
-     (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (if #t (Option None) (Option Some aloemacs-global-keymap))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -150,7 +152,9 @@
               #f
               #f
               (List empty)
-              (if #t (Option None) (Option Some aloemacs-global-keymap)))
+              (if #t (Option None) (Option Some aloemacs-global-keymap))
+              (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+              (if #t (Option None) (Option Some "")))
             (AloemacsSession new
               (AloemacsBuffers new
                 (List empty)
@@ -166,7 +170,9 @@
               #f
               #f
               (List empty)
-              (if #t (Option None) (Option Some aloemacs-global-keymap)))))])
+              (if #t (Option None) (Option Some aloemacs-global-keymap))
+              (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+              (if #t (Option None) (Option Some "")))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

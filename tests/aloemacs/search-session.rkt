@@ -40,7 +40,9 @@
      #f
      #f
      (List empty)
-     (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (if #t (Option None) (Option Some aloemacs-global-keymap))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -254,7 +256,9 @@
        #f
        #f
        (List empty)
-       (if #t (Option None) (Option Some aloemacs-global-keymap))))
+       (if #t (Option None) (Option Some aloemacs-global-keymap))
+       (base prompt)
+       (base last-submission)))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a "))
   (step! state 'exit 'failed "return")

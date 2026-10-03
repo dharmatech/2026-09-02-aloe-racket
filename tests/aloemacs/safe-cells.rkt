@@ -59,7 +59,9 @@
      #f
      #f
      (List empty)
-     (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (if #t (Option None) (Option Some aloemacs-global-keymap))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

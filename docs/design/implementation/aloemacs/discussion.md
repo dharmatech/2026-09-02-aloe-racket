@@ -26,8 +26,10 @@ are implemented, including search at [`search/`](search/) and
 kill at [`kill/`](kill/) and motion at [`motion/`](motion/).
 Keymap is implemented and accepted at [`keymap/`](keymap/),
 aloemacs-keymap 000–001. The buffer series is implemented and
-accepted at [`buffer/`](buffer/), aloemacs-buffer 000–001. Do not
-reopen those series or write their `spec.md` here.
+accepted at [`buffer/`](buffer/), aloemacs-buffer 000–001. The
+minibuffer series is implemented and accepted at
+[`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001.
+Do not reopen those series or write their `spec.md` here.
 
 ## How this conversation works
 
@@ -60,6 +62,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Motion (line, page, buffer) | **Implemented.** aloemacs-motion 000 |
 | Keymap (commands as values, `C-x C-s`) | **Implemented and accepted.** aloemacs-keymap 000–001 at [`keymap/`](keymap/) |
 | Buffer | **Implemented and accepted.** aloemacs-buffer 000–001 at [`buffer/`](buffer/) |
+| Minibuffer | **Implemented and accepted.** aloemacs-minibuffer 000–001 at [`minibuffer/`](minibuffer/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -96,9 +99,10 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows, the minibuffer, find-file, save-as, and M-x (see
-  [`explorations.md`](explorations.md) for order). The buffer
-  series is implemented and accepted at [`buffer/`](buffer/)
+- Windows, find-file, save-as, named switch-buffer, and M-x
+  (see [`explorations.md`](explorations.md) for order). The
+  minibuffer series is implemented and accepted at
+  [`minibuffer/`](minibuffer/)
 - Live `eval` / Mirror
 
 Chez Emacs (`/home/dharmatech/src/e`) and Legmacs

@@ -112,7 +112,9 @@
             #f
             #f
             (List empty)
-            (if #t (Option None) (Option Some aloemacs-global-keymap))))
+            (if #t (Option None) (Option Some aloemacs-global-keymap))
+            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+            (if #t (Option None) (Option Some ""))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))
   (check-equal? (driver-eval! st '(paged echo)) "")

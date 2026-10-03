@@ -11,7 +11,8 @@
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default '(if #t (Option None) (Option Some aloemacs-self-insert-command)))
-(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending))
+(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
+                                prompt last-submission))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -44,7 +45,9 @@
      (,s wrapped)
      (,s failing)
      (,s kill-ring)
-     ,pending))
+     ,pending
+     (,s prompt)
+     (,s last-submission)))
 
 (define (fixture [path '(Option Some (Path new "/cwd/a.txt"))] [echo "saved"])
   `(AloemacsSession new
@@ -65,7 +68,9 @@
      #t
      #t
      (List of "Z\nY" "older")
-     ,no-pending))
+     ,no-pending
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
@@ -167,7 +172,9 @@
        #f
        #f
        (List empty)
-       ,no-pending))
+       ,no-pending
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+       (if #t (Option None) (Option Some ""))))
   (def! st 'result '((base handle-key "ctrl-x") handle-key "save"))
   (check-equal? (writes calls) '((write "/cwd/a.txt" "\uFEFFλ\r\nb\n")))
   (same-session st 'result (rebuild 'base no-pending "saved"))
@@ -291,7 +298,9 @@
        #f
        #f
        (List of "ring")
-       ,no-pending))
+       ,no-pending
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+       (if #t (Option None) (Option Some ""))))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
                 (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))

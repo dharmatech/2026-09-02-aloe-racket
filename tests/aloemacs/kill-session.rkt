@@ -44,7 +44,9 @@
      #f
      #f
      ,ring
-     (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (if #t (Option None) (Option Some aloemacs-global-keymap))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -99,7 +101,9 @@
                                   #f
                                   #f
                                   "wrong"
-                                  (if #t (Option None) (Option Some aloemacs-global-keymap))))))
+                                  (if #t (Option None) (Option Some aloemacs-global-keymap))
+                                  (aloemacs-editor prompt)
+                                  (aloemacs-editor last-submission)))))
   (def! st 'base (session "ab\ncd" 0 0))
   (key! st 'marked 'base "mark")
   (check-equal? (mark-position st 'marked) "0:0")

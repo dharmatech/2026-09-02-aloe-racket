@@ -53,7 +53,9 @@
         #f
         #f
         (List empty)
-        (if #t (Option None) (Option Some aloemacs-global-keymap)))))
+        (if #t (Option None) (Option Some aloemacs-global-keymap))
+        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+        (if #t (Option None) (Option Some "")))))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -98,7 +100,9 @@
         #f
         #f
         (List empty)
-        (if #t (Option None) (Option Some aloemacs-global-keymap)))))
+        (if #t (Option None) (Option Some aloemacs-global-keymap))
+        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+        (if #t (Option None) (Option Some "")))))
   (driver-eval!
    state
    '(define visited

@@ -62,20 +62,26 @@
                  #:ring [ring '(List of "newest" "older")]
                  #:pending [pending '(Option Some aloemacs-ctrl-x-keymap)])
   `(AloemacsSession new ,buffers (Fs new fs-host) ,echo ,searching ,query ,origin
-                       ,wrapped ,failing ,ring ,pending))
+                       ,wrapped ,failing ,ring ,pending
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 ;; Expectations explicitly rebuild all fields. They never invoke the selection
 ;; methods, collection transitions, or execute-command being tested.
 (define (reset s buffers #:ring [ring `(,s kill-ring)])
   `(AloemacsSession new ,buffers (,s fs) "" #f "" (Position new 0 0)
-                       #f #f ,ring ,no-pending))
+                       #f #f ,ring ,no-pending
+     (,s prompt)
+     (,s last-submission)))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin ,wrapped
-                       ,failing ,ring ,pending))
+                       ,failing ,ring ,pending
+     (,s prompt)
+     (,s last-submission)))
 (define (with-editor s editor)
   (rebuild s #:buffers
     `(AloemacsBuffers new ((,s buffers) before)
@@ -85,7 +91,7 @@
   (def! st 'comparison-expected expected)
   (same st 'comparison-actual 'comparison-expected)
   (for ([field '(buffers fs echo searching query origin wrapped failing kill-ring
-                        pending current-buffer editor path text point quit)])
+                        pending prompt last-submission current-buffer editor path text point quit)])
     (same st `(comparison-actual ,field) `(comparison-expected ,field)))
   (for ([field '(before current-buffer after)])
     (same st `((comparison-actual buffers) ,field) `((comparison-expected buffers) ,field))))

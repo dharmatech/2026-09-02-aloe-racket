@@ -47,7 +47,8 @@
 (define no-default
   '(if #t (Option None) (Option Some (AloemacsCommand SelfInsert))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending))
+(define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
+                                prompt last-submission))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -121,7 +122,9 @@
      #t
      #t
      ,ring
-     ,pending))
+     ,pending
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 ;; Build expected echo results without using the new with-echo helper.
 (define (token s echo)
@@ -140,7 +143,9 @@
      (,s wrapped)
      (,s failing)
      (,s kill-ring)
-     (,s pending)))
+     (,s pending)
+     (,s prompt)
+     (,s last-submission)))
 
 ;; Independent expected-value construction for prefix installation/clearing.
 (define (prefix-state s pending [echo `(,s echo)])
@@ -159,7 +164,9 @@
      (,s wrapped)
      (,s failing)
      (,s kill-ring)
-     ,pending))
+     ,pending
+     (,s prompt)
+     (,s last-submission)))
 
 (define (expected s row)
   (define selector (fourth row))
@@ -342,7 +349,9 @@
                (List empty))))
       (same-session st `(,s execute-command (AloemacsCommand ,constructor) "x")
         `(AloemacsSession new ,expected-buffers (,s fs) "" #f ""
-           (Position new 0 0) #f #f (,s kill-ring) ,no-pending)))
+           (Position new 0 0) #f #f (,s kill-ring) ,no-pending
+           (,s prompt)
+           (,s last-submission))))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
     (check-equal? (type st `(,s with-prefix aloemacs-ctrl-x-keymap))
@@ -680,7 +689,9 @@
          #f
          #f
          (List empty)
-         ,no-pending))
+         ,no-pending
+         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+         (armed last-submission)))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))
   (same-session st '((armed visit (Path new "dir")) case

@@ -45,7 +45,9 @@
         #f
         #f
         (List empty)
-        (if #t (Option None) (Option Some aloemacs-global-keymap))))))
+        (if #t (Option None) (Option Some aloemacs-global-keymap))
+        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+        (if #t (Option None) (Option Some ""))))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")
@@ -131,7 +133,7 @@
      (hash "/cwd" 'directory "/cwd/kept.txt" 'file)
      (hash "/cwd/kept.txt" "kept")))
   (for ([name (in-list
-               '(AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path Option
+               '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path Option
                  aloemacs-editor))])
     (check-true (unbound-in-driver? state name))
     (check-true (unbound-in-driver? fresh-state name)))
@@ -142,7 +144,7 @@
   (check-equal? (driver-load-file! state main-path load-output) '())
   (check-equal? (get-output-string load-output) "")
   (for ([name (in-list
-               '(AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path Option
+               '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path Option
                  aloemacs-editor))])
     (check-true (bound-in-driver? state name))
     (check-true (unbound-in-driver? fresh-state name)))
@@ -156,6 +158,8 @@
   (check-false (driver-eval! state '(aloemacs-editor quit)))
   (check-false (driver-eval! state '((aloemacs-editor path) present?)))
   (check-false (driver-eval! state '((aloemacs-editor pending) present?)))
+  (check-false (driver-eval! state '((aloemacs-editor prompt) present?)))
+  (check-false (driver-eval! state '((aloemacs-editor last-submission) present?)))
   (check-equal? (driver-eval! state '(aloemacs-editor echo)) "")
   (check-equal? (driver-eval! state '(fs-host read "/cwd/kept.txt"))
                 "kept")

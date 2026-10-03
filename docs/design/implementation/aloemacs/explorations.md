@@ -10,7 +10,8 @@ kill, and yank is implemented (aloemacs-kill 000–002). The motion
 pack is implemented (aloemacs-motion 000). Commands and keymap are
 implemented and accepted (aloemacs-keymap 000–001) at [`keymap/`](keymap/).
 The buffer series is implemented and accepted (aloemacs-buffer 000–001)
-at [`buffer/`](buffer/).
+at [`buffer/`](buffer/). The minibuffer series is implemented and
+accepted (aloemacs-minibuffer 000–001) at [`minibuffer/`](minibuffer/).
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -96,14 +97,14 @@ language modes, and M-x are libraries.
 | 4 | **Commands as objects** | **Implemented and accepted** with item 5 at [`keymap/`](keymap/), aloemacs-keymap 000–001. A command is a named value; the session executes it. M-x stays later | Band 1 crowding |
 | 5 | **Keymap as data** | **Implemented and accepted.** Immutable maps dispatch existing keys and one prefix: `C-x C-s`. Pending misses cancel and consume the key | Commands |
 | 6 | **Buffer as an object** | **Implemented and accepted** at [`buffer/`](buffer/), aloemacs-buffer 000–001. A buffer holds the editor and optional path; the session holds a nonempty zipper. Addition, switch, and kill-buffer are checked sends in one window, with no new key binding | File session, commands |
-| 7 | **Minibuffer** | A prompt that is a small editable buffer (or a window onto one), not a second ad-hoc string field. Completing-read can stay tiny | Buffer, echo, keymap |
+| 7 | **Minibuffer** | **Implemented and accepted** at [`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001. The prompt is its own small editor on the echo row, outside the buffer zipper. A test types, submits or cancels, and reads the string. Completion stays a later series | Buffer, echo, keymap |
 | 8 | **Find-file / save-as / switch-buffer as commands** | These are the first *uses* of the minibuffer. They are not a directory UI | Minibuffer, Fs |
 
 GNU-like keys (`C-x C-f`, `C-x C-s`, `C-x b`, `M-x`) are welcome
 here as bindings of those commands. The implementation stays
 data. `C-x C-s` is implemented by the keymap series.
-`C-x C-f`, `C-x b`, and `M-x` wait for the buffer, the
-minibuffer, and M-x.
+`C-x C-f`, `C-x b`, and `M-x` wait for the command series that
+follows this minibuffer, and for M-x.
 
 ---
 
@@ -184,8 +185,9 @@ Leave these until a slice is blocked by them.
    [`keymap/`](keymap/), aloemacs-keymap 000–001. Existing keys are the
    first consumer, and `C-x C-s` is the first prefix.
 4. **Buffer** — implemented and accepted at [`buffer/`](buffer/),
-   aloemacs-buffer 000–001. Then **minibuffer**, then find-file /
-   prompted buffer selection.
+   aloemacs-buffer 000–001. **Minibuffer** — implemented and accepted at
+   [`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001. Then find-file /
+   save-as / named switch-buffer.
 5. **Windows + lock**.
 6. **Faces**, then highlighting, then modes as libraries.
 7. Folding, then outline/notes, then a directory browser.

@@ -46,7 +46,9 @@
      #f
      #f
      (List empty)
-     (if #t (Option None) (Option Some aloemacs-global-keymap))))
+     (if #t (Option None) (Option Some aloemacs-global-keymap))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some ""))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -97,7 +99,7 @@
              (lambda () (value state (drop-right untitled 1))))
   (check-exn exn:fail:aloe-type?
              (lambda ()
-               (value state (append (drop-right untitled 1) '(7))))))
+               (value state (append (take untitled 11) '(7) (take-right untitled 2))))))
 
 (test-case "rebuilds preserve echo and visit resets it"
   (define state (make-state))
