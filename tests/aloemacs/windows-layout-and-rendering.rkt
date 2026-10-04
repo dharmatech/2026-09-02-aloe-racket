@@ -95,12 +95,26 @@
   (string-append "\e[?25l\e[2J\e[H" (string-join rows "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
-(define (single rows row col [echo-row #f] [echo ""] [final-row row] [final-col col])
-  (string-append "\e[?25l\e[2J\e[H" (string-join rows "\r\n")
-                 (cursor row col) "\e[?25h"
-                 (if echo-row
-                     (string-append "\e[?25l" (cursor echo-row 1) echo
-                                    (cursor final-row final-col) "\e[?25h") "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
+                #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if echo-row (text-body (string-join lines "\r\n") echo-row) (string-join lines "\r\n"))
+    (format "\e[~a;~aH\e[?25h" row col)
+    (if echo-row
+        (string-append "\e[?25l"
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (snapshot st s)
   (for/list ([expr (list s `(,s buffers) `((,s buffers) before)
                           `((,s buffers) current-buffer) `((,s buffers) after)
@@ -177,7 +191,7 @@
 (define a-lines '("abcdef" "ghijkl" "mnopqr" "stuvwx" "yz0123" ""))
 (define b-lines '("ABCDE" "FGHIJ" "KLMNO" "PQRST" "UVWXY"))
 (define example-tree (right (below (leaf 71 41) (leaf 3 41 3 1 #t)) (leaf 55 9 1 2)))
-(define example-rows '("abcd|HIJ " "ghij|MNO " "----+RST " "tuvw|WXY " "z012|    "))
+(define example-rows '("abcd|HIJ " "/cwd|MNO " "----+RST " "tuvw|WXY " "/cwd|unti"))
 (define (example! st)
   (def! st 'a (buffer 41 (editor (indexed a-lines 2) 3 2 3 1 2)
                      '(Option Some (Path new "/cwd/a.txt"))))
@@ -197,7 +211,8 @@
   (paint st 'r 9 6 (multi example-rows 3 8 6 "untitled"))
   (def! st 'a-top (buffer 41 (editor (indexed a-lines 2) 1 2)))
   (def! st 'top (session (zipper '(a-top b) 0) example-tree 71 #:echo ""))
-  (paint st 'top 9 6 (multi example-rows 2 3 6 "untitled"))
+  (paint st 'top 9 6 (multi '("abcd|HIJ " "unti|MNO " "----+RST " "tuvw|WXY " "unti|unti")
+                            2 3 6 "untitled"))
   (for ([token '("" "saved" "failed")]
         [shown '("/cwd/a.tx" "saved: /c" "failed: /")])
     (def! st 'idle (rebuild 's #:echo token))
@@ -210,7 +225,8 @@
     (paint st 'search 9 6 (multi example-rows 4 2 6 shown)))
   (def! st 'safe-path (rebuild 's #:buffers
     (zipper (list (buffer 41 '(a editor) '(Option Some (Path new "/a\tbcdefghij"))) 'b) 0)))
-  (paint st 'safe-path 9 6 (multi example-rows 4 2 6 "/a bcdefg"))
+  (paint st 'safe-path 9 6 (multi '("abcd|HIJ " "/a b|MNO " "----+RST " "tuvw|WXY " "/a b|unti")
+                                  4 2 6 "/a bcdefg"))
   (def! st 'prompted (rebuild 'search #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2))))
   (paint st 'prompted 9 6 (multi example-rows 6 5 6 "L A B"))
   (def! st 'ended '(prompted cancel-prompt))
@@ -228,23 +244,23 @@
                  (below (right l r) n) (below l (right r n))
                  (right (below l r) (below n m))
                  (below (right l r) (right n m)))]
-        [rows (list '("a  |a  " "   |   " "---+   " "a  |   " "   |   ")
-                    '("a  |a  " "   |   " "   +---" "   |a  " "   |   ")
-                    '("a  |a  " "   |   " "---+---" "a      " "       ")
-                    '("a      " "       " "---+---" "a  |a  " "   |   ")
-                    '("a  |a  " "   |   " "---+---" "a  |a  " "   |   ")
-                    '("a  |a  " "   |   " "---+---" "a  |a  " "   |   "))])
+        [rows (list '("a  |a  " "unt|   " "---+   " "a  |   " "unt|unt")
+                    '("a  |a  " "   |unt" "   +---" "   |a  " "unt|unt")
+                    '("a  |a  " "unt|unt" "---+---" "a      " "untitle")
+                    '("a      " "untitle" "---+---" "a  |a  " "unt|unt")
+                    '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt")
+                    '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt"))])
     (def! st 's (session (zipper '(a) 0) t 71 #:echo ""))
     (paint st 's 7 6 (multi rows 1 1 6 "untitle")))
   ;; A grandchild divider reaches the ancestor, through its subtree edge.
   (def! st 's (session (zipper '(a) 0)
     (right (right l (below r n)) m) 71 #:echo ""))
-  (paint st 's 11 6 (multi '("a |a |a    " "  |  |     " "  +--+     " "  |a |     " "  |  |     ")
+  (paint st 's 11 6 (multi '("a |a |a    " "  |un|     " "  +--+     " "  |a |     " "un|un|untit")
                             1 1 6 "untitled"))
   ;; Identical punctuation next to a divider does not affect its orientation.
   (def! st 'punct (buffer 41 (editor '(Text from-string "---\n|||\n+++\n---\n|||"))))
   (def! st 's (session (zipper '(punct) 0) (right l r) 71 #:echo ""))
-  (paint st 's 7 6 (multi '("---|---" "|||||||" "+++|+++" "---|---" "|||||||") 1 1 6 "untitle"))
+  (paint st 's 7 6 (multi '("---|---" "|||||||" "+++|+++" "---|---" "unt|unt") 1 1 6 "untitle"))
   (check-equal? (unbox calls) '()))
 
 (test-case "shared edit and visit preserve inactive origins beyond EOF and exact zipper focus during paint"
@@ -254,9 +270,9 @@
   (def! st 'far (rebuild 's #:windows (config t 3 80 24)))
   ;; Shared edit replaces one owned editor; the far view remains blank.
   (def! st 'edited '(far insert "λ"))
-  (paint st 'edited 9 3 (multi '("    |tλuv" "    |z012") 1 8 3 "/cwd/a.tx"))
+  (paint st 'edited 9 3 (multi '("    |tλuv" "/cwd|/cwd") 1 8 3 "/cwd/a.tx"))
   (def! st 'short '(far visited "x\n" (Path new "/short")))
-  (paint st 'short 9 3 (multi '("    |x   " "    |    ") 1 6 3 "/short"))
+  (paint st 'short 9 3 (multi '("    |x   " "/sho|/sho") 1 6 3 "/short"))
   (same st '(((short windows) tree) find-view 71)
     '(Option Some (AloemacsView new 71 41 99 101 #t)))
   (check-equal? (unbox calls) '()))
@@ -266,7 +282,7 @@
   (define ls (for/list ([i (in-range 20)]) (format "line~a-abcdefghijk" i)))
   (define text (indexed ls 12))
   (define tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 2 3 #t)) (leaf 55 9 99 101)))
-  (define fitted-tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 9 6 #t)) (leaf 55 9 99 101)))
+  (define fitted-tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 10 6 #t)) (leaf 55 9 99 101)))
   (def! st 'a (buffer 41 (editor text 10 9 2 3 17 #t) '(Option Some (Path new "/cwd/a.txt"))))
   (def! st 'b (buffer 9 (editor '(Text from-string "inactive") 0 4 2 3 13)))
   (def! st 's (session (zipper '(b a) 1) tree 3 #:columns 0 #:rows 0
@@ -274,7 +290,7 @@
     #:prompt '(Option Some (AloemacsPrompt new "draft: " "input" 2))
     #:waiting '(Option Some (AloemacsCommand SaveAs))))
   (define source (snapshot st 's))
-  (define fitted-buffer (buffer 41 (editor text 10 9 9 6 2 #t) '(a path)))
+  (define fitted-buffer (buffer 41 (editor text 10 9 10 6 1 #t) '(a path)))
   (same-session st '(s ensure-visible 9 6)
     (rebuild 's #:buffers (zipper (list 'b fitted-buffer) 1)
       #:windows (config fitted-tree 3 9 6)))
@@ -285,7 +301,7 @@
   (define far-tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 99 101 #t)) (leaf 55 9 99 101)))
   (def! st 'far (rebuild 's #:buffers (zipper '(b far-a) 1) #:windows (config far-tree 3)))
   (same-session st '(far ensure-visible 9 6)
-    (rebuild 'far #:buffers (zipper (list 'b (buffer 41 (editor text 10 9 10 9 2 #t) '(a path))) 1)
+    (rebuild 'far #:buffers (zipper (list 'b (buffer 41 (editor text 10 9 10 9 1 #t) '(a path))) 1)
       #:windows (config (right (below (leaf 71 41 7 11 #t) (leaf 3 41 10 9 #t))
                               (leaf 55 9 99 101)) 3 9 6)))
   (define before (snapshot st 'fit))
@@ -304,22 +320,22 @@
   (define tree (below (leaf 71 41 2 1 #t) (leaf 3 41 8 1 #t)))
   (def! st 'a (buffer 41 (editor text 8 2 8 1 0)))
   (def! st 's (session (zipper '(a) 0) tree 3 #:echo ""))
-  (def! st 'fit '(s ensure-visible 7 8)) ; 7 text rows: top 3, bottom 3
-  (same st '((fit editor) text-rows) 3)
-  (same st '((fit page-down) point) '(Position new 10 2))
-  (same st '((fit page-up) point) '(Position new 6 2))
+  (def! st 'fit '(s ensure-visible 7 8)) ; full leaves 3, text heights 2
+  (same st '((fit editor) text-rows) 2)
+  (same st '((fit page-down) point) '(Position new 9 2))
+  (same st '((fit page-up) point) '(Position new 7 2))
   (same st '((fit editor) text) text)
   (def! st 'tiny '(fit ensure-visible 7 2))
   (same-session st 'tiny (rebuild 'fit #:buffers
     (zipper (list (buffer 41 (editor text 8 2 8 1 1) '(a path))) 0)
     #:windows (config tree 3 7 2)))
   (same st '((tiny page-down) point) '(Position new 9 2))
-  (paint st 'tiny 7 2 (single '("bcdef8") 1 2 2 "untitle"))
+  (paint st 'tiny 7 2 (single '("bcdef8") 1 2 2 "untitle" #:name "untitled" #:width 7))
   (def! st 'grown '(tiny ensure-visible 7 8))
   (same-session st 'grown (rebuild 'tiny #:buffers
-    (zipper (list (buffer 41 (editor text 8 2 8 1 3) '(a path))) 0)
+    (zipper (list (buffer 41 (editor text 8 2 8 1 2) '(a path))) 0)
     #:windows (config tree 3 7 8)))
-  (paint st 'grown 7 8 (multi '("bcdef2 " "bcdef3 " "bcdef4 " "-------" "bcdef8 " "bcdef9 " "bcdef10")
+  (paint st 'grown 7 8 (multi '("bcdef2 " "bcdef3 " "untitle" "-------" "bcdef8 " "bcdef9 " "untitle")
                               5 2 8 "untitle"))
   (check-equal? (unbox calls) '()))
 
@@ -331,15 +347,15 @@
     #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4))))
   ;; Selected left is positive; only the nested right fails.
   (def! st 'fit '(s ensure-visible 7 3))
-  (same st '((fit editor) text-rows) 2)
+  (same st '((fit editor) text-rows) 1)
   (same st '((fit windows) tree) tree)
-  (paint st 'fit 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7))
-  (paint st 'fit 7 1 (single '("abc") 1 1))
+  (paint st 'fit 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
+  (paint st 'fit 7 1 (single '("abc") 1 1 #:name "untitled" #:width 7))
   (def! st 'horizontal (session (zipper '(a) 0) (right (leaf 71) (leaf 3)) 71
     #:echo "" #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4))))
   (paint st 'horizontal 7 1 (multi '("abc|abc") 1 1))
   (def! st 'one (rebuild 'horizontal #:windows (config (leaf 71) 71)))
-  (paint st 'one 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7))
+  (paint st 'one 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
   (check-equal? (unbox calls) '()))
 
 (test-case "checked scripted Term loop fits, paints, writes once, then reads/handles; shrink and growth"
@@ -364,9 +380,9 @@
       (lambda () (record 'read) (begin0 (car (unbox keys)) (set-box! keys (cdr (unbox keys)))))
       (lambda () (record 'size) (apply values (car (unbox sizes))))))
   (define expected
-    (list (multi '("abc|ijk" "ghi|   ") 3 5 3 "P: xy")
-          (single '("a") 1 1 2 "P" 2 1)
-          (multi '("abc|ijk" "ghi|   ") 3 4 3 "P: xy")))
+    (list (multi '("abc|ijk" "unt|unt") 3 5 3 "P: xy")
+          (single '("a") 1 1 2 "P" 2 1 #:name "untitled" #:width 1)
+          (multi '("abc|ijk" "unt|unt") 3 4 3 "P: xy")))
   (for ([frame expected] [size '((7 3) (1 2) (7 3))])
     (define before (ev st 's))
     (def! st 'columns '(term columns))
@@ -398,7 +414,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))

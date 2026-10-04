@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/runtime-path rackunit
+(require racket/string racket/list racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/host.rkt" "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type? type-of type->datum)
          "../../host/racket/fs.rkt")
@@ -433,11 +433,25 @@
   (same st '((active buffers) after) '(List of b c))
   (check-equal? (unbox calls) '()))
 
-(define (frame body row col [rows #f] [label ""])
-  (string-append "\u001b[?25l\u001b[2J\u001b[H" body
-    (format "\u001b[~a;~aH\u001b[?25h" row col)
-    (if rows (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-                     rows label row col) "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column [rows #f] [label ""] #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "selection frames destination stored origins, safe clipping, padding and one row"
   (define-values (st calls disk) (state))
@@ -456,26 +470,26 @@
     (def! st 'selected '(base switch-buffer))
     (define original (ev st 'selected))
     (same-session st 'selected (reset 'base (zipper '(a b c) 1)))
-    (check-equal? (ev st '(selected frame 4 4)) (frame "2 XY\r\nst\r\n" 1 4 4 "/b l"))
-    (check-equal? (ev st '(selected frame 4 1)) (frame "2 XY" 1 4))
+    (check-equal? (ev st '(selected frame 4 4)) (frame "2 XY\r\nst\r\n" 1 4 4 "/b l" #:name "/b\u001blong" #:width 4))
+    (check-equal? (ev st '(selected frame 4 1)) (frame "2 XY" 1 4 #:name "untitled" #:width 4))
     (check-equal? (ev st 'selected) original)
     (def! st 'fitted '(selected ensure-visible 2 3))
     (define fitted-editor
       '(AloemacsEditor new ((b editor) text) ((b editor) point) #f 1 4
-                          ((b editor) history) ((b editor) mark) 2))
+                          ((b editor) history) ((b editor) mark) 1))
     (same-session st 'fitted (with-editor 'selected fitted-editor #:columns 2 #:rows 3))
-    (check-equal? (ev st '(fitted frame 2 3)) (frame "XY\r\n" 1 2 3 "/b"))
+    (check-equal? (ev st '(fitted frame 2 3)) (frame "XY\r\n" 1 2 3 "/b" #:name "/b\u001blong" #:width 2))
     (same-session st '(selected ensure-visible 2 1)
       (with-editor 'selected
         '(AloemacsEditor new ((b editor) text) ((b editor) point) #f 1 4
                             ((b editor) history) ((b editor) mark) 1) #:columns 2 #:rows 1))
     (def! st 'untitled '(selected switch-buffer))
-    (check-equal? (ev st '(untitled frame 4 3)) (frame "\r\n" 1 1 3 "unti"))
-    (check-equal? (ev st '(untitled frame 4 1)) (frame "" 1 1))
+    (check-equal? (ev st '(untitled frame 4 3)) (frame "\r\n" 1 1 3 "unti" #:name "untitled" #:width 4))
+    (check-equal? (ev st '(untitled frame 4 1)) (frame "" 1 1 #:name "untitled" #:width 4))
     (same-session st '(selected kill-buffer) (reset 'selected (zipper '(a c) 1)))
-    (check-equal? (ev st '((selected kill-buffer) frame 4 3)) (frame "\r\n" 1 1 3 "unti"))
+    (check-equal? (ev st '((selected kill-buffer) frame 4 3)) (frame "\r\n" 1 1 3 "unti" #:name "untitled" #:width 4))
     (def! st 'added '(selected add-buffer "a\u001bb" (Path new "new\u001bname")))
-    (check-equal? (ev st '(added frame 4 3)) (frame "a b\r\n" 1 1 3 "new ")))
+    (check-equal? (ev st '(added frame 4 3)) (frame "a b\r\n" 1 1 3 "new " #:name "new\u001bname" #:width 4)))
   (check-equal? (unbox calls) '()))
 
 (test-case "test-only maps follow pending consumption and search precedence"

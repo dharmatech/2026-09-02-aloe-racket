@@ -563,7 +563,7 @@
   (define-values (st calls) (state))
   (fixture! st)
   (for ([size '((1 2) (2 1) (12 4) (80 24))]
-        [row '(2 2 2 2)] [col '(4 3 3 3)] [text-rows '(1 1 3 5)])
+        [row '(2 2 2 2)] [col '(4 3 3 3)] [text-rows '(1 1 2 4)])
     (define ed (editor #:row row #:left col #:rows text-rows))
     (same-session st `(source ensure-visible ,@size)
       (rebuild 'source #:buffers (replacement 'source ed)
@@ -572,7 +572,7 @@
     (same-session st `(fitted ensure-visible ,@size) (rebuild 'fitted)))
   (def! st 'small '(source ensure-visible 1 2))
   (same-session st '(small ensure-visible 12 4)
-    (rebuild 'small #:buffers (replacement 'small (editor #:left 4 #:rows 3))
+    (rebuild 'small #:buffers (replacement 'small (editor #:left 4 #:rows 2))
       #:windows (config (selected-views views 55 9 2 4) 55 12 4)))
   (for ([size '((0 0) (1 2))])
     (def! st 's (session (zipper '(a b c) 1) (config views 55 (car size) (cadr size))))
@@ -586,8 +586,8 @@
   (def! st 'one (rebuild 'source #:windows single))
   (define snapshot (ev st 'one))
   (check-equal? (ev st '(one frame 8 3))
-    (string-append "\e[?25l\e[2J\e[Hrd-long\r\nrth\e[1;2H\e[?25h"
-                   "\e[?25l\e[3;1Hdraft: i\e[3;8H\e[?25h"))
+    (string-append "\e[?25l\e[2J\e[Hrd-long\e[1;2H\e[?25h"
+                   "\e[?25l\e[2;1H/cwd/b.t\e[3;1Hdraft: i\e[3;8H\e[?25h"))
   (check-equal? (ev st 'one) snapshot)
   (assert-effects calls '()))
 
@@ -597,7 +597,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry

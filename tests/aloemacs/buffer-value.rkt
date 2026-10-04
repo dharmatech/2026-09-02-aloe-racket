@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list
+(require racket/string racket/list
          racket/runtime-path
          rackunit
          "../../aloe/driver.rkt"
@@ -149,7 +149,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (class name) (findf (lambda (d) (equal? (cadr d) name)) classes))
@@ -338,7 +338,7 @@
       (rebuild 'source #:editor `(old-editor ,@operation))))
   (for ([rows '(1 2 5)])
     (same-session st `(source ensure-visible 3 ,rows)
-      (rebuild 'source #:columns 3 #:rows rows #:editor `(old-editor ensure-visible 3 ,(if (>= rows 2) (sub1 rows) rows)))))
+      (rebuild 'source #:columns 3 #:rows rows #:editor `(old-editor ensure-visible 3 ,(if (>= rows 3) (- rows 2) 1)))))
   (check-equal? (ev st 'source) original)
   (check-equal? (unbox calls) '()))
 
@@ -415,11 +415,25 @@
   (check-equal? (length (writes failures)) 1)
   (check-equal? (ev failing 'source) before))
 
-(define (frame body row column [rows #f] [label ""])
-  (string-append "\u001b[?25l\u001b[2J\u001b[H" body
-    (format "\u001b[~a;~aH\u001b[?25h" row column)
-    (if rows (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-                     rows label row column) "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column [rows #f] [label ""] #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "prefix, save echoes and complete ANSI frames survive singleton fitting"
   (define-values (st calls) (state))
@@ -428,9 +442,9 @@
   (def! st 'armed '(base handle-key "ctrl-x"))
   (define original (ev st 'armed))
   (def! st 'fitted '(armed ensure-visible 3 3))
-  (same-session st 'fitted (rebuild 'armed #:columns 3 #:rows 3 #:editor '((armed editor) ensure-visible 3 2)))
-  (check-equal? (ev st '(fitted frame 3 3)) (frame "a b\r\nsec" 1 2 3 "/cw"))
-  (check-equal? (ev st '(fitted frame 3 1)) (frame "a b" 1 2))
+  (same-session st 'fitted (rebuild 'armed #:columns 3 #:rows 3 #:editor '((armed editor) ensure-visible 3 1)))
+  (check-equal? (ev st '(fitted frame 3 3)) (frame "a b\r\nsec" 1 2 3 "/cw" #:name "/cwd/a.txt" #:width 3))
+  (check-equal? (ev st '(fitted frame 3 1)) (frame "a b" 1 2 #:name "/cwd/a.txt" #:width 3))
   (same st '(fitted pending) '(armed pending))
   (check-equal? (ev st 'armed) original)
   (check-equal? (unbox calls) '())
@@ -448,8 +462,8 @@
     (check-equal? (ev st '(plain frame 20 3))
       (frame "a b\r\nsecond" 1 2 3
              (string-append echo ": " (if (equal? path no-path) "untitled"
-                                            (if (equal? echo "saved") "/cwd/a.txt" "/cwd/dir")))))
-    (check-equal? (ev st '(prefixed frame 3 1)) (frame "a b" 1 2)))
+                                            (if (equal? echo "saved") "/cwd/a.txt" "/cwd/dir"))) #:name (if (equal? path no-path) "untitled" (if (equal? echo "saved") "/cwd/a.txt" "/cwd/dir")) #:width 20))
+    (check-equal? (ev st '(prefixed frame 3 1)) (frame "a b" 1 2 #:name (if (equal? path no-path) "untitled" (if (equal? echo "saved") "/cwd/a.txt" "/cwd/dir")) #:width 20)))
   (def! st 'miss '(armed handle-key "x"))
   (same-session st 'miss (rebuild 'armed #:pending no-pending #:echo ""))
   (same-session st '(miss handle-key "x")

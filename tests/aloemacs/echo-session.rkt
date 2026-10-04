@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list
+(require racket/string racket/list
          racket/runtime-path
          rackunit
          "../../aloe/driver.rkt"
@@ -94,11 +94,25 @@
    "\u001b[?25l\u001b[2J\u001b[H" body
    (format "\u001b[~a;~aH\u001b[?25h" row column)))
 
-(define (session-frame body row column terminal-row label)
-  (string-append
-   (editor-frame body row column)
-   (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-           terminal-row label row column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (session-frame body row column rows label #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "fourth field is checked and main starts idle"
   (define state (make-state #t))
@@ -109,7 +123,7 @@
   (check-equal? (type state '(aloemacs-editor echo)) 'String)
   (check-equal? (value state '(aloemacs-editor echo)) "")
   (check-equal? (value state '(aloemacs-editor frame 8 4))
-                (session-frame "\r\n\r\n" 1 1 4 "untitled"))
+                (session-frame "\r\n\r\n" 1 1 4 "untitled" #:name "untitled" #:width 8))
   (check-exn exn:fail:aloe-type?
              (lambda () (value state (drop-right untitled 1))))
   (check-exn exn:fail:aloe-type?
@@ -158,13 +172,13 @@
   (define! state 'untitled (session "" #f ""))
   (define! state 'bound (session "zero\none\ntwo\nthree" "/cwd/a.txt" ""))
   (check-equal? (value state '(untitled frame 8 4))
-                (session-frame "\r\n\r\n" 1 1 4 "untitled"))
+                (session-frame "\r\n\r\n" 1 1 4 "untitled" #:name "untitled" #:width 8))
   (check-equal? (value state '(bound frame 8 4))
-                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.t"))
+                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8))
   (check-equal? (value state '(bound frame 20 4))
-                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.txt"))
+                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
   (check-equal? (value state '(untitled frame 4 2))
-                (session-frame "" 1 1 2 "unti"))
+                (session-frame "" 1 1 2 "unti" #:name "untitled" #:width 4))
   (define! state 'prior (session "one\ntwo" #f "prior"))
   (define! state 'single '(prior ensure-visible 8 1))
   (check-equal? (value state '(single frame 8 1))
@@ -173,20 +187,20 @@
   (define! state 'grown '(single ensure-visible 8 4))
   (check-equal? (value state '(grown echo)) "prior"))
 
-(test-case "three text rows scroll at source line three and hold on Up"
+(test-case "two text rows scroll at source line two and hold on Up"
   (define state (make-state))
   (define! state 'start
     (session "zero\none\ntwo\nthree\nfour" "/cwd/a.txt" ""))
   (define! state 'one '((start handle-key "down") ensure-visible 8 4))
   (define! state 'two '((one handle-key "down") ensure-visible 8 4))
   (define! state 'three '((two handle-key "down") ensure-visible 8 4))
-  (check-equal? (value state '((three editor) scroll-row)) 1)
+  (check-equal? (value state '((three editor) scroll-row)) 2)
   (check-equal? (value state '(three frame 8 4))
-                (session-frame "one\r\ntwo\r\nthree" 3 1 4 "/cwd/a.t"))
+                (session-frame "two\r\nthree" 2 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8))
   (define! state 'up '((three handle-key "up") ensure-visible 8 4))
-  (check-equal? (value state '((up editor) scroll-row)) 1)
+  (check-equal? (value state '((up editor) scroll-row)) 2)
   (check-equal? (value state '(up frame 8 4))
-                (session-frame "one\r\ntwo\r\nthree" 2 1 4 "/cwd/a.t")))
+                (session-frame "two\r\nthree" 1 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)))
 
 (test-case "key saves report success or failure without changing session payload"
   (define state (make-state))
@@ -200,21 +214,21 @@
   (check-equal? (value state '(fs-host read "/cwd/a.txt")) "changed")
   (check-equal? (value state '(success frame 20 4))
                 (session-frame "changed\r\n\r\n" 1 2 4
-                               "saved: /cwd/a.txt"))
+                               "saved: /cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
   (define! state 'untitled (session "draft" #f ""))
   (define! state 'untitled-failed '(untitled handle-key "save"))
   (same-payload state 'untitled-failed 'untitled)
   (check-equal? (value state '(untitled-failed echo)) "failed")
   (check-equal? (value state '(untitled-failed frame 20 4))
                 (session-frame "draft\r\n\r\n" 1 1 4
-                               "failed: untitled"))
+                               "failed: untitled" #:name "untitled" #:width 20))
   (define! state 'ineligible (session "draft" "/cwd/dir" ""))
   (define! state 'ineligible-failed '(ineligible handle-key "save"))
   (same-payload state 'ineligible-failed 'ineligible)
   (check-equal? (value state '(ineligible-failed echo)) "failed")
   (check-equal? (value state '(ineligible-failed frame 20 4))
                 (session-frame "draft\r\n\r\n" 1 1 4
-                               "failed: /cwd/dir"))
+                               "failed: /cwd/dir" #:name "/cwd/dir" #:width 20))
   (check-equal? (value state '(fs-host kind "/cwd/dir")) "directory"))
 
 (test-case "later saves replace outcomes and frames preserve them"
@@ -224,7 +238,7 @@
   (same-payload state 'now-saved 'was-failed)
   (check-equal? (value state '(now-saved echo)) "saved")
   (define expected
-    (session-frame "changed\r\n\r\n" 1 1 4 "saved: /cwd/a.txt"))
+    (session-frame "changed\r\n\r\n" 1 1 4 "saved: /cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
   (check-equal? (value state '(now-saved frame 20 4)) expected)
   (check-equal? (value state '(now-saved frame 20 4)) expected)
   (define! state 'was-saved (session "draft" "/cwd/dir" "saved"))
@@ -232,10 +246,10 @@
   (same-payload state 'now-failed 'was-saved)
   (check-equal? (value state '(now-failed echo)) "failed")
   (check-equal? (value state '(now-failed frame 8 4))
-                (session-frame "draft\r\n\r\n" 1 1 4 "failed: "))
+                (session-frame "draft\r\n\r\n" 1 1 4 "failed: " #:name "/cwd/dir" #:width 8))
   (check-equal? (value state '(now-failed frame 20 4))
                 (session-frame "draft\r\n\r\n" 1 1 4
-                               "failed: /cwd/dir")))
+                               "failed: /cwd/dir" #:name "/cwd/dir" #:width 20)))
 
 (test-case "non-save active keys clear outcomes after editor handling"
   (define state (make-state))
@@ -272,12 +286,12 @@
                 (value state '((small editor) frame 8 1)))
   (define! state 'grown '(small ensure-visible 8 4))
   (check-equal? (value state '(grown frame 8 4))
-                (session-frame "one\r\ntwo\r\n" 1 1 4 "saved: u"))
+                (session-frame "one\r\ntwo\r\n" 1 1 4 "saved: u" #:name "untitled" #:width 8))
   (check-equal? (value state '(grown frame 8 4))
-                (session-frame "one\r\ntwo\r\n" 1 1 4 "saved: u"))
+                (session-frame "one\r\ntwo\r\n" 1 1 4 "saved: u" #:name "untitled" #:width 8))
   (define! state 'failed (session "" #f "failed"))
   (check-equal? (value state '(failed frame 8 4))
-                (session-frame "\r\n\r\n" 1 1 4 "failed: ")))
+                (session-frame "\r\n\r\n" 1 1 4 "failed: " #:name "untitled" #:width 8)))
 
 (test-case "direct save keeps Option and any existing echo"
   (define state (make-state))

@@ -129,17 +129,32 @@
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
     (format "\u001b[~a;~aH\u001b[?25h" row column)))
-(define (frame body text-row text-column rows shown cursor-row cursor-column)
-  (string-append (editor-frame body text-row text-column)
-    (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-      rows shown cursor-row cursor-column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 
 (test-case "exact fourteen fields, helper signatures, command and production map inventories"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (define (declaration name) (findf (lambda (d) (equal? (cadr d) name)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (declaration '(AloemacsSession H)))
@@ -359,7 +374,7 @@
   (check-equal? (effects calls 'write) '((write "/cwd/b.txt" "first\nsecond\nthird-long\nfourth\nfifth")))
   (set-box! calls '())
   (for ([i (in-range 2)])
-    (check-equal? (ev st '(draft frame 12 3)) (frame "rd-long\r\nrth" 1 2 3 "Find file: d" 3 12)))
+    (check-equal? (ev st '(draft frame 12 3)) (frame "rd-long\r\nrth" 1 2 3 "Find file: d" 3 12 #:name "/cwd/b.txt" #:width 12)))
   (check-equal? (unbox calls) '())
   (check-equal? (ev st 'draft) before)
   ;; Completion uses the current buffer at Return, after a direct switch.
@@ -525,22 +540,22 @@
   (def! st 's (session (zipper (list (buffer "ab\nsecond")) 0)))
   (def! st 'active '((s handle-key "ctrl-x") handle-key "find"))
   (same st '(active waiting-command) waiting)
-  (check-equal? (ev st '(active frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Find file: " 3 12))
+  (check-equal? (ev st '(active frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Find file: " 3 12 #:name "untitled" #:width 20))
   (def! st 'typed (rebuild 'active #:prompt (prompt "a.txt")))
-  (check-equal? (ev st '(typed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Find file: a.txt" 3 17))
+  (check-equal? (ev st '(typed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Find file: a.txt" 3 17 #:name "untitled" #:width 20))
   (def! st 'done '(typed handle-key "return"))
-  (check-equal? (ev st '(done frame 20 3)) (frame "λ \r\nb" 1 1 3 "/cwd/a.txt" 1 1))
+  (check-equal? (ev st '(done frame 20 3)) (frame "λ \r\nb" 1 1 3 "/cwd/a.txt" 1 1 #:name "/cwd/a.txt" #:width 20))
   (def! st 'refused (rebuild 'active #:prompt (prompt "dir")))
   (def! st 'failed '(refused handle-key "return"))
-  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1))
+  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1 #:name "untitled" #:width 20))
   (def! st 'cancel '(typed handle-key "escape"))
-  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "untitled" 1 1))
+  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "untitled" 1 1 #:name "untitled" #:width 20))
   (define unsafe "\t\r\u001b\u0000\u007f λabcdef")
   (def! st 'safe (rebuild 'active #:prompt (prompt unsafe (string-length unsafe) "L\t\u001b: ")))
   (define before (ev st 'safe))
   (set-box! calls '())
   (for ([i (in-range 2)])
-    (check-equal? (ev st '(safe frame 4 3)) (frame "ab\r\nseco" 1 1 3 "L  :" 3 4)))
+    (check-equal? (ev st '(safe frame 4 3)) (frame "ab\r\nseco" 1 1 3 "L  :" 3 4 #:name "untitled" #:width 4)))
   (check-equal? (ev st 'safe) before)
   (check-equal? (unbox calls) '())
   (def! st 'done '(safe submit-prompt))
@@ -593,12 +608,13 @@
   (check-equal? (reverse (unbox events))
     (append-map (lambda (key painted) (list 'columns 'rows (list 'write painted) (list 'key key))) keys expected))
   (values calls disk (reverse (unbox missing-at-key))))
-(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3])
+(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
+                      #:name [name "untitled"])
   (define shown (substring label 0 (min columns (string-length label))))
   (if (= rows 1)
       (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown
-        (if prompt-column rows 1) (or prompt-column column))))
+        (if prompt-column rows 1) (or prompt-column column) #:name name #:width columns)))
 
 (test-case "scripted runner prefix, redraw, typing, completion, edit/save, cancel and quit"
   (define keys '("ctrl-x" "unknown" "ctrl-x" "find" "n" "e" "w" "left" "right" "return"
@@ -609,11 +625,11 @@
       (for/list ([text '("" "n" "ne" "new" "new" "new")]
                  [col '(12 13 14 15 14 15)])
         (runner-frame "" 1 (string-append "Find file: " text) col))
-      (list (runner-frame "" 1 "/cwd/new") (runner-frame "x" 2 "/cwd/new")
-            (runner-frame "x" 2 "saved: /cwd/new") (runner-frame "x" 2 "/cwd/new")
-            (runner-frame "x" 2 "saved: /cwd/new") (runner-frame "x" 2 "/cwd/new")
-            (runner-frame "x" 2 "Find file: " 12) (runner-frame "x" 2 "Find file: z" 13)
-            (runner-frame "x" 2 "/cwd/new"))))
+      (list (runner-frame "" 1 "/cwd/new" #:name "/cwd/new") (runner-frame "x" 2 "/cwd/new" #:name "/cwd/new")
+            (runner-frame "x" 2 "saved: /cwd/new" #:name "/cwd/new") (runner-frame "x" 2 "/cwd/new" #:name "/cwd/new")
+            (runner-frame "x" 2 "saved: /cwd/new" #:name "/cwd/new") (runner-frame "x" 2 "/cwd/new" #:name "/cwd/new")
+            (runner-frame "x" 2 "Find file: " 12 #:name "/cwd/new") (runner-frame "x" 2 "Find file: z" 13 #:name "/cwd/new")
+            (runner-frame "x" 2 "/cwd/new" #:name "/cwd/new"))))
   (define-values (calls disk missing) (scripted-run keys 20 3 frames))
   (check-equal? (all-calls calls)
     '((resolve "new") (kind "/cwd/new") (resolve "/cwd/new")
@@ -633,10 +649,10 @@
       (append (make-list 2 (runner-frame "" 1 "untitled" #f 2 rows))
         (for/list ([text '("" "a" "a." "a.t" "a.tx" "a.txt")])
           (runner-frame "" 1 (string-append "Find file: " text) (if (= rows 1) #f 2) 2 rows))
-        (list (runner-frame "ab" 1 "/cwd/a.txt" #f 2 rows)
-              (runner-frame "ab" 2 "/cwd/a.txt" #f 2 rows)
-              (runner-frame "bc" 2 "/cwd/a.txt" #f 2 rows)
-              (runner-frame "cd" 2 "/cwd/a.txt" #f 2 rows))))
+        (list (runner-frame "ab" 1 "/cwd/a.txt" #f 2 rows #:name "/cwd/a.txt")
+              (runner-frame "ab" 2 "/cwd/a.txt" #f 2 rows #:name "/cwd/a.txt")
+              (runner-frame "bc" 2 "/cwd/a.txt" #f 2 rows #:name "/cwd/a.txt")
+              (runner-frame "cd" 2 "/cwd/a.txt" #f 2 rows #:name "/cwd/a.txt"))))
     (define-values (calls disk missing) (scripted-run keys 2 rows frames #:contents "abcd"))
     (check-equal? (all-calls calls) (read-calls "a.txt" "/cwd/a.txt"))
     (check-equal? (effects calls 'write) '())))

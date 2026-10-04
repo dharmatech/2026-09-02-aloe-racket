@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list
+(require racket/string racket/list
          rackunit
          "../../aloe/driver.rkt"
          (only-in "../../aloe/env.rkt" env-bound?)
@@ -114,12 +114,25 @@
     (check-equal? (unbox count) 3)))
 
 ;; Expected bytes are built independently of the Aloe frame implementation.
-(define (frame body row column rows label)
-  (string-append
-   "\u001b[?25l\u001b[2J\u001b[H" body
-   (format "\u001b[~a;~aH\u001b[?25h" row column)
-   (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-           rows label row column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows label #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (struct scripted-term (receiver remaining size-calls events gaps) #:transparent)
 
@@ -187,7 +200,7 @@
     (lambda (row key)
       (list '(columns 20) '(rows 8)
             (list 'write (frame "a\r\nb\r\nc\r\nd\r\ne\r\nf\r\ng"
-                                row 1 8 "/cwd/a.txt"))
+                                row 1 8 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
             'flush (list 'key key)))
     '(1 2 3 4 5 6) keys))
   (define gaps ((scripted-term-gaps fixture)))

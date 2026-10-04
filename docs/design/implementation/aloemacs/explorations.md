@@ -14,9 +14,10 @@ at [`buffer/`](buffer/). The minibuffer series is implemented and
 accepted (aloemacs-minibuffer 000–001) at [`minibuffer/`](minibuffer/).
 The prompt-command series is implemented and accepted
 (aloemacs-prompt-commands 000–002) at
-[`prompt-commands/`](prompt-commands/). The windows charter is
-issued at [`windows/`](windows/). Its accepted product behavior is closed;
-the revised checkpoint partition is drafted for review.
+[`prompt-commands/`](prompt-commands/). The windows series is
+implemented (aloemacs-windows 000–006) at [`windows/`](windows/).
+Final human review of that series remains. The mode-line charter
+is issued at [`mode-line/`](mode-line/).
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -34,12 +35,13 @@ Process: [`docs/workflow.md`](../../../workflow.md). Map:
 
 ## Already built
 
-One window: visit a path, edit, scroll, save, undo, quit, echo
-row, incremental search, mark, kill, and yank. The session holds
-a zipper of buffers. Switch and kill-buffer are sends, with no
-new key. Text zipper, stored viewport, snapshot undo, linear
-load/save, safe control display. Idiom cleanups on Text and Int.
-Scale charter withdrawn.
+Visit a path, edit, scroll, save, undo, quit, echo row,
+incremental search, mark, kill, and yank. The session holds a
+zipper of buffers and a tree of windows. A window is a view of a
+buffer: split below, split right, other-window, delete, and lock.
+Switch and kill-buffer are sends. Text zipper, stored viewport,
+snapshot undo, linear load/save, safe control display. Idiom
+cleanups on Text and Int. Scale charter withdrawn.
 
 | Band | What | State |
 |---|---|---|
@@ -120,8 +122,8 @@ view of a buffer, not a second copy of the editor class.
 
 | # | Exploration | Note |
 |---|---|---|
-| 9 | **Windows** (split right, split below, delete, other-window) | **Revised partition drafted for review** at [`windows/`](windows/). Accepted behavior stays closed. Replacement 000 is buffer identity; state, layout/rendering/fit, both splits, delete/other-window, then lock follow. State may be separated further without a maximum count or added behavior. A window is a view of a buffer. The mode line stays item 10 |
-| 10 | **Mode line** | Optional. Echo can stay the message row; a per-window line can show buffer name and mode once modes exist |
+| 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line stays item 10 |
+| 10 | **Mode line** | **Charter issued** at [`mode-line/`](mode-line/). A per-window row shows the buffer name. The echo row stays the message row. A mode name waits until language modes exist |
 
 ---
 
@@ -195,14 +197,17 @@ Leave these until a slice is blocked by them.
    **Find-file / save-as / named switch-buffer** — implemented and
    accepted at [`prompt-commands/`](prompt-commands/),
    aloemacs-prompt-commands 000–002.
-5. **Windows + lock** — accepted behavior and revised partition drafted
-   for review at [`windows/`](windows/). Replacement 000 is buffer
-   identity; lock is the final part. The spec carries the ordered
-   partition and permits further window-state separation.
-6. **Faces**, then highlighting, then modes as libraries.
-7. Folding, then outline/notes, then a directory browser.
-8. LSP, then live eval, each with its own charter.
+5. **Windows + lock** — implemented at [`windows/`](windows/),
+   aloemacs-windows 000–006. A window is a view of a buffer.
+   Final human review remains.
+6. **Mode line** — charter issued at [`mode-line/`](mode-line/).
+   The designer writes `spec.md` and stops. A per-window row
+   shows the buffer name. The echo row stays the message row.
+7. **Faces**, then highlighting, then modes as libraries.
+8. Folding, then outline/notes, then a directory browser.
+9. LSP, then live eval, each with its own charter.
 
 The motion pack is implemented (aloemacs-motion 000). Band 2 is
-implemented. Windows awaits revised-partition review. Modes, org, dired,
-and `M-x` stay later.
+implemented. Windows is implemented (aloemacs-windows 000–006);
+final human review remains. The mode-line charter is issued at
+[`mode-line/`](mode-line/). Modes, org, dired, and `M-x` stay later.

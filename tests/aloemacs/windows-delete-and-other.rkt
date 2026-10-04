@@ -105,13 +105,26 @@
   (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
-(define (single lines row col [echo-row 6] [echo "untitled"]
-                [final-row row] [final-col col])
-  (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
-                 (cursor row col) "\e[?25h"
-                 (if echo-row
-                     (string-append "\e[?25l" (cursor echo-row 1) echo
-                                    (cursor final-row final-col) "\e[?25h") "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
+                #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if echo-row (text-body (string-join lines "\r\n") echo-row) (string-join lines "\r\n"))
+    (format "\e[~a;~aH\e[?25h" row col)
+    (if echo-row
+        (string-append "\e[?25l"
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (paint st s columns rows expected)
   (define before (for/list ([expr (list s `(,s buffers) `(,s windows) `((,s editor) text))])
                    (ev st expr)))
@@ -144,7 +157,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsCommand))
@@ -261,13 +274,13 @@
   (def! st 'fitted '(entered ensure-visible 9 6))
   (define fit-tree (right (below (leaf 70) (leaf 2 41 2 2 #t)) (leaf 40 41 0 1)))
   (same-session st 'fitted (rebuild 'entered
-    #:buffers (zipper (list (buffer 41 (editor text 2 5 2 2 2))))
+    #:buffers (zipper (list (buffer 41 (editor text 2 5 2 2 1))))
     #:windows (config fit-tree 2)))
   (paint st 'fitted 9 6
-    (multi '("abcd|bcde" "ghij|hijk" "----+nopq" "opqr|tuvw" "uvwx|    ") 4 4 6 "saved: un"))
+    (multi '("abcd|bcde" "unti|hijk" "----+nopq" "opqr|tuvw" "unti|unti") 4 4 6 "saved: un"))
   (def! st 'prompted (rebuild 'fitted #:prompt active-prompt))
   (paint st 'prompted 9 6
-    (multi '("abcd|bcde" "ghij|hijk" "----+nopq" "opqr|tuvw" "uvwx|    ") 6 5 6 "P x y"))
+    (multi '("abcd|bcde" "unti|hijk" "----+nopq" "opqr|tuvw" "unti|unti") 6 5 6 "P x y"))
   (same-session st '(fitted ensure-visible 9 6) 'fitted)
   (check-equal? (unbox calls) '()))
 
@@ -289,7 +302,7 @@
     (zipper (list (buffer 41 (editor edited-text 0 2 0 0 5 #:history history #:mark no-mark))))
     #:windows (config t 7)))
   (def! st 'fit '(back ensure-visible 9 6))
-  (paint st 'fit 9 6 (multi '("aXbc|ef  " "def |    " "    |    " "    |    " "    |    ") 1 3))
+  (paint st 'fit 9 6 (multi '("aXbc|ef  " "def |    " "    |    " "    |    " "unti|unti") 1 3))
   (same-session st '(back undo) (rebuild 'back #:buffers
     (zipper (list (buffer 41 (editor text 0 1 1 1 5 #:history '(List empty) #:mark no-mark))))
     #:windows (config (right (leaf 7 41 1 1) (leaf 3 41 1 1)) 7)))
@@ -448,20 +461,20 @@
     (define below? (equal? split-key "2"))
     (define keys (list "ctrl-x" split-key "ctrl-x" "o" "x" "ctrl-x" "0" "escape"))
     (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (2 3) (9 6) (9 6)))
-    (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx"))
+    (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9))
     (define split-rows (if below?
-      '("abc      " "def      " "---------" "abc      " "def      ")
-      '("abc |abc " "def |def " "    |    " "    |    " "    |    ")))
+      '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
+      '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")))
     (define edited-rows (if below?
-      '("xabc     " "def      " "---------" "xabc     " "def      ")
-      '("xabc|xabc" "def |def " "    |    " "    |    " "    |    ")))
+      '("xabc     " "/cwd/a.tx" "---------" "xabc     " "/cwd/a.tx")
+      '("xabc|xabc" "def |def " "    |    " "    |    " "/cwd|/cwd")))
     (define frames
       (list start start (multi split-rows 1 1 6 "/cwd/a.tx")
         (multi split-rows 1 1 6 "/cwd/a.tx")
         (multi split-rows (if below? 4 1) (if below? 1 6) 6 "/cwd/a.tx")
-        (single '("xa" "de") 1 2 3 "/c")
+        (single '("xa" "de") 1 2 3 "/c" #:name "/cwd/a.txt" #:width 2)
         (multi edited-rows (if below? 4 1) (if below? 2 7) 6 "/cwd/a.tx")
-        (single '("xabc" "def" "" "" "") 1 2 6 "/cwd/a.tx")))
+        (single '("xabc" "def" "" "" "") 1 2 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9)))
     (define-values (host calls disk) (counted-fs))
     (define iteration 0)
     (define events (box '()))
@@ -542,16 +555,16 @@
   (simple! st)
   (def! st 's (session (zipper '(a)) (right (leaf 7) (leaf 2 41 1 1)) 7
     #:columns 2 #:rows 3 #:echo ""))
-  (paint st 's 2 3 (single '("ab" "de") 1 1 3 "un"))
+  (paint st 's 2 3 (single '("ab" "de") 1 1 3 "un" #:name "untitled" #:width 2))
   (def! st 'deleted '(s delete-window))
   (same-session st 'deleted (rebuild 's #:buffers
     (zipper (list (buffer 41 (editor ab-text 0 0 1 1))))
     #:windows (config (leaf 2 41 1 1) 2 2 3)))
   (def! st 'fit '(deleted ensure-visible 2 3))
   (same-session st 'fit (rebuild 'deleted #:buffers
-    (zipper (list (buffer 41 (editor ab-text 0 0 0 0 2))))
+    (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
     #:windows (config (leaf 2) 2 2 3)))
-  (paint st 'fit 2 3 (single '("ab" "de") 1 1 3 "un"))
+  (paint st 'fit 2 3 (single '("ab" "de") 1 1 3 "un" #:name "untitled" #:width 2))
   (check-equal? (unbox calls) '()))
 
 (test-case "all tokens: same-ID entry, different-ID resets, active rows and refusal preservation"
@@ -579,8 +592,8 @@
                        [(equal? kept-token "failed") "failed: u"] [else "untitled"]))
     (if (eq? (car op) 'delete-window)
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
-                                 (if prompt? 6 1) (if prompt? 5 1)))
-        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "    |    ")
+                                 (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9))
+        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "unti|unti")
                                  (if prompt? 6 1) (if prompt? 5 6) 6 shown))))
   (for* ([token '("" "saved" "failed")] [mode '(neither prompt search both)]
          [t (list (leaf 7) (right (leaf 7 41 0 0 #t) (leaf 2))
@@ -596,8 +609,8 @@
     (define shown (cond [prompt? "P x y"] [search? "failing: "] [else "failed: u"]))
     (if (equal? t (leaf 7))
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
-                                 (if prompt? 6 1) (if prompt? 5 1)))
-        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "    |    ")
+                                 (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9))
+        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "unti|unti")
                                  (if prompt? 6 1) (if prompt? 5 1) 6 shown))))
   (check-equal? (unbox calls) '()))
 

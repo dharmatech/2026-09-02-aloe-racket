@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list
+(require racket/string racket/list
          racket/runtime-path
          rackunit
          "../../aloe/driver.rkt"
@@ -132,12 +132,25 @@
   (def! st 'seed (fixture path echo))
   (def! st 'base '(seed insert "!")))
 
-(define (frame body row column rows label)
-  (string-append
-   "\u001b[?25l\u001b[2J\u001b[H" body
-   (format "\u001b[~a;~aH\u001b[?25h" row column)
-   (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-           rows label row column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows label #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "arming changes only pending and echo, without effects or history"
   (define-values (st calls) (state))
@@ -378,15 +391,15 @@
          0 0 0))))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
-                (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))
+                (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
   (def! st 'small '(armed ensure-visible 2 2))
-  (check-equal? (ev st '(small frame 2 2)) (frame " b" 1 2 2 "/c"))
+  (check-equal? (ev st '(small frame 2 2)) (frame " b" 1 2 2 "/c" #:name "/cwd/a.txt" #:width 2))
   (same st '(small pending) '(armed pending))
   (def! st 'saved '(small handle-key "save"))
-  (check-equal? (ev st '(saved frame 2 2)) (frame " b" 1 2 2 "sa"))
+  (check-equal? (ev st '(saved frame 2 2)) (frame " b" 1 2 2 "sa" #:name "/cwd/a.txt" #:width 2))
   (def! st 'cancel '(armed handle-key "return"))
   (check-equal? (ev st '(cancel frame 20 4))
-                (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))
+                (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
   (def! st 'one-row '(armed ensure-visible 2 1))
   (define expected "\u001b[?25l\u001b[2J\u001b[H b\u001b[1;2H\u001b[?25h")
   (check-equal? (ev st '(one-row frame 2 1)) expected)

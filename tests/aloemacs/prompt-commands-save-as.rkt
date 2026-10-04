@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/port racket/runtime-path rackunit
+(require racket/string racket/list racket/port racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/host.rkt" "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type? type-of type->datum)
          "../../host/racket/fs.rkt" "../../host/racket/aloemacs-run.rkt")
@@ -141,15 +141,31 @@
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
     (format "\u001b[~a;~aH\u001b[?25h" row column)))
-(define (frame body text-row text-column rows shown cursor-row cursor-column)
-  (string-append (editor-frame body text-row text-column)
-    (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-      rows shown cursor-row cursor-column)))
-(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3])
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
+(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
+                      #:name [name "untitled"])
   (define shown (substring label 0 (min columns (string-length label))))
   (if (= rows 1) (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown
-        (if prompt-column rows 1) (or prompt-column column))))
+        (if prompt-column rows 1) (or prompt-column column) #:name name #:width columns)))
 
 (test-case "SaveAs, pure helper signatures, unchanged shapes and exact production maps"
   (define ds (datums file-path))
@@ -296,7 +312,7 @@
       '(AloemacsEditor new (draft text) (draft point) #f 2 3
          (rich-editor history) (rich-editor mark) 1))))
   (for ([i (in-range 2)]) (check-equal? (ev st '(draft frame 12 3))
-    (frame "rd-long\r\nrth" 1 2 3 "Save as: abc" 3 12)))
+    (frame "rd-long\r\nrth" 1 2 3 "Save as: abc" 3 12 #:name "/cwd/b.txt" #:width 12)))
   (check-equal? (ev st 'draft) before)
   (check-equal? (unbox calls) '()))
 
@@ -511,19 +527,19 @@
   (define-values (st calls disk) (state))
   (def! st 'source (session (zipper (list (buffer "ab\nsecond")) 0)))
   (draft! st "a.txt")
-  (check-equal? (ev st '(draft frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Save as: a.txt" 3 15))
+  (check-equal? (ev st '(draft frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Save as: a.txt" 3 15 #:name "untitled" #:width 20))
   (def! st 'done '(draft submit-prompt))
-  (check-equal? (ev st '(done frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: /cwd/a.txt" 1 1))
+  (check-equal? (ev st '(done frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: /cwd/a.txt" 1 1 #:name "/cwd/a.txt" #:width 20))
   (def! st 'failed (rebuild 'draft #:prompt (prompt "dir")))
   (def! st 'failed '(failed submit-prompt))
-  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1))
+  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1 #:name "untitled" #:width 20))
   (def! st 'later '(done execute-command (AloemacsCommand SaveAs) "ignored"))
   (def! st 'cancel '(later handle-key "escape"))
-  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: /cwd/a.txt" 1 1))
+  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: /cwd/a.txt" 1 1 #:name "/cwd/a.txt" #:width 20))
   (define unsafe "\t\r\u001b\u0000\u007f λabcdef")
   (def! st 'safe (rebuild 'draft #:prompt (prompt unsafe)))
   (set-box! calls '())
-  (check-equal? (ev st '(safe frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Save as:    " 3 12))
+  (check-equal? (ev st '(safe frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Save as:    " 3 12 #:name "untitled" #:width 12))
   (check-equal? (unbox calls) '())
   (def! st 'safe-done '(safe submit-prompt))
   (same st '(safe-done last-submission) `(Option Some ,unsafe))
@@ -564,16 +580,16 @@
   (for ([rows '(3 1)])
     (define keys '("x" "ctrl-x" "kill" "n" "e" "w" "left" "right" "return"
                   "y" "save" "ctrl-x" "kill" "z" "escape" "escape"))
-    (define (paint text column label [prompt-column #f])
-      (runner-frame text column label prompt-column 20 rows))
+    (define (paint text column label [prompt-column #f] #:name [name "untitled"])
+      (runner-frame text column label prompt-column 20 rows #:name name))
     (define frames
       (append (list (paint "" 1 "untitled") (paint "x" 2 "untitled") (paint "x" 2 "untitled"))
         (for/list ([text '("" "n" "ne" "new" "new" "new")] [col '(10 11 12 13 12 13)])
           (paint "x" 2 (string-append "Save as: " text) col))
-        (list (paint "x" 2 "saved: /cwd/new") (paint "xy" 3 "/cwd/new")
-              (paint "xy" 3 "saved: /cwd/new") (paint "xy" 3 "/cwd/new")
-              (paint "xy" 3 "Save as: " 10) (paint "xy" 3 "Save as: z" 11)
-              (paint "xy" 3 "/cwd/new"))))
+        (list (paint "x" 2 "saved: /cwd/new" #:name "/cwd/new") (paint "xy" 3 "/cwd/new" #:name "/cwd/new")
+              (paint "xy" 3 "saved: /cwd/new" #:name "/cwd/new") (paint "xy" 3 "/cwd/new" #:name "/cwd/new")
+              (paint "xy" 3 "Save as: " 10 #:name "/cwd/new") (paint "xy" 3 "Save as: z" 11 #:name "/cwd/new")
+              (paint "xy" 3 "/cwd/new" #:name "/cwd/new"))))
     (define-values (calls disk kinds) (scripted-run keys 20 rows frames))
     (check-equal? (all-calls calls)
       (append (write-calls "new" "/cwd/new" "x" #:parent "/cwd")
@@ -585,13 +601,13 @@
 (test-case "scripted narrow runner fits before every frame through save-as without changing contents"
   (for ([rows '(3 1)])
     (define keys '("a" "b" "c" "d" "ctrl-x" "kill" "a" "." "t" "x" "t" "return" "escape"))
-    (define (paint text column label [prompt-column #f])
-      (runner-frame text column label prompt-column 2 rows))
+    (define (paint text column label [prompt-column #f] #:name [name "untitled"])
+      (runner-frame text column label prompt-column 2 rows #:name name))
     (define frames
       (append (list (paint "" 1 "untitled") (paint "a" 2 "untitled") (paint "b" 2 "untitled")
                     (paint "c" 2 "untitled") (paint "d" 2 "untitled") (paint "d" 2 "untitled"))
         (for/list ([text '("" "a" "a." "a.t" "a.tx" "a.txt")])
           (paint "d" 2 (string-append "Save as: " text) 2))
-        (list (paint "d" 2 "saved: /cwd/a.txt"))))
+        (list (paint "d" 2 "saved: /cwd/a.txt" #:name "/cwd/a.txt"))))
     (define-values (calls disk kinds) (scripted-run keys 2 rows frames))
     (check-equal? (all-calls calls) (write-calls "a.txt" "/cwd/a.txt" "abcd"))))

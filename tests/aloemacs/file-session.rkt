@@ -542,8 +542,8 @@
 
   (define expected-frame
     (string-append
-     (driver-eval! state '((source editor) frame 5 2))
-     "\u001b[?25l\u001b[3;1H/cwd/\u001b[2;2H\u001b[?25h"))
+     "\u001b[?25l\u001b[2J\u001b[Hab\u001b[2;2H\u001b[?25h"
+     "\u001b[?25l\u001b[2;1H/cwd/\u001b[3;1H/cwd/\u001b[2;2H\u001b[?25h"))
   (define source-before-frame
     (driver-eval! state '((source text) to-string)))
   (check-equal? (driver-eval! state '(source frame 5 3)) expected-frame)

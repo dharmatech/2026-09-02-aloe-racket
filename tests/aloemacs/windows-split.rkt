@@ -105,13 +105,26 @@
   (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
-(define (single lines row col [echo-row 6] [echo "untitled"]
-                [final-row row] [final-col col])
-  (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
-                 (cursor row col) "\e[?25h"
-                 (if echo-row
-                     (string-append "\e[?25l" (cursor echo-row 1) echo
-                                    (cursor final-row final-col) "\e[?25h") "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
+                #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if echo-row (text-body (string-join lines "\r\n") echo-row) (string-join lines "\r\n"))
+    (format "\e[~a;~aH\e[?25h" row col)
+    (if echo-row
+        (string-append "\e[?25l"
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (paint st s columns rows expected)
   (define before (for/list ([expr (list s `(,s buffers) `(,s windows) `((,s editor) text))])
                    (ev st expr)))
@@ -139,7 +152,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsCommand))
@@ -215,7 +228,8 @@
       (def! st 'a (buffer 41 (editor text 0 0)))
       (def! st 's (session (zipper '(a)) (leaf 7) #:columns columns #:rows rows))
       (define t ((if vertical? below right) (leaf 7) (leaf 8)))
-      (define ed (editor text 0 0 0 0 (if vertical? early 5)))
+      (define h (if vertical? early 5))
+      (define ed (editor text 0 0 0 0 (if (>= h 2) (sub1 h) h)))
       (same-session st `(s ,(car o))
         (rebuild 's #:buffers (zipper (list (buffer 41 ed)))
           #:windows (config t 7 columns rows) #:echo ""))
@@ -266,7 +280,7 @@
   (for ([o orientations])
     (same-session st `(zero ,(car o)) (rebuild 'zero #:echo "failed")))
   ;; Selected is positive (4 x 2); another zero-height view forces fallback.
-  ;; Right succeeds using selected width 4, then fit independently uses 9 x 2.
+  ;; Right succeeds using selected width 4, then fallback text fit uses 9 x 1.
   (define bad-sibling (below (leaf 99 41 33 44 #t) (leaf 3 41 55 66)))
   (define t (right (leaf 7) bad-sibling))
   (def! st 'raw (rebuild 's #:windows (config t 7 9 3)))
@@ -274,10 +288,10 @@
   (same-session st '(raw split-below) (rebuild 'raw #:echo "failed"))
   (define rt (right (right (leaf 7) (leaf 100)) bad-sibling))
   (same-session st '(raw split-right)
-    (rebuild 'raw #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 2))))
+    (rebuild 'raw #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
       #:windows (config rt 7 9 3) #:echo ""))
   (def! st 'r '(raw split-right))
-  (paint st 'r 9 3 (single '("abc" "def") 1 1 3 "untitled"))
+  (paint st 'r 9 3 (single '("abc" "def") 1 1 3 "untitled" #:name "untitled" #:width 9))
   (check-equal? (unbox calls) '()))
 
 (test-case "sparse IDs, maximum away from selected, live origin capture and inactive locks"
@@ -294,9 +308,9 @@
     (def! st 's (session (zipper '(b a c) 1) tree #:columns 9 #:rows 13
       #:searching #t #:prompt active-prompt #:pending pending))
     (define vertical? (eq? (car o) 'split-below))
-    (define fitted-row (if vertical? 8 5))
+    (define fitted-row (if vertical? 9 6))
     (define fitted-col (if vertical? 3 6))
-    (define h (if vertical? 3 6))
+    (define h (if vertical? 2 5))
     (define replacement ((if vertical? below right)
       (leaf 7 41 fitted-row fitted-col) (leaf 100 41 2 3)))
     (define expected-tree (below replacement sibling))
@@ -324,23 +338,23 @@
   (define m (leaf 9))
   (def! st 'r '(s split-right))
   (same st '((r windows) tree) (right l n))
-  (paint st 'r 7 6 (multi '("a  |a  " "   |   " "   |   " "   |   " "   |   ") 1 1 6 "untitle"))
+  (paint st 'r 7 6 (multi '("a  |a  " "   |   " "   |   " "   |   " "unt|unt") 1 1 6 "untitle"))
   (def! st 'rb '(r split-below))
   (same st '((rb windows) tree) (right (below l m) n))
   (same st '(((rb windows) tree) leaves)
     '(List of (AloemacsView new 7 41 0 0 #f) (AloemacsView new 9 41 0 0 #f)
               (AloemacsView new 8 41 0 0 #f)))
-  (paint st 'rb 7 6 (multi '("a  |a  " "   |   " "---+   " "a  |   " "   |   ") 1 1 6 "untitle"))
+  (paint st 'rb 7 6 (multi '("a  |a  " "unt|   " "---+   " "a  |   " "unt|unt") 1 1 6 "untitle"))
   (def! st 'b '(s split-below))
   (def! st 'br '(b split-right))
   (same st '((br windows) tree) (below (right l m) n))
-  (paint st 'br 7 6 (multi '("a  |a  " "   |   " "---+---" "a      " "       ") 1 1 6 "untitle"))
+  (paint st 'br 7 6 (multi '("a  |a  " "unt|unt" "---+---" "a      " "untitle") 1 1 6 "untitle"))
   ;; Arrange another selected leaf with raw constructors, never an entry API.
   (def! st 'other (rebuild 'rb #:windows (config (right (below l m) n) 8 7 6)))
   (def! st 'cross '(other split-below))
   (same st '((cross windows) tree) (right (below l m) (below n (leaf 10))))
   (paint st 'cross 7 6
-    (multi '("a  |a  " "   |   " "---+---" "a  |a  " "   |   ") 1 5 6 "untitle"))
+    (multi '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt") 1 5 6 "untitle"))
   (def! st 'wide (rebuild 's #:windows (config l 7 15 6)))
   (def! st 'rr '((wide split-right) split-right))
   (same st '((rr windows) tree) (right (right l m) n))
@@ -348,15 +362,15 @@
     `(Option Some ,(rect 8 0 7 5)))
   (paint st 'rr 15 6
     (multi '("a  |a  |a      " "   |   |       " "   |   |       "
-             "   |   |       " "   |   |       ") 1 1 6 "untitled"))
+             "   |   |       " "unt|unt|untitle") 1 1 6 "untitled"))
   (def! st 'tall (rebuild 's #:windows (config l 7 7 16)))
   (def! st 'bb '((tall split-below) split-below))
   (same st '((bb windows) tree) (below (below l m) n))
   (same st `(((bb windows) tree) rect-for 8 ,(rect 0 0 7 15))
     `(Option Some ,(rect 0 8 7 7)))
   (paint st 'bb 7 16
-    (multi '("a      " "       " "       " "-------" "a      " "       " "       "
-             "-------" "a      " "       " "       " "       " "       " "       " "       ")
+    (multi '("a      " "       " "untitle" "-------" "a      " "       " "untitle"
+             "-------" "a      " "       " "       " "       " "       " "       " "untitle")
            1 1 16 "untitle"))
   (check-equal? (unbox calls) '()))
 
@@ -367,28 +381,30 @@
   (def! st 's (session (zipper '(a)) (leaf 7 41 1 1) #:columns 7 #:rows 6))
   (def! st 'b '(s split-below))
   (same-session st 'b (rebuild 's #:echo ""
-    #:buffers (zipper (list (buffer 41 (editor text 3 2 2 1 2))))
-    #:windows (config (below (leaf 7 41 2 1) (leaf 8 41 1 1)) 7 7 6)))
-  (paint st 'b 7 6 (multi '("jkl    " "nop    " "-------" "fgh    " "jkl    ") 2 2 6 "untitle"))
+    #:buffers (zipper (list (buffer 41 (editor text 3 2 3 1 1))))
+    #:windows (config (below (leaf 7 41 3 1) (leaf 8 41 1 1)) 7 7 6)))
+  (paint st 'b 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 "untitle"))
   (def! st 'edited '(b insert "λ"))
   (define changed (indexed '("abcd" "efgh" "ijkl" "mnλop" "qrst" "uvwx" "yz01") 3))
-  (define undo-history `(List of (UndoFrame new ,text (Position new 3 2) 2 1)
+  (define undo-history `(List of (UndoFrame new ,text (Position new 3 2) 3 1)
     (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2)))
   (same-session st 'edited (rebuild 'b #:buffers (zipper (list (buffer 41
-    (editor changed 3 3 2 1 2 #:history undo-history))))))
-  (paint st 'edited 7 6 (multi '("jkl    " "nλop   " "-------" "fgh    " "jkl    ") 2 3 6 "untitle"))
+    (editor changed 3 3 3 1 1 #:history undo-history))))))
+  (paint st 'edited 7 6 (multi '("nλop   " "untitle" "-------" "fgh    " "untitle") 1 3 6 "untitle"))
   (def! st 'undone '(edited undo))
   (same-session st 'undone 'b)
-  (paint st 'undone 7 6 (multi '("jkl    " "nop    " "-------" "fgh    " "jkl    ") 2 2 6 "untitle"))
+  (paint st 'undone 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 "untitle"))
   (same st '((b page-down) point) '(Position new 4 2))
   (same st '((b page-up) point) '(Position new 2 2))
   (same st '(((b page-down) editor) history) rich-history)
   (same st '(((b page-down) editor) mark) '(Option Some (Position new 0 1)))
-  ;; Move point into the overlapping source row: both independent origins
-  ;; then display the same edited line from the one shared Text value.
-  (def! st 'overlap '((b move-up) insert "λ"))
-  (paint st 'overlap 7 6
-    (multi '("jλkl   " "nop    " "-------" "fgh    " "jλkl   ") 1 3 6 "untitle"))
+  ;; Two text rows retain the overlapping-source-row proof while the fresh
+  ;; child's original origin stays exact. Fit the moved selected point only.
+  (def! st 'overlap-base '(b ensure-visible 7 8))
+  (def! st 'overlap '(((overlap-base move-up) ensure-visible 7 8) insert "λ"))
+  (paint st 'overlap 7 8
+    (multi '("jλkl   " "nop    " "untitle" "-------" "fgh    " "jλkl   " "untitle") 1 3 8 "untitle"))
+  (same st '(((overlap windows) tree) find-view 8) '(Option Some (AloemacsView new 8 41 1 1 #f)))
   (same st '((overlap editor) mark) '(Option Some (Position new 0 1)))
   (same st '(((overlap undo) editor) text) (indexed '("abcd" "efgh" "ijkl" "mnop" "qrst" "uvwx" "yz01") 2))
   ;; A shared deletion shortens below the inactive origin; it must stay there.
@@ -405,19 +421,19 @@
   (def! st 'short-fit '(short ensure-visible 7 6))
   (same st '((short-fit windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
   (paint st 'short-fit 7 6
-    (multi '("       " "       " "-------" "       " "       ") 1 1 6 "untitle"))
+    (multi '("       " "untitle" "-------" "       " "untitle") 1 1 6 "untitle"))
   (def! st 'visited '(b visited "x" (Path new "/short")))
   (same st '((visited windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
   (def! st 'vfit '(visited ensure-visible 7 6))
   (paint st 'vfit 7 6
-    (multi '("x      " "       " "-------" "       " "       ") 1 1 6 "/short"))
+    (multi '("x      " "/short " "-------" "       " "/short ") 1 1 6 "/short"))
   (check-equal? (unbox calls) '()))
 
 (test-case "existing buffer operations after real splits: selected retarget and all-view kill"
   (define-values (st calls) (state))
   (simple! st)
   (def! st 'p '(s split-below))
-  (define a (buffer 41 (editor ab-text 0 0 0 0 2)))
+  (define a (buffer 41 (editor ab-text 0 0 0 0 1)))
   (define fresh-text (indexed '("fresh")))
   (define fresh (buffer 42 (editor fresh-text #:history '(List empty) #:mark no-mark)))
   (define selected-new (below (leaf 7 42) (leaf 8)))
@@ -497,7 +513,7 @@
     (define expected
       (if success?
           (rebuild 'raw #:echo result-token
-            #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 2 5)))))
+            #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 1 4)))))
             #:windows (config ((if vertical? below right) (leaf 7) (leaf 8)) 7))
           (if preserved? 'raw (rebuild 'raw #:echo result-token))))
     (same-session st `(raw ,(car o)) expected)
@@ -510,10 +526,10 @@
     (define ccol (if prompted? 5 1))
     (if success?
         (paint st 'r 9 6
-          (multi (if vertical? '("abc      " "def      " "---------" "abc      " "def      ")
-                     '("abc |abc " "def |def " "    |    " "    |    " "    |    "))
+          (multi (if vertical? '("abc      " "untitled " "---------" "abc      " "untitled ")
+                     '("abc |abc " "def |def " "    |    " "    |    " "unti|unti"))
                  crow ccol 6 shown))
-        (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown crow ccol))))
+        (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown crow ccol #:name "untitled" #:width 9))))
   ;; Unknown-size refusals with active owners also return the whole session.
   (for* ([token '("" "saved" "failed")] [mode '(prompt search both)] [o orientations])
     (def! st 'raw (session (zipper '(a)) (leaf 7) #:columns 0 #:rows 0 #:echo token
@@ -528,7 +544,7 @@
   (for ([o orientations])
     (define vertical? (eq? (car o) 'split-below))
     (define t ((if vertical? below right) (leaf 7) (leaf 8)))
-    (define bs (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 2 5))))))
+    (define bs (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 1 4))))))
     (define expected (rebuild 's #:buffers bs #:windows (config t 7) #:echo ""))
     (for ([actual (list `(s ,(car o))
                        `(s execute-command (AloemacsCommand ,(cadr o)) "ignored")
@@ -536,8 +552,8 @@
       (same-session st actual expected)
       (def! st 'r actual)
       (paint st 'r 9 6 (multi
-        (if vertical? '("abc      " "def      " "---------" "abc      " "def      ")
-            '("abc |abc " "def |def " "    |    " "    |    " "    |    ")) 1 1)))
+        (if vertical? '("abc      " "untitled " "---------" "abc      " "untitled ")
+            '("abc |abc " "def |def " "    |    " "    |    " "unti|unti")) 1 1)))
     (def! st 'prefixed (rebuild 's #:echo "" #:pending pending))
     (same-session st `(prefixed ,(car o))
       (rebuild 'prefixed #:buffers bs #:windows (config t 7)))
@@ -549,12 +565,12 @@
                        `((locked handle-key "ctrl-x") handle-key ,(caddr o)))])
       (same-session st actual refused)
       (def! st 'r actual)
-      (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 "failed: u")))
+      (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 "failed: u" #:name "untitled" #:width 9)))
     ;; Direct sends and execute-command can act even when raw quit is true.
     (def! st 'quit-s (rebuild 's #:buffers
       (zipper (list (buffer 41 (editor ab-text #:quit #t))))))
     (define quit-expected (rebuild 'quit-s #:echo ""
-      #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 2 5) #:quit #t))))
+      #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 1 4) #:quit #t))))
       #:windows (config t 7)))
     (same-session st `(quit-s ,(car o)) quit-expected)
     (same-session st `(quit-s execute-command (AloemacsCommand ,(cadr o)) "ignored")
@@ -591,7 +607,7 @@
   (same-session st 'exit (rebuild 'search #:searching #f #:query "" #:echo "" #:pending pending))
   (same-session st '(exit handle-key "2")
     (rebuild 'exit #:pending no-pending #:buffers
-      (zipper (list (buffer 41 (editor ab-text 0 0 0 0 2))))
+      (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
       #:windows (config (below (leaf 7) (leaf 8)) 7)))
   (check-equal? (unbox calls) '()))
 
@@ -605,15 +621,15 @@
 (test-case "unchanged production runner: both chords, shared edit/save, shrink/growth and quit"
   (define keys '("ctrl-x" "2" "ctrl-x" "3" "x" "save" "unknown" "escape"))
   (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (1 2) (9 6) (9 6)))
-  (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx"))
-  (define below-frame (multi '("abc      " "def      " "---------" "abc      " "def      ")
+  (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9))
+  (define below-frame (multi '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
                              1 1 6 "/cwd/a.tx"))
-  (define mixed-frame (multi '("abc |abc " "def |def " "----+----" "abc      " "def      ")
+  (define mixed-frame (multi '("abc |abc " "/cwd|/cwd" "----+----" "abc      " "/cwd/a.tx")
                              1 1 6 "/cwd/a.tx"))
-  (define restored-rows '("abc |xabc" "ef  |def " "----+----" "xabc     " "def      "))
+  (define restored-rows '("abc |xabc" "/cwd|/cwd" "----+----" "xabc     " "/cwd/a.tx"))
   (define frames
     (list start start below-frame below-frame mixed-frame
-          (single '("a") 1 1 2 "/")
+          (single '("a") 1 1 2 "/" #:name "/cwd/a.txt" #:width 1)
           (multi restored-rows 1 1 6 "saved: /c")
           (multi restored-rows 1 1 6 "/cwd/a.tx")))
   (define-values (host calls disk) (counted-fs))
@@ -662,7 +678,7 @@
     (when (>= index 4)
       (same st '((s windows) tree)
         (below (right (leaf 0 0 0 (if (>= index 5) 1 0)) (leaf 2 0)) (leaf 1 0)))
-      (same st '((s editor) text-rows) (if (= index 5) 1 2)))
+      (same st '((s editor) text-rows) 1))
     (def! st 's `(s handle-key ,key)))
   (same st '(s quit) #t)
   (same st '(s pending) no-pending)

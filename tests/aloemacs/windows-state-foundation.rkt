@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/port racket/runtime-path rackunit
+(require racket/string racket/list racket/port racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/host.rkt" "../../aloe/parse.rkt"
          (only-in "../../aloe/env.rkt" env-bound?)
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type? type-of type->datum)
@@ -130,7 +130,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry
@@ -426,11 +426,25 @@
   (check-equal? (unbox fcalls)
     (write-calls "a.txt" "/cwd/a.txt" "first\nsecond\nthird-long\nfourth\nfifth")))
 
-(define (ansi body row column [echo-row #f] [echo ""] [prompt-row row] [prompt-column column])
-  (string-append "\e[?25l\e[2J\e[H" body "\e[" (number->string row) ";"
-                 (number->string column) "H\e[?25h"
-    (if echo-row (string-append "\e[?25l\e[" (number->string echo-row) ";1H" echo "\e["
-                    (number->string prompt-row) ";" (number->string prompt-column) "H\e[?25h") "")))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (ansi body row column [echo-row #f] [echo ""] [prompt-row row] [prompt-column column] #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if echo-row (text-body body echo-row) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and echo-row (>= echo-row 2))
+        (string-append "\e[?25l"
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo prompt-row prompt-column)) "")))
 (test-case "positive fit remembers full size, mirrors minimal origins and preserves complete frames"
   (define-values (st calls) (state))
   (rich! st)
@@ -450,7 +464,7 @@
   (same st '((single editor) text-rows) 1)
   (def! st 'grown '(single ensure-visible 12 4))
   (same st '(grown windows) (windows 9 2 4 12 4))
-  (same st '((grown editor) text-rows) 3)
+  (same st '((grown editor) text-rows) 2)
   ;; Fitting brings an origin beyond point back only as far as required.
   (def! st 'far-editor
     '(AloemacsEditor new (rich-editor text) (rich-editor point) #f 99 101
@@ -459,21 +473,21 @@
   (same-session st '(far ensure-visible 8 4)
     (rebuild 'far #:buffers (replace 'far
       '(AloemacsEditor new (rich-editor text) (rich-editor point) #f 2 4
-                           (rich-editor history) (rich-editor mark) 3))
+                           (rich-editor history) (rich-editor mark) 2))
       #:windows (windows 9 2 4 8 4)))
   (define snapshot (ev st 'source))
   ;; Stored origin, active prompt and the intermediate editor cursor are exact.
   (check-equal? (ev st '(source frame 8 3))
-    (ansi "rd-long\r\nrth" 1 2 3 "draft: i" 3 8))
+    (ansi "rd-long\r\nrth" 1 2 3 "draft: i" 3 8 #:name "/cwd/b.txt" #:width 8))
   (for ([echo '("" "saved" "failed")] [label '("/cwd/b.t" "saved: /" "failed: ")])
     (def! st 'idle (rebuild 'source #:searching #f #:prompt no-prompt #:echo echo))
-    (check-equal? (ev st '(idle frame 8 3)) (ansi "rd-long\r\nrth" 1 2 3 label)))
+    (check-equal? (ev st '(idle frame 8 3)) (ansi "rd-long\r\nrth" 1 2 3 label #:name "/cwd/b.txt" #:width 8)))
   (for ([wrapped '(#f #t #t)] [failing '(#f #f #t)]
         [label '("search: " "wrapped:" "failing:")])
     (def! st 'search (rebuild 'source #:prompt no-prompt #:query "abc"
                              #:wrapped wrapped #:failing failing))
-    (check-equal? (ev st '(search frame 8 3)) (ansi "rd-long\r\nrth" 1 2 3 label)))
-  (check-equal? (ev st '(source frame 8 1)) (ansi "rd-long" 1 2))
+    (check-equal? (ev st '(search frame 8 3)) (ansi "rd-long\r\nrth" 1 2 3 label #:name "/cwd/b.txt" #:width 8)))
+  (check-equal? (ev st '(source frame 8 1)) (ansi "rd-long" 1 2 #:name "/cwd/b.txt" #:width 8))
   (check-equal? (ev st 'source) snapshot)
   (check-equal? (unbox calls) '()))
 
@@ -483,16 +497,16 @@
   (def! st 'blank (rebuild 'empty #:searching #f #:echo "" #:pending no-pending
                           #:prompt no-prompt #:windows (windows 33 0 0 0 0)))
   (define blank-before (ev st 'blank))
-  (check-equal? (ev st '(blank frame 8 3)) (ansi "\r\n" 1 1 3 "untitled"))
-  (check-equal? (ev st '(blank frame 1 1)) (ansi "" 1 1))
+  (check-equal? (ev st '(blank frame 8 3)) (ansi "\r\n" 1 1 3 "untitled" #:name "untitled" #:width 8))
+  (check-equal? (ev st '(blank frame 1 1)) (ansi "" 1 1 #:name "untitled" #:width 8))
   (check-equal? (ev st 'blank) blank-before)
   (def! st 'controls (session (zipper (list (buffer 44 "a\u001bb\tc\u007f")) 0)))
   (def! st 'safe (rebuild 'controls #:searching #f
     #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2))
     #:windows (windows 44 0 0 0 0)))
   (define safe-before (ev st 'safe))
-  (check-equal? (ev st '(safe frame 4 2)) (ansi "a b " 1 1 2 "L A " 2 4))
-  (check-equal? (ev st '(safe frame 1 2)) (ansi "a" 1 1 2 "L" 2 1))
-  (check-equal? (ev st '(safe frame 4 1)) (ansi "a b " 1 1))
+  (check-equal? (ev st '(safe frame 4 2)) (ansi "a b " 1 1 2 "L A " 2 4 #:name "untitled" #:width 4))
+  (check-equal? (ev st '(safe frame 1 2)) (ansi "a" 1 1 2 "L" 2 1 #:name "untitled" #:width 1))
+  (check-equal? (ev st '(safe frame 4 1)) (ansi "a b " 1 1 #:name "untitled" #:width 4))
   (check-equal? (ev st 'safe) safe-before)
   (check-equal? (unbox calls) '()))

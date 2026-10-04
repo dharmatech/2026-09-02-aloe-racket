@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/port racket/runtime-path rackunit
+(require racket/string racket/list racket/port racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/env.rkt" "../../aloe/host.rkt"
          "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt"
@@ -135,17 +135,32 @@
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
                  (format "\u001b[~a;~aH\u001b[?25h" row column)))
-(define (frame body text-row text-column rows shown cursor-row cursor-column)
-  (string-append (editor-frame body text-row text-column)
-    (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-            rows shown cursor-row cursor-column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 
 (test-case "exact prompt declaration, signatures, session fields, and class order"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define prompt (findf (lambda (d) (eq? (cadr d) 'AloemacsPrompt)) classes))
@@ -361,7 +376,7 @@
     (def! st 'actual `(source ensure-visible 3 ,rows))
     (same-session st 'actual
       (rebuild 'source #:columns 3 #:rows rows #:buffers
-        (replace-current 'source `(rich-editor ensure-visible 3 ,(if (>= rows 2) (sub1 rows) rows)))))
+        (replace-current 'source `(rich-editor ensure-visible 3 ,(if (>= rows 3) (- rows 2) 1)))))
     (preserved st 'actual)
     (define before-frame (ev st 'actual))
     (ev st `(actual frame 3 ,rows))
@@ -545,7 +560,7 @@
     (def! st 'fitted `(raw ensure-visible ,width 3))
     (define original (ev st 'fitted))
     (define text-column (if (= width 1) 1 2))
-    (define expected (frame (list-ref row 6) 1 text-column 3 (list-ref row 4) 3 (list-ref row 5)))
+    (define expected (frame (list-ref row 6) 1 text-column 3 (list-ref row 4) 3 (list-ref row 5) #:name "untitled" #:width width))
     (for ([i (in-range 2)])
       (check-equal? (ev st `(fitted frame ,width 3)) expected))
     (check-equal? (ev st `((fitted editor) frame ,width 2))
@@ -559,7 +574,7 @@
     (check-equal? (ev st '(resized frame 20 3))
       (frame (if (= width 1) " b\r\necond" "a b\r\nsecond")
              1 text-column 3 (string-append label text) 3
-             (+ (string-length label) column 1))))
+             (+ (string-length label) column 1) #:name "untitled" #:width 20)))
   (check-equal? (unbox calls) '()))
 
 (test-case "prompt controls are sanitized after clipping without changing stored data"
@@ -571,7 +586,7 @@
   (define original (ev st 's))
   (for ([width '(30 12 9 1)] [shown '("L [31m T   Z " "L [31m T   Z" "L [31m T " "L")]
         [column '(12 12 9 1)])
-    (check-equal? (ev st `(s frame ,width 2)) (frame "" 1 1 2 shown 2 column)))
+    (check-equal? (ev st `(s frame ,width 2)) (frame "" 1 1 2 shown 2 column #:name "untitled" #:width width)))
   (check-equal? (ev st '((s prompt) case (None () "") (Some (p) (p label)))) label)
   (check-equal? (ev st '((s prompt) case (None () "") (Some (p) (p text)))) text)
   (check-equal? (ev st 's) original)
@@ -586,12 +601,12 @@
     (replace-current 'base (editor "zero\none\ntwo\nthree\nfour" '(Position new 3 2)))
     #:prompt '(Option Some (AloemacsPrompt new "Ask: " "abcd" 2))))
   (def! st 'fitted '(base ensure-visible 12 4))
-  (check-equal? (ev st '((fitted editor) scroll-row)) 1)
-  (check-equal? (ev st '((fitted editor) text-rows)) 3)
+  (check-equal? (ev st '((fitted editor) scroll-row)) 2)
+  (check-equal? (ev st '((fitted editor) text-rows)) 2)
   (same-session st 'fitted
-    (rebuild 'base #:columns 12 #:rows 4 #:buffers (replace-current 'base '((base editor) ensure-visible 12 3))))
+    (rebuild 'base #:columns 12 #:rows 4 #:buffers (replace-current 'base '((base editor) ensure-visible 12 2))))
   (check-equal? (ev st '(fitted frame 12 4))
-    (frame "one\r\ntwo\r\nthree" 3 3 4 "Ask: abcd" 4 8))
+    (frame "two\r\nthree" 2 3 4 "Ask: abcd" 4 8 #:name "/cwd/a.txt" #:width 12))
   ;; Search and pending remain raw active fixture state despite prompt painting.
   (same st '(fitted searching) '(base searching))
   (same st '(fitted query) '(base query))
@@ -600,13 +615,13 @@
         [shown '("/cwd/a.txt" "saved: /cwd/" "failed: /cwd")])
     (def! st 'inactive (rebuild 'fitted #:prompt no-prompt #:searching #f #:echo echo))
     (check-equal? (ev st '(inactive frame 12 4))
-      (frame "one\r\ntwo\r\nthree" 3 3 4 shown 3 3)))
+      (frame "two\r\nthree" 2 3 4 shown 2 3 #:name "/cwd/a.txt" #:width 12)))
   (for ([wrapped '(#f #t #t)] [failing '(#f #f #t)]
         [shown '("search: abc" "wrapped: abc" "failing: abc")])
     (def! st 'inactive (rebuild 'fitted #:prompt no-prompt #:query "abc"
                                #:wrapped wrapped #:failing failing))
     (check-equal? (ev st '(inactive frame 12 4))
-      (frame "one\r\ntwo\r\nthree" 3 3 4 shown 3 3)))
+      (frame "two\r\nthree" 2 3 4 shown 2 3 #:name "/cwd/a.txt" #:width 12)))
   (def! st 'single '(fitted ensure-visible 12 1))
   (check-equal? (ev st '((single editor) text-rows)) 1)
   (check-equal? (ev st '(single frame 12 1)) (editor-frame "three" 1 3))
@@ -615,7 +630,7 @@
   (same st '(single last-submission) submitted)
   (def! st 'grown '(single ensure-visible 12 4))
   (check-equal? (ev st '(grown frame 12 4))
-    (frame "three\r\nfour\r\n" 1 3 4 "Ask: abcd" 4 8))
+    (frame "three\r\nfour\r\n" 1 3 4 "Ask: abcd" 4 8 #:name "/cwd/a.txt" #:width 12))
   (same st '(grown prompt) '(single prompt))
   (same st '(grown last-submission) submitted)
   (check-equal? (unbox calls) '()))

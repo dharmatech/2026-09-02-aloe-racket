@@ -154,6 +154,18 @@
           (AloemacsBuffers new
             (self before) ((self after) first) ((self after) rest))))))
 
+(define-class AloemacsModeLine
+  (fields)
+  (methods
+    (row (name String) (width Int) String
+      (if (width <= 0)
+          ""
+          (let ((clipped ((name append " ") take width)))
+            (clipped append (self fill (width - (clipped len)))))))
+
+    (fill (remaining Int) String
+      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))))
+
 (define-class AloemacsView
   (fields
     (id Int)
@@ -355,6 +367,9 @@
     (columns Int)
     (rows Int))
   (methods
+    (text-rows () Int
+      (if ((self rows) >= 2) ((self rows) - 1) (self rows)))
+
     (positive? () Bool
       (if ((self columns) > 0) ((self rows) > 0) #f))
 
@@ -500,9 +515,18 @@
           ((buffers find-id (view buffer-id)) case
             (None () (self blank-rows rect (rect rows)))
             (Some (focused)
-              ((((focused current-buffer) editor)
-                 frame-rows (rect columns) (rect rows) (view scroll-row) (view scroll-col))
-               map (fn (line) (rect pad-row line))))))
+              (let ((buffer (focused current-buffer)))
+                (let ((editor (buffer editor)))
+                  (let ((lines
+                          ((editor frame-rows (rect columns) (rect text-rows)
+                             (view scroll-row) (view scroll-col))
+                           map (fn (line) (rect pad-row line)))))
+                    (if ((rect rows) >= 2)
+                        ((lines reverse) fold
+                          (List of (editor safe-cells
+                            ((AloemacsModeLine new) row (buffer name) (rect columns))))
+                          (fn (rows line) (rows cons line)))
+                        lines)))))))
         (Below (top bottom)
           (((top frame-rows buffers (rect top)) reverse)
            fold
@@ -1379,12 +1403,12 @@
                     body)
                 cursor-row cursor-column))))))
 
-    ;; Keep the complete predecessor composer, including its intermediate
-    ;; cursor sequences and the direct editor's unpadded/raw-state branches.
+    ;; Keep the editor prefix and its intermediate cursor sequences. Tall
+    ;; one-view/fallback frames reserve the root's last row for its name.
     (single-frame (columns Int) (rows Int) String
       (let ((editor (self editor))
-            (text-rows (if (rows >= 2) (rows - 1) rows)))
-        (let ((body (editor frame columns text-rows)))
+            (root ((self windows) text-rect columns rows)))
+        (let ((body (editor frame columns (root text-rows))))
           (if (rows < 2)
               body
               (let ((point (editor point))
@@ -1420,6 +1444,13 @@
                     ((List of
                        body
                        "\u001b[?25l"
+                       (if ((root rows) >= 2)
+                           ((List of "\u001b[" ((root rows) text) ";1H"
+                              (editor safe-cells
+                                ((AloemacsModeLine new) row
+                                  ((self current-buffer) name) columns)))
+                            fold "" (fn (acc part) (acc append part)))
+                           "")
                        "\u001b["
                        (rows text)
                        ";1H"
@@ -1435,16 +1466,17 @@
                      (fn (acc part) (acc append part))))))))))
 
     (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
-      (let ((rect ((self windows) fit-rect columns rows)))
-        (let ((session
-                (self with-editor
-                  ((self editor) ensure-visible (rect columns) (rect rows)))))
-          (AloemacsSession new
-            (session buffers) (session fs) (session echo)
-            (session searching) (session query) (session origin)
-            (session wrapped) (session failing) (session kill-ring) (session pending)
-            (session prompt) (session last-submission) (session waiting-command)
-            ((session windows) with-size columns rows)))))
+      (let ((windows (self windows)))
+        (let ((rect (windows fit-rect columns rows)))
+          (let ((session
+                  (self with-editor
+                    ((self editor) ensure-visible (rect columns) (rect text-rows)))))
+            (AloemacsSession new
+              (session buffers) (session fs) (session echo)
+              (session searching) (session query) (session origin)
+              (session wrapped) (session failing) (session kill-ring) (session pending)
+              (session prompt) (session last-submission) (session waiting-command)
+              ((session windows) with-size columns rows))))))
 
     (file-contents (path Path) (Option String)
       (((self fs) inspect path) case

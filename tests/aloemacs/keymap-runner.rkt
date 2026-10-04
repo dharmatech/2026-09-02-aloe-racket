@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list
+(require racket/string racket/list
          rackunit
          "../../aloe/host.rkt"
          "../../host/racket/aloemacs-run.rkt"
@@ -8,13 +8,25 @@
          "../../host/racket/term.rkt")
 
 ;; Expected bytes are independent of the Aloe frame implementation.
-(define (frame body row column rows label)
-  (string-append
-   "\u001b[?25l\u001b[2J\u001b[H" body
-   (format "\u001b[~a;~aH\u001b[?25h" row column)
-   (if (= rows 1) ""
-       (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-               rows label row column))))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows label #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (define spare-keys '("save" "x"))
 (define (make-scripted-term sizes keys)
@@ -89,15 +101,15 @@
                 (hash "/cwd/a.txt" "abcdef\nsecond\nthird\nfourth")))
   (run-aloemacs-with-hosts term fs "a.txt")
   (check-script events remaining calls sizes keys
-    (list (frame "abcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 2 4 "/cwd/a.txt")
-          (frame "xabcd" 1 2 2 "/cwd/")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 2 4 "saved: /cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")
-          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt")))
+    (list (frame "abcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 2 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcd" 1 2 2 "/cwd/" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 2 4 "saved: /cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)
+          (frame "xabcdef\r\nsecond\r\nthird" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20)))
   (check-equal? (unbox writes) '(("/cwd/a.txt" "xabcdef\nsecond\nthird\nfourth")))
   (check-equal? (host-receiver-send inner 'read '("/cwd/a.txt"))
                 "xabcdef\nsecond\nthird\nfourth"))
@@ -111,13 +123,13 @@
                 (hash "/cwd/a.txt" "a\u001bb\nc\rd")))
   (run-aloemacs-with-hosts term fs "a.txt")
   (check-script events remaining calls sizes keys
-    (list (frame "a b\r\nc d" 1 1 3 "/cwd/a.t")
-          (frame "a b\r\nc d" 1 2 3 "/cwd/a.t")
-          (frame "a b\r\nc d" 1 3 3 "/cwd/a.t")
-          (frame " b" 1 2 2 "/c")
-          (frame " b\r\n d" 1 2 3 "saved: /")
-          (frame " b\r\n d" 1 2 3 "/cwd/a.t")
-          (frame " b\r\n d" 1 2 3 "/cwd/a.t")))
+    (list (frame "a b\r\nc d" 1 1 3 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)
+          (frame "a b\r\nc d" 1 2 3 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)
+          (frame "a b\r\nc d" 1 3 3 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)
+          (frame " b" 1 2 2 "/c" #:name "/cwd/a.txt" #:width 2)
+          (frame " b\r\n d" 1 2 3 "saved: /" #:name "/cwd/a.txt" #:width 8)
+          (frame " b\r\n d" 1 2 3 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)
+          (frame " b\r\n d" 1 2 3 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)))
   (check-equal? (unbox writes) '(("/cwd/a.txt" "a\u001bb\nc\rd")))
   (check-equal? (host-receiver-send inner 'read '("/cwd/a.txt")) "a\u001bb\nc\rd"))
 
@@ -130,7 +142,7 @@
                 (hash "/cwd/a.txt" "ab")))
   (run-aloemacs-with-hosts term fs "a.txt")
   (check-script events remaining calls sizes keys
-                (cons (frame "ab" 1 1 1 "") (make-list 6 (frame "xa" 1 2 1 ""))))
+                (cons (frame "ab" 1 1 1 "" #:name "/cwd/a.txt" #:width 2) (make-list 6 (frame "xa" 1 2 1 "" #:name "/cwd/a.txt" #:width 2))))
   (check-equal? (unbox writes) '(("/cwd/a.txt" "xab") ("/cwd/a.txt" "xab"))))
 
 (test-case "untitled and ineligible prefix saves show failure and retain zero writes"
@@ -143,10 +155,10 @@
     (define-values (fs writes inner) (tracked-fs (hash "/cwd" 'directory) (hash)))
     (run-aloemacs-with-hosts term fs path)
     (check-script events remaining calls sizes keys
-      (list (frame "\r\n\r\n" 1 1 4 label)
-            (frame "\r\n\r\n" 1 1 4 label)
-            (frame "\r\n\r\n" 1 1 4 failure)
-            (frame "\r\n\r\n" 1 1 4 label)
-            (frame "\r\n\r\n" 1 1 4 label)
-            (frame "\r\n\r\n" 1 1 4 label)))
+      (list (frame "\r\n\r\n" 1 1 4 label #:name label #:width 20)
+            (frame "\r\n\r\n" 1 1 4 label #:name label #:width 20)
+            (frame "\r\n\r\n" 1 1 4 failure #:name label #:width 20)
+            (frame "\r\n\r\n" 1 1 4 label #:name label #:width 20)
+            (frame "\r\n\r\n" 1 1 4 label #:name label #:width 20)
+            (frame "\r\n\r\n" 1 1 4 label #:name label #:width 20)))
     (check-equal? (unbox writes) '())))

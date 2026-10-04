@@ -251,7 +251,7 @@
              #:ring '(List of "Z\nY" "older")))
   (def! st 'base '((seed insert "!") ensure-visible 2 4))
   (check-equal? (history-len st 'base) 1)
-  (check-equal? (ev st '((base editor) text-rows)) 3))
+  (check-equal? (ev st '((base editor) text-rows)) 2))
 
 (test-case "classes and constants load twice without capabilities or effects"
   (for ([i (in-range 2)])
@@ -529,8 +529,8 @@
   (for ([row (in-list (take (drop rows 6) 6))])
     (same-session st `(base handle-key ,(first row)) (expected 'base row))
     (same st `(((base handle-key ,(first row)) editor) history) '((base editor) history)))
-  (check-equal? (point st '(base handle-key "page-up")) '(0 3))
-  (check-equal? (point st '(base handle-key "page-down")) '(4 3))
+  (check-equal? (point st '(base handle-key "page-up")) '(1 3))
+  (check-equal? (point st '(base handle-key "page-down")) '(3 3))
   (def! st 'unfit (session "abc\ndef" 0 1))
   (same-session st '(unfit handle-key "page-down") (token 'unfit ""))
   (def! st 'one-row '(unfit ensure-visible 8 1))

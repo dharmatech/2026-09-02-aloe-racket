@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/runtime-path
+(require racket/list racket/string racket/runtime-path
          rackunit
          "../../aloe/driver.rkt"
          "../../aloe/parse.rkt"
@@ -88,12 +88,25 @@
 (define (same state left right)
   (check-not-exn (lambda () (value state `(check ,left ,right)))))
 
-(define (frame body row column rows label)
-  (string-append
-   "\u001b[?25l\u001b[2J\u001b[H" body
-   (format "\u001b[~a;~aH\u001b[?25h" row column)
-   (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-           rows label row column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows label #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "ordered fields, entry, ordinary rebuilds, exit, and visit reset"
   (define state (make-state #t))
@@ -240,7 +253,7 @@
   (define! state 'base (session "ababa\naba" 0 0 "saved"))
   (step! state 'active 'base "find")
   (check-equal? (value state '(active frame 8 3))
-                (frame "ababa\r\naba" 1 1 3 "search: "))
+                (frame "ababa\r\naba" 1 1 3 "search: " #:name "untitled" #:width 8))
   (step! state 'a 'active "a")
   (step! state 'b 'a "b")
   (step! state 'c 'b "a")
@@ -248,10 +261,10 @@
   (step! state 'later 'next "find")
   (step! state 'wrapped 'later "find")
   (check-equal? (value state '(wrapped frame 12 3))
-                (frame "ababa\r\naba" 1 1 3 "wrapped: aba"))
+                (frame "ababa\r\naba" 1 1 3 "wrapped: aba" #:name "untitled" #:width 12))
   (step! state 'failed 'wrapped "find")
   (check-equal? (value state '(failed frame 10 3))
-                (frame "ababa\r\naba" 1 1 3 "failing: a"))
+                (frame "ababa\r\naba" 1 1 3 "failing: a" #:name "untitled" #:width 10))
   (check-equal? (value state '(failed frame 8 1))
                 (value state '((failed editor) frame 8 1)))
   (define! state 'sanitized
@@ -286,7 +299,7 @@
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
          0 ((base windows) columns) ((base windows) rows)))))
   (check-equal? (value state '(sanitized frame 12 3))
-                (frame "ababa\r\naba" 1 1 3 "search: a "))
+                (frame "ababa\r\naba" 1 1 3 "search: a " #:name "untitled" #:width 12))
   (step! state 'exit 'failed "return")
   (check-equal? (value state '(exit frame 20 3))
-                (frame "ababa\r\naba" 1 1 3 "saved: untitled")))
+                (frame "ababa\r\naba" 1 1 3 "saved: untitled" #:name "untitled" #:width 20)))

@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/port racket/runtime-path rackunit
+(require racket/string racket/list racket/port racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/host.rkt" "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type? type-of type->datum)
          "../../host/racket/fs.rkt")
@@ -154,10 +154,25 @@
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
     (format "\u001b[~a;~aH\u001b[?25h" row column)))
-(define (frame body text-row text-column rows shown cursor-row cursor-column)
-  (string-append (editor-frame body text-row text-column)
-    (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-      rows shown cursor-row cursor-column)))
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 
 (test-case "five ordinary session methods have exact signatures and concrete checked results"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
@@ -302,7 +317,7 @@
   (check-equal? (ev st '(hit searching)) #t)
   (same st '(hit prompt) '(raw prompt))
   (check-equal? (ev st '(hit frame 12 3))
-    (frame "rd-long\r\nrth" 1 4 3 "Ask: draft" 3 8))
+    (frame "rd-long\r\nrth" 1 4 3 "Ask: draft" 3 8 #:name "/cwd/b.txt" #:width 12))
   (def! st 'miss '(raw handle-key "z"))
   (same-session st 'miss (rebuild 'raw #:query "z" #:failing #t))
   (def! st 'deleted '(hit handle-key "backspace"))
@@ -366,7 +381,7 @@
   (def! st 's (rebuild 's #:buffers (replace-current 's
     '(AloemacsEditor new ((Text from-string "ab\nsecond") indexed-value)
        (Position new 0 1) #f 0 0 (List empty) (Option Some (Position new 1 2)) 2))))
-  (define inactive (frame "ab\r\nsecond" 1 2 3 "saved: untit" 1 2))
+  (define inactive (frame "ab\r\nsecond" 1 2 3 "saved: untit" 1 2 #:name "untitled" #:width 12))
   (check-equal? (ev st '(s frame 12 3)) inactive)
   (transition! st calls 's '(s start-prompt "Ask: ") (rebuild 's #:prompt (prompt "Ask: " "" 0)))
   (def! st 's 'actual)
@@ -378,7 +393,7 @@
   (define before (ev st 's))
   (for ([i (in-range 2)])
     (check-equal? (ev st '(s frame 12 3))
-      (frame "ab\r\nsecond" 1 2 3 "Ask: abc" 3 8)))
+      (frame "ab\r\nsecond" 1 2 3 "Ask: abc" 3 8 #:name "untitled" #:width 12)))
   (check-equal? (ev st 's) before)
   (transition! st calls 's '(s handle-key "return")
     (rebuild 's #:prompt no-prompt #:submission '(Option Some "abc")))
@@ -394,7 +409,7 @@
   (rich! st)
   (for ([echo '("saved" "failed")] [shown '("saved: /cw" "failed: /c")])
     (def! st 's (rebuild 'source #:echo echo))
-    (define inactive (frame "rd-long\r\nrth" 1 2 3 shown 1 2))
+    (define inactive (frame "rd-long\r\nrth" 1 2 3 shown 1 2 #:name "/cwd/b.txt" #:width 10))
     ;; Cancellation before a submit retains None.
     (transition! st calls 's '(s start-prompt "Ask: ") (rebuild 's #:prompt (prompt "Ask: " "" 0)))
     (def! st 's 'actual)
@@ -473,7 +488,7 @@
   (same st '(hit point) '(Position new 2 6))
   (same st '(hit last-submission) '(Option Some "Z"))
   (check-equal? (ev st '(hit frame 12 3))
-    (frame "rd-long\r\nrth" 1 4 3 "search: l" 1 4))
+    (frame "rd-long\r\nrth" 1 4 3 "search: l" 1 4 #:name "/cwd/b.txt" #:width 12))
   (for ([key '("escape" "return")])
     (def! st 'exited `(hit handle-key ,key))
     (check-false (ev st '(exited searching)))
@@ -543,7 +558,7 @@
     (same st '(result last-submission) '(Option Some "Z")))
   (for ([i (in-range 2)])
     (check-equal? (ev st '(draft frame 12 3))
-      (frame "rd-long\r\nrth" 1 2 3 "Draft: d" 3 9)))
+      (frame "rd-long\r\nrth" 1 2 3 "Draft: d" 3 9 #:name "/cwd/b.txt" #:width 12)))
   (check-equal? (ev st 'draft) original)
   (check-equal? (unbox calls) '()))
 
@@ -630,7 +645,7 @@
     (def! st 's 'actual))
   ;; Width four clips the label before safe cells; neither edit nor submit
   ;; depends on these displayed spaces or the clipped prompt cursor.
-  (check-equal? (ev st '(s frame 4 3)) (frame "rd-l\r\nrth" 1 2 3 "L  :" 3 4))
+  (check-equal? (ev st '(s frame 4 3)) (frame "rd-l\r\nrth" 1 2 3 "L  :" 3 4 #:name "/cwd/b.txt" #:width 4))
   (transition! st calls 's '(s handle-key "return")
     (rebuild 's #:prompt no-prompt #:submission `(Option Some ,text)))
   (for ([i (in-range 3)]) (same st '(actual last-submission) `(Option Some ,text)))
@@ -647,7 +662,7 @@
   (def! st 's 'actual)
   (check-equal? (ev st '(s frame 12 1)) only-text)
   (check-equal? (ev st '(s frame 12 1)) (ev st '((s editor) frame 12 1)))
-  (check-equal? (ev st '(s frame 12 3)) (frame "rd-long\r\nrth" 1 2 3 "Ask: x" 3 7))
+  (check-equal? (ev st '(s frame 12 3)) (frame "rd-long\r\nrth" 1 2 3 "Ask: x" 3 7 #:name "/cwd/b.txt" #:width 12))
   (transition! st calls 's '(s handle-key "return")
     (rebuild 's #:prompt no-prompt #:submission '(Option Some "x")))
   (def! st 's 'actual)

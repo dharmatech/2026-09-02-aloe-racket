@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/list racket/port racket/runtime-path rackunit
+(require racket/string racket/list racket/port racket/runtime-path rackunit
          "../../aloe/driver.rkt" "../../aloe/host.rkt" "../../aloe/parse.rkt"
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type? type-of type->datum)
          "../../host/racket/fs.rkt" "../../host/racket/aloemacs-run.rkt")
@@ -133,15 +133,31 @@
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
     (format "\u001b[~a;~aH\u001b[?25h" row column)))
-(define (frame body text-row text-column rows shown cursor-row cursor-column)
-  (string-append (editor-frame body text-row text-column)
-    (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
-      rows shown cursor-row cursor-column)))
-(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3])
+;; Independent name and text allocation from the supplied fixture and size.
+(define (mode-row name width)
+  (define label (substring (string-append name " ") 0
+                          (min width (add1 (string-length name)))))
+  (list->string
+    (for/list ([c (in-string (string-append label
+                              (make-string (- width (string-length label)) #\-)))])
+      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+(define (text-body body rows)
+  (define lines (string-split body "\r\n" #:trim? #f))
+  (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+(define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
+  (string-append "\e[?25l\e[2J\e[H"
+    (if rows (text-body body rows) body)
+    (format "\e[~a;~aH\e[?25h" row column)
+    (if (and rows (>= rows 2))
+        (string-append "\e[?25l"
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
+(define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
+                      #:name [name "untitled"])
   (define shown (substring label 0 (min columns (string-length label))))
   (if (= rows 1) (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown
-        (if prompt-column rows 1) (or prompt-column column))))
+        (if prompt-column rows 1) (or prompt-column column) #:name name #:width columns)))
 
 (test-case "SelectBuffer signature, thirteen fields, unchanged editor shapes and final maps"
   (define ds (datums file-path))
@@ -278,7 +294,7 @@
          (rich-editor history) (rich-editor mark) 1))))
   (for ([i (in-range 2)])
     (check-equal? (ev st '(draft frame 12 3))
-      (frame "rd-long\r\nrth" 1 2 3 "Buffer: abc" 3 12)))
+      (frame "rd-long\r\nrth" 1 2 3 "Buffer: abc" 3 12 #:name "/cwd/b.txt" #:width 12)))
   (check-equal? (ev st 'draft) before)
   (check-equal? (unbox calls) '()))
 
@@ -497,22 +513,22 @@
        (Option Some (Path new "/cwd/b.txt")) 1))
   (def! st 'source (session (zipper '(a b) 0)))
   (def! st 'active '(source execute-command (AloemacsCommand SelectBuffer) "ignored"))
-  (check-equal? (ev st '(active frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: " 3 9))
+  (check-equal? (ev st '(active frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: " 3 9 #:name "untitled" #:width 20))
   (def! st 'typed (rebuild 'active #:prompt (prompt "/cwd/b.txt")))
-  (check-equal? (ev st '(typed frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: /cwd" 3 12))
+  (check-equal? (ev st '(typed frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: /cwd" 3 12 #:name "untitled" #:width 12))
   (def! st 'done '(typed submit-prompt))
-  (check-equal? (ev st '(done frame 20 3)) (frame "other\r\n" 1 3 3 "/cwd/b.txt" 1 3))
+  (check-equal? (ev st '(done frame 20 3)) (frame "other\r\n" 1 3 3 "/cwd/b.txt" 1 3 #:name "/cwd/b.txt" #:width 20))
   (def! st 'failed (rebuild 'active #:prompt (prompt "missing")))
   (def! st 'failed '(failed submit-prompt))
-  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1))
+  (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1 #:name "untitled" #:width 20))
   (def! st 'cancel '(typed handle-key "escape"))
-  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: untitled" 1 1))
+  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: untitled" 1 1 #:name "untitled" #:width 20))
   (define unsafe "\t\r\u001b\u0000\u007f λabcdef")
   (def! st 'unsafe-buffer (bound "unsafe target" unsafe 1))
   (def! st 'safe (rebuild 'active #:buffers (zipper '(a unsafe-buffer) 0) #:prompt (prompt unsafe)))
   (define before (ev st 'safe))
   (for ([i (in-range 2)])
-    (check-equal? (ev st '(safe frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer:     " 3 12)))
+    (check-equal? (ev st '(safe frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer:     " 3 12 #:name "untitled" #:width 12)))
   (def! st 'safe-done '(safe submit-prompt))
   (same st 'safe-done (completed 'safe unsafe (zipper '(a unsafe-buffer) 1)))
   (same st '(safe-done last-submission) `(Option Some ,unsafe))
@@ -600,33 +616,33 @@
         '("return" "!" "save" "ctrl-x" "b")
         (map string (string->list "/cwd/b.txt")) '("return" "escape")))
     (define narrow? (= columns 2))
-    (define (paint text column label [prompt-column #f])
+    (define (paint text column label [prompt-column #f] #:name [name "/cwd/a.txt"])
       (runner-frame text column label
-        (and prompt-column (min columns prompt-column)) columns rows))
+        (and prompt-column (min columns prompt-column)) columns rows #:name name))
     (define old-visible (if narrow? "is" "disk a"))
     (define old-column (if narrow? 2 3))
     (define neighbor-visible (if narrow? "di" "disk b"))
     (define edited-visible (if narrow? "!s" "di!sk a"))
     (define edited-column (if narrow? 2 4))
-    (define (typing-frames text column label input)
+    (define (typing-frames text column label input name)
       (for/list ([n (in-range (add1 (string-length input)))])
         (paint text column (string-append label (substring input 0 n))
-          (+ (string-length label) n 1))))
+          (+ (string-length label) n 1) #:name name)))
     (define frames
       (append
         (list (paint (if narrow? "di" "disk a") 1 "/cwd/a.txt")
               (paint (if narrow? "di" "disk a") 2 "/cwd/a.txt")
               (paint old-visible old-column "/cwd/a.txt")
               (paint old-visible old-column "/cwd/a.txt"))
-        (typing-frames old-visible old-column "Find file: " "b.txt")
-        (make-list 2 (paint neighbor-visible 1 "/cwd/b.txt"))
-        (typing-frames neighbor-visible 1 "Buffer: " "/cwd/a.txt")
+        (typing-frames old-visible old-column "Find file: " "b.txt" "/cwd/a.txt")
+        (make-list 2 (paint neighbor-visible 1 "/cwd/b.txt" #:name "/cwd/b.txt"))
+        (typing-frames neighbor-visible 1 "Buffer: " "/cwd/a.txt" "/cwd/b.txt")
         (list (paint old-visible old-column "/cwd/a.txt")
               (paint edited-visible edited-column "/cwd/a.txt")
               (paint edited-visible edited-column "saved: /cwd/a.txt")
               (paint edited-visible edited-column "/cwd/a.txt"))
-        (typing-frames edited-visible edited-column "Buffer: " "/cwd/b.txt")
-        (list (paint neighbor-visible 1 "/cwd/b.txt"))))
+        (typing-frames edited-visible edited-column "Buffer: " "/cwd/b.txt" "/cwd/a.txt")
+        (list (paint neighbor-visible 1 "/cwd/b.txt" #:name "/cwd/b.txt"))))
     (define-values (calls disk snapshots) (scripted-run keys columns rows frames))
     (define startup
       '((resolve "/cwd/a.txt") (resolve "/cwd/a.txt")
