@@ -48,7 +48,8 @@
 (define-class AloemacsBuffer
   (fields
     (editor AloemacsEditor)
-    (path (Option Path)))
+    (path (Option Path))
+    (id Int))
   (methods
     (name () String
       ((self path) case
@@ -56,10 +57,10 @@
         (Some (path) (path text))))
 
     (with-editor (editor AloemacsEditor) AloemacsBuffer
-      (AloemacsBuffer new editor (self path)))
+      (AloemacsBuffer new editor (self path) (self id)))
 
     (with-path (path Path) AloemacsBuffer
-      (AloemacsBuffer new (self editor) (Option Some path)))))
+      (AloemacsBuffer new (self editor) (Option Some path) (self id)))))
 
 (define-class AloemacsBuffers
   (fields
@@ -69,6 +70,26 @@
   (methods
     (with-current-buffer (buffer AloemacsBuffer) AloemacsBuffers
       (AloemacsBuffers new (self before) buffer (self after)))
+
+    (fresh-id () Int
+      (let ((maximum
+              ((self before) fold ((self current-buffer) id)
+                (fn (maximum buffer) (maximum max (buffer id))))))
+        (((self after) fold maximum
+           (fn (maximum buffer) (maximum max (buffer id)))) + 1)))
+
+    (find-id (id Int) (Option AloemacsBuffers)
+      (self find-id-in id
+        ((1 + ((self before) len)) + ((self after) len))))
+
+    (find-id-in (id Int) (remaining Int) (Option AloemacsBuffers)
+      (if (remaining <= 0)
+          (Option None)
+          (if (((self current-buffer) id) = id)
+              (Option Some self)
+              (if (remaining > 1)
+                  ((self focus-next) find-id-in id (remaining - 1))
+                  (Option None)))))
 
     (find-name (name String) (Option AloemacsBuffers)
       (if (name = "")
@@ -126,12 +147,447 @@
                     (Position new 0 0) #f 0 0 (List empty)
                     (if #t (Option None) (Option Some (Position new 0 0)))
                     0)
-                  (Option None))
+                  (Option None) ((self current-buffer) id))
                 (List empty))
               (AloemacsBuffers new
                 ((self before) rest) ((self before) first) (List empty)))
           (AloemacsBuffers new
             (self before) ((self after) first) ((self after) rest))))))
+
+(define-class AloemacsView
+  (fields
+    (id Int)
+    (buffer-id Int)
+    (scroll-row Int)
+    (scroll-col Int)
+    (locked Bool))
+  (methods))
+
+(define-class AloemacsWindowTree
+  (constructors
+    (Leaf (fields (view AloemacsView)))
+    (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
+    (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree))))
+  (methods
+    (single? () Bool
+      (self case (Leaf (view) #t) (else #f)))
+
+    (leaves () (List AloemacsView)
+      (self case
+        (Leaf (view) (List of view))
+        (Below (top bottom)
+          (((top leaves) reverse) fold (bottom leaves)
+            (fn (views view) (views cons view))))
+        (Right (left right)
+          (((left leaves) reverse) fold (right leaves)
+            (fn (views view) (views cons view))))))
+
+    (find-view (id Int) (Option AloemacsView)
+      (self case
+        (Leaf (view)
+          (if ((view id) = id) (Option Some view) (Option None)))
+        (Below (top bottom)
+          ((top find-view id) case
+            (Some (view) (Option Some view))
+            (None () (bottom find-view id))))
+        (Right (left right)
+          ((left find-view id) case
+            (Some (view) (Option Some view))
+            (None () (right find-view id))))))
+
+    (fresh-id () Int
+      (((self leaves) fold 0
+         (fn (maximum view) (maximum max (view id)))) + 1))
+
+    (with-toggled-lock (id Int) AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((view id) = id)
+              (AloemacsWindowTree Leaf
+                (AloemacsView new (view id) (view buffer-id)
+                  (view scroll-row) (view scroll-col) (if (view locked) #f #t)))
+              self))
+        (Below (top bottom)
+          (if ((top find-view id) present?)
+              (AloemacsWindowTree Below (top with-toggled-lock id) bottom)
+              (if ((bottom find-view id) present?)
+                  (AloemacsWindowTree Below top (bottom with-toggled-lock id))
+                  self)))
+        (Right (left right)
+          (if ((left find-view id) present?)
+              (AloemacsWindowTree Right (left with-toggled-lock id) right)
+              (if ((right find-view id) present?)
+                  (AloemacsWindowTree Right left (right with-toggled-lock id))
+                  self)))))
+
+    (next-view (id Int) (Option AloemacsView)
+      (let ((views (self leaves)))
+        ((self next-in views id) case
+          (Some (view) (Option Some view))
+          (None ()
+            (if (views empty?) (Option None) (Option Some (views first)))))))
+
+    (next-in (views (List AloemacsView)) (id Int) (Option AloemacsView)
+      (if (views empty?)
+          (Option None)
+          (let ((remaining (views rest)))
+            (if (((views first) id) = id)
+                (if (remaining empty?) (Option None) (Option Some (remaining first)))
+                (self next-in remaining id)))))
+
+    (any-locked? () Bool
+      ((self leaves) fold #f
+        (fn (locked? view) (if locked? #t (view locked)))))
+
+    ;; Find the immediate sibling, not the sibling of a containing subtree.
+    (sibling-for (id Int) (Option AloemacsWindowTree)
+      (self case
+        (Leaf (view) (Option None))
+        (Below (top bottom)
+          (if ((top find-view id) present?)
+              (if (top single?) (Option Some bottom) (top sibling-for id))
+              (if ((bottom find-view id) present?)
+                  (if (bottom single?) (Option Some top) (bottom sibling-for id))
+                  (Option None))))
+        (Right (left right)
+          (if ((left find-view id) present?)
+              (if (left single?) (Option Some right) (left sibling-for id))
+              (if ((right find-view id) present?)
+                  (if (right single?) (Option Some left) (right sibling-for id))
+                  (Option None))))))
+
+    (without-view (id Int) AloemacsWindowTree
+      (self case
+        (Leaf (view) self)
+        (Below (top bottom)
+          (if ((top find-view id) present?)
+              (if (top single?) bottom
+                  (AloemacsWindowTree Below (top without-view id) bottom))
+              (if ((bottom find-view id) present?)
+                  (if (bottom single?) top
+                      (AloemacsWindowTree Below top (bottom without-view id)))
+                  self)))
+        (Right (left right)
+          (if ((left find-view id) present?)
+              (if (left single?) right
+                  (AloemacsWindowTree Right (left without-view id) right))
+              (if ((right find-view id) present?)
+                  (if (right single?) left
+                      (AloemacsWindowTree Right left (right without-view id)))
+                  self)))))
+
+    (with-split (id Int) (fresh-id Int) (scroll-row Int) (scroll-col Int)
+                (below? Bool) AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((view id) = id)
+              (let ((original
+                      (AloemacsWindowTree Leaf
+                        (AloemacsView new id (view buffer-id) scroll-row scroll-col #f)))
+                    (fresh
+                      (AloemacsWindowTree Leaf
+                        (AloemacsView new fresh-id (view buffer-id) scroll-row scroll-col #f))))
+                (if below?
+                    (AloemacsWindowTree Below original fresh)
+                    (AloemacsWindowTree Right original fresh)))
+              self))
+        (Below (top bottom)
+          (if ((top find-view id) present?)
+              (AloemacsWindowTree Below
+                (top with-split id fresh-id scroll-row scroll-col below?) bottom)
+              (if ((bottom find-view id) present?)
+                  (AloemacsWindowTree Below top
+                    (bottom with-split id fresh-id scroll-row scroll-col below?))
+                  self)))
+        (Right (left right)
+          (if ((left find-view id) present?)
+              (AloemacsWindowTree Right
+                (left with-split id fresh-id scroll-row scroll-col below?) right)
+              (if ((right find-view id) present?)
+                  (AloemacsWindowTree Right left
+                    (right with-split id fresh-id scroll-row scroll-col below?))
+                  self)))))
+
+    (with-view-buffer (id Int) (buffer AloemacsBuffer) AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((view id) = id)
+              (let ((editor (buffer editor)))
+                (AloemacsWindowTree Leaf
+                  (AloemacsView new id (buffer id)
+                    (editor scroll-row) (editor scroll-col) (view locked))))
+              self))
+        (Below (top bottom)
+          (if ((top find-view id) present?)
+              (AloemacsWindowTree Below (top with-view-buffer id buffer) bottom)
+              (if ((bottom find-view id) present?)
+                  (AloemacsWindowTree Below top (bottom with-view-buffer id buffer))
+                  self)))
+        (Right (left right)
+          (if ((left find-view id) present?)
+              (AloemacsWindowTree Right (left with-view-buffer id buffer) right)
+              (if ((right find-view id) present?)
+                  (AloemacsWindowTree Right left (right with-view-buffer id buffer))
+                  self)))))
+
+    (retarget-buffer (removed-id Int) (buffer-id Int)
+                     (scroll-row Int) (scroll-col Int) AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((view buffer-id) = removed-id)
+              (AloemacsWindowTree Leaf
+                (AloemacsView new (view id) buffer-id
+                  scroll-row scroll-col (view locked)))
+              self))
+        (Below (top bottom)
+          (AloemacsWindowTree Below
+            (top retarget-buffer removed-id buffer-id scroll-row scroll-col)
+            (bottom retarget-buffer removed-id buffer-id scroll-row scroll-col)))
+        (Right (left right)
+          (AloemacsWindowTree Right
+            (left retarget-buffer removed-id buffer-id scroll-row scroll-col)
+            (right retarget-buffer removed-id buffer-id scroll-row scroll-col)))))))
+
+(define-class AloemacsWindowRect
+  (fields
+    (x Int)
+    (y Int)
+    (columns Int)
+    (rows Int))
+  (methods
+    (positive? () Bool
+      (if ((self columns) > 0) ((self rows) > 0) #f))
+
+    (same? (other AloemacsWindowRect) Bool
+      (if ((self x) = (other x))
+          (if ((self y) = (other y))
+              (if ((self columns) = (other columns))
+                  ((self rows) = (other rows)) #f) #f) #f))
+
+    (divider (extent Int) Int
+      (1 min extent))
+
+    (earlier (extent Int) Int
+      (((extent - (self divider extent)) + 1) / 2))
+
+    (top () AloemacsWindowRect
+      (AloemacsWindowRect new (self x) (self y) (self columns)
+        (self earlier (self rows))))
+
+    (bottom () AloemacsWindowRect
+      (let ((earlier (self earlier (self rows))) (divider (self divider (self rows))))
+        (AloemacsWindowRect new (self x) (((self y) + earlier) + divider)
+          (self columns) (((self rows) - divider) - earlier))))
+
+    (left () AloemacsWindowRect
+      (AloemacsWindowRect new (self x) (self y)
+        (self earlier (self columns)) (self rows)))
+
+    (right () AloemacsWindowRect
+      (let ((earlier (self earlier (self columns))) (divider (self divider (self columns))))
+        (AloemacsWindowRect new (((self x) + earlier) + divider) (self y)
+          (((self columns) - divider) - earlier) (self rows))))
+
+    (divider-row () Int
+      ((self y) + (self earlier (self rows))))
+
+    (divider-column () Int
+      ((self x) + (self earlier (self columns))))
+
+    (spaces (remaining Int) String
+      (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
+
+    (pad-row (row String) String
+      (row append (self spaces ((self columns) - (row len)))))))
+
+;; Both types are now declared; keep the tree/rectangle declaration order.
+(define-methods AloemacsWindowTree
+  (methods
+    (locked-rects-equal? (views (List AloemacsView))
+                         (candidate AloemacsWindowTree) (root AloemacsWindowRect) Bool
+      (if (views empty?)
+          #t
+          (let ((view (views first)))
+            (if (if (view locked)
+                    ((self rect-for (view id) root) case
+                      (None () #f)
+                      (Some (old)
+                        ((candidate rect-for (view id) root) case
+                          (None () #f)
+                          (Some (new) (old same? new)))))
+                    #t)
+                (self locked-rects-equal? (views rest) candidate root)
+                #f))))
+
+    (rect-for (id Int) (rect AloemacsWindowRect) (Option AloemacsWindowRect)
+      (self case
+        (Leaf (view)
+          (if ((view id) = id) (Option Some rect) (Option None)))
+        (Below (top bottom)
+          ((top rect-for id (rect top)) case
+            (Some (found) (Option Some found))
+            (None () (bottom rect-for id (rect bottom)))))
+        (Right (left right)
+          ((left rect-for id (rect left)) case
+            (Some (found) (Option Some found))
+            (None () (right rect-for id (rect right)))))))
+
+    (positive-layout? (rect AloemacsWindowRect) Bool
+      (self case
+        (Leaf (view) (rect positive?))
+        (Below (top bottom)
+          (if (top positive-layout? (rect top))
+              (bottom positive-layout? (rect bottom)) #f))
+        (Right (left right)
+          (if (left positive-layout? (rect left))
+              (right positive-layout? (rect right)) #f))))
+
+    ;; Each divider extends one cell beyond its subtree edge. These pure
+    ;; geometry queries supply junctions without inspecting buffer characters.
+    (horizontal-divider? (rect AloemacsWindowRect) (x Int) (y Int) Bool
+      (self case
+        (Leaf (view) #f)
+        (Below (top bottom)
+          (if (if (y = (rect divider-row))
+                  (if (x >= ((rect x) - 1))
+                      (x <= ((rect x) + (rect columns))) #f) #f)
+              #t
+              (if (top horizontal-divider? (rect top) x y)
+                  #t (bottom horizontal-divider? (rect bottom) x y))))
+        (Right (left right)
+          (if (left horizontal-divider? (rect left) x y)
+              #t (right horizontal-divider? (rect right) x y)))))
+
+    (vertical-divider? (rect AloemacsWindowRect) (x Int) (y Int) Bool
+      (self case
+        (Leaf (view) #f)
+        (Below (top bottom)
+          (if (top vertical-divider? (rect top) x y)
+              #t (bottom vertical-divider? (rect bottom) x y)))
+        (Right (left right)
+          (if (if (x = (rect divider-column))
+                  (if (y >= ((rect y) - 1))
+                      (y <= ((rect y) + (rect rows))) #f) #f)
+              #t
+              (if (left vertical-divider? (rect left) x y)
+                  #t (right vertical-divider? (rect right) x y))))))
+
+    (below-divider (rect AloemacsWindowRect) (x Int) (remaining Int) String
+      (if (remaining <= 0)
+          ""
+          ((if (self vertical-divider? rect x (rect divider-row)) "+" "-")
+           append (self below-divider rect (x + 1) (remaining - 1)))))
+
+    (right-rows (rect AloemacsWindowRect) (left-rows (List String))
+                (right-rows (List String)) (y Int) (List String)
+      (if (left-rows empty?)
+          (List empty)
+          ((self right-rows rect (left-rows rest) (right-rows rest) (y + 1))
+           cons
+           (((left-rows first)
+             append (if (self horizontal-divider? rect (rect divider-column) y) "+" "|"))
+            append (right-rows first)))))
+
+    (blank-rows (rect AloemacsWindowRect) (remaining Int) (List String)
+      (if (remaining <= 0)
+          (List empty)
+          ((self blank-rows rect (remaining - 1)) cons (rect pad-row ""))))
+
+    (frame-rows (buffers AloemacsBuffers) (rect AloemacsWindowRect) (List String)
+      (self case
+        (Leaf (view)
+          ;; find-id returns a local focused collection; never install it.
+          ((buffers find-id (view buffer-id)) case
+            (None () (self blank-rows rect (rect rows)))
+            (Some (focused)
+              ((((focused current-buffer) editor)
+                 frame-rows (rect columns) (rect rows) (view scroll-row) (view scroll-col))
+               map (fn (line) (rect pad-row line))))))
+        (Below (top bottom)
+          (((top frame-rows buffers (rect top)) reverse)
+           fold
+           ((bottom frame-rows buffers (rect bottom))
+            cons (self below-divider rect (rect x) (rect columns)))
+           (fn (rows row) (rows cons row))))
+        (Right (left right)
+          (self right-rows rect
+            (left frame-rows buffers (rect left))
+            (right frame-rows buffers (rect right)) (rect y)))))))
+
+(define-class AloemacsWindows
+  (fields
+    (tree AloemacsWindowTree)
+    (selected Int)
+    (columns Int)
+    (rows Int))
+  (methods
+    (text-rect (columns Int) (rows Int) AloemacsWindowRect
+      (AloemacsWindowRect new 0 0 columns (if (rows >= 2) (rows - 1) rows)))
+
+    (fit-rect (columns Int) (rows Int) AloemacsWindowRect
+      (let ((root (self text-rect columns rows)))
+        (if ((self tree) positive-layout? root)
+            (((self tree) rect-for (self selected) root) case
+              (None () root)
+              (Some (rect) rect))
+            root)))
+
+    (split-allowed? (below? Bool) Bool
+      (cond
+        (((self columns) <= 0) #f)
+        (((self rows) <= 0) #f)
+        (else
+          (((self tree) find-view (self selected)) case
+            (None () #f)
+            (Some (view)
+              (if (view locked)
+                  #f
+                  ;; Commands judge the nominal leaf, even during fallback.
+                  (((self tree) rect-for (self selected)
+                     (self text-rect (self columns) (self rows))) case
+                    (None () #f)
+                    (Some (rect)
+                      (if (rect positive?)
+                          ((if below? (rect rows) (rect columns)) >= 3)
+                          #f)))))))))
+
+    (with-split (scroll-row Int) (scroll-col Int) (below? Bool) AloemacsWindows
+      (AloemacsWindows new
+        ((self tree) with-split (self selected) ((self tree) fresh-id)
+          scroll-row scroll-col below?)
+        (self selected) (self columns) (self rows)))
+
+    (with-toggled-lock () AloemacsWindows
+      (AloemacsWindows new
+        ((self tree) with-toggled-lock (self selected))
+        (self selected) (self columns) (self rows)))
+
+    (delete-allowed? (candidate AloemacsWindowTree) (sibling AloemacsWindowTree) Bool
+      (if (if ((self columns) > 0) ((self rows) > 0) #f)
+          ((self tree) locked-rects-equal? (candidate leaves) candidate
+            (self text-rect (self columns) (self rows)))
+          ;; Unknown geometry cannot prove protection of sibling descendants.
+          (if (sibling any-locked?) #f #t)))
+
+    (with-buffer (buffer AloemacsBuffer) AloemacsWindows
+      (AloemacsWindows new
+        ((self tree) with-view-buffer (self selected) buffer)
+        (self selected) (self columns) (self rows)))
+
+    (without-buffer (removed-id Int) (replacement AloemacsBuffer) AloemacsWindows
+      ;; Capture the replacement origin before traversing any affected view.
+      (let ((editor (replacement editor)))
+        (AloemacsWindows new
+          ((self tree) retarget-buffer removed-id (replacement id)
+            (editor scroll-row) (editor scroll-col))
+          (self selected) (self columns) (self rows))))
+
+    (with-size (columns Int) (rows Int) AloemacsWindows
+      (if (columns > 0)
+          (if (rows > 0)
+              (AloemacsWindows new (self tree) (self selected) columns rows)
+              self)
+          self))))
 
 (define-class AloemacsCommand
   (constructors
@@ -160,7 +616,12 @@
     (KillBuffer (fields))
     (FindFile (fields))
     (SaveAs (fields))
-    (SelectBuffer (fields)))
+    (SelectBuffer (fields))
+    (SplitBelow (fields))
+    (SplitRight (fields))
+    (DeleteWindow (fields))
+    (OtherWindow (fields))
+    (ToggleWindowLock (fields)))
   (methods
     (name () String
       (self case
@@ -189,7 +650,12 @@
         (KillBuffer () "kill-buffer")
         (FindFile () "find-file")
         (SaveAs () "save-as")
-        (SelectBuffer () "select-buffer")))))
+        (SelectBuffer () "select-buffer")
+        (SplitBelow () "split-below")
+        (SplitRight () "split-right")
+        (DeleteWindow () "delete-window")
+        (OtherWindow () "other-window")
+        (ToggleWindowLock () "toggle-window-lock")))))
 
 (define-class (AloemacsKeymap B)
   (fields
@@ -253,7 +719,8 @@
     (pending (Option (AloemacsKeymap AloemacsBinding)))
     (prompt (Option AloemacsPrompt))
     (last-submission (Option String))
-    (waiting-command (Option AloemacsCommand)))
+    (waiting-command (Option AloemacsCommand))
+    (windows AloemacsWindows))
   (methods
     (current-buffer () AloemacsBuffer
       ((self buffers) current-buffer))
@@ -271,7 +738,7 @@
         (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command) (self windows)))
 
     (start-prompt (label String) (AloemacsSession H)
       (cond
@@ -286,21 +753,21 @@
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (Option Some prompt) (self last-submission) (self waiting-command)))
+        (Option Some prompt) (self last-submission) (self waiting-command) (self windows)))
 
     (with-waiting-command (command AloemacsCommand) (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (self prompt) (self last-submission) (Option Some command)))
+        (self prompt) (self last-submission) (Option Some command) (self windows)))
 
     (clear-waiting-command () (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (self prompt) (self last-submission) (Option None)))
+        (self prompt) (self last-submission) (Option None) (self windows)))
 
     (start-command-prompt (command AloemacsCommand) (label String)
                           (AloemacsSession H)
@@ -334,7 +801,7 @@
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
             (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
-            (Option Some (prompt text)) (self waiting-command))
+            (Option Some (prompt text)) (self waiting-command) (self windows))
            run-submitted-command))))
 
     (cancel-prompt () (AloemacsSession H)
@@ -343,7 +810,7 @@
             (self buffers) (self fs) (self echo)
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
-            (Option None) (self last-submission) (Option None))
+            (Option None) (self last-submission) (Option None) (self windows))
           ((self waiting-command) case
             (None () self)
             (Some (command) (self clear-waiting-command)))))
@@ -368,7 +835,7 @@
 
     (add-buffer (contents String) (AloemacsSession H)
       (let ((session (self end-search)))
-        (AloemacsSession new
+        (session selected-buffers
           ((session buffers) insert-after
             (AloemacsBuffer new
               (AloemacsEditor new
@@ -376,14 +843,11 @@
                 (Position new 0 0) #f 0 0 (List empty)
                 (if #t (Option None) (Option Some (Position new 0 0)))
                 0)
-              (Option None)))
-          (session fs) "" #f "" (Position new 0 0) #f #f
-          (session kill-ring) (Option None)
-          (session prompt) (session last-submission) (session waiting-command))))
+              (Option None) ((session buffers) fresh-id))))))
 
     (add-buffer (contents String) (path Path) (AloemacsSession H)
       (let ((session (self end-search)))
-        (AloemacsSession new
+        (session selected-buffers
           ((session buffers) insert-after
             (AloemacsBuffer new
               (AloemacsEditor new
@@ -391,32 +855,28 @@
                 (Position new 0 0) #f 0 0 (List empty)
                 (if #t (Option None) (Option Some (Position new 0 0)))
                 0)
-              (Option Some path)))
-          (session fs) "" #f "" (Position new 0 0) #f #f
-          (session kill-ring) (Option None)
-          (session prompt) (session last-submission) (session waiting-command))))
+              (Option Some path) ((session buffers) fresh-id))))))
 
     (switch-buffer () (AloemacsSession H)
       (let ((session (self end-search)))
-        (AloemacsSession new
-          ((session buffers) focus-next)
-          (session fs) "" #f "" (Position new 0 0) #f #f
-          (session kill-ring) (Option None)
-          (session prompt) (session last-submission) (session waiting-command))))
+        (session selected-buffers ((session buffers) focus-next))))
 
     (kill-buffer () (AloemacsSession H)
       (let ((session (self end-search)))
-        (AloemacsSession new
-          ((session buffers) remove-current)
-          (session fs) "" #f "" (Position new 0 0) #f #f
-          (session kill-ring) (Option None)
-          (session prompt) (session last-submission) (session waiting-command))))
+        (let ((buffers ((session buffers) remove-current)))
+          (AloemacsSession new
+            buffers (session fs) "" #f "" (Position new 0 0) #f #f
+            (session kill-ring) (Option None)
+            (session prompt) (session last-submission) (session waiting-command)
+            ((session windows) without-buffer ((session current-buffer) id)
+              (buffers current-buffer))))))
 
     (selected-buffers (buffers AloemacsBuffers) (AloemacsSession H)
       (AloemacsSession new
         buffers (self fs) "" #f "" (Position new 0 0) #f #f
         (self kill-ring) (Option None)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command)
+        ((self windows) with-buffer (buffers current-buffer))))
 
     (with-editor (editor AloemacsEditor) (AloemacsSession H)
       (AloemacsSession new
@@ -433,7 +893,8 @@
         (self pending)
         (self prompt)
         (self last-submission)
-        (self waiting-command)))
+        (self waiting-command)
+        ((self windows) with-buffer ((self current-buffer) with-editor editor))))
 
     (with-kill-state (editor AloemacsEditor) (kill-ring (List String))
                      (AloemacsSession H)
@@ -443,7 +904,8 @@
         (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) kill-ring (self pending)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command)
+        ((self windows) with-buffer ((self current-buffer) with-editor editor))))
 
     (with-search (editor AloemacsEditor) (searching Bool)
                  (query String) (origin Position)
@@ -453,28 +915,114 @@
           ((self current-buffer) with-editor editor))
         (self fs) (self echo)
         searching query origin wrapped failing (self kill-ring) (self pending)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command)
+        ((self windows) with-buffer ((self current-buffer) with-editor editor))))
 
     (with-echo (token String) (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) token
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (self pending)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command) (self windows)))
+
+    (split-below () (AloemacsSession H)
+      (self split-window #t))
+
+    (split-right () (AloemacsSession H)
+      (self split-window #f))
+
+    (split-window (below? Bool) (AloemacsSession H)
+      (let ((windows (self windows))
+            (active? (if (self searching) #t ((self prompt) present?))))
+        (if (windows split-allowed? below?)
+            ;; Capture both origins before fitting the selected original once.
+            (let ((editor (self editor)))
+              ((AloemacsSession new
+                 (self buffers) (self fs) (if active? (self echo) "")
+                 (self searching) (self query) (self origin)
+                 (self wrapped) (self failing) (self kill-ring) (self pending)
+                 (self prompt) (self last-submission) (self waiting-command)
+                 (windows with-split (editor scroll-row) (editor scroll-col) below?))
+               ensure-visible (windows columns) (windows rows)))
+            (if active? self (self with-echo "failed")))))
+
+    ;; The callers store the departing live origin before changing selection.
+    ;; Entry changes only buffer focus/origins and the buffer-ID reset fields.
+    (enter-view (tree AloemacsWindowTree) (view AloemacsView) (AloemacsSession H)
+      (((self buffers) find-id (view buffer-id)) case
+        (None () self)
+        (Some (focused)
+          (let ((same-buffer? (((self current-buffer) id) = (view buffer-id)))
+                (buffer (focused current-buffer)))
+            (AloemacsSession new
+              (focused with-current-buffer
+                (buffer with-editor
+                  ((buffer editor) with-origin (view scroll-row) (view scroll-col))))
+              (self fs)
+              (if same-buffer? (self echo)
+                  (if ((self prompt) present?) (self echo) ""))
+              (if same-buffer? (self searching) #f)
+              (if same-buffer? (self query) "")
+              (if same-buffer? (self origin) (Position new 0 0))
+              (if same-buffer? (self wrapped) #f)
+              (if same-buffer? (self failing) #f)
+              (self kill-ring) (if same-buffer? (self pending) (Option None))
+              (self prompt) (self last-submission) (self waiting-command)
+              (AloemacsWindows new tree (view id)
+                ((self windows) columns) ((self windows) rows)))))))
+
+    (other-window () (AloemacsSession H)
+      (if (((self windows) tree) single?)
+          self
+          (let ((windows ((self windows) with-buffer (self current-buffer))))
+            (((windows tree) next-view (windows selected)) case
+              (None () self)
+              (Some (view) (self enter-view (windows tree) view))))))
+
+    (toggle-window-lock () (AloemacsSession H)
+      (AloemacsSession new
+        (self buffers) (self fs) (self echo)
+        (self searching) (self query) (self origin)
+        (self wrapped) (self failing) (self kill-ring) (self pending)
+        (self prompt) (self last-submission) (self waiting-command)
+        ((self windows) with-toggled-lock)))
+
+    (delete-refused () (AloemacsSession H)
+      (if (self searching) self
+          (if ((self prompt) present?) self (self with-echo "failed"))))
+
+    (delete-window () (AloemacsSession H)
+      (let ((windows (self windows)))
+        (((windows tree) find-view (windows selected)) case
+          (None () (self delete-refused))
+          (Some (view)
+            (if (view locked)
+                (self delete-refused)
+                (((windows tree) sibling-for (windows selected)) case
+                  (None () (self delete-refused))
+                  (Some (sibling)
+                    (let ((stored ((windows with-buffer (self current-buffer)) tree)))
+                      (let ((candidate (stored without-view (windows selected)))
+                            (destinations (sibling leaves)))
+                        (if (windows delete-allowed? candidate sibling)
+                            (if (destinations empty?)
+                                (self delete-refused)
+                                (self enter-view candidate (destinations first)))
+                            (self delete-refused)))))))))))
 
     (with-prefix (map (AloemacsKeymap AloemacsBinding)) (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) ""
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option Some map)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command) (self windows)))
 
     (clear-prefix () (AloemacsSession H)
       (AloemacsSession new
         (self buffers) (self fs) (self echo)
         (self searching) (self query) (self origin)
         (self wrapped) (self failing) (self kill-ring) (Option None)
-        (self prompt) (self last-submission) (self waiting-command)))
+        (self prompt) (self last-submission) (self waiting-command) (self windows)))
 
     (find () (AloemacsSession H)
       (self with-search (self editor) #t "" (self point) #f #f))
@@ -693,28 +1241,30 @@
         (KillBuffer () (self kill-buffer))
         (FindFile () (self start-command-prompt command "Find file: "))
         (SaveAs () (self start-command-prompt command "Save as: "))
-        (SelectBuffer () (self start-command-prompt command "Buffer: "))))
+        (SelectBuffer () (self start-command-prompt command "Buffer: "))
+        (SplitBelow () (self split-below))
+        (SplitRight () (self split-right))
+        (DeleteWindow () (self delete-window))
+        (OtherWindow () (self other-window))
+        (ToggleWindowLock () (self toggle-window-lock))))
 
     (unchanged () (AloemacsSession H)
       self)
 
     (visited (contents String) (path Path) (AloemacsSession H)
-      (AloemacsSession new
-        ((self buffers) with-current-buffer
-          (AloemacsBuffer new
-            (AloemacsEditor new
-              ((Text from-string contents) indexed-value)
-              (Position new 0 0)
-              #f
-              0
-              0
-              (List empty)
-              (if #t (Option None) (Option Some (Position new 0 0)))
-              0)
-            (Option Some path)))
-        (self fs)
-        "" #f "" (Position new 0 0) #f #f (List empty) (Option None)
-        (Option None) (self last-submission) (Option None)))
+      (let ((buffer
+              (AloemacsBuffer new
+                (AloemacsEditor new
+                  ((Text from-string contents) indexed-value)
+                  (Position new 0 0) #f 0 0 (List empty)
+                  (if #t (Option None) (Option Some (Position new 0 0))) 0)
+                (Option Some path) ((self current-buffer) id))))
+        (AloemacsSession new
+          ((self buffers) with-current-buffer buffer)
+          (self fs)
+          "" #f "" (Position new 0 0) #f #f (List empty) (Option None)
+          (Option None) (self last-submission) (Option None)
+          ((self windows) with-buffer buffer))))
 
     (text () Text
       ((self editor) text))
@@ -771,6 +1321,67 @@
       (self with-editor ((self editor) request-quit)))
 
     (frame (columns Int) (rows Int) String
+      (let ((windows (self windows)))
+        (let ((root (windows text-rect columns rows)))
+          (if ((windows tree) single?)
+              (self single-frame columns rows)
+              (if ((windows tree) positive-layout? root)
+                  (self multi-frame root columns rows)
+                  (self single-frame columns rows))))))
+
+    (shown-echo (columns Int) String
+      (let ((label
+              ((self path) case
+                (None () "untitled")
+                (Some (path) (path text)))))
+        (let ((row
+                ((self prompt) case
+                  (Some (prompt) (prompt row))
+                  (None ()
+                    (if (self searching)
+                        (cond
+                          ((self failing) ("failing: " append (self query)))
+                          ((self wrapped) ("wrapped: " append (self query)))
+                          (else ("search: " append (self query))))
+                        (cond
+                          (((self echo) = "saved") ("saved: " append label))
+                          (((self echo) = "failed") ("failed: " append label))
+                          (else label)))))))
+          ((self editor) safe-cells (row take columns)))))
+
+    (multi-frame (root AloemacsWindowRect) (columns Int) (rows Int) String
+      (let ((editor (self editor)) (windows (self windows)))
+        (let ((lines ((windows tree) frame-rows (self buffers) root))
+              (selected (windows fit-rect columns rows)))
+          (let ((body
+                  ((lines rest) fold (lines first)
+                    (fn (body line) ((body append "\r\n") append line))))
+                (text-cursor-row
+                  ((((selected y) + ((editor point) line)) - (editor scroll-row)) + 1))
+                (text-cursor-column
+                  ((((selected x) + ((editor point) column)) - (editor scroll-col)) + 1)))
+            (let ((cursor-row
+                    (if (rows >= 2)
+                        ((self prompt) case
+                          (Some (prompt) rows)
+                          (None () text-cursor-row))
+                        text-cursor-row))
+                  (cursor-column
+                    (if (rows >= 2)
+                        ((self prompt) case
+                          (Some (prompt) (prompt screen-column columns))
+                          (None () text-cursor-column))
+                        text-cursor-column)))
+              (editor frame-ansi
+                (if (rows >= 2)
+                    ((((body append "\u001b[") append (rows text)) append ";1H")
+                     append (self shown-echo columns))
+                    body)
+                cursor-row cursor-column))))))
+
+    ;; Keep the complete predecessor composer, including its intermediate
+    ;; cursor sequences and the direct editor's unpadded/raw-state branches.
+    (single-frame (columns Int) (rows Int) String
       (let ((editor (self editor))
             (text-rows (if (rows >= 2) (rows - 1) rows)))
         (let ((body (editor frame columns text-rows)))
@@ -824,9 +1435,16 @@
                      (fn (acc part) (acc append part))))))))))
 
     (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
-      (self with-editor
-        ((self editor) ensure-visible columns
-          (if (rows >= 2) (rows - 1) rows))))
+      (let ((rect ((self windows) fit-rect columns rows)))
+        (let ((session
+                (self with-editor
+                  ((self editor) ensure-visible (rect columns) (rect rows)))))
+          (AloemacsSession new
+            (session buffers) (session fs) (session echo)
+            (session searching) (session query) (session origin)
+            (session wrapped) (session failing) (session kill-ring) (session pending)
+            (session prompt) (session last-submission) (session waiting-command)
+            ((session windows) with-size columns rows)))))
 
     (file-contents (path Path) (Option String)
       (((self fs) inspect path) case
@@ -893,7 +1511,12 @@
       (AloemacsBinding Command "save" aloemacs-save-command)
       (AloemacsBinding Command "find" (AloemacsCommand FindFile))
       (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
-      (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer)))
+      (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))
+      (AloemacsBinding Command "2" (AloemacsCommand SplitBelow))
+      (AloemacsBinding Command "3" (AloemacsCommand SplitRight))
+      (AloemacsBinding Command "0" (AloemacsCommand DeleteWindow))
+      (AloemacsBinding Command "o" (AloemacsCommand OtherWindow))
+      (AloemacsBinding Command "l" (AloemacsCommand ToggleWindowLock)))
     (if #t
         (Option None)
         (Option Some aloemacs-self-insert-command))))

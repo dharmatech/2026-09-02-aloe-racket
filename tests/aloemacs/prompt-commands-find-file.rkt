@@ -70,16 +70,22 @@
 (define (editor contents)
   `(AloemacsEditor new ((Text from-string ,contents) indexed-value)
      (Position new 0 0) #f 0 0 (List empty) ,no-mark 0))
-(define (buffer contents [path no-path])
-  `(AloemacsBuffer new ,(editor contents) ,path))
-(define (bound contents name) (buffer contents `(Option Some (Path new ,name))))
+(define (buffer contents [path no-path] [id 0])
+  `(AloemacsBuffer new ,(editor contents) ,path ,id))
+(define (bound contents name [id 0]) (buffer contents `(Option Some (Path new ,name)) id))
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
 (define (session buffers)
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #f "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
-     ,no-pending ,no-prompt ,no-submission ,no-command))
+     ,no-pending ,no-prompt ,no-submission ,no-command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 ;; Only constructors and reads appear in expected reconstructions.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
@@ -87,17 +93,25 @@
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)] #:prompt [line `(,s prompt)]
                  #:submission [submission `(,s last-submission)]
-                 #:waiting [command `(,s waiting-command)])
+                 #:waiting [command `(,s waiting-command)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
-     ,wrapped ,failing ,ring ,pending ,line ,submission ,command))
+     ,wrapped ,failing ,ring ,pending ,line ,submission ,command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
-     (AloemacsBuffer new ,new-editor ,path) ((,s buffers) after)))
+     (AloemacsBuffer new ,new-editor ,path ((,s current-buffer) id)) ((,s buffers) after)))
 (define (selected s buffers)
   (rebuild s #:buffers buffers #:echo "" #:searching #f #:query ""
     #:origin '(Position new 0 0) #:wrapped #f #:failing #f #:pending no-pending))
 (define (rich! st)
-  (def! st 'a (bound "neighbor a" "/cwd/old.txt"))
+  (def! st 'a (bound "neighbor a" "/cwd/old.txt" 0))
   (def! st 'rich-editor
     '(AloemacsEditor new
        (Text indexed (List of "second" "first") "third-long"
@@ -105,8 +119,8 @@
        (Position new 2 4) #f 2 3
        (List of (UndoFrame new (Text from-string "old b") (Position new 0 2) 1 2))
        (Option Some (Position new 1 1)) 4))
-  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt"))))
-  (def! st 'c (buffer "neighbor c"))
+  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt")) 1))
+  (def! st 'c (buffer "neighbor c" no-path 2))
   (def! st 'source (session (zipper '(a b c) 1))))
 (define (draft! st [text "draft"])
   (rich! st)
@@ -120,19 +134,20 @@
     (format "\u001b[?25l\u001b[~a;1H~a\u001b[~a;~aH\u001b[?25h"
       rows shown cursor-row cursor-column)))
 
-(test-case "exact thirteen fields, helper signatures, command and production map inventories"
+(test-case "exact fourteen fields, helper signatures, command and production map inventories"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (define (declaration name) (findf (lambda (d) (equal? (cadr d) name)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsCommand
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+      AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (declaration '(AloemacsSession H)))
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
        (query String) (origin Position) (wrapped Bool) (failing Bool)
        (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
        (prompt (Option AloemacsPrompt)) (last-submission (Option String))
-       (waiting-command (Option AloemacsCommand))))
+       (waiting-command (Option AloemacsCommand)) (windows AloemacsWindows)))
   (define signatures
     '((with-waiting-command (command AloemacsCommand) (AloemacsSession H))
       (clear-waiting-command () (AloemacsSession H))
@@ -152,8 +167,9 @@
   (check-equal? (map car constructors)
     '(Newline BackwardDelete MoveLeft MoveRight MoveUp MoveDown LineStart LineEnd
       PageUp PageDown BufferStart BufferEnd RequestQuit Undo SetMark Kill KillLine
-      Yank Find Save SelfInsert SwitchBuffer KillBuffer FindFile SaveAs SelectBuffer))
-  (check-equal? (take-right constructors 3)
+      Yank Find Save SelfInsert SwitchBuffer KillBuffer FindFile SaveAs SelectBuffer
+      SplitBelow SplitRight DeleteWindow OtherWindow ToggleWindowLock))
+  (check-equal? (take-right (drop-right constructors 5) 3)
     '((FindFile (fields)) (SaveAs (fields)) (SelectBuffer (fields))))
   (check-equal? (length (cdr (cadddr (declaration 'AloemacsCommand)))) 1)
   (define-values (st calls) (state))
@@ -161,7 +177,12 @@
     '(List of (AloemacsBinding Command "save" aloemacs-save-command)
               (AloemacsBinding Command "find" (AloemacsCommand FindFile))
               (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
-              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
+              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))
+              (AloemacsBinding Command "2" (AloemacsCommand SplitBelow))
+              (AloemacsBinding Command "3" (AloemacsCommand SplitRight))
+              (AloemacsBinding Command "0" (AloemacsCommand DeleteWindow))
+              (AloemacsBinding Command "o" (AloemacsCommand OtherWindow))
+              (AloemacsBinding Command "l" (AloemacsCommand ToggleWindowLock))))
   (check-false (ev st '((aloemacs-ctrl-x-keymap default) present?)))
   (define global-rows
     '(("return" Newline) ("backspace" BackwardDelete) ("left" MoveLeft) ("right" MoveRight)
@@ -316,12 +337,12 @@
       (list '(draft clear-prefix) 'draft)
       (list '(draft switch-buffer) (selected 'draft (zipper '(a b c) 2)))
       (list '(draft kill-buffer) (selected 'draft (zipper '(a c) 1)))
-      (list '(draft add-buffer "new") (selected 'draft (zipper (list 'a 'b (buffer "new") 'c) 2)))
+      (list '(draft add-buffer "new") (selected 'draft (zipper (list 'a 'b (buffer "new" no-path 3) 'c) 2)))
       (list '(draft add-buffer "new" (Path new "relative"))
-            (selected 'draft (zipper (list 'a 'b (bound "new" "relative") 'c) 2)))
+            (selected 'draft (zipper (list 'a 'b (bound "new" "relative" 3) 'c) 2)))
       (list '(draft selected-buffers (draft buffers)) (selected 'draft '(draft buffers)))
       (list '(draft ensure-visible 2 2)
-            (rebuild 'draft #:buffers (replace-current 'draft
+            (rebuild 'draft #:columns 2 #:rows 2 #:buffers (replace-current 'draft
               '(AloemacsEditor new (draft text) (draft point) #f 2 3
                  (rich-editor history) (rich-editor mark) 1))))))
   (for ([row rows])
@@ -352,14 +373,15 @@
 
 (test-case "bounded pure lookup: singleton, forward/wrapped duplicates and equal-valued positions"
   (define-values (st calls) (state))
-  (def! st 'a (bound "a" "same"))
-  (def! st 'b (bound "b" "same"))
-  (def! st 'c (bound "c" "target"))
-  (def! st 'd (bound "d" "same"))
+  (def! st 'a (bound "a" "same" 0))
+  (def! st 'b (bound "b" "same" 1))
+  (def! st 'c (bound "c" "target" 2))
+  (def! st 'd (bound "d" "same" 3))
+  (def! st 'equal-a (bound "a" "same" 4))
   (for ([row (list (list '(a) 0 "same" 0) (list '(a b c d) 1 "same" 1)
                    (list '(a b c d) 0 "target" 2) (list '(a b c d) 3 "target" 2)
                    (list '(a c b d) 1 "same" 2) (list '(a b c d) 2 "same" 3)
-                   (list '(a b c) 2 "same" 0) (list '(a a c) 0 "target" 2))])
+                   (list '(a b c) 2 "same" 0) (list '(a equal-a c) 0 "target" 2))])
     (define order (car row))
     (def! st 'collection (zipper order (cadr row)))
     (define before (ev st 'collection))
@@ -371,9 +393,9 @@
     (check-equal? (ev st 'collection) before))
   (def! st 'empty-name (zipper (list (bound "empty" "")) 0))
   (check-false (ev st '((empty-name find-name "") present?)))
-  (def! st 'collection (zipper '(a a c) 0))
+  (def! st 'collection (zipper '(a equal-a c) 0))
   (check-false (ev st '((collection find-name-in "target" 2) present?)))
-  (same st '(collection find-name-in "target" 3) `(Option Some ,(zipper '(a a c) 2)))
+  (same st '(collection find-name-in "target" 3) `(Option Some ,(zipper '(a equal-a c) 2)))
   (check-equal? (unbox calls) '()))
 
 (test-case "Return opens exact regular contents or missing paths after current, preserving complete buffers"
@@ -388,7 +410,7 @@
     (define missing? (equal? input "missing.txt"))
     (define resolved (if missing? "/cwd/missing.txt" "/cwd/a.txt"))
     (define contents (if missing? "" "\uFEFFλ\r\nb\n"))
-    (define new (bound contents resolved))
+    (define new (bound contents resolved 3))
     (define order (append (take '(a b c) (add1 focus)) (list new) (drop '(a b c) (add1 focus))))
     (same st 'done (rebuild 'active #:buffers (zipper order (add1 focus)) #:echo ""
       #:searching #f #:query "" #:origin '(Position new 0 0) #:wrapped #f #:failing #f
@@ -411,7 +433,7 @@
   (def! st 'empty (buffer ""))
   (def! st 's (session (zipper '(empty) 0)))
   (same st '(s find-file-submitted "new")
-    (selected 's (zipper (list 'empty (bound "" "/cwd/new")) 1)))
+    (selected 's (zipper (list 'empty (bound "" "/cwd/new" 1)) 1)))
   (check-equal? (all-calls calls) (read-calls "new" "/cwd/new" #f #f)))
 
 (test-case "reuse precedes all disk inspection and resets selection even on current hits"
@@ -419,8 +441,8 @@
     (define-values (st calls) (state))
     (rich! st)
     (define resolved (string-append "/cwd/" input))
-    (def! st 'first `(AloemacsBuffer new rich-editor (Option Some (Path new ,resolved))))
-    (def! st 'duplicate (bound "different unsaved" resolved))
+    (def! st 'first `(AloemacsBuffer new rich-editor (Option Some (Path new ,resolved)) 1))
+    (def! st 'duplicate (bound "different unsaved" resolved 3))
     (for ([focus '(0 1 2 3)] [hit '(1 1 2 1)])
       (def! st 's (session (zipper '(a first duplicate c) focus)))
       (def! st 's (rebuild 's #:pending '(Option Some aloemacs-ctrl-x-keymap)
@@ -540,7 +562,7 @@
     (define-values (st calls) (state #:contents contents))
     (rich! st)
     (def! st 'done '(source find-file-submitted "a.txt"))
-    (same st '(done current-buffer) (bound contents "/cwd/a.txt"))
+    (same st '(done current-buffer) (bound contents "/cwd/a.txt" 3))
     (check-equal? (all-calls calls) (read-calls "a.txt" "/cwd/a.txt"))))
 
 ;; Real runner, descriptor-compatible Term with exact fixed host call shapes.

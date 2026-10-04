@@ -76,7 +76,7 @@
        (List empty)
        (AloemacsBuffer new
          ,editor
-         ,(if path `(Option Some (Path new ,path)) no-path))
+         ,(if path `(Option Some (Path new ,path)) no-path) 0)
        (List empty))
      (Fs new fs-host)
      ""
@@ -89,7 +89,18 @@
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,editor
+         ,(if path `(Option Some (Path new ,path)) no-path) 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -143,7 +154,7 @@
                 (List empty)
                 (AloemacsBuffer new
                   ,editor
-                  "path")
+                  "path" 0)
                 (List empty))
               (Fs new fs-host)
               ""
@@ -156,13 +167,24 @@
               (if #t (Option None) (Option Some aloemacs-global-keymap))
               (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
               (if #t (Option None) (Option Some ""))
-              (if #t (Option None) (Option Some (AloemacsCommand FindFile))))
+              (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+                (List empty)
+                (AloemacsBuffer new
+                  ,editor
+                  "path" 0)
+                (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0)))
             (AloemacsSession new
               (AloemacsBuffers new
                 (List empty)
                 (AloemacsBuffer new
                   ,editor
-                  ,no-path)
+                  ,no-path 0)
                 (List empty))
               (Fs new fs-host)
               0
@@ -175,7 +197,18 @@
               (if #t (Option None) (Option Some aloemacs-global-keymap))
               (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
               (if #t (Option None) (Option Some ""))
-              (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))])
+              (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+                (List empty)
+                (AloemacsBuffer new
+                  ,editor
+                  ,no-path 0)
+                (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0)))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

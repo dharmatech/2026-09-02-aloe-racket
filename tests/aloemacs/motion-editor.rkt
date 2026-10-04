@@ -102,7 +102,7 @@
               (List empty)
               (AloemacsBuffer new
                 ,(editor "abc\ndef" 1 2)
-                (if #t (Option None) (Option Some (Path new "/unused"))))
+                (if #t (Option None) (Option Some (Path new "/unused"))) 0)
               (List empty))
             (Fs new fs-host)
             "saved"
@@ -115,7 +115,18 @@
             (if #t (Option None) (Option Some aloemacs-global-keymap))
             (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
             (if #t (Option None) (Option Some ""))
-            (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+            (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+              (List empty)
+              (AloemacsBuffer new
+                ,(editor "abc\ndef" 1 2)
+                (if #t (Option None) (Option Some (Path new "/unused"))) 0)
+              (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))
   (check-equal? (driver-eval! st '(paged echo)) "")

@@ -18,7 +18,7 @@
 (define submitted '(Option Some "previous\tanswer"))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission waiting-command))
+            prompt last-submission waiting-command windows))
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
 (define (type st expr)
@@ -68,8 +68,8 @@
      ,(if cold? `(Text from-string ,contents)
           `((Text from-string ,contents) indexed-value))
      ,point #f 0 0 (List empty) ,no-mark 0))
-(define (buffer contents [path no-path])
-  `(AloemacsBuffer new ,(editor contents) ,path))
+(define (buffer contents [path no-path] [id 0])
+  `(AloemacsBuffer new ,(editor contents) ,path ,id))
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
@@ -77,7 +77,13 @@
                  #:pending [pending '(Option Some aloemacs-ctrl-x-keymap)])
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #t "old query"
      (Position new 4 2) #t #t (List of "newest" "older") ,pending ,prompt ,submission
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 ;; All expectations rebuild independently of production session helpers.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -85,13 +91,21 @@
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)] #:prompt [prompt `(,s prompt)]
-                 #:submission [submission `(,s last-submission)])
+                 #:submission [submission `(,s last-submission)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
      ,wrapped ,failing ,ring ,pending ,prompt ,submission
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (replace-current s editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
-     (AloemacsBuffer new ,editor ,path) ((,s buffers) after)))
+     (AloemacsBuffer new ,editor ,path ((,s current-buffer) id)) ((,s buffers) after)))
 (define (reset s buffers #:visit? [visit? #f])
   (rebuild s #:buffers buffers #:echo "" #:searching #f #:query ""
            #:origin '(Position new 0 0) #:wrapped #f #:failing #f
@@ -107,7 +121,7 @@
   (same st `(,name prompt) active)
   (same st `(,name last-submission) submitted))
 (define (rich! st)
-  (def! st 'a (buffer "neighbor a" '(Option Some (Path new "/cwd/a.txt"))))
+  (def! st 'a (buffer "neighbor a" '(Option Some (Path new "/cwd/a.txt")) 0))
   (def! st 'rich-editor
     '(AloemacsEditor new
        (Text indexed (List of "second" "first") "third-long"
@@ -115,8 +129,8 @@
        (Position new 2 4) #f 2 3
        (List of (UndoFrame new (Text from-string "old b") (Position new 0 2) 1 2))
        (Option Some (Position new 1 1)) 4))
-  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt"))))
-  (def! st 'c (buffer "neighbor c"))
+  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt")) 1))
+  (def! st 'c (buffer "neighbor c" no-path 2))
   (def! st 'source (session (zipper '(a b c) 1))))
 (define (editor-frame body row column)
   (string-append "\u001b[?25l\u001b[2J\u001b[H" body
@@ -131,7 +145,8 @@
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsCommand
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+      AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define prompt (findf (lambda (d) (eq? (cadr d) 'AloemacsPrompt)) classes))
   (check-not-false prompt)
@@ -147,7 +162,7 @@
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
              (query String) (origin Position) (wrapped Bool) (failing Bool)
              (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
-             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand)))))
+             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand)) (windows AloemacsWindows))))
 
 (test-case "two fresh checked loads have no output, capability, or host effects"
   (for ([i (in-range 2)])
@@ -257,7 +272,7 @@
     (check-false (ev st '(((edited text) find "\n" 0) present?)))
     (check-equal? (ev st 'p) original)))
 
-(test-case "thirteen-field constructor, pure Option reads, and lawful cold startup"
+(test-case "fourteen-field constructor, pure Option reads, and lawful cold startup"
   (define-values (st calls) (state))
   (rich! st)
   (check-equal? (type st '(source prompt)) '(Option AloemacsPrompt))
@@ -267,9 +282,9 @@
   (for ([bad (list (drop-right fixture 2) (drop-right fixture 1)
                    (append fixture '(0))
                    (append (take fixture 12) (list '(Option Some "wrong") submitted)
-                           (take-right fixture 1))
+                           (take-right fixture 2))
                    (append (take fixture 13) (list '(Option Some 1))
-                           (take-right fixture 1))
+                           (take-right fixture 2))
                    '(source prompt 0) '(source last-submission 0)
                    '(1 prompt) '("x" last-submission))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st bad))))
@@ -287,10 +302,16 @@
   (ev startup `(load ,(path->string main-path)))
   (same-session startup 'aloemacs-editor
     `(AloemacsSession new
-       ,(zipper (list `(AloemacsBuffer new ,(editor "" '(Position new 0 0) #t) ,no-path)) 0)
+       ,(zipper (list `(AloemacsBuffer new ,(editor "" '(Position new 0 0) #t) ,no-path 0)) 0)
        (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty)
        ,no-pending ,no-prompt ,no-submission
-       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer (,(zipper (list `(AloemacsBuffer new ,(editor "" '(Position new 0 0) #t) ,no-path 0)) 0) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
   (check-false (ev startup '((aloemacs-editor prompt) present?)))
   (check-false (ev startup '((aloemacs-editor last-submission) present?)))
   (check-equal? (unbox startup-calls) '())
@@ -339,7 +360,7 @@
   (for ([rows '(1 2 5)])
     (def! st 'actual `(source ensure-visible 3 ,rows))
     (same-session st 'actual
-      (rebuild 'source #:buffers
+      (rebuild 'source #:columns 3 #:rows rows #:buffers
         (replace-current 'source `(rich-editor ensure-visible 3 ,(if (>= rows 2) (sub1 rows) rows)))))
     (preserved st 'actual)
     (define before-frame (ev st 'actual))
@@ -393,7 +414,7 @@
     (def! st 'source (session (zipper '(a b c) focus)))
     (define original (ev st 'source))
     (for ([path (list #f "./dir/../optional")])
-      (define new-buffer (buffer "new\ntext" (if path `(Option Some (Path new ,path)) no-path)))
+      (define new-buffer (buffer "new\ntext" (if path `(Option Some (Path new ,path)) no-path) 3))
       (def! st 'actual `(source add-buffer "new\ntext" ,@(if path `((Path new ,path)) '())))
       (same-session st 'actual
         (reset 'source (zipper (append (take '(a b c) (add1 focus)) (list new-buffer)
@@ -407,7 +428,7 @@
   (def! st 'singleton (session (zipper '(b) 0)))
   (same-session st '(singleton switch-buffer) (reset 'singleton (zipper '(b) 0)))
   (same-session st '(singleton kill-buffer)
-    (reset 'singleton (zipper (list (buffer "")) 0)))
+    (reset 'singleton (zipper (list (buffer "" no-path 1)) 0)))
   (check-equal? (unbox calls) '()))
 
 (test-case "direct save writes buffer contents only and preserves the full active session"
@@ -568,7 +589,7 @@
   (check-equal? (ev st '((fitted editor) scroll-row)) 1)
   (check-equal? (ev st '((fitted editor) text-rows)) 3)
   (same-session st 'fitted
-    (rebuild 'base #:buffers (replace-current 'base '((base editor) ensure-visible 12 3))))
+    (rebuild 'base #:columns 12 #:rows 4 #:buffers (replace-current 'base '((base editor) ensure-visible 12 3))))
   (check-equal? (ev st '(fitted frame 12 4))
     (frame "one\r\ntwo\r\nthree" 3 3 4 "Ask: abcd" 4 8))
   ;; Search and pending remain raw active fixture state despite prompt painting.

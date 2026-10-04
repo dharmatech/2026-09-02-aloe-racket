@@ -19,7 +19,7 @@
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission waiting-command))
+            prompt last-submission waiting-command windows))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -28,8 +28,8 @@
 (define (same st actual expected)
   (check-not-exn (lambda () (ev st `(check ,actual ,expected)))
                  (format "~s equals ~s" actual expected)))
-(define (singleton editor path)
-  `(AloemacsBuffers new (List empty) (AloemacsBuffer new ,editor ,path)
+(define (singleton editor path [id 0])
+  `(AloemacsBuffers new (List empty) (AloemacsBuffer new ,editor ,path ,id)
                      (List empty)))
 (define (editor source [indexed? #f])
   `(AloemacsEditor new
@@ -41,7 +41,13 @@
      (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty) ,no-pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer (,(singleton (editor contents indexed?) path) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 ;; Independent full-value reconstruction; no production rebuild/dispatcher is
 ;; used to construct expectations. Every session fixture is a singleton.
@@ -49,12 +55,20 @@
                  #:echo [echo `(,s echo)] #:searching [searching `(,s searching)]
                  #:query [query `(,s query)] #:origin [origin `(,s origin)]
                  #:wrapped [wrapped `(,s wrapped)] #:failing [failing `(,s failing)]
-                 #:ring [ring `(,s kill-ring)] #:pending [pending `(,s pending)])
-  `(AloemacsSession new ,(singleton editor path) (,s fs) ,echo ,searching ,query
+                 #:ring [ring `(,s kill-ring)] #:pending [pending `(,s pending)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
+  `(AloemacsSession new ,(singleton editor path `((,s current-buffer) id)) (,s fs) ,echo ,searching ,query
      ,origin ,wrapped ,failing ,ring ,pending
      (,s prompt)
      (,s last-submission)
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer (,(singleton editor path `((,s current-buffer) id)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (same-session st actual expected)
   (same st actual expected)
   (for ([field (in-list (append session-fields '(current-buffer editor path)))])
@@ -117,7 +131,13 @@
        (List of "newest" "older") (Option Some aloemacs-ctrl-x-keymap)
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
        (if #t (Option None) (Option Some ""))
-       (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer (,(singleton 'old-editor '(Option Some (Path new "/cwd/a.txt"))) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0)))))
 
 (test-case "exact stored ownership, class order, and new method signatures"
   (define datums
@@ -129,13 +149,14 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsCommand (AloemacsKeymap B)
+    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsView AloemacsWindowTree
+      AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (class name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (define buffer (class 'AloemacsBuffer))
   (define buffers (class 'AloemacsBuffers))
   (define session (class '(AloemacsSession H)))
-  (check-equal? (caddr buffer) '(fields (editor AloemacsEditor) (path (Option Path))))
+  (check-equal? (caddr buffer) '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (caddr buffers)
     '(fields (before (List AloemacsBuffer)) (current-buffer AloemacsBuffer)
              (after (List AloemacsBuffer))))
@@ -144,6 +165,9 @@
       (with-path (path Path) AloemacsBuffer)))
   (check-equal? (map (lambda (method) (drop-right method 1)) (cdr (cadddr buffers)))
     '((with-current-buffer (buffer AloemacsBuffer) AloemacsBuffers)
+      (fresh-id () Int)
+      (find-id (id Int) (Option AloemacsBuffers))
+      (find-id-in (id Int) (remaining Int) (Option AloemacsBuffers))
       (find-name (name String) (Option AloemacsBuffers))
       (find-name-in (name String) (remaining Int) (Option AloemacsBuffers))
       (focus-next () AloemacsBuffers)
@@ -154,7 +178,7 @@
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
              (query String) (origin Position) (wrapped Bool) (failing Bool)
              (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
-             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand))))
+             (prompt (Option AloemacsPrompt)) (last-submission (Option String)) (waiting-command (Option AloemacsCommand)) (windows AloemacsWindows)))
   (for ([signature (in-list '((current-buffer () AloemacsBuffer)
                               (editor () AloemacsEditor) (path () (Option Path))))])
     (define method (assq (car signature) (cdr (cadddr session))))
@@ -198,10 +222,11 @@
   (for ([datum
          (in-list (append
           '((AloemacsBuffer new) (AloemacsBuffer new old-editor)
-            (AloemacsBuffer new old-editor (Option Some (Path new "x")) 0)
-            (AloemacsBuffer new "editor" (Option Some (Path new "x")))
-            (AloemacsBuffer new old-editor (Option Some "path"))
-            (AloemacsBuffer new old-editor (Path new "x"))
+            (AloemacsBuffer new old-editor (Option Some (Path new "x")))
+            (AloemacsBuffer new old-editor (Option Some (Path new "x")) 0 0)
+            (AloemacsBuffer new "editor" (Option Some (Path new "x")) 0)
+            (AloemacsBuffer new old-editor (Option Some "path") 0)
+            (AloemacsBuffer new old-editor (Path new "x") 0)
             (AloemacsBuffers new) (AloemacsBuffers new (List empty) (List empty) (List empty))
             (AloemacsBuffers new (List of old-editor) (source current-buffer) (List empty))
             (AloemacsBuffers new (List empty) (source current-buffer) (List of "wrong"))
@@ -220,15 +245,17 @@
                                   #f #f (List empty) ,no-pending
                    (source prompt)
                    (source last-submission)
-                   (source waiting-command))
+                   (source waiting-command)
+     (source windows))
                 `(AloemacsSession new (source current-buffer) (source fs) "" #f ""
                                   (Position new 0 0) #f #f (List empty) ,no-pending
                    (source prompt)
                    (source last-submission)
-                   (source waiting-command))
+                   (source waiting-command)
+     (source windows))
                 `(AloemacsSession new (source buffers) (source fs) "" #f "" (Position new 0 0)
                                   #f #f (List empty) ,no-pending
-                                  (source prompt) (source last-submission) (source waiting-command) 0))))])
+                                  (source prompt) (source last-submission) (source waiting-command) (source windows) 0))))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st datum)) (format "reject ~s" datum)))
   (check-equal? (unbox calls) '()))
 
@@ -239,7 +266,7 @@
   (for ([path (in-list (list no-path '(Option Some (Path new "./dir/../a.txt"))
                             '(Option Some (Path new "/full/path/a.txt"))))]
         [name '("untitled" "./dir/../a.txt" "/full/path/a.txt")])
-    (def! st 'buffer `(AloemacsBuffer new editor ,path))
+    (def! st 'buffer `(AloemacsBuffer new editor ,path 0))
     (define original (ev st 'buffer))
     (def! st 'changed '(buffer with-editor replacement))
     (check-equal? (ev st '(buffer name)) name)
@@ -249,7 +276,12 @@
     (check-equal? (ev st 'buffer) original)
     ;; Raw collection values prove list preservation without a multi-buffer
     ;; session, focus operation, or second-buffer command.
-    (def! st 'collection '(AloemacsBuffers new (List of buffer changed) buffer (List of changed buffer)))
+    (def! st 'buffer-before '(AloemacsBuffer new (buffer editor) (buffer path) 1))
+    (def! st 'changed-before '(AloemacsBuffer new (changed editor) (changed path) 2))
+    (def! st 'changed-after '(AloemacsBuffer new (changed editor) (changed path) 3))
+    (def! st 'buffer-after '(AloemacsBuffer new (buffer editor) (buffer path) 4))
+    (def! st 'collection '(AloemacsBuffers new (List of buffer-before changed-before)
+                           buffer (List of changed-after buffer-after)))
     (define old-collection (ev st 'collection))
     (def! st 'updated '(collection with-current-buffer changed))
     (same st '(updated before) '(collection before))
@@ -261,7 +293,7 @@
   (def! st 'raw `(AloemacsBuffer new
                   (AloemacsEditor new (Text from-string "") (Position new 99 -2)
                                      #f 0 0 (List empty) ,no-mark 0)
-                  (Option Some (Path new "../directory"))))
+                  (Option Some (Path new "../directory")) 0))
   (check-equal? (ev st '(raw name)) "../directory")
   (check-equal? (ev st '(((raw editor) point) line)) 99))
 
@@ -306,7 +338,7 @@
       (rebuild 'source #:editor `(old-editor ,@operation))))
   (for ([rows '(1 2 5)])
     (same-session st `(source ensure-visible 3 ,rows)
-      (rebuild 'source #:editor `(old-editor ensure-visible 3 ,(if (>= rows 2) (sub1 rows) rows)))))
+      (rebuild 'source #:columns 3 #:rows rows #:editor `(old-editor ensure-visible 3 ,(if (>= rows 2) (sub1 rows) rows)))))
   (check-equal? (ev st 'source) original)
   (check-equal? (unbox calls) '()))
 
@@ -396,7 +428,7 @@
   (def! st 'armed '(base handle-key "ctrl-x"))
   (define original (ev st 'armed))
   (def! st 'fitted '(armed ensure-visible 3 3))
-  (same-session st 'fitted (rebuild 'armed #:editor '((armed editor) ensure-visible 3 2)))
+  (same-session st 'fitted (rebuild 'armed #:columns 3 #:rows 3 #:editor '((armed editor) ensure-visible 3 2)))
   (check-equal? (ev st '(fitted frame 3 3)) (frame "a b\r\nsec" 1 2 3 "/cw"))
   (check-equal? (ev st '(fitted frame 3 1)) (frame "a b" 1 2))
   (same st '(fitted pending) '(armed pending))

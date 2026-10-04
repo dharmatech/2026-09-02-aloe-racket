@@ -44,14 +44,19 @@
                      ("" KillBuffer "kill-buffer" kill-buffer)
                      ("" FindFile "find-file" start-command-prompt)
                      ("" SaveAs "save-as" start-command-prompt)
-                     ("" SelectBuffer "select-buffer" start-command-prompt))))
+                     ("" SelectBuffer "select-buffer" start-command-prompt)
+                     ("" SplitBelow "split-below" split-below)
+                     ("" SplitRight "split-right" split-right)
+                     ("" DeleteWindow "delete-window" delete-window)
+                     ("" OtherWindow "other-window" other-window)
+                     ("" ToggleWindowLock "toggle-window-lock" toggle-window-lock))))
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default
   '(if #t (Option None) (Option Some (AloemacsCommand SelfInsert))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
-                                prompt last-submission waiting-command))
+                                prompt last-submission waiting-command windows))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -115,7 +120,7 @@
        (AloemacsBuffer new
          (AloemacsEditor new (Text from-string ,source) (Position new ,line ,column)
                              #f 2 3 ,history ,mark 0)
-         ,path)
+         ,path 0)
        (List empty))
      (Fs new ,host)
      ,echo
@@ -128,7 +133,19 @@
      ,pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new (Text from-string ,source) (Position new ,line ,column)
+                             #f 2 3 ,history ,mark 0)
+         ,path 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 ;; Build expected echo results without using the new with-echo helper.
 (define (token s echo)
@@ -137,7 +154,7 @@
        (List empty)
        (AloemacsBuffer new
          (,s editor)
-         (,s path))
+         (,s path) ((,s current-buffer) id))
        (List empty))
      (,s fs)
      ,echo
@@ -150,7 +167,18 @@
      (,s pending)
      (,s prompt)
      (,s last-submission)
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (,s editor)
+         (,s path) ((,s current-buffer) id))
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((,s windows) columns) ((,s windows) rows)))))
 
 ;; Independent expected-value construction for prefix installation/clearing.
 (define (prefix-state s pending [echo `(,s echo)])
@@ -159,7 +187,7 @@
        (List empty)
        (AloemacsBuffer new
          (,s editor)
-         (,s path))
+         (,s path) ((,s current-buffer) id))
        (List empty))
      (,s fs)
      ,echo
@@ -172,7 +200,18 @@
      ,pending
      (,s prompt)
      (,s last-submission)
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (,s editor)
+         (,s path) ((,s current-buffer) id))
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((,s windows) columns) ((,s windows) rows)))))
 
 (define (expected s row)
   (define selector (fourth row))
@@ -265,7 +304,12 @@
         '(List of (AloemacsBinding Command "save" aloemacs-save-command)
                   (AloemacsBinding Command "find" (AloemacsCommand FindFile))
                   (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
-                  (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
+                  (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))
+                  (AloemacsBinding Command "2" (AloemacsCommand SplitBelow))
+                  (AloemacsBinding Command "3" (AloemacsCommand SplitRight))
+                  (AloemacsBinding Command "0" (AloemacsCommand DeleteWindow))
+                  (AloemacsBinding Command "o" (AloemacsCommand OtherWindow))
+                  (AloemacsBinding Command "l" (AloemacsCommand ToggleWindowLock))))
   (same st '(aloemacs-ctrl-x-keymap default) no-default)
   (same st '(aloemacs-ctrl-x-keymap lookup "save")
         '(aloemacs-global-keymap lookup "save"))
@@ -354,14 +398,20 @@
                (AloemacsBuffer new
                  (AloemacsEditor new ((Text from-string "") indexed-value)
                    (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
-                 ,no-path)
+                 ,no-path ((,s current-buffer) id))
                (List empty))))
       (same-session st `(,s execute-command (AloemacsCommand ,constructor) "x")
         `(AloemacsSession new ,expected-buffers (,s fs) "" #f ""
            (Position new 0 0) #f #f (,s kill-ring) ,no-pending
            (,s prompt)
            (,s last-submission)
-           (,s waiting-command))))
+           (,s waiting-command)
+     (let ((buffer (,expected-buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((,s windows) columns) ((,s windows) rows))))))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
     (check-equal? (type st `(,s with-prefix aloemacs-ctrl-x-keymap))
@@ -689,7 +739,7 @@
            (AloemacsBuffer new
              (AloemacsEditor new ((Text from-string ,contents) indexed-value)
                                  (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
-             (Option Some (Path new ,(string-append "/cwd/" path))))
+             (Option Some (Path new ,(string-append "/cwd/" path))) ((armed current-buffer) id))
            (List empty))
          (armed fs)
          ""
@@ -702,7 +752,19 @@
          ,no-pending
          (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
          (armed last-submission)
-         (armed waiting-command)))
+         (armed waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+           (List empty)
+           (AloemacsBuffer new
+             (AloemacsEditor new ((Text from-string ,contents) indexed-value)
+                                 (Position new 0 0) #f 0 0 (List empty) ,no-mark 0)
+             (Option Some (Path new ,(string-append "/cwd/" path))) ((armed current-buffer) id))
+           (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((armed windows) columns) ((armed windows) rows)))))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))
   (same-session st '((armed visit (Path new "dir")) case

@@ -34,7 +34,7 @@
          (AloemacsEditor new (Text from-string ,source)
                              (Position new ,line ,column) #f
                              ,scroll-row ,scroll-col (List empty) ,mark 0)
-         ,path)
+         ,path 0)
        (List empty))
      (Fs new fs-host)
      ,echo
@@ -47,7 +47,20 @@
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new (Text from-string ,source)
+                             (Position new ,line ,column) #f
+                             ,scroll-row ,scroll-col (List empty) ,mark 0)
+         ,path 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -92,7 +105,7 @@
                                     (List empty)
                                     (AloemacsBuffer new
                                       (aloemacs-editor editor)
-                                      (aloemacs-editor path))
+                                      (aloemacs-editor path) ((aloemacs-editor current-buffer) id))
                                     (List empty))
                                   (aloemacs-editor fs)
                                   ""
@@ -105,7 +118,18 @@
                                   (if #t (Option None) (Option Some aloemacs-global-keymap))
                                   (aloemacs-editor prompt)
                                   (aloemacs-editor last-submission)
-                                  (aloemacs-editor waiting-command)))))
+                                  (aloemacs-editor waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+                                    (List empty)
+                                    (AloemacsBuffer new
+                                      (aloemacs-editor editor)
+                                      (aloemacs-editor path) ((aloemacs-editor current-buffer) id))
+                                    (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((aloemacs-editor windows) columns) ((aloemacs-editor windows) rows)))))))
   (def! st 'base (session "ab\ncd" 0 0))
   (key! st 'marked 'base "mark")
   (check-equal? (mark-position st 'marked) "0:0")

@@ -43,7 +43,7 @@
           (List empty)
           (AloemacsBuffer new
             editor
-            (Option Some (Path new "/cwd/a.txt")))
+            (Option Some (Path new "/cwd/a.txt")) 0)
           (List empty))
         (Fs new fs-host)
         "prior"
@@ -56,7 +56,18 @@
         (if #t (Option None) (Option Some aloemacs-global-keymap))
         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
         (if #t (Option None) (Option Some ""))
-        (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))
+        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            editor
+            (Option Some (Path new "/cwd/a.txt")) 0)
+          (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0)))))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -91,7 +102,7 @@
               0
               0
               (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
-            (Option Some (Path new "/cwd/a.txt")))
+            (Option Some (Path new "/cwd/a.txt")) 0)
           (List empty))
         (Fs new fs-host)
         "prior"
@@ -104,7 +115,24 @@
         (if #t (Option None) (Option Some aloemacs-global-keymap))
         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
         (if #t (Option None) (Option Some ""))
-        (if #t (Option None) (Option Some (AloemacsCommand FindFile))))))
+        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            (AloemacsEditor new
+              (Text from-string "before")
+              (Position new 0 0)
+              #f
+              0
+              0
+              (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+            (Option Some (Path new "/cwd/a.txt")) 0)
+          (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0)))))
   (driver-eval!
    state
    '(define visited

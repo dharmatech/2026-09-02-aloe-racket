@@ -12,7 +12,7 @@
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default '(if #t (Option None) (Option Some aloemacs-self-insert-command)))
 (define session-fields '(buffers fs echo searching query origin wrapped failing kill-ring pending
-                                prompt last-submission waiting-command))
+                                prompt last-submission waiting-command windows))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -35,7 +35,7 @@
        (List empty)
        (AloemacsBuffer new
          ,editor
-         (,s path))
+         (,s path) ((,s current-buffer) id))
        (List empty))
      (,s fs)
      ,echo
@@ -48,7 +48,18 @@
      ,pending
      (,s prompt)
      (,s last-submission)
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,editor
+         (,s path) ((,s current-buffer) id))
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((,s windows) columns) ((,s windows) rows)))))
 
 (define (fixture [path '(Option Some (Path new "/cwd/a.txt"))] [echo "saved"])
   `(AloemacsSession new
@@ -59,7 +70,7 @@
             (Text from-string "ababa\nsecond\nababa\nfourth\nfifth")
             (Position new 2 3) #f 2 2 (List empty)
             (Option Some (Position new 1 1)) 3)
-         ,path)
+         ,path 0)
        (List empty))
      (Fs new fs-host)
      ,echo
@@ -72,7 +83,21 @@
      ,no-pending
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new
+            (Text from-string "ababa\nsecond\nababa\nfourth\nfifth")
+            (Position new 2 3) #f 2 2 (List empty)
+            (Option Some (Position new 1 1)) 3)
+         ,path 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
@@ -164,7 +189,7 @@
            (AloemacsEditor new (Text from-string "\uFEFFλ\r\nb\n")
                                (Position new 1 0) #f 0 0 (List empty)
                                (if #t (Option None) (Option Some (Position new 0 0))) 0)
-           (Option Some (Path new "/cwd/a.txt")))
+           (Option Some (Path new "/cwd/a.txt")) 0)
          (List empty))
        (Fs new fs-host)
        "saved"
@@ -177,7 +202,20 @@
        ,no-pending
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
        (if #t (Option None) (Option Some ""))
-       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (AloemacsEditor new (Text from-string "\uFEFFλ\r\nb\n")
+                               (Position new 1 0) #f 0 0 (List empty)
+                               (if #t (Option None) (Option Some (Position new 0 0))) 0)
+           (Option Some (Path new "/cwd/a.txt")) 0)
+         (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
   (def! st 'result '((base handle-key "ctrl-x") handle-key "save"))
   (check-equal? (writes calls) '((write "/cwd/a.txt" "\uFEFFλ\r\nb\n")))
   (same-session st 'result (rebuild 'base no-pending "saved"))
@@ -200,7 +238,13 @@
          (base buffers) (base fs) "" (base searching) (base query) (base origin)
          (base wrapped) (base failing) (base kill-ring) ,no-pending
          (Option Some (AloemacsPrompt new ,label "" 0))
-         (base last-submission) (Option Some (AloemacsCommand ,command)))))
+         (base last-submission) (Option Some (AloemacsCommand ,command))
+     (let ((buffer ((base buffers) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((base windows) columns) ((base windows) rows))))))
   (check-equal? (unbox calls) '()))
 
 (test-case "every unbound second key is consumed once; the following key dispatches globally"
@@ -305,7 +349,7 @@
            (AloemacsEditor new (Text from-string "a\u001bb\nsecond")
                                (Position new 0 2) #f 0 0 (List empty)
                                (Option Some (Position new 0 0)) 0)
-           (Option Some (Path new "/cwd/a.txt")))
+           (Option Some (Path new "/cwd/a.txt")) 0)
          (List empty))
        (Fs new fs-host)
        "failed"
@@ -318,7 +362,20 @@
        ,no-pending
        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
        (if #t (Option None) (Option Some ""))
-       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+       (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (AloemacsEditor new (Text from-string "a\u001bb\nsecond")
+                               (Position new 0 2) #f 0 0 (List empty)
+                               (Option Some (Position new 0 0)) 0)
+           (Option Some (Path new "/cwd/a.txt")) 0)
+         (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
                 (frame "a b\r\nsecond\r\n" 1 3 4 "/cwd/a.txt"))

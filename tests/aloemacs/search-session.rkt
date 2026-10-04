@@ -30,7 +30,7 @@
          (AloemacsEditor new
             (Text from-string ,source) (Position new ,line ,column)
             #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
-         ,(if path `(Option Some (Path new ,path)) no-path))
+         ,(if path `(Option Some (Path new ,path)) no-path) 0)
        (List empty))
      (Fs new fs-host)
      ,echo
@@ -43,7 +43,20 @@
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         (AloemacsEditor new
+            (Text from-string ,source) (Position new ,line ,column)
+            #f 0 0 (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
+         ,(if path `(Option Some (Path new ,path)) no-path) 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -247,7 +260,7 @@
          (List empty)
          (AloemacsBuffer new
            (base editor)
-           (base path))
+           (base path) ((base current-buffer) id))
          (List empty))
        (base fs)
        "saved"
@@ -260,7 +273,18 @@
        (if #t (Option None) (Option Some aloemacs-global-keymap))
        (base prompt)
        (base last-submission)
-       (base waiting-command)))
+       (base waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+         (List empty)
+         (AloemacsBuffer new
+           (base editor)
+           (base path) ((base current-buffer) id))
+         (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((base windows) columns) ((base windows) rows)))))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a "))
   (step! state 'exit 'failed "return")

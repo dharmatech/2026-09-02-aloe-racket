@@ -14,7 +14,9 @@ at [`buffer/`](buffer/). The minibuffer series is implemented and
 accepted (aloemacs-minibuffer 000–001) at [`minibuffer/`](minibuffer/).
 The prompt-command series is implemented and accepted
 (aloemacs-prompt-commands 000–002) at
-[`prompt-commands/`](prompt-commands/).
+[`prompt-commands/`](prompt-commands/). The windows charter is
+issued at [`windows/`](windows/). Its accepted product behavior is closed;
+the revised checkpoint partition is drafted for review.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -118,7 +120,7 @@ view of a buffer, not a second copy of the editor class.
 
 | # | Exploration | Note |
 |---|---|---|
-| 9 | **Windows** (split right, split below, delete, other-window) | GNU Emacs layout-smash is the defect to avoid. Include **window lock** (a window commands must not resize or delete) in the same design, even if lock is a later checkpoint |
+| 9 | **Windows** (split right, split below, delete, other-window) | **Revised partition drafted for review** at [`windows/`](windows/). Accepted behavior stays closed. Replacement 000 is buffer identity; state, layout/rendering/fit, both splits, delete/other-window, then lock follow. State may be separated further without a maximum count or added behavior. A window is a view of a buffer. The mode line stays item 10 |
 | 10 | **Mode line** | Optional. Echo can stay the message row; a per-window line can show buffer name and mode once modes exist |
 
 ---
@@ -193,11 +195,14 @@ Leave these until a slice is blocked by them.
    **Find-file / save-as / named switch-buffer** — implemented and
    accepted at [`prompt-commands/`](prompt-commands/),
    aloemacs-prompt-commands 000–002.
-5. **Windows + lock**.
+5. **Windows + lock** — accepted behavior and revised partition drafted
+   for review at [`windows/`](windows/). Replacement 000 is buffer
+   identity; lock is the final part. The spec carries the ordered
+   partition and permits further window-state separation.
 6. **Faces**, then highlighting, then modes as libraries.
 7. Folding, then outline/notes, then a directory browser.
 8. LSP, then live eval, each with its own charter.
 
-The motion pack is implemented (aloemacs-motion 000). The hinge
-that stays put is Band 2 before
-windows, modes, org, dired, or M-x as a hardcoded dispatcher.
+The motion pack is implemented (aloemacs-motion 000). Band 2 is
+implemented. Windows awaits revised-partition review. Modes, org, dired,
+and `M-x` stay later.

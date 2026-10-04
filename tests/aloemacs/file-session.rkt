@@ -89,7 +89,7 @@
          ,(editor-expression source line column quit)
          ,(if path
                `(Option Some (Path new ,path))
-               no-path-expression))
+               no-path-expression) 0)
        (List empty))
      (Fs new fs-host)
      ,echo
@@ -102,7 +102,20 @@
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,(editor-expression source line column quit)
+         ,(if path
+               `(Option Some (Path new ,path))
+               no-path-expression) 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -432,7 +445,7 @@
           (List empty)
           (AloemacsBuffer new
             ((source editor) ,selector ,@arguments)
-            (source path))
+            (source path) ((source current-buffer) id))
           (List empty))
         (source fs)
         (source echo)
@@ -445,7 +458,18 @@
         (source pending)
         (source prompt)
         (source last-submission)
-        (source waiting-command))))
+        (source waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            ((source editor) ,selector ,@arguments)
+            (source path) ((source current-buffer) id))
+          (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((source windows) columns) ((source windows) rows))))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -465,7 +489,7 @@
           (List empty)
           (AloemacsBuffer new
             ((source editor) handle-key ,key)
-            (source path))
+            (source path) ((source current-buffer) id))
           (List empty))
         (source fs)
         (source echo)
@@ -478,7 +502,18 @@
         (source pending)
         (source prompt)
         (source last-submission)
-        (source waiting-command))))
+        (source waiting-command)
+     (let ((buffer ((AloemacsBuffers new
+          (List empty)
+          (AloemacsBuffer new
+            ((source editor) handle-key ,key)
+            (source path) ((source current-buffer) id))
+          (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ((source windows) columns) ((source windows) rows))))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

@@ -49,7 +49,7 @@
        (List empty)
        (AloemacsBuffer new
          ,(editor source 0)
-         (Option Some (Path new ,path)))
+         (Option Some (Path new ,path)) 0)
        (List empty))
      (Fs new fs-host)
      ,echo
@@ -62,7 +62,18 @@
      (if #t (Option None) (Option Some aloemacs-global-keymap))
      (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
      (if #t (Option None) (Option Some ""))
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer ((AloemacsBuffers new
+       (List empty)
+       (AloemacsBuffer new
+         ,(editor source 0)
+         (Option Some (Path new ,path)) 0)
+       (List empty)) current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

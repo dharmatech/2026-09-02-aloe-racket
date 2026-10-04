@@ -66,15 +66,21 @@
 (define (editor contents)
   `(AloemacsEditor new ((Text from-string ,contents) indexed-value)
      (Position new 0 0) #f 0 0 (List empty) ,no-mark 0))
-(define (buffer contents [path no-path]) `(AloemacsBuffer new ,(editor contents) ,path))
-(define (bound contents name) (buffer contents `(Option Some (Path new ,name))))
+(define (buffer contents [path no-path] [id 0]) `(AloemacsBuffer new ,(editor contents) ,path ,id))
+(define (bound contents name [id 0]) (buffer contents `(Option Some (Path new ,name)) id))
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
 (define (session buffers)
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #f "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
-     ,no-pending ,no-prompt ,no-submission ,no-command))
+     ,no-pending ,no-prompt ,no-submission ,no-command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 ;; Independent expected values use only constructors and reads. In particular,
 ;; they never send with-path, with-current-path, or save-as-submitted.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -83,12 +89,20 @@
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)] #:prompt [line `(,s prompt)]
                  #:submission [submission `(,s last-submission)]
-                 #:waiting [command `(,s waiting-command)])
+                 #:waiting [command `(,s waiting-command)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
-     ,wrapped ,failing ,ring ,pending ,line ,submission ,command))
+     ,wrapped ,failing ,ring ,pending ,line ,submission ,command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
-     (AloemacsBuffer new ,new-editor ,path) ((,s buffers) after)))
+     (AloemacsBuffer new ,new-editor ,path ((,s current-buffer) id)) ((,s buffers) after)))
 (define (rebound s resolved)
   (replace-current s `(,s editor) `(Option Some (Path new ,resolved))))
 (define (completed s submitted #:echo [echo "saved"] #:buffers [buffers `(,s buffers)])
@@ -108,14 +122,14 @@
     `(AloemacsBuffer new
        (AloemacsEditor new (Text from-string "unsaved neighbor a") (Position new 0 3)
          #f 1 2 (rich-editor history) (Option Some (Position new 0 1)) 5)
-       (Option Some (Path new "/cwd/a.txt"))))
-  (def! st 'b `(AloemacsBuffer new rich-editor ,path))
+       (Option Some (Path new "/cwd/a.txt")) 0))
+  (def! st 'b `(AloemacsBuffer new rich-editor ,path 1))
   (def! st 'c
     '(AloemacsBuffer new
        (AloemacsEditor new (Text indexed (List of "c first") "c second" (List empty) 1)
          (Position new 1 2) #f 1 1 (rich-editor history)
          (Option Some (Position new 0 1)) 3)
-       (if #t (Option None) (Option Some (Path new "/typed-none")))))
+       (if #t (Option None) (Option Some (Path new "/typed-none"))) 2))
   (def! st 'source (session (zipper '(a b c) 1))))
 (define (draft! st [text "new.txt"])
   (def! st 'draft (rebuild 'source #:prompt (prompt text)
@@ -151,7 +165,7 @@
        (query String) (origin Position) (wrapped Bool) (failing Bool)
        (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
        (prompt (Option AloemacsPrompt)) (last-submission (Option String))
-       (waiting-command (Option AloemacsCommand))))
+       (waiting-command (Option AloemacsCommand)) (windows AloemacsWindows)))
   (define es (datums editor-path))
   (check-equal? (caddr (declaration es 'AloemacsEditor))
     '(fields (text Text) (point Position) (quit Bool) (scroll-row Int) (scroll-col Int)
@@ -165,7 +179,9 @@
        (BufferEnd (fields)) (RequestQuit (fields)) (Undo (fields)) (SetMark (fields))
        (Kill (fields)) (KillLine (fields)) (Yank (fields)) (Find (fields)) (Save (fields))
        (SelfInsert (fields)) (SwitchBuffer (fields)) (KillBuffer (fields))
-       (FindFile (fields)) (SaveAs (fields)) (SelectBuffer (fields))))
+       (FindFile (fields)) (SaveAs (fields)) (SelectBuffer (fields))
+       (SplitBelow (fields)) (SplitRight (fields))
+       (DeleteWindow (fields)) (OtherWindow (fields)) (ToggleWindowLock (fields))))
   (check-equal? (map (lambda (m) (drop-right m 1))
     (cdr (cadddr (declaration ds 'AloemacsCommand)))) '((name () String)))
   (define-values (st calls disk) (state))
@@ -173,7 +189,12 @@
     '(List of (AloemacsBinding Command "save" aloemacs-save-command)
               (AloemacsBinding Command "find" (AloemacsCommand FindFile))
               (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
-              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
+              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))
+              (AloemacsBinding Command "2" (AloemacsCommand SplitBelow))
+              (AloemacsBinding Command "3" (AloemacsCommand SplitRight))
+              (AloemacsBinding Command "0" (AloemacsCommand DeleteWindow))
+              (AloemacsBinding Command "o" (AloemacsCommand OtherWindow))
+              (AloemacsBinding Command "l" (AloemacsCommand ToggleWindowLock))))
   (check-false (ev st '((aloemacs-ctrl-x-keymap default) present?)))
   (define global-rows
     '(("return" Newline) ("backspace" BackwardDelete) ("left" MoveLeft) ("right" MoveRight)
@@ -271,7 +292,7 @@
   (for ([key '("\n" "save" "find" "ctrl-x" "kill" "kill-line" "yank" "up" "down" "unknown")])
     (same st `(draft handle-key ,key) 'draft))
   (same st '(draft ensure-visible 2 2)
-    (rebuild 'draft #:buffers (replace-current 'draft
+    (rebuild 'draft #:columns 2 #:rows 2 #:buffers (replace-current 'draft
       '(AloemacsEditor new (draft text) (draft point) #f 2 3
          (rich-editor history) (rich-editor mark) 1))))
   (for ([i (in-range 2)]) (check-equal? (ev st '(draft frame 12 3))
@@ -289,7 +310,7 @@
   (for ([s '(source raw (raw request-quit))])
     (def! st 's s)
     (def! st 'changed-buffer '((s current-buffer) with-path (Path new "./relative/../new")))
-    (same st 'changed-buffer '(AloemacsBuffer new (s editor) (Option Some (Path new "./relative/../new"))))
+    (same st 'changed-buffer '(AloemacsBuffer new (s editor) (Option Some (Path new "./relative/../new")) ((s current-buffer) id)))
     (same st '(changed-buffer editor) '(s editor))
     (check-equal? (ev st '(changed-buffer name)) "./relative/../new")
     (same st '(s with-current-path (Path new "./relative/../new"))

@@ -58,15 +58,21 @@
 (define (editor contents)
   `(AloemacsEditor new ((Text from-string ,contents) indexed-value)
      (Position new 0 0) #f 0 0 (List empty) ,no-mark 0))
-(define (buffer contents [path no-path]) `(AloemacsBuffer new ,(editor contents) ,path))
-(define (bound contents name) (buffer contents `(Option Some (Path new ,name))))
+(define (buffer contents [path no-path] [id 0]) `(AloemacsBuffer new ,(editor contents) ,path ,id))
+(define (bound contents name [id 0]) (buffer contents `(Option Some (Path new ,name)) id))
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
 (define (session buffers)
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #f "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
-     ,no-pending ,no-prompt ,no-submission ,no-command))
+     ,no-pending ,no-prompt ,no-submission ,no-command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 ;; Expectations only construct and read values; they do not invoke lookup,
 ;; selected-buffers, or select-buffer-submitted to obtain an expected focus.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -75,12 +81,20 @@
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)] #:prompt [line `(,s prompt)]
                  #:submission [submission `(,s last-submission)]
-                 #:waiting [command `(,s waiting-command)])
+                 #:waiting [command `(,s waiting-command)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
-     ,wrapped ,failing ,ring ,pending ,line ,submission ,command))
+     ,wrapped ,failing ,ring ,pending ,line ,submission ,command
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (replace-current s new-editor)
   `(AloemacsBuffers new ((,s buffers) before)
-     (AloemacsBuffer new ,new-editor (,s path)) ((,s buffers) after)))
+     (AloemacsBuffer new ,new-editor (,s path) ((,s current-buffer) id)) ((,s buffers) after)))
 (define (selected s buffers)
   (rebuild s #:buffers buffers #:echo "" #:searching #f #:query ""
     #:origin '(Position new 0 0) #:wrapped #f #:failing #f #:pending no-pending))
@@ -102,14 +116,14 @@
     '(AloemacsBuffer new
        (AloemacsEditor new (Text from-string "unsaved neighbor a") (Position new 0 3)
          #f 1 2 (rich-editor history) (Option Some (Position new 0 1)) 5)
-       (Option Some (Path new "/cwd/a.txt"))))
-  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt"))))
+       (Option Some (Path new "/cwd/a.txt")) 0))
+  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt")) 1))
   (def! st 'c
     `(AloemacsBuffer new
        (AloemacsEditor new (Text indexed (List of "c first") "c second" (List empty) 1)
          (Position new 1 2) #f 1 1 (rich-editor history)
          (Option Some (Position new 0 1)) 3)
-       ,no-path))
+       ,no-path 2))
   (def! st 'source (session (zipper '(a b c) 1))))
 (define (draft! st [text "/cwd/a.txt"])
   (def! st 'draft (rebuild 'source #:prompt (prompt text)
@@ -139,7 +153,7 @@
        (query String) (origin Position) (wrapped Bool) (failing Bool)
        (kill-ring (List String)) (pending (Option (AloemacsKeymap AloemacsBinding)))
        (prompt (Option AloemacsPrompt)) (last-submission (Option String))
-       (waiting-command (Option AloemacsCommand))))
+       (waiting-command (Option AloemacsCommand)) (windows AloemacsWindows)))
   (define es (datums editor-path))
   (check-equal? (caddr (declaration es 'AloemacsEditor))
     '(fields (text Text) (point Position) (quit Bool) (scroll-row Int) (scroll-col Int)
@@ -153,7 +167,9 @@
        (BufferEnd (fields)) (RequestQuit (fields)) (Undo (fields)) (SetMark (fields))
        (Kill (fields)) (KillLine (fields)) (Yank (fields)) (Find (fields)) (Save (fields))
        (SelfInsert (fields)) (SwitchBuffer (fields)) (KillBuffer (fields))
-       (FindFile (fields)) (SaveAs (fields)) (SelectBuffer (fields))))
+       (FindFile (fields)) (SaveAs (fields)) (SelectBuffer (fields))
+       (SplitBelow (fields)) (SplitRight (fields))
+       (DeleteWindow (fields)) (OtherWindow (fields)) (ToggleWindowLock (fields))))
   (check-equal? (map (lambda (m) (drop-right m 1))
     (cdr (cadddr (declaration ds 'AloemacsCommand)))) '((name () String)))
   (define-values (st calls disk) (state))
@@ -161,7 +177,12 @@
     '(List of (AloemacsBinding Command "save" aloemacs-save-command)
               (AloemacsBinding Command "find" (AloemacsCommand FindFile))
               (AloemacsBinding Command "kill" (AloemacsCommand SaveAs))
-              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))))
+              (AloemacsBinding Command "b" (AloemacsCommand SelectBuffer))
+              (AloemacsBinding Command "2" (AloemacsCommand SplitBelow))
+              (AloemacsBinding Command "3" (AloemacsCommand SplitRight))
+              (AloemacsBinding Command "0" (AloemacsCommand DeleteWindow))
+              (AloemacsBinding Command "o" (AloemacsCommand OtherWindow))
+              (AloemacsBinding Command "l" (AloemacsCommand ToggleWindowLock))))
   (check-false (ev st '((aloemacs-ctrl-x-keymap default) present?)))
   (define global-rows
     '(("return" Newline) ("backspace" BackwardDelete) ("left" MoveLeft) ("right" MoveRight)
@@ -252,7 +273,7 @@
               "up" "down" "page-up" "buffer-end" "unknown" "select-buffer" "")])
     (same st `(draft handle-key ,key) 'draft))
   (same st '(draft ensure-visible 2 2)
-    (rebuild 'draft #:buffers (replace-current 'draft
+    (rebuild 'draft #:columns 2 #:rows 2 #:buffers (replace-current 'draft
       '(AloemacsEditor new (draft text) (draft point) #f 2 3
          (rich-editor history) (rich-editor mark) 1))))
   (for ([i (in-range 2)])
@@ -295,15 +316,15 @@
       (same st `(,s select-buffer-submitted ,name) (selected s (zipper '(a b c) focus)))))
   (check-equal? (ev st 'raw) before)
   (same st '((raw select-buffer-submitted "/cwd/a.txt") buffers) (zipper '(a b c) 0))
-  (same st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt"))))
+  (same st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt")) 1))
   (check-equal? (unbox calls) '()))
 
 (test-case "current-first and first-forward duplicate selection before and across wrap"
   (define-values (st calls disk) (state))
-  (def! st 'a (bound "first duplicate" "same"))
-  (def! st 'b (bound "second duplicate" "same"))
-  (def! st 'c (bound "other current" "other"))
-  (def! st 'd (bound "third duplicate" "same"))
+  (def! st 'a (bound "first duplicate" "same" 0))
+  (def! st 'b (bound "second duplicate" "same" 1))
+  (def! st 'c (bound "other current" "other" 2))
+  (def! st 'd (bound "third duplicate" "same" 3))
   (for ([row '(((a b c d) 0 0) ((a b c d) 1 1) ((a c b d) 1 2)
                ((a b d c) 3 0) ((c a b d) 0 1))])
     (define order (car row))
@@ -316,10 +337,10 @@
 
 (test-case "multiple untitled buffers and literal untitled collisions have no kind preference"
   (define-values (st calls disk) (state))
-  (def! st 'a (buffer "pathless first"))
-  (def! st 'b (buffer "pathless second"))
-  (def! st 'c (bound "bound literal" "untitled"))
-  (def! st 'd (bound "nonmatching" "/cwd/d"))
+  (def! st 'a (buffer "pathless first" no-path 0))
+  (def! st 'b (buffer "pathless second" no-path 1))
+  (def! st 'c (bound "bound literal" "untitled" 2))
+  (def! st 'd (bound "nonmatching" "/cwd/d" 3))
   (for ([row '(((a b d) 0 0) ((a b d) 2 0) ((d a b) 0 1)
                ((d a c) 0 1) ((d c a) 0 1) ((a c d) 2 0) ((c a d) 2 0)
                ((a c d) 1 1) ((c a d) 1 1))])
@@ -331,10 +352,12 @@
 
 (test-case "equal-valued distinct positions do not terminate the bounded scan early"
   (define-values (st calls disk) (state))
-  (def! st 'a (bound "equal payload" "same"))
-  (def! st 'b (bound "equal payload" "same"))
-  (def! st 'c (bound "target after equal positions" "target"))
-  (same st 'a 'b)
+  (def! st 'a (bound "equal payload" "same" 0))
+  (def! st 'b (bound "equal payload" "same" 1))
+  (def! st 'c (bound "target after equal positions" "target" 2))
+  (same st '(a editor) '(b editor))
+  (same st '(a path) '(b path))
+  (check-not-equal? (ev st '(a id)) (ev st '(b id)))
   (for ([row '(((a b c) 0 2) ((a b c) 1 2) ((c a b) 1 0))])
     (define order (car row))
     (def! st 'source (session (zipper order (cadr row))))
@@ -361,7 +384,7 @@
                " /cwd/a.txt" "/cwd/a.txt " "  " "unknown")])
     (same st `(raw select-buffer-submitted ,name) (rebuild 'raw #:echo "failed")))
   (check-equal? (ev st 'raw) before)
-  (def! st 'empty-path (bound "raw empty stored path" ""))
+  (def! st 'empty-path (bound "raw empty stored path" "" 1))
   (def! st 'raw (rebuild 'raw #:buffers (zipper '(a empty-path c) 1)))
   (same st '(raw select-buffer-submitted "") (rebuild 'raw #:echo "failed"))
   (same st '((raw buffers) current-buffer) 'empty-path)
@@ -380,15 +403,15 @@
     (same st 'done (missed 'draft name))
     (same st '(done submit-prompt) 'done)
     (check-equal? (ev st 'draft) before))
-  (def! st 'source (rebuild 'source #:buffers (zipper (list (bound "empty name" "") 'a 'c) 0)))
+  (def! st 'source (rebuild 'source #:buffers (zipper (list (bound "empty name" "" 1) 'a 'c) 0)))
   (draft! st "")
   (same st '(draft submit-prompt) (missed 'draft ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "relative, space and case names match only their exact stored string"
   (define-values (st calls disk) (state))
-  (define order (list (bound "relative" "./a.txt") (bound "spaces" "  ")
-                      (bound "case" "/CWD/A.txt")))
+  (define order (list (bound "relative" "./a.txt" 0) (bound "spaces" "  " 1)
+                      (bound "case" "/CWD/A.txt" 2)))
   (def! st 'source (session (zipper order 1)))
   (for ([name '("./a.txt" "  " "/CWD/A.txt")] [focus '(0 1 2)])
     (draft! st name)
@@ -466,12 +489,12 @@
 
 (test-case "full frames restore selected text cursors, safe display keeps exact names, and one row works"
   (define-values (st calls disk) (state))
-  (def! st 'a (buffer "ab\nsecond"))
+  (def! st 'a (buffer "ab\nsecond" no-path 0))
   (def! st 'b
     `(AloemacsBuffer new
        (AloemacsEditor new ((Text from-string "other") indexed-value) (Position new 0 2)
          #f 0 0 (List empty) ,no-mark 2)
-       (Option Some (Path new "/cwd/b.txt"))))
+       (Option Some (Path new "/cwd/b.txt")) 1))
   (def! st 'source (session (zipper '(a b) 0)))
   (def! st 'active '(source execute-command (AloemacsCommand SelectBuffer) "ignored"))
   (check-equal? (ev st '(active frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: " 3 9))
@@ -485,7 +508,7 @@
   (def! st 'cancel '(typed handle-key "escape"))
   (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "saved: untitled" 1 1))
   (define unsafe "\t\r\u001b\u0000\u007f λabcdef")
-  (def! st 'unsafe-buffer (bound "unsafe target" unsafe))
+  (def! st 'unsafe-buffer (bound "unsafe target" unsafe 1))
   (def! st 'safe (rebuild 'active #:buffers (zipper '(a unsafe-buffer) 0) #:prompt (prompt unsafe)))
   (define before (ev st 'safe))
   (for ([i (in-range 2)])

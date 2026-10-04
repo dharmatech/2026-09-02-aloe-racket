@@ -55,8 +55,8 @@
 (define (editor contents [point '(Position new 0 0)])
   `(AloemacsEditor new ((Text from-string ,contents) indexed-value)
      ,point #f 0 0 (List empty) ,no-mark 0))
-(define (buffer contents [path no-path])
-  `(AloemacsBuffer new ,(editor contents) ,path))
+(define (buffer contents [path no-path] [id 0])
+  `(AloemacsBuffer new ,(editor contents) ,path ,id))
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
@@ -64,7 +64,13 @@
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #f "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
      ,no-pending ,no-prompt ,no-submission
-     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+     (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 0 0))))
 
 ;; Expectations use only constructors and reads, never the transition under test.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -72,13 +78,21 @@
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
                  #:failing [failing `(,s failing)] #:ring [ring `(,s kill-ring)]
                  #:pending [pending `(,s pending)] #:prompt [line `(,s prompt)]
-                 #:submission [submission `(,s last-submission)])
+                 #:submission [submission `(,s last-submission)]
+                 #:columns [columns `((,s windows) columns)]
+                 #:rows [rows `((,s windows) rows)])
   `(AloemacsSession new ,buffers (,s fs) ,echo ,searching ,query ,origin
      ,wrapped ,failing ,ring ,pending ,line ,submission
-     (,s waiting-command)))
+     (,s waiting-command)
+     (let ((buffer (,buffers current-buffer)))
+       (AloemacsWindows new
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 0 (buffer id)
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+         0 ,columns ,rows))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
-     (AloemacsBuffer new ,new-editor ,path) ((,s buffers) after)))
+     (AloemacsBuffer new ,new-editor ,path ((,s current-buffer) id)) ((,s buffers) after)))
 (define (reset s buffers #:visit? [visit? #f])
   (rebuild s #:buffers buffers #:echo "" #:searching #f #:query ""
     #:origin '(Position new 0 0) #:wrapped #f #:failing #f #:pending no-pending
@@ -92,7 +106,7 @@
          (Position new 1 2) #f 1 1
          (List of (UndoFrame new (Text from-string "old a") (Position new 0 1) 0 1))
          (Option Some (Position new 0 2)) 2)
-       (Option Some (Path new "/cwd/a.txt"))))
+       (Option Some (Path new "/cwd/a.txt")) 0))
   (def! st 'rich-editor
     '(AloemacsEditor new
        (Text indexed (List of "second" "first") "third-long"
@@ -100,12 +114,12 @@
        (Position new 2 4) #f 2 3
        (List of (UndoFrame new (Text from-string "old b") (Position new 0 2) 1 2))
        (Option Some (Position new 1 1)) 4))
-  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt"))))
-  (def! st 'c (buffer "neighbor c"))
+  (def! st 'b '(AloemacsBuffer new rich-editor (Option Some (Path new "/cwd/b.txt")) 1))
+  (def! st 'c (buffer "neighbor c" no-path 2))
   (def! st 'source (session (zipper '(a b c) 1))))
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending
-            prompt last-submission waiting-command))
+            prompt last-submission waiting-command windows))
 (define editor-fields '(text point quit scroll-row scroll-col history mark text-rows))
 (define (same-session st actual expected)
   (def! st 'comparison-actual actual)
@@ -491,9 +505,9 @@
   (same-session st '(answered switch-buffer) (reset 'answered (zipper '(a b c) 2)))
   (same-session st '(answered kill-buffer) (reset 'answered (zipper '(a c) 1)))
   (same-session st '(answered add-buffer "new")
-    (reset 'answered (zipper (list 'a 'b (buffer "new") 'c) 2)))
+    (reset 'answered (zipper (list 'a 'b (buffer "new" no-path 3) 'c) 2)))
   (same-session st '(answered add-buffer "new" (Path new "./new.txt"))
-    (reset 'answered (zipper (list 'a 'b (buffer "new" '(Option Some (Path new "./new.txt"))) 'c) 2)))
+    (reset 'answered (zipper (list 'a 'b (buffer "new" '(Option Some (Path new "./new.txt")) 3) 'c) 2)))
   (check-equal? (unbox calls) '())
   (check-equal? (ev st 'answered) original))
 
@@ -516,11 +530,11 @@
               (list '(draft switch-buffer) (reset 'draft (zipper '(a b c) 2)))
               (list '(draft kill-buffer) (reset 'draft (zipper '(a c) 1)))
               (list '(draft add-buffer "new")
-                    (reset 'draft (zipper (list 'a 'b (buffer "new") 'c) 2)))
+                    (reset 'draft (zipper (list 'a 'b (buffer "new" no-path 3) 'c) 2)))
               (list '(draft add-buffer "new" (Path new "new.txt"))
-                    (reset 'draft (zipper (list 'a 'b (buffer "new" '(Option Some (Path new "new.txt"))) 'c) 2)))
+                    (reset 'draft (zipper (list 'a 'b (buffer "new" '(Option Some (Path new "new.txt")) 3) 'c) 2)))
               (list '(draft ensure-visible 2 2)
-                    (rebuild 'draft #:buffers (replace-current 'draft
+                    (rebuild 'draft #:columns 2 #:rows 2 #:buffers (replace-current 'draft
                       '(AloemacsEditor new (draft text) (draft point) #f 2 3
                          (rich-editor history) (rich-editor mark) 1)))))])
     (def! st 'result (car row))

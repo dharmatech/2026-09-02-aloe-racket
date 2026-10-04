@@ -31,8 +31,14 @@ minibuffer series is implemented and accepted at
 [`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001. The
 prompt-command series is implemented and accepted at
 [`prompt-commands/`](prompt-commands/), aloemacs-prompt-commands
-000–002. Do not reopen those
-series, and do not write the prompt-command `spec.md` here.
+000–002. The windows charter is issued at
+[`windows/`](windows/); accepted product behavior stays closed. The
+approved packaging revision orders buffer identity; window state and
+synchronization; layout, rendering, and fit; both splits; delete and
+other-window; window lock, permitting further state separation without
+a maximum count or added behavior. Its revised spec is drafted for
+review in the designer role. Do not reopen product behavior in those
+series, and do not write the windows `spec.md` from this discussion role.
 
 ## How this conversation works
 
@@ -67,6 +73,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Buffer | **Implemented and accepted.** aloemacs-buffer 000–001 at [`buffer/`](buffer/) |
 | Minibuffer | **Implemented and accepted.** aloemacs-minibuffer 000–001 at [`minibuffer/`](minibuffer/) |
 | Prompt commands | **Implemented and accepted.** aloemacs-prompt-commands 000–002 at [`prompt-commands/`](prompt-commands/) |
+| Windows | **Revised partition drafted for review.** Accepted behavior stays closed. Replacement 000 is buffer identity; final part is lock. See [`windows/`](windows/) for the ordered partition and optional further state separation |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
@@ -103,8 +110,9 @@ These are known residue. Leave them until the human picks one.
 - Session send-forwarding until the language has delegation
 - Constructor arity growth on the editor
 - Class methods / class-side `(String join …)`
-- Windows and M-x (see [`explorations.md`](explorations.md)
-  for order). The prompt-command series is implemented and accepted at
+- `M-x` (see [`explorations.md`](explorations.md) for order).
+  Windows has a charter at [`windows/`](windows/). The
+  prompt-command series is implemented and accepted at
   [`prompt-commands/`](prompt-commands/)
 - Live `eval` / Mirror
 

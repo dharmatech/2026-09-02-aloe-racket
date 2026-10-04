@@ -74,6 +74,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 14 | Buffer | [`buffer/`](buffer/) | **Implemented and accepted.** aloemacs-buffer 000–001. | 4, 13 (file session, commands) |
 | 15 | Minibuffer | [`minibuffer/`](minibuffer/) | **Implemented and accepted.** aloemacs-minibuffer 000–001. | 8–10, 13–14 (echo row, safe cells, search, keymap, buffer) |
 | 16 | Prompt commands | [`prompt-commands/`](prompt-commands/) | **Implemented and accepted.** aloemacs-prompt-commands 000–002. | 4, 13–15 (Fs, keymap, buffer, minibuffer) |
+| 17 | Windows | [`windows/`](windows/) | **Revised spec accepted; replacement 000 ready to implement.** Buffer identity only; later parts remain unissued. | 6, 8, 13–16 (viewport, echo, keymap, buffer, minibuffer, prompt commands) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -90,8 +91,17 @@ aloemacs-buffer 000–001. **Minibuffer** is implemented and accepted at
 [`minibuffer/`](minibuffer/), aloemacs-minibuffer 000–001.
 **Prompt commands** are implemented and accepted at
 [`prompt-commands/`](prompt-commands/), aloemacs-prompt-commands
-000–002. Ranked later work lives in
-[`explorations.md`](explorations.md).
+000–002. **Windows** has an accepted revised spec at
+[`windows/`](windows/). The order is
+buffer identity; window state and synchronization; layout, rendering,
+and fit; both splits; delete and other-window; window lock. Intended
+aloemacs-windows numbers are 000–005; window state may be separated
+further without a maximum count or added behavior. The returned
+`000-split.md` stays historical. Replacement
+[`000-buffer-identity.md`](windows/checkpoints/000-buffer-identity.md)
+is ready to implement; no later checkpoint is issued.
+Ranked later
+work lives in [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
@@ -124,7 +134,7 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 
 Easy to smuggle in. They are not.
 
-- Windows, a buffer menu, and modes
+- A mode line, a buffer menu, and modes
 - Mouse, paste, PTY, VT emulator, daemon, multi-head
 - Unicode clusters, `wcwidth`, grapheme width
 - `M-x` eval, Gel's `Mirror`, hot reload
@@ -152,6 +162,7 @@ Easy to smuggle in. They are not.
 | Buffer | No-TTY: two buffers, switch shows the other text and that buffer's path or `untitled`. Kill leaves a current buffer. Save writes the current path. Undo, mark, and scroll survive a round trip. Existing keys still behave on the current buffer |
 | Minibuffer | No-TTY: start a prompt, type, submit, and read the string back. Cancel leaves the buffer and the previous submission. While the prompt is active the cursor sits on the echo row; when it ends, the cursor returns to the text. The current buffer's text, point, undo, path, and name stay |
 | Prompt commands | No-TTY: `C-x C-f` opens a path and leaves the previous buffer in the zipper. `C-x C-w` writes the current text and binds the path. `C-x b` selects a buffer by its exact name. A refused path, a missed name, and Escape leave the buffers as they were |
+| Windows | No-TTY: `C-x 2` and `C-x 3` show two views of the current buffer. `C-x o` moves between views. `C-x 0` deletes the selected view. `C-x l` locks a view so a later split or delete leaves it in place. One view still frames as before |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

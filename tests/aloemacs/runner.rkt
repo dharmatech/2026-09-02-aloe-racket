@@ -35,7 +35,7 @@
               (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
             (if #t
                 (Option None)
-                (Option Some (Path new "/typed-none"))))
+                (Option Some (Path new "/typed-none"))) 0)
           (List empty))
         (Fs new fs-host)
         ""
@@ -48,7 +48,10 @@
         (if #t (Option None) (Option Some aloemacs-global-keymap))
         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
         (if #t (Option None) (Option Some ""))
-        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))))
+        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+        (AloemacsWindows new
+          (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f))
+          0 0 0)))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[4;1Huntitled\u001b[1;1H\u001b[?25h")

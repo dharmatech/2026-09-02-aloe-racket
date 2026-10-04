@@ -16,7 +16,8 @@
           0)
         (if #t
             (Option None)
-            (Option Some (Path new "/typed-none"))))
+            (Option Some (Path new "/typed-none")))
+        0)
       (List empty))
     (Fs new fs-host)
     ""
@@ -31,4 +32,7 @@
         (Option Some aloemacs-global-keymap))
     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
     (if #t (Option None) (Option Some ""))
-    (if #t (Option None) (Option Some (AloemacsCommand FindFile)))))
+    (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
+    (AloemacsWindows new
+      (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f))
+      0 0 0)))

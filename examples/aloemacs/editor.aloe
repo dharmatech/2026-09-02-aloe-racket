@@ -23,6 +23,11 @@
     (mark (Option Position))
     (text-rows Int))
   (methods
+    (with-origin (scroll-row Int) (scroll-col Int) AloemacsEditor
+      (AloemacsEditor new
+        (self text) (self point) (self quit) scroll-row scroll-col
+        (self history) (self mark) (self text-rows)))
+
     (fit-origin (point Int) (origin Int) (size Int) Int
       ((if (point < origin)
            point
@@ -67,6 +72,21 @@
                  cell)
              append
              (self safe-cells (clipped-string drop 1))))))
+
+    (blank-rows (rows Int) (List String)
+      (if (rows <= 0)
+          (List empty)
+          ((self blank-rows (rows - 1)) cons "")))
+
+    (frame-rows (columns Int) (rows Int) (scroll-row Int) (scroll-col Int)
+                (List String)
+      ;; Focus only a temporary zipper at this view's explicit origin.
+      (((self text) focus-at scroll-row) case
+        (None () (self blank-rows rows))
+        (Some (at-top)
+          ((at-top next-lines rows) map
+            (fn (line)
+              (self safe-cells ((line drop scroll-col) take columns)))))))
 
     (frame (columns Int) (rows Int) String
       (let ((point (self point)))
