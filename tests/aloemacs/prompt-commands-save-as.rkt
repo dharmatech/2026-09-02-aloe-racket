@@ -162,7 +162,9 @@
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 (define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
                       #:name [name "untitled"])
-  (define shown (substring label 0 (min columns (string-length label))))
+  (define shown
+    (if (and (>= rows 3) (not prompt-column) (equal? label name)) ""
+        (substring label 0 (min columns (string-length label)))))
   (if (= rows 1) (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown
         (if prompt-column rows 1) (or prompt-column column) #:name name #:width columns)))

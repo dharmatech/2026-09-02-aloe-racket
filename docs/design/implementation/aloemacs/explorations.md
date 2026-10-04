@@ -16,8 +16,11 @@ The prompt-command series is implemented and accepted
 (aloemacs-prompt-commands 000–002) at
 [`prompt-commands/`](prompt-commands/). The windows series is
 implemented (aloemacs-windows 000–006) at [`windows/`](windows/).
-Final human review of that series remains. The mode-line charter
-is issued at [`mode-line/`](mode-line/).
+Final human review of that series remains. The mode-line series is
+implemented (aloemacs-mode-line 000–001) at
+[`mode-line/`](mode-line/). Final human review of that series
+remains. The idle-echo follow-on is ready to implement at
+[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -39,7 +42,8 @@ Visit a path, edit, scroll, save, undo, quit, echo row,
 incremental search, mark, kill, and yank. The session holds a
 zipper of buffers and a tree of windows. A window is a view of a
 buffer: split below, split right, other-window, delete, and lock.
-Switch and kill-buffer are sends. Text zipper, stored viewport,
+A tall window's last row shows that window's buffer name. The
+echo row stays the message row. Switch and kill-buffer are sends. Text zipper, stored viewport,
 snapshot undo, linear load/save, safe control display. Idiom
 cleanups on Text and Int. Scale charter withdrawn.
 
@@ -122,8 +126,8 @@ view of a buffer, not a second copy of the editor class.
 
 | # | Exploration | Note |
 |---|---|---|
-| 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line stays item 10 |
-| 10 | **Mode line** | **Charter issued** at [`mode-line/`](mode-line/). A per-window row shows the buffer name. The echo row stays the message row. A mode name waits until language modes exist |
+| 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line is the separate item 10 |
+| 10 | **Mode line** | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). A per-window row shows the buffer name on a dash fill. The echo row stays the message row. A leaf shorter than two rows keeps today's text frame. Final human review remains. A mode name waits until language modes exist |
 
 ---
 
@@ -200,14 +204,20 @@ Leave these until a slice is blocked by them.
 5. **Windows + lock** — implemented at [`windows/`](windows/),
    aloemacs-windows 000–006. A window is a view of a buffer.
    Final human review remains.
-6. **Mode line** — charter issued at [`mode-line/`](mode-line/).
-   The designer writes `spec.md` and stops. A per-window row
-   shows the buffer name. The echo row stays the message row.
+6. **Mode line** — implemented at [`mode-line/`](mode-line/),
+   aloemacs-mode-line 000–001. A per-window row shows the buffer
+   name. The echo row stays the message row. Final human review
+   remains. The idle name leaves that row in the standalone
+   checkpoint [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000,
+   which is ready to implement.
 7. **Faces**, then highlighting, then modes as libraries.
 8. Folding, then outline/notes, then a directory browser.
 9. LSP, then live eval, each with its own charter.
 
 The motion pack is implemented (aloemacs-motion 000). Band 2 is
 implemented. Windows is implemented (aloemacs-windows 000–006);
-final human review remains. The mode-line charter is issued at
-[`mode-line/`](mode-line/). Modes, org, dired, and `M-x` stay later.
+final human review remains. Mode line is implemented
+(aloemacs-mode-line 000–001) at [`mode-line/`](mode-line/);
+final human review remains. The next handoff is
+aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/). Faces stay
+next on this list. Modes, org, dired, and `M-x` stay later.

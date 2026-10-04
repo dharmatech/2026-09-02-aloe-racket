@@ -101,7 +101,7 @@
   (same st 'actual 'expected)
   (for ([field fields]) (same st `(actual ,field) `(expected ,field))))
 (define (cursor row col) (format "\e[~a;~aH" row col))
-(define (multi lines row col [echo-row 6] [echo "untitled"])
+(define (multi lines row col [echo-row 6] [echo ""])
   (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
@@ -461,7 +461,7 @@
     (define below? (equal? split-key "2"))
     (define keys (list "ctrl-x" split-key "ctrl-x" "o" "x" "ctrl-x" "0" "escape"))
     (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (2 3) (9 6) (9 6)))
-    (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9))
+    (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
     (define split-rows (if below?
       '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
       '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")))
@@ -469,12 +469,12 @@
       '("xabc     " "/cwd/a.tx" "---------" "xabc     " "/cwd/a.tx")
       '("xabc|xabc" "def |def " "    |    " "    |    " "/cwd|/cwd")))
     (define frames
-      (list start start (multi split-rows 1 1 6 "/cwd/a.tx")
-        (multi split-rows 1 1 6 "/cwd/a.tx")
-        (multi split-rows (if below? 4 1) (if below? 1 6) 6 "/cwd/a.tx")
-        (single '("xa" "de") 1 2 3 "/c" #:name "/cwd/a.txt" #:width 2)
-        (multi edited-rows (if below? 4 1) (if below? 2 7) 6 "/cwd/a.tx")
-        (single '("xabc" "def" "" "" "") 1 2 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9)))
+      (list start start (multi split-rows 1 1 6 "")
+        (multi split-rows 1 1 6 "")
+        (multi split-rows (if below? 4 1) (if below? 1 6) 6 "")
+        (single '("xa" "de") 1 2 3 "" #:name "/cwd/a.txt" #:width 2)
+        (multi edited-rows (if below? 4 1) (if below? 2 7) 6 "")
+        (single '("xabc" "def" "" "" "") 1 2 6 "" #:name "/cwd/a.txt" #:width 9)))
     (define-values (host calls disk) (counted-fs))
     (define iteration 0)
     (define events (box '()))
@@ -555,7 +555,7 @@
   (simple! st)
   (def! st 's (session (zipper '(a)) (right (leaf 7) (leaf 2 41 1 1)) 7
     #:columns 2 #:rows 3 #:echo ""))
-  (paint st 's 2 3 (single '("ab" "de") 1 1 3 "un" #:name "untitled" #:width 2))
+  (paint st 's 2 3 (single '("ab" "de") 1 1 3 "" #:name "untitled" #:width 2))
   (def! st 'deleted '(s delete-window))
   (same-session st 'deleted (rebuild 's #:buffers
     (zipper (list (buffer 41 (editor ab-text 0 0 1 1))))
@@ -564,7 +564,7 @@
   (same-session st 'fit (rebuild 'deleted #:buffers
     (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
     #:windows (config (leaf 2) 2 2 3)))
-  (paint st 'fit 2 3 (single '("ab" "de") 1 1 3 "un" #:name "untitled" #:width 2))
+  (paint st 'fit 2 3 (single '("ab" "de") 1 1 3 "" #:name "untitled" #:width 2))
   (check-equal? (unbox calls) '()))
 
 (test-case "all tokens: same-ID entry, different-ID resets, active rows and refusal preservation"
@@ -589,7 +589,7 @@
     (check-equal? (ev st '(r echo)) kept-token)
     (define shown (cond [prompt? "P x y"] [(and same-id? search?) "failing: "]
                        [(equal? kept-token "saved") "saved: un"]
-                       [(equal? kept-token "failed") "failed: u"] [else "untitled"]))
+                       [(equal? kept-token "failed") "failed: u"] [else ""]))
     (if (eq? (car op) 'delete-window)
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
                                  (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9))

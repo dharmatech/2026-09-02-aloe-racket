@@ -22,7 +22,7 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
-(define (complete-frame body row column [label "/cwd/a.t"] [echo-row 5]
+(define (complete-frame body row column [label ""] [echo-row 5]
                         #:name [name "/cwd/a.txt"] #:width [width 8])
   (string-append "\e[?25l\e[2J\e[H" (text-body body echo-row)
     (format "\e[~a;~aH\e[?25h" row column)
@@ -119,13 +119,13 @@
   (define empty-fs (make-fs-double "/cwd" (hash "/cwd" 'directory)))
   (run-aloemacs-with-hosts (scripted-term-receiver pathless) empty-fs)
   (check-script pathless sizes
-                (list (complete-frame "\r\n" 1 1 "untitled" 4 #:name "untitled")) keys)
+                (list (complete-frame "\r\n" 1 1 "" 4 #:name "untitled")) keys)
 
   (define visited (make-scripted-term sizes keys))
   (define fs (file-double "hello\nworld"))
   (run-aloemacs-with-hosts (scripted-term-receiver visited) fs "a.txt")
   (check-script visited sizes
-                (list (complete-frame "hello\r\nworld\r\n" 1 1 "/cwd/a.t" 4))
+                (list (complete-frame "hello\r\nworld\r\n" 1 1 "" 4))
                 keys)
   (check-equal? (host-receiver-send fs 'read '("/cwd/a.txt"))
                 "hello\nworld"))
@@ -145,9 +145,9 @@
                            (file-double source) "a.txt")
   (check-script fixture sizes frames keys)
   (check-equal? (list-ref frames 3)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H/cwd/a.t\u001b[3;1H\u001b[?25h")
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H\u001b[3;1H\u001b[?25h")
   (check-equal? (list-ref frames 4)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H/cwd/a.t\u001b[2;1H\u001b[?25h"))
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H\u001b[2;1H\u001b[?25h"))
 
 (test-case "vertical shrink shifts only on exit and growth holds the origin"
   (define keys '("down" "down" "down" "f1" "up" "f1" "escape"))
@@ -159,9 +159,9 @@
      (for/list ([body (list top-body top-body top-body "one\r\ntwo\r\nthree")]
                 [row '(1 2 3 3)])
        (complete-frame body row 1))
-     (list (complete-frame "two\r\nthree" 2 1 "/cwd/a.t" 4)
-           (complete-frame "two" 1 1 "/cwd/a.t" 3)
-           (complete-frame "two\r\nthree\r\nfour\r\nfive" 1 1 "/cwd/a.t" 6))))
+     (list (complete-frame "two\r\nthree" 2 1 "" 4)
+           (complete-frame "two" 1 1 "" 3)
+           (complete-frame "two\r\nthree\r\nfour\r\nfive" 1 1 "" 6))))
   (define fixture (make-scripted-term sizes keys))
   (run-aloemacs-with-hosts
    (scripted-term-receiver fixture)
@@ -174,9 +174,9 @@
   (define frames
     (append
      (for/list ([column (in-range 1 7)])
-       (complete-frame "01234567\r\nabcdefgh" 1 column "/cwd/a.t" 3))
-     (list (complete-frame "3456" 1 4 "/cwd" 3 #:width 4)
-           (complete-frame "3456789\r\ndefghij" 1 4 "/cwd/a.t" 3))))
+       (complete-frame "01234567\r\nabcdefgh" 1 column "" 3))
+     (list (complete-frame "3456" 1 4 "" 3 #:width 4)
+           (complete-frame "3456789\r\ndefghij" 1 4 "" 3))))
   (define fixture (make-scripted-term sizes keys))
   (run-aloemacs-with-hosts
    (scripted-term-receiver fixture)

@@ -200,7 +200,7 @@
     (lambda (row key)
       (list '(columns 20) '(rows 8)
             (list 'write (frame "a\r\nb\r\nc\r\nd\r\ne\r\nf\r\ng"
-                                row 1 8 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
+                                row 1 8 "" #:name "/cwd/a.txt" #:width 20))
             'flush (list 'key key)))
     '(1 2 3 4 5 6) keys))
   (define gaps ((scripted-term-gaps fixture)))

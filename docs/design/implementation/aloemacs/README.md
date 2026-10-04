@@ -75,7 +75,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 15 | Minibuffer | [`minibuffer/`](minibuffer/) | **Implemented and accepted.** aloemacs-minibuffer 000–001. | 8–10, 13–14 (echo row, safe cells, search, keymap, buffer) |
 | 16 | Prompt commands | [`prompt-commands/`](prompt-commands/) | **Implemented and accepted.** aloemacs-prompt-commands 000–002. | 4, 13–15 (Fs, keymap, buffer, minibuffer) |
 | 17 | Windows | [`windows/`](windows/) | **Implemented.** aloemacs-windows 000–006. Final human review remains. | 6, 8, 13–16 (viewport, echo, keymap, buffer, minibuffer, prompt commands) |
-| 18 | Mode line | [`mode-line/`](mode-line/) | **Charter issued.** Designer writes `spec.md` and stops. | 8, 14, 17 (echo, buffer name, windows) |
+| 18 | Mode line | [`mode-line/`](mode-line/) | **Implemented.** aloemacs-mode-line 000–001. Final human review remains. | 8, 14, 17 (echo, buffer name, windows) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -96,10 +96,16 @@ aloemacs-buffer 000–001. **Minibuffer** is implemented and accepted at
 aloemacs-windows 000–006: buffer identity, window state, layout
 and rendering, both splits, delete and other-window, and lock.
 The returned `000-split.md` stays historical. Final human review
-remains. **Mode line** has a charter at [`mode-line/`](mode-line/).
-A per-window row shows the buffer name. The echo row stays the
-message row. The designer writes `spec.md` and stops. Ranked later
-work lives in [`explorations.md`](explorations.md).
+remains. **Mode line** is implemented at [`mode-line/`](mode-line/),
+aloemacs-mode-line 000–001. A tall window's last row shows that
+window's buffer name. The echo row stays the message row. A leaf
+shorter than two rows keeps today's text frame. Final human review
+remains. **Idle echo** is ready to implement at
+[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. When the
+selected window paints a mode line, an idle echo row is blank. A
+selected window with no mode line still shows the name there.
+Save, search, and prompt messages stay. Ranked later work lives in
+[`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
 
@@ -127,6 +133,14 @@ checkpoint** (no charter, no spec, no manager) unless it grows.
 | safe-cell-scan | [`safe-cell-scan/`](safe-cell-scan/) | **Implemented.** aloemacs-safe-cell-scan 000 |
 | safe-cell-controls | [`safe-cell-controls/`](safe-cell-controls/) | **Implemented.** aloemacs-safe-cell-controls 000 |
 | runner-check | [`runner-check/`](runner-check/) | **Implemented.** aloemacs-runner-check 000 |
+
+## Follow-on
+
+Locked display change. A standalone checkpoint, not a new layer.
+
+| Identity | Path | This conversation |
+|---|---|---|
+| idle-echo | [`idle-echo/`](idle-echo/) | **Ready to implement.** aloemacs-idle-echo 000 |
 
 ## Not in this map
 

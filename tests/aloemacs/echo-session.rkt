@@ -123,7 +123,7 @@
   (check-equal? (type state '(aloemacs-editor echo)) 'String)
   (check-equal? (value state '(aloemacs-editor echo)) "")
   (check-equal? (value state '(aloemacs-editor frame 8 4))
-                (session-frame "\r\n\r\n" 1 1 4 "untitled" #:name "untitled" #:width 8))
+                (session-frame "\r\n\r\n" 1 1 4 "" #:name "untitled" #:width 8))
   (check-exn exn:fail:aloe-type?
              (lambda () (value state (drop-right untitled 1))))
   (check-exn exn:fail:aloe-type?
@@ -172,11 +172,11 @@
   (define! state 'untitled (session "" #f ""))
   (define! state 'bound (session "zero\none\ntwo\nthree" "/cwd/a.txt" ""))
   (check-equal? (value state '(untitled frame 8 4))
-                (session-frame "\r\n\r\n" 1 1 4 "untitled" #:name "untitled" #:width 8))
+                (session-frame "\r\n\r\n" 1 1 4 "" #:name "untitled" #:width 8))
   (check-equal? (value state '(bound frame 8 4))
-                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8))
+                (session-frame "zero\r\none\r\ntwo" 1 1 4 "" #:name "/cwd/a.txt" #:width 8))
   (check-equal? (value state '(bound frame 20 4))
-                (session-frame "zero\r\none\r\ntwo" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
+                (session-frame "zero\r\none\r\ntwo" 1 1 4 "" #:name "/cwd/a.txt" #:width 20))
   (check-equal? (value state '(untitled frame 4 2))
                 (session-frame "" 1 1 2 "unti" #:name "untitled" #:width 4))
   (define! state 'prior (session "one\ntwo" #f "prior"))
@@ -196,11 +196,11 @@
   (define! state 'three '((two handle-key "down") ensure-visible 8 4))
   (check-equal? (value state '((three editor) scroll-row)) 2)
   (check-equal? (value state '(three frame 8 4))
-                (session-frame "two\r\nthree" 2 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8))
+                (session-frame "two\r\nthree" 2 1 4 "" #:name "/cwd/a.txt" #:width 8))
   (define! state 'up '((three handle-key "up") ensure-visible 8 4))
   (check-equal? (value state '((up editor) scroll-row)) 2)
   (check-equal? (value state '(up frame 8 4))
-                (session-frame "two\r\nthree" 1 1 4 "/cwd/a.t" #:name "/cwd/a.txt" #:width 8)))
+                (session-frame "two\r\nthree" 1 1 4 "" #:name "/cwd/a.txt" #:width 8)))
 
 (test-case "key saves report success or failure without changing session payload"
   (define state (make-state))

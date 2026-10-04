@@ -101,7 +101,7 @@
   (same st 'actual 'expected)
   (for ([field fields]) (same st `(actual ,field) `(expected ,field))))
 (define (cursor row col) (format "\e[~a;~aH" row col))
-(define (multi lines row col [echo-row 6] [echo "untitled"])
+(define (multi lines row col [echo-row 6] [echo ""])
   (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
@@ -291,7 +291,7 @@
     (rebuild 'raw #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
       #:windows (config rt 7 9 3) #:echo ""))
   (def! st 'r '(raw split-right))
-  (paint st 'r 9 3 (single '("abc" "def") 1 1 3 "untitled" #:name "untitled" #:width 9))
+  (paint st 'r 9 3 (single '("abc" "def") 1 1 3 "" #:name "untitled" #:width 9))
   (check-equal? (unbox calls) '()))
 
 (test-case "sparse IDs, maximum away from selected, live origin capture and inactive locks"
@@ -338,23 +338,23 @@
   (define m (leaf 9))
   (def! st 'r '(s split-right))
   (same st '((r windows) tree) (right l n))
-  (paint st 'r 7 6 (multi '("a  |a  " "   |   " "   |   " "   |   " "unt|unt") 1 1 6 "untitle"))
+  (paint st 'r 7 6 (multi '("a  |a  " "   |   " "   |   " "   |   " "unt|unt") 1 1 6 ""))
   (def! st 'rb '(r split-below))
   (same st '((rb windows) tree) (right (below l m) n))
   (same st '(((rb windows) tree) leaves)
     '(List of (AloemacsView new 7 41 0 0 #f) (AloemacsView new 9 41 0 0 #f)
               (AloemacsView new 8 41 0 0 #f)))
-  (paint st 'rb 7 6 (multi '("a  |a  " "unt|   " "---+   " "a  |   " "unt|unt") 1 1 6 "untitle"))
+  (paint st 'rb 7 6 (multi '("a  |a  " "unt|   " "---+   " "a  |   " "unt|unt") 1 1 6 ""))
   (def! st 'b '(s split-below))
   (def! st 'br '(b split-right))
   (same st '((br windows) tree) (below (right l m) n))
-  (paint st 'br 7 6 (multi '("a  |a  " "unt|unt" "---+---" "a      " "untitle") 1 1 6 "untitle"))
+  (paint st 'br 7 6 (multi '("a  |a  " "unt|unt" "---+---" "a      " "untitle") 1 1 6 ""))
   ;; Arrange another selected leaf with raw constructors, never an entry API.
   (def! st 'other (rebuild 'rb #:windows (config (right (below l m) n) 8 7 6)))
   (def! st 'cross '(other split-below))
   (same st '((cross windows) tree) (right (below l m) (below n (leaf 10))))
   (paint st 'cross 7 6
-    (multi '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt") 1 5 6 "untitle"))
+    (multi '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt") 1 5 6 ""))
   (def! st 'wide (rebuild 's #:windows (config l 7 15 6)))
   (def! st 'rr '((wide split-right) split-right))
   (same st '((rr windows) tree) (right (right l m) n))
@@ -362,7 +362,7 @@
     `(Option Some ,(rect 8 0 7 5)))
   (paint st 'rr 15 6
     (multi '("a  |a  |a      " "   |   |       " "   |   |       "
-             "   |   |       " "unt|unt|untitle") 1 1 6 "untitled"))
+             "   |   |       " "unt|unt|untitle") 1 1 6 ""))
   (def! st 'tall (rebuild 's #:windows (config l 7 7 16)))
   (def! st 'bb '((tall split-below) split-below))
   (same st '((bb windows) tree) (below (below l m) n))
@@ -371,7 +371,7 @@
   (paint st 'bb 7 16
     (multi '("a      " "       " "untitle" "-------" "a      " "       " "untitle"
              "-------" "a      " "       " "       " "       " "       " "       " "untitle")
-           1 1 16 "untitle"))
+           1 1 16 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "one owned editor: shared edits/undo/mark, independent origins and page height"
@@ -383,17 +383,17 @@
   (same-session st 'b (rebuild 's #:echo ""
     #:buffers (zipper (list (buffer 41 (editor text 3 2 3 1 1))))
     #:windows (config (below (leaf 7 41 3 1) (leaf 8 41 1 1)) 7 7 6)))
-  (paint st 'b 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 "untitle"))
+  (paint st 'b 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 ""))
   (def! st 'edited '(b insert "λ"))
   (define changed (indexed '("abcd" "efgh" "ijkl" "mnλop" "qrst" "uvwx" "yz01") 3))
   (define undo-history `(List of (UndoFrame new ,text (Position new 3 2) 3 1)
     (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2)))
   (same-session st 'edited (rebuild 'b #:buffers (zipper (list (buffer 41
     (editor changed 3 3 3 1 1 #:history undo-history))))))
-  (paint st 'edited 7 6 (multi '("nλop   " "untitle" "-------" "fgh    " "untitle") 1 3 6 "untitle"))
+  (paint st 'edited 7 6 (multi '("nλop   " "untitle" "-------" "fgh    " "untitle") 1 3 6 ""))
   (def! st 'undone '(edited undo))
   (same-session st 'undone 'b)
-  (paint st 'undone 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 "untitle"))
+  (paint st 'undone 7 6 (multi '("nop    " "untitle" "-------" "fgh    " "untitle") 1 2 6 ""))
   (same st '((b page-down) point) '(Position new 4 2))
   (same st '((b page-up) point) '(Position new 2 2))
   (same st '(((b page-down) editor) history) rich-history)
@@ -403,7 +403,7 @@
   (def! st 'overlap-base '(b ensure-visible 7 8))
   (def! st 'overlap '(((overlap-base move-up) ensure-visible 7 8) insert "λ"))
   (paint st 'overlap 7 8
-    (multi '("jλkl   " "nop    " "untitle" "-------" "fgh    " "jλkl   " "untitle") 1 3 8 "untitle"))
+    (multi '("jλkl   " "nop    " "untitle" "-------" "fgh    " "jλkl   " "untitle") 1 3 8 ""))
   (same st '(((overlap windows) tree) find-view 8) '(Option Some (AloemacsView new 8 41 1 1 #f)))
   (same st '((overlap editor) mark) '(Option Some (Position new 0 1)))
   (same st '(((overlap undo) editor) text) (indexed '("abcd" "efgh" "ijkl" "mnop" "qrst" "uvwx" "yz01") 2))
@@ -421,12 +421,12 @@
   (def! st 'short-fit '(short ensure-visible 7 6))
   (same st '((short-fit windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
   (paint st 'short-fit 7 6
-    (multi '("       " "untitle" "-------" "       " "untitle") 1 1 6 "untitle"))
+    (multi '("       " "untitle" "-------" "       " "untitle") 1 1 6 ""))
   (def! st 'visited '(b visited "x" (Path new "/short")))
   (same st '((visited windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
   (def! st 'vfit '(visited ensure-visible 7 6))
   (paint st 'vfit 7 6
-    (multi '("x      " "/short " "-------" "       " "/short ") 1 1 6 "/short"))
+    (multi '("x      " "/short " "-------" "       " "/short ") 1 1 6 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "existing buffer operations after real splits: selected retarget and all-view kill"
@@ -521,7 +521,7 @@
     (def! st 'r `(raw ,(car o)))
     (check-equal? (ev st '(r echo)) result-token)
     (define shown (cond [prompted? "P x y"] [searching? "failing: "]
-                       [success? "untitled"] [else "failed: u"]))
+                       [success? ""] [else "failed: u"]))
     (define crow (if prompted? 6 1))
     (define ccol (if prompted? 5 1))
     (if success?
@@ -621,17 +621,17 @@
 (test-case "unchanged production runner: both chords, shared edit/save, shrink/growth and quit"
   (define keys '("ctrl-x" "2" "ctrl-x" "3" "x" "save" "unknown" "escape"))
   (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (1 2) (9 6) (9 6)))
-  (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9))
+  (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
   (define below-frame (multi '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
-                             1 1 6 "/cwd/a.tx"))
+                             1 1 6 ""))
   (define mixed-frame (multi '("abc |abc " "/cwd|/cwd" "----+----" "abc      " "/cwd/a.tx")
-                             1 1 6 "/cwd/a.tx"))
+                             1 1 6 ""))
   (define restored-rows '("abc |xabc" "/cwd|/cwd" "----+----" "xabc     " "/cwd/a.tx"))
   (define frames
     (list start start below-frame below-frame mixed-frame
           (single '("a") 1 1 2 "/" #:name "/cwd/a.txt" #:width 1)
           (multi restored-rows 1 1 6 "saved: /c")
-          (multi restored-rows 1 1 6 "/cwd/a.tx")))
+          (multi restored-rows 1 1 6 "")))
   (define-values (host calls disk) (counted-fs))
   (define iteration 0)
   (define events (box '()))

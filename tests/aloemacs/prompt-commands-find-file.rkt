@@ -544,12 +544,12 @@
   (def! st 'typed (rebuild 'active #:prompt (prompt "a.txt")))
   (check-equal? (ev st '(typed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "Find file: a.txt" 3 17 #:name "untitled" #:width 20))
   (def! st 'done '(typed handle-key "return"))
-  (check-equal? (ev st '(done frame 20 3)) (frame "λ \r\nb" 1 1 3 "/cwd/a.txt" 1 1 #:name "/cwd/a.txt" #:width 20))
+  (check-equal? (ev st '(done frame 20 3)) (frame "λ \r\nb" 1 1 3 "" 1 1 #:name "/cwd/a.txt" #:width 20))
   (def! st 'refused (rebuild 'active #:prompt (prompt "dir")))
   (def! st 'failed '(refused handle-key "return"))
   (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1 #:name "untitled" #:width 20))
   (def! st 'cancel '(typed handle-key "escape"))
-  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "untitled" 1 1 #:name "untitled" #:width 20))
+  (check-equal? (ev st '(cancel frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "" 1 1 #:name "untitled" #:width 20))
   (define unsafe "\t\r\u001b\u0000\u007f λabcdef")
   (def! st 'safe (rebuild 'active #:prompt (prompt unsafe (string-length unsafe) "L\t\u001b: ")))
   (define before (ev st 'safe))
@@ -610,7 +610,9 @@
   (values calls disk (reverse (unbox missing-at-key))))
 (define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
                       #:name [name "untitled"])
-  (define shown (substring label 0 (min columns (string-length label))))
+  (define shown
+    (if (and (>= rows 3) (not prompt-column) (equal? label name)) ""
+        (substring label 0 (min columns (string-length label)))))
   (if (= rows 1)
       (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown

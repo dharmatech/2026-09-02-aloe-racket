@@ -443,7 +443,7 @@
   (define original (ev st 'armed))
   (def! st 'fitted '(armed ensure-visible 3 3))
   (same-session st 'fitted (rebuild 'armed #:columns 3 #:rows 3 #:editor '((armed editor) ensure-visible 3 1)))
-  (check-equal? (ev st '(fitted frame 3 3)) (frame "a b\r\nsec" 1 2 3 "/cw" #:name "/cwd/a.txt" #:width 3))
+  (check-equal? (ev st '(fitted frame 3 3)) (frame "a b\r\nsec" 1 2 3 "" #:name "/cwd/a.txt" #:width 3))
   (check-equal? (ev st '(fitted frame 3 1)) (frame "a b" 1 2 #:name "/cwd/a.txt" #:width 3))
   (same st '(fitted pending) '(armed pending))
   (check-equal? (ev st 'armed) original)

@@ -154,7 +154,9 @@
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 (define (runner-frame text column label [prompt-column #f] [columns 20] [rows 3]
                       #:name [name "untitled"])
-  (define shown (substring label 0 (min columns (string-length label))))
+  (define shown
+    (if (and (>= rows 3) (not prompt-column) (equal? label name)) ""
+        (substring label 0 (min columns (string-length label)))))
   (if (= rows 1) (editor-frame text 1 column)
       (frame (string-append text "\r\n") 1 column rows shown
         (if prompt-column rows 1) (or prompt-column column) #:name name #:width columns)))
@@ -517,7 +519,7 @@
   (def! st 'typed (rebuild 'active #:prompt (prompt "/cwd/b.txt")))
   (check-equal? (ev st '(typed frame 12 3)) (frame "ab\r\nsecond" 1 1 3 "Buffer: /cwd" 3 12 #:name "untitled" #:width 12))
   (def! st 'done '(typed submit-prompt))
-  (check-equal? (ev st '(done frame 20 3)) (frame "other\r\n" 1 3 3 "/cwd/b.txt" 1 3 #:name "/cwd/b.txt" #:width 20))
+  (check-equal? (ev st '(done frame 20 3)) (frame "other\r\n" 1 3 3 "" 1 3 #:name "/cwd/b.txt" #:width 20))
   (def! st 'failed (rebuild 'active #:prompt (prompt "missing")))
   (def! st 'failed '(failed submit-prompt))
   (check-equal? (ev st '(failed frame 20 3)) (frame "ab\r\nsecond" 1 1 3 "failed: untitled" 1 1 #:name "untitled" #:width 20))

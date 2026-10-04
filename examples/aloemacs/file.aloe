@@ -1353,7 +1353,7 @@
                   (self multi-frame root columns rows)
                   (self single-frame columns rows))))))
 
-    (shown-echo (columns Int) String
+    (echo-row (columns Int) (leaf-rows Int) String
       (let ((label
               ((self path) case
                 (None () "untitled")
@@ -1370,7 +1370,7 @@
                         (cond
                           (((self echo) = "saved") ("saved: " append label))
                           (((self echo) = "failed") ("failed: " append label))
-                          (else label)))))))
+                          (else (if (leaf-rows >= 2) "" label))))))))
           ((self editor) safe-cells (row take columns)))))
 
     (multi-frame (root AloemacsWindowRect) (columns Int) (rows Int) String
@@ -1399,7 +1399,7 @@
               (editor frame-ansi
                 (if (rows >= 2)
                     ((((body append "\u001b[") append (rows text)) append ";1H")
-                     append (self shown-echo columns))
+                     append (self echo-row columns (selected rows)))
                     body)
                 cursor-row cursor-column))))))
 
@@ -1411,59 +1411,38 @@
         (let ((body (editor frame columns (root text-rows))))
           (if (rows < 2)
               body
-              (let ((point (editor point))
-                    (label
-                      ((self path) case
-                        (None () "untitled")
-                        (Some (path) (path text)))))
-                (let ((row
+              (let ((point (editor point)))
+                (let ((cursor-row
                         ((self prompt) case
-                          (Some (prompt) (prompt row))
-                          (None ()
-                            (if (self searching)
-                                (cond
-                                  ((self failing)
-                                   ("failing: " append (self query)))
-                                  ((self wrapped)
-                                   ("wrapped: " append (self query)))
-                                  (else ("search: " append (self query))))
-                                (cond
-                                  (((self echo) = "saved")
-                                    ("saved: " append label))
-                                  (((self echo) = "failed")
-                                    ("failed: " append label))
-                                  (else label)))))))
-                  (let ((cursor-row
-                          ((self prompt) case
-                            (Some (prompt) rows)
-                            (None () (((point line) - (editor scroll-row)) + 1))))
-                        (cursor-column
-                          ((self prompt) case
-                            (Some (prompt) (prompt screen-column columns))
-                            (None () (((point column) - (editor scroll-col)) + 1)))))
-                    ((List of
-                       body
-                       "\u001b[?25l"
-                       (if ((root rows) >= 2)
-                           ((List of "\u001b[" ((root rows) text) ";1H"
-                              (editor safe-cells
-                                ((AloemacsModeLine new) row
-                                  ((self current-buffer) name) columns)))
-                            fold "" (fn (acc part) (acc append part)))
-                           "")
-                       "\u001b["
-                       (rows text)
-                       ";1H"
-                       (editor safe-cells (row take columns))
-                       "\u001b["
-                       (cursor-row text)
-                       ";"
-                       (cursor-column text)
-                       "H"
-                       "\u001b[?25h")
-                     fold
-                     ""
-                     (fn (acc part) (acc append part))))))))))
+                          (Some (prompt) rows)
+                          (None () (((point line) - (editor scroll-row)) + 1))))
+                      (cursor-column
+                        ((self prompt) case
+                          (Some (prompt) (prompt screen-column columns))
+                          (None () (((point column) - (editor scroll-col)) + 1)))))
+                  ((List of
+                     body
+                     "\u001b[?25l"
+                     (if ((root rows) >= 2)
+                         ((List of "\u001b[" ((root rows) text) ";1H"
+                            (editor safe-cells
+                              ((AloemacsModeLine new) row
+                                ((self current-buffer) name) columns)))
+                          fold "" (fn (acc part) (acc append part)))
+                         "")
+                     "\u001b["
+                     (rows text)
+                     ";1H"
+                     (self echo-row columns (root rows))
+                     "\u001b["
+                     (cursor-row text)
+                     ";"
+                     (cursor-column text)
+                     "H"
+                     "\u001b[?25h")
+                   fold
+                   ""
+                   (fn (acc part) (acc append part)))))))))
 
     (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
       (let ((windows (self windows)))

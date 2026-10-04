@@ -101,7 +101,7 @@
   (same st 'actual 'expected)
   (for ([field fields]) (same st `(actual ,field) `(expected ,field))))
 (define (cursor row col) (format "\e[~a;~aH" row col))
-(define (multi lines row col [echo-row 6] [echo "untitled"])
+(define (multi lines row col [echo-row 6] [echo ""])
   (string-append "\e[?25l\e[2J\e[H" (string-join lines "\r\n")
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
@@ -272,11 +272,11 @@
   ;; Start fitted. Shrink forces selected-only fallback and changes nominal geometry
   ;; despite the lock; growth restores composition, keeping inactive EOF origins.
   (paint st 's 9 6 (multi '("pqr |Z   " "unti|    " "----+    " "    |    " "unti|unti")
-                         1 3 6 "untitled"))
+                         1 3 6 ""))
   (def! st 'small '(s ensure-visible 2 3))
   (same-session st 'small (rebuild 's #:buffers (zipper (list
     (buffer 41 (editor text 2 5 2 4 1)) b)) #:windows (config (t 2 4) 7 2 3)))
-  (paint st 'small 2 3 (single '("qr" "wx") 1 2 3 "un" #:name "untitled" #:width 2))
+  (paint st 'small 2 3 (single '("qr" "wx") 1 2 3 "" #:name "untitled" #:width 2))
   (same st `(((s windows) tree) rect-for 7 ,(rect 0 0 9 5))
     `(Option Some ,(rect 0 0 4 2)))
   (same st `(((small windows) tree) rect-for 7 ,(rect 0 0 2 2))
@@ -292,7 +292,7 @@
     (buffer 41 (editor text 2 5 2 5 2)) b)) #:windows (config (t 2 5) 7 13 8)))
   (paint st 'grown 13 8 (multi '("r     |Z     " "x     |      " "untitl|      "
                                "------+      " "      |      " "      |      " "untitl|untitl")
-                             1 1 8 "untitled"))
+                             1 1 8 ""))
   (same-session st '(grown ensure-visible 13 8) 'grown)
   (effects calls '()))
 
@@ -345,11 +345,11 @@
     (define keys '("ctrl-x" "l" "ctrl-x" "2" "ctrl-x" "3" "ctrl-x" "0"
                   "ctrl-x" "l" "ctrl-x" "SPLIT" "ctrl-x" "0" "escape"))
     (define actual-keys (map (lambda (key) (if (equal? key "SPLIT") split-key key)) keys))
-    (define start (single '("abc" "def" "" "" "") 1 1 6 "/cwd/a.tx" #:name "/cwd/a.txt" #:width 9))
+    (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
     (define failed (single '("abc" "def" "" "" "") 1 1 6 "failed: /" #:name "/cwd/a.txt" #:width 9))
     (define split-frame (multi (if below?
       '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
-      '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")) 1 1 6 "/cwd/a.tx"))
+      '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")) 1 1 6 ""))
     ;; Frames precede the corresponding key, so each refusal is visible next turn.
     (define frames (list start start start start failed start failed start failed start
                          start start split-frame split-frame start))
@@ -589,7 +589,7 @@
     (define active? (or prompt? search?))
     (define shown (cond [prompt? "P x y"] [search? "failing: "]
                        [(equal? token "saved") "saved: un"]
-                       [(equal? token "failed") "failed: u"] [else "untitled"]))
+                       [(equal? token "failed") "failed: u"] [else ""]))
     (def! st 'raw (session (zipper '(a)) t #:echo token #:searching search?
       #:prompt (if prompt? active-prompt no-prompt) #:pending pending))
     (def! st 'locked '(raw toggle-window-lock))
@@ -615,7 +615,7 @@
         (multi (if (eq? op 'split-below)
                    '("abc |abc " "unti|def " "----+    " "abc |    " "unti|unti")
                    '("ab|a|abc " "de|d|def " "  | |    " "  | |    " "un|u|unti"))
-               (if prompt? 6 1) (if prompt? 5 1) 6 (if active? shown "untitled"))))
+               (if prompt? 6 1) (if prompt? 5 1) 6 (if active? shown ""))))
     (same-session st '(unlocked delete-window)
       (rebuild 'unlocked #:windows (config (leaf 2) 2)))
     (def! st 'deleted '(unlocked delete-window))

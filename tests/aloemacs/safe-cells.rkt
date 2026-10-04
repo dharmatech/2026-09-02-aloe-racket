@@ -156,7 +156,7 @@
                      (Some (s) s))))
   (check-equal? (driver-eval! state '((visited text) to-string)) source)
   (check-equal? (driver-eval! state '(visited frame 20 4))
-                (session-frame "A  \r\nB  \r\n" 1 1 4 "/cwd/a.txt" #:name "/cwd/a.txt" #:width 20))
+                (session-frame "A  \r\nB  \r\n" 1 1 4 "" #:name "/cwd/a.txt" #:width 20))
   (check-equal? (driver-eval! state '((visited text) to-string)) source)
   (driver-eval! state
                 '(define saved

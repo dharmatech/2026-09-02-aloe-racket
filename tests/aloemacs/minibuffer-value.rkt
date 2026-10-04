@@ -612,7 +612,7 @@
   (same st '(fitted query) '(base query))
   (same st '(fitted pending) '(base pending))
   (for ([echo '("" "saved" "failed")]
-        [shown '("/cwd/a.txt" "saved: /cwd/" "failed: /cwd")])
+        [shown '("" "saved: /cwd/" "failed: /cwd")])
     (def! st 'inactive (rebuild 'fitted #:prompt no-prompt #:searching #f #:echo echo))
     (check-equal? (ev st '(inactive frame 12 4))
       (frame "two\r\nthree" 2 3 4 shown 2 3 #:name "/cwd/a.txt" #:width 12)))

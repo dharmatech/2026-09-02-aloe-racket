@@ -470,7 +470,7 @@
     (def! st 'selected '(base switch-buffer))
     (define original (ev st 'selected))
     (same-session st 'selected (reset 'base (zipper '(a b c) 1)))
-    (check-equal? (ev st '(selected frame 4 4)) (frame "2 XY\r\nst\r\n" 1 4 4 "/b l" #:name "/b\u001blong" #:width 4))
+    (check-equal? (ev st '(selected frame 4 4)) (frame "2 XY\r\nst\r\n" 1 4 4 "" #:name "/b\u001blong" #:width 4))
     (check-equal? (ev st '(selected frame 4 1)) (frame "2 XY" 1 4 #:name "untitled" #:width 4))
     (check-equal? (ev st 'selected) original)
     (def! st 'fitted '(selected ensure-visible 2 3))
@@ -478,18 +478,18 @@
       '(AloemacsEditor new ((b editor) text) ((b editor) point) #f 1 4
                           ((b editor) history) ((b editor) mark) 1))
     (same-session st 'fitted (with-editor 'selected fitted-editor #:columns 2 #:rows 3))
-    (check-equal? (ev st '(fitted frame 2 3)) (frame "XY\r\n" 1 2 3 "/b" #:name "/b\u001blong" #:width 2))
+    (check-equal? (ev st '(fitted frame 2 3)) (frame "XY\r\n" 1 2 3 "" #:name "/b\u001blong" #:width 2))
     (same-session st '(selected ensure-visible 2 1)
       (with-editor 'selected
         '(AloemacsEditor new ((b editor) text) ((b editor) point) #f 1 4
                             ((b editor) history) ((b editor) mark) 1) #:columns 2 #:rows 1))
     (def! st 'untitled '(selected switch-buffer))
-    (check-equal? (ev st '(untitled frame 4 3)) (frame "\r\n" 1 1 3 "unti" #:name "untitled" #:width 4))
+    (check-equal? (ev st '(untitled frame 4 3)) (frame "\r\n" 1 1 3 "" #:name "untitled" #:width 4))
     (check-equal? (ev st '(untitled frame 4 1)) (frame "" 1 1 #:name "untitled" #:width 4))
     (same-session st '(selected kill-buffer) (reset 'selected (zipper '(a c) 1)))
-    (check-equal? (ev st '((selected kill-buffer) frame 4 3)) (frame "\r\n" 1 1 3 "unti" #:name "untitled" #:width 4))
+    (check-equal? (ev st '((selected kill-buffer) frame 4 3)) (frame "\r\n" 1 1 3 "" #:name "untitled" #:width 4))
     (def! st 'added '(selected add-buffer "a\u001bb" (Path new "new\u001bname")))
-    (check-equal? (ev st '(added frame 4 3)) (frame "a b\r\n" 1 1 3 "new " #:name "new\u001bname" #:width 4)))
+    (check-equal? (ev st '(added frame 4 3)) (frame "a b\r\n" 1 1 3 "" #:name "new\u001bname" #:width 4)))
   (check-equal? (unbox calls) '()))
 
 (test-case "test-only maps follow pending consumption and search precedence"

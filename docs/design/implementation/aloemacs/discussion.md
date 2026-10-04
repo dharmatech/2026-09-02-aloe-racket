@@ -33,10 +33,13 @@ prompt-command series is implemented and accepted at
 [`prompt-commands/`](prompt-commands/), aloemacs-prompt-commands
 000–002. The windows series is implemented at
 [`windows/`](windows/), aloemacs-windows 000–006. Final human
-review of that series remains. The mode-line charter is issued
-at [`mode-line/`](mode-line/). Do not reopen product behavior in
-the implemented series, and do not write the mode-line `spec.md`
-from this discussion role.
+review of that series remains. The mode-line series is implemented
+at [`mode-line/`](mode-line/), aloemacs-mode-line 000–001. Final
+human review of that series remains. The current handoff is the
+standalone checkpoint aloemacs-idle-echo 000 at
+[`idle-echo/checkpoints/000-blank-beside-mode-line.md`](idle-echo/checkpoints/000-blank-beside-mode-line.md).
+Do not write a charter for it. Do not reopen other product
+behavior in the implemented series.
 
 ## How this conversation works
 
@@ -72,7 +75,8 @@ layer is the topic; do not survey the whole tree on every turn.
 | Minibuffer | **Implemented and accepted.** aloemacs-minibuffer 000–001 at [`minibuffer/`](minibuffer/) |
 | Prompt commands | **Implemented and accepted.** aloemacs-prompt-commands 000–002 at [`prompt-commands/`](prompt-commands/) |
 | Windows | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). Final human review remains |
-| Mode line | **Charter issued** at [`mode-line/`](mode-line/). Designer writes `spec.md` and stops |
+| Mode line | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). Final human review remains |
+| Idle echo | **Ready to implement.** Standalone aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |

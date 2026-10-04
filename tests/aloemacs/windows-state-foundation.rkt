@@ -479,7 +479,7 @@
   ;; Stored origin, active prompt and the intermediate editor cursor are exact.
   (check-equal? (ev st '(source frame 8 3))
     (ansi "rd-long\r\nrth" 1 2 3 "draft: i" 3 8 #:name "/cwd/b.txt" #:width 8))
-  (for ([echo '("" "saved" "failed")] [label '("/cwd/b.t" "saved: /" "failed: ")])
+  (for ([echo '("" "saved" "failed")] [label '("" "saved: /" "failed: ")])
     (def! st 'idle (rebuild 'source #:searching #f #:prompt no-prompt #:echo echo))
     (check-equal? (ev st '(idle frame 8 3)) (ansi "rd-long\r\nrth" 1 2 3 label #:name "/cwd/b.txt" #:width 8)))
   (for ([wrapped '(#f #t #t)] [failing '(#f #f #t)]
@@ -497,7 +497,7 @@
   (def! st 'blank (rebuild 'empty #:searching #f #:echo "" #:pending no-pending
                           #:prompt no-prompt #:windows (windows 33 0 0 0 0)))
   (define blank-before (ev st 'blank))
-  (check-equal? (ev st '(blank frame 8 3)) (ansi "\r\n" 1 1 3 "untitled" #:name "untitled" #:width 8))
+  (check-equal? (ev st '(blank frame 8 3)) (ansi "\r\n" 1 1 3 "" #:name "untitled" #:width 8))
   (check-equal? (ev st '(blank frame 1 1)) (ansi "" 1 1 #:name "untitled" #:width 8))
   (check-equal? (ev st 'blank) blank-before)
   (def! st 'controls (session (zipper (list (buffer 44 "a\u001bb\tc\u007f")) 0)))

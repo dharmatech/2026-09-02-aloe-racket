@@ -201,20 +201,20 @@
 (test-case "complete mixed frame, selected offsets, full-width echo and exactly one ANSI envelope"
   (define-values (st calls) (state))
   (example! st)
-  (paint st 's 9 6 (multi example-rows 4 2 6 "/cwd/a.tx"))
+  (paint st 's 9 6 (multi example-rows 4 2 6 ""))
   (define output (ev st '(s frame 9 6)))
   (for ([piece '("\e[?25l" "\e[2J" "\e[H" "\e[?25h")])
     (check-equal? (length (regexp-match* (regexp (regexp-quote piece)) output)) 1))
   ;; Construct a different selected leaf/current origin without any entry API.
   (def! st 'b-selected (buffer 9 (editor (indexed b-lines 3) 3 4 1 2 5)))
   (def! st 'r (session (zipper '(a b-selected) 1) example-tree 55 #:echo ""))
-  (paint st 'r 9 6 (multi example-rows 3 8 6 "untitled"))
+  (paint st 'r 9 6 (multi example-rows 3 8 6 ""))
   (def! st 'a-top (buffer 41 (editor (indexed a-lines 2) 1 2)))
   (def! st 'top (session (zipper '(a-top b) 0) example-tree 71 #:echo ""))
   (paint st 'top 9 6 (multi '("abcd|HIJ " "unti|MNO " "----+RST " "tuvw|WXY " "unti|unti")
-                            2 3 6 "untitled"))
+                            2 3 6 ""))
   (for ([token '("" "saved" "failed")]
-        [shown '("/cwd/a.tx" "saved: /c" "failed: /")])
+        [shown '("" "saved: /c" "failed: /")])
     (def! st 'idle (rebuild 's #:echo token))
     (paint st 'idle 9 6 (multi example-rows 4 2 6 shown))
     (check-equal? (ev st '(idle echo)) token))
@@ -226,7 +226,7 @@
   (def! st 'safe-path (rebuild 's #:buffers
     (zipper (list (buffer 41 '(a editor) '(Option Some (Path new "/a\tbcdefghij"))) 'b) 0)))
   (paint st 'safe-path 9 6 (multi '("abcd|HIJ " "/a b|MNO " "----+RST " "tuvw|WXY " "/a b|unti")
-                                  4 2 6 "/a bcdefg"))
+                                  4 2 6 ""))
   (def! st 'prompted (rebuild 'search #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2))))
   (paint st 'prompted 9 6 (multi example-rows 6 5 6 "L A B"))
   (def! st 'ended '(prompted cancel-prompt))
@@ -251,16 +251,16 @@
                     '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt")
                     '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt"))])
     (def! st 's (session (zipper '(a) 0) t 71 #:echo ""))
-    (paint st 's 7 6 (multi rows 1 1 6 "untitle")))
+    (paint st 's 7 6 (multi rows 1 1 6 "")))
   ;; A grandchild divider reaches the ancestor, through its subtree edge.
   (def! st 's (session (zipper '(a) 0)
     (right (right l (below r n)) m) 71 #:echo ""))
   (paint st 's 11 6 (multi '("a |a |a    " "  |un|     " "  +--+     " "  |a |     " "un|un|untit")
-                            1 1 6 "untitled"))
+                            1 1 6 ""))
   ;; Identical punctuation next to a divider does not affect its orientation.
   (def! st 'punct (buffer 41 (editor '(Text from-string "---\n|||\n+++\n---\n|||"))))
   (def! st 's (session (zipper '(punct) 0) (right l r) 71 #:echo ""))
-  (paint st 's 7 6 (multi '("---|---" "|||||||" "+++|+++" "---|---" "unt|unt") 1 1 6 "untitle"))
+  (paint st 's 7 6 (multi '("---|---" "|||||||" "+++|+++" "---|---" "unt|unt") 1 1 6 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "shared edit and visit preserve inactive origins beyond EOF and exact zipper focus during paint"
@@ -270,9 +270,9 @@
   (def! st 'far (rebuild 's #:windows (config t 3 80 24)))
   ;; Shared edit replaces one owned editor; the far view remains blank.
   (def! st 'edited '(far insert "λ"))
-  (paint st 'edited 9 3 (multi '("    |tλuv" "/cwd|/cwd") 1 8 3 "/cwd/a.tx"))
+  (paint st 'edited 9 3 (multi '("    |tλuv" "/cwd|/cwd") 1 8 3 ""))
   (def! st 'short '(far visited "x\n" (Path new "/short")))
-  (paint st 'short 9 3 (multi '("    |x   " "/sho|/sho") 1 6 3 "/short"))
+  (paint st 'short 9 3 (multi '("    |x   " "/sho|/sho") 1 6 3 ""))
   (same st '(((short windows) tree) find-view 71)
     '(Option Some (AloemacsView new 71 41 99 101 #t)))
   (check-equal? (unbox calls) '()))
@@ -336,7 +336,7 @@
     (zipper (list (buffer 41 (editor text 8 2 8 1 2) '(a path))) 0)
     #:windows (config tree 3 7 8)))
   (paint st 'grown 7 8 (multi '("bcdef2 " "bcdef3 " "untitle" "-------" "bcdef8 " "bcdef9 " "untitle")
-                              5 2 8 "untitle"))
+                              5 2 8 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "global fallback despite positive selected rectangle; one-row split and prompt rules"
