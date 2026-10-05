@@ -39,7 +39,7 @@
 (define (fresh-session contents path [indexed? #t])
   `(AloemacsSession new ,(singleton (editor contents indexed?) path)
      (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty) ,no-pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer (,(singleton (editor contents indexed?) path) current-buffer)))
@@ -129,7 +129,7 @@
        ,(singleton 'old-editor '(Option Some (Path new "/cwd/a.txt")))
        (Fs new fs-host) "saved" #t "old query" (Position new 4 2) #t #t
        (List of "newest" "older") (Option Some aloemacs-ctrl-x-keymap)
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer (,(singleton 'old-editor '(Option Some (Path new "/cwd/a.txt"))) current-buffer)))

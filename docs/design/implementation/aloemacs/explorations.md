@@ -23,7 +23,9 @@ remains. The idle-echo follow-on is ready to implement at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. Path completion is back with the designer at
 [`completion/`](completion/). The recursive scans move off
 `(AloemacsSession H)`. aloemacs-completion 000 is not ready to
-implement. That revision does not replace idle-echo.
+implement. That revision does not replace idle-echo. Paging the
+painted list is chartered at [`completion-page/`](completion-page/).
+The designer writes that spec. It is not a completion checkpoint.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -216,8 +218,9 @@ Leave these until a slice is blocked by them.
 7. **Path completion** — back with the designer at
    [`completion/`](completion/). Tab completes find-file and
    save-as. The recursive scans move off `(AloemacsSession H)`.
-   aloemacs-completion 000 is not ready to implement. Faces stay
-   after that revision.
+   aloemacs-completion 000 is not ready to implement. Paging the
+   painted list is chartered at
+   [`completion-page/`](completion-page/). Faces stay after that.
 8. **Faces**, then highlighting, then modes as libraries.
 9. Folding, then outline/notes, then a directory browser.
 10. LSP, then live eval, each with its own charter.
@@ -229,4 +232,5 @@ final human review remains. Mode line is implemented
 final human review remains. aloemacs-idle-echo 000 at
 [`idle-echo/`](idle-echo/) stays ready to implement. Path
 completion is back with the designer at
-[`completion/`](completion/). Faces stay after that revision. Modes, org, dired, and `M-x` stay later.
+[`completion/`](completion/). Paging the painted list is chartered at
+[`completion-page/`](completion-page/). Faces stay after that revision. Modes, org, dired, and `M-x` stay later.

@@ -12,7 +12,7 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new ""))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand SaveAs))))
 (define (ev st expr) (driver-eval! st expr))
@@ -74,7 +74,7 @@
 (define (config tree selected [columns 9] [rows 6])
   `(AloemacsWindows new ,tree ,selected ,columns ,rows))
 (define (rect x y columns rows) `(AloemacsWindowRect new ,x ,y ,columns ,rows))
-(define active-prompt '(Option Some (AloemacsPrompt new "P\t" "x\ry" 2 "" (List empty))))
+(define active-prompt '(Option Some (AloemacsPrompt new "P\t" "x\ry" 2 "" (List empty) (List empty) 0)))
 (define waiting '(Option Some (AloemacsCommand SaveAs)))
 (define pending '(Option Some aloemacs-ctrl-x-keymap))
 (define (session bs tree [selected 7] #:columns [columns 9] #:rows [rows 6]
@@ -590,7 +590,7 @@
   (def! st 'p (rebuild 's #:prompt active-prompt #:pending pending))
   (same-session st '(p handle-key "ctrl-x") 'p)
   (same-session st '(p handle-key "2")
-    (rebuild 'p #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\r2y" 3 "" (List empty)))))
+    (rebuild 'p #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\r2y" 3 "" (List empty) (List empty) 0))))
   (def! st 'search (rebuild 's #:searching #t #:query "" #:wrapped #f #:failing #f
     #:origin '(Position new 0 0) #:pending no-pending))
   (same-session st '(search handle-key "3")
@@ -602,7 +602,7 @@
   (same-session st '((both handle-key "ctrl-x") handle-key "3")
     (rebuild 'both #:searching #f #:query "" #:origin '(Position new 0 0)
       #:wrapped #f #:failing #f #:echo "" #:pending pending
-      #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\r3y" 3 "" (List empty)))))
+      #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\r3y" 3 "" (List empty) (List empty) 0))))
   (def! st 'exit '(search handle-key "ctrl-x"))
   (same-session st 'exit (rebuild 'search #:searching #f #:query "" #:echo "" #:pending pending))
   (same-session st '(exit handle-key "2")

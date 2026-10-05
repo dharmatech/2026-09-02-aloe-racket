@@ -12,12 +12,12 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/typed-none"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand FindFile))))
 (define waiting '(Option Some (AloemacsCommand FindFile)))
 (define (prompt text [column (string-length text)] [label "Find file: "])
-  `(Option Some (AloemacsPrompt new ,label ,text ,column "" (List empty))))
+  `(Option Some (AloemacsPrompt new ,label ,text ,column "" (List empty) (List empty) 0)))
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
 (define (type st expr)
@@ -343,7 +343,7 @@
   (define before (ev st 'draft))
   (define rows
     (list
-      (list '(draft with-active-prompt (AloemacsPrompt new "Other: " "x" 1 "" (List empty)))
+      (list '(draft with-active-prompt (AloemacsPrompt new "Other: " "x" 1 "" (List empty) (List empty) 0))
             (rebuild 'draft #:prompt (prompt "x" 1 "Other: ")))
       (list '(draft with-editor rich-editor) 'draft)
       (list '(draft with-kill-state rich-editor (List of "ring")) (rebuild 'draft #:echo "" #:ring '(List of "ring")))

@@ -7,7 +7,9 @@
     (text String)
     (column Int)
     (completion-note String)
-    (completion-lines (List String)))
+    (completion-lines (List String))
+    (completion-matches (List String))
+    (completion-start Int))
   (methods
     (row () String
       (((self label) append (self text)) append (self completion-note)))
@@ -18,10 +20,15 @@
     (with-completion (text String) (note String) (lines (List String))
                      AloemacsPrompt
       (AloemacsPrompt new (self label) text
-        (if (text = (self text)) (self column) (text len)) note lines))
+        (if (text = (self text)) (self column) (text len)) note lines (List empty) 0))
+
+    (with-completion-page (matches (List String)) (start Int) (lines (List String))
+                          AloemacsPrompt
+      (AloemacsPrompt new (self label) (self text) (self column)
+        "" lines matches start))
 
     (clear-completion () AloemacsPrompt
-      (AloemacsPrompt new (self label) (self text) (self column) "" (List empty)))
+      (AloemacsPrompt new (self label) (self text) (self column) "" (List empty) (List empty) 0))
 
     (insert (character String) AloemacsPrompt
       (if ((character len) = 1)
@@ -30,7 +37,7 @@
               (let ((text (self text)) (column (self column)))
                 (AloemacsPrompt new (self label)
                   (((text take column) append character) append (text drop column))
-                  (column + 1) "" (List empty))))
+                  (column + 1) "" (List empty) (List empty) 0)))
           self))
 
     (backward-delete () AloemacsPrompt
@@ -38,25 +45,29 @@
         (if (column > 0)
             (AloemacsPrompt new (self label)
               ((text take (column - 1)) append (text drop column))
-              (column - 1) "" (List empty))
+              (column - 1) "" (List empty) (List empty) 0)
             (self clear-completion))))
 
     (move-left () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text)
-        (0 max ((self column) - 1)) (self completion-note) (self completion-lines)))
+        (0 max ((self column) - 1)) (self completion-note) (self completion-lines)
+        (self completion-matches) (self completion-start)))
 
     (move-right () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text)
         (((self text) len) min ((self column) + 1))
-        (self completion-note) (self completion-lines)))
+        (self completion-note) (self completion-lines)
+        (self completion-matches) (self completion-start)))
 
     (line-start () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text) 0
-        (self completion-note) (self completion-lines)))
+        (self completion-note) (self completion-lines)
+        (self completion-matches) (self completion-start)))
 
     (line-end () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text) ((self text) len)
-        (self completion-note) (self completion-lines)))))
+        (self completion-note) (self completion-lines)
+        (self completion-matches) (self completion-start)))))
 
 ;; Recursive scans stay on a nongeneric receiver. The session owns Fs and
 ;; the prompt result; this scanner only consumes character/list data.
@@ -86,7 +97,24 @@
     (shared-prefix (prefix String) (name String) String
       (if (name starts-with? prefix)
           prefix
-          (self shared-prefix (prefix take ((prefix len) - 1)) name)))))
+          (self shared-prefix (prefix take ((prefix len) - 1)) name)))
+
+    (drop-lines (lines (List String)) (count Int) (List String)
+      (cond
+        ((count <= 0) lines)
+        ((lines empty?) lines)
+        (else (self drop-lines (lines rest) (count - 1)))))
+
+    (window-lines (matches (List String)) (start Int) (List String)
+      (if ((matches len) <= 8)
+          matches
+          (let ((names
+                  ((self drop-lines matches start) fold (List empty)
+                    (fn (acc name)
+                      (if ((acc len) < 7) (acc cons name) acc)))))
+            ((names cons
+               (("...(+" append (((matches len) - (names len)) text)) append ")"))
+             reverse))))))
 
 (define-class AloemacsBuffer
   (fields
@@ -813,7 +841,7 @@
         ((self searching) self)
         (((self pending) present?) self)
         (((self prompt) present?) self)
-        (else (self with-active-prompt (AloemacsPrompt new label "" 0 "" (List empty))))))
+        (else (self with-active-prompt (AloemacsPrompt new label "" 0 "" (List empty) (List empty) 0)))))
 
     (with-active-prompt (prompt AloemacsPrompt) (AloemacsSession H)
       (AloemacsSession new
@@ -853,7 +881,7 @@
                         (Some (path) (path text))))
                     (else ""))))
             ((self with-active-prompt
-               (AloemacsPrompt new label text (text len) "" (List empty)))
+               (AloemacsPrompt new label text (text len) "" (List empty) (List empty) 0))
              with-waiting-command command)))))
 
     (file-prompt-directory () String
@@ -945,19 +973,48 @@
                                                     (Directory (path) "/")
                                                     (else "")))))))
                                       (let ((prepared
-                                              (if ((matches len) <= 8)
-                                                  lines
-                                                  (let ((first-seven
-                                                          (lines fold (List empty)
-                                                            (fn (acc name)
-                                                              (if ((acc len) < 7)
-                                                                  (acc cons name) acc)))))
-                                                    ((first-seven cons
-                                                       (("...(+" append (((matches len) - 7) text))
-                                                        append ")")) reverse)))))
+                                              (scanner window-lines lines 0)))
                                         (self with-active-prompt
-                                          (prompt with-completion text "" prepared))))))))))))))
+                                          (prompt with-completion-page lines 0 prepared))))))))))))))
               self))))
+
+    (page-completion (key String) (AloemacsSession H)
+      (if (cond
+            ((key = "page-down") #t)
+            ((key = "page-up") #t)
+            (else #f))
+          ((self prompt) case
+            (None () self)
+            (Some (prompt)
+              (if ((self waiting-command) case
+                    (None () #f)
+                    (Some (command)
+                      (command case
+                        (FindFile () #t)
+                        (SaveAs () #t)
+                        (else #f))))
+                  (cond
+                    (((prompt completion-note) = "")
+                      (if ((prompt completion-lines) empty?)
+                          self
+                          (let ((matches (prompt completion-matches))
+                                (start (prompt completion-start)))
+                            (if ((matches len) > 8)
+                                (let ((next
+                                        (if (key = "page-down")
+                                            (if ((start + 7) < (matches len))
+                                                (start + 7) start)
+                                            (0 max (start - 7)))))
+                                  (if (next = start)
+                                      self
+                                      (self with-active-prompt
+                                        (prompt with-completion-page matches next
+                                          ((AloemacsCompletionScan new)
+                                           window-lines matches next)))))
+                                self))))
+                    (else self))
+                  self)))
+          self))
 
     (run-submitted-command () (AloemacsSession H)
       ((self waiting-command) case
@@ -981,7 +1038,7 @@
             (self buffers) (self fs) (self echo)
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
-            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
             (Option Some (prompt text)) (self waiting-command) (self windows))
            run-submitted-command))))
 
@@ -1002,6 +1059,8 @@
         (Some (prompt)
           (cond
             ((key = "tab") (self complete-prompt))
+            ((key = "page-down") (self page-completion key))
+            ((key = "page-up") (self page-completion key))
             ((key = "backspace") (self with-active-prompt (prompt backward-delete)))
             ((key = "left") (self with-active-prompt (prompt move-left)))
             ((key = "right") (self with-active-prompt (prompt move-right)))

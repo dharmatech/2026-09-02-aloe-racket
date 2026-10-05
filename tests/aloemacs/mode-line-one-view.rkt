@@ -88,7 +88,7 @@
   (for ([wrapped '(#t #f)] [failing '(#f #t)] [echo '("wrapped: two" "failing: two")])
     (def! st 'search `(search with-search (search editor) #t "two" (search origin) ,wrapped ,failing))
     (paint st 'search 20 3 (frame "wo" 2 2 20 3 "/cwd/a" echo) calls))
-  (def! st 'prompt '(search with-active-prompt (AloemacsPrompt new "Ask: " "abcd" 2 "" (List empty))))
+  (def! st 'prompt '(search with-active-prompt (AloemacsPrompt new "Ask: " "abcd" 2 "" (List empty) (List empty) 0)))
   (for ([rows '(1 2 3 4)])
     (paint st 'prompt 12 rows
       (frame (if (= rows 4) "wo\r\nhree" "wo") 2 2 12 rows "/cwd/a" "Ask: abcd"
@@ -163,7 +163,7 @@
       (AloemacsBuffer new ed (Option Some (Path new "/cwd/a")) 0)
       (List of (AloemacsBuffer new ed (Option Some (Path new "/inactive")) 22)))
     (s fs) "saved" #t "query" (Position new 1 2) #t #t (List of "ring" "older")
-    (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty)))
+    (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
     (Option Some "prior") (Option Some (AloemacsCommand FindFile))
     (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 0 0 #t)) 7 80 24)))
   (define before (ev st 'rich))
@@ -175,7 +175,7 @@
           (AloemacsEditor new (ed text) (ed point) (ed quit) 2 4 (ed history) (ed mark) 2)
           (rich path) ((rich current-buffer) id)) ((rich buffers) after))
       (rich fs) "saved" #t "query" (Position new 1 2) #t #t (List of "ring" "older")
-      (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty)))
+      (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
       (Option Some "prior") (Option Some (AloemacsCommand FindFile))
       (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 2 4 #t)) 7 3 4))))))
   (check-equal? (ev st 'rich) before)

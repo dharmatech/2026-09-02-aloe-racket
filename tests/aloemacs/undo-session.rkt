@@ -45,7 +45,7 @@
         #f
         (List empty)
         (if #t (Option None) (Option Some aloemacs-global-keymap))
-        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
         (if #t (Option None) (Option Some ""))
         (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new

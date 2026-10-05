@@ -63,7 +63,7 @@
                  #:pending [pending '(Option Some aloemacs-ctrl-x-keymap)])
   `(AloemacsSession new ,buffers (Fs new fs-host) ,echo ,searching ,query ,origin
                        ,wrapped ,failing ,ring ,pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer (,buffers current-buffer)))

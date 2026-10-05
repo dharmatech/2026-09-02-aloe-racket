@@ -77,6 +77,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 17 | Windows | [`windows/`](windows/) | **Implemented.** aloemacs-windows 000–006. Final human review remains. | 6, 8, 13–16 (viewport, echo, keymap, buffer, minibuffer, prompt commands) |
 | 18 | Mode line | [`mode-line/`](mode-line/) | **Implemented.** aloemacs-mode-line 000–001. Final human review remains. | 8, 14, 17 (echo, buffer name, windows) |
 | 19 | Completion | [`completion/`](completion/) | **Spec accepted.** aloemacs-completion 000 is ready to implement; 001 waits for review of 000. | 16–18 (prompt commands, windows, mode line) |
+| 20 | Completion page | [`completion-page/`](completion-page/) | **Charter.** Designer writes `spec.md`. | 19 (painted completion list) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -111,7 +112,9 @@ recursive scans belong to the nongeneric `AloemacsCompletionScan`,
 while Fs queries and results stay on `(AloemacsSession H)`.
 aloemacs-completion 000 is ready to implement. Prepared-list painting
 waits for 001, after human review of 000. This series does not replace
-idle-echo. Ranked later work lives in
+idle-echo. **Completion page** is chartered at
+[`completion-page/`](completion-page/). It pages the list completion
+paints. The designer writes `spec.md`. Ranked later work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.

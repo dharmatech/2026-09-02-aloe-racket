@@ -12,7 +12,7 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/typed-none"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand FindFile))))
 (define fields '(buffers fs echo searching query origin wrapped failing kill-ring
@@ -73,7 +73,7 @@
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #t "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
      (Option Some aloemacs-ctrl-x-keymap)
-     (Option Some (AloemacsPrompt new "draft: " "input" 2 "" (List empty)))
+     (Option Some (AloemacsPrompt new "draft: " "input" 2 "" (List empty) (List empty) 0))
      (Option Some "previous") (Option Some (AloemacsCommand SaveAs))
      (let ((buffer (,buffers current-buffer)))
        (AloemacsWindows new
@@ -302,11 +302,11 @@
   (same-session st '(source clear-prefix) (rebuild 'source #:pending no-pending))
   (same-session st '(source with-prefix aloemacs-global-keymap)
     (rebuild 'source #:echo "" #:pending '(Option Some aloemacs-global-keymap)))
-  (same-session st '(source with-active-prompt (AloemacsPrompt new "new: " "x" 1 "" (List empty)))
-    (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "new: " "x" 1 "" (List empty)))))
+  (same-session st '(source with-active-prompt (AloemacsPrompt new "new: " "x" 1 "" (List empty) (List empty) 0))
+    (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "new: " "x" 1 "" (List empty) (List empty) 0))))
   (same-session st '(source cancel-prompt) (rebuild 'source #:prompt no-prompt #:waiting no-command))
   (same-session st '(source prompt-key "x")
-    (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "draft: " "inxput" 3 "" (List empty)))))
+    (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "draft: " "inxput" 3 "" (List empty) (List empty) 0))))
   (same-session st '(source switch-buffer) (selected 'source (zipper '(a b c) 2)))
   (same st '((source buffers) focus-previous) (zipper '(a b c) 0))
   (same-session st '(source select-buffer-submitted "/cwd/a.txt")
@@ -415,7 +415,7 @@
                                      (list 'resolve (string-append "/cwd/" name))))))
   (set-box! calls '())
   (def! st 'draft (rebuild 'source #:searching #f #:pending no-pending
-    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "new.txt" 7 "" (List empty)))))
+    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "new.txt" 7 "" (List empty) (List empty) 0))))
   (same-session st '(draft handle-key "return")
     (rebuild 'draft #:buffers (replace 'draft 'rich-editor '(Option Some (Path new "/cwd/new.txt")))
       #:echo "saved" #:prompt no-prompt #:submission '(Option Some "new.txt") #:waiting no-command))

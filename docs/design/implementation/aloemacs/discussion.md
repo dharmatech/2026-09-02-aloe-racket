@@ -39,7 +39,9 @@ human review of that series remains. The standalone checkpoint aloemacs-idle-ech
 [`idle-echo/checkpoints/000-blank-beside-mode-line.md`](idle-echo/checkpoints/000-blank-beside-mode-line.md)
 is ready to implement. Do not write a charter for it. Path completion is back with the designer at
 [`completion/charter.md`](completion/charter.md). Do not revise
-its `spec.md` here.
+its `spec.md` here. Completion paging is chartered at
+[`completion-page/charter.md`](completion-page/charter.md). Do not
+write its `spec.md` here.
 Do not reopen other product behavior in the implemented series.
 
 ## How this conversation works

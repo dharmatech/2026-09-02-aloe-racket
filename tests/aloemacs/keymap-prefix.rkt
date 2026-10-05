@@ -81,7 +81,7 @@
      #t
      (List of "Z\nY" "older")
      ,no-pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
@@ -213,7 +213,7 @@
        #f
        (List empty)
        ,no-pending
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
@@ -251,7 +251,7 @@
       `(AloemacsSession new
          (base buffers) (base fs) "" (base searching) (base query) (base origin)
          (base wrapped) (base failing) (base kill-ring) ,no-pending
-         (Option Some (AloemacsPrompt new ,label ,text ,(string-length text) "" (List empty)))
+         (Option Some (AloemacsPrompt new ,label ,text ,(string-length text) "" (List empty) (List empty) 0))
          (base last-submission) (Option Some (AloemacsCommand ,command))
      (let ((buffer ((base buffers) current-buffer)))
        (AloemacsWindows new
@@ -374,7 +374,7 @@
        #f
        (List of "ring")
        ,no-pending
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
