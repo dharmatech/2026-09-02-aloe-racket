@@ -76,6 +76,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 16 | Prompt commands | [`prompt-commands/`](prompt-commands/) | **Implemented and accepted.** aloemacs-prompt-commands 000–002. | 4, 13–15 (Fs, keymap, buffer, minibuffer) |
 | 17 | Windows | [`windows/`](windows/) | **Implemented.** aloemacs-windows 000–006. Final human review remains. | 6, 8, 13–16 (viewport, echo, keymap, buffer, minibuffer, prompt commands) |
 | 18 | Mode line | [`mode-line/`](mode-line/) | **Implemented.** aloemacs-mode-line 000–001. Final human review remains. | 8, 14, 17 (echo, buffer name, windows) |
+| 19 | Completion | [`completion/`](completion/) | **Spec accepted.** aloemacs-completion 000 is ready to implement; 001 waits for review of 000. | 16–18 (prompt commands, windows, mode line) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -104,7 +105,13 @@ remains. **Idle echo** is ready to implement at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. When the
 selected window paints a mode line, an idle echo row is blank. A
 selected window with no mode line still shows the name there.
-Save, search, and prompt messages stay. Ranked later work lives in
+Save, search, and prompt messages stay. **Completion** has an accepted spec at
+[`completion/`](completion/). Tab completes find-file and save-as;
+recursive scans belong to the nongeneric `AloemacsCompletionScan`,
+while Fs queries and results stay on `(AloemacsSession H)`.
+aloemacs-completion 000 is ready to implement. Prepared-list painting
+waits for 001, after human review of 000. This series does not replace
+idle-echo. Ranked later work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
@@ -176,6 +183,7 @@ Easy to smuggle in. They are not.
 | Prompt commands | No-TTY: `C-x C-f` opens a path and leaves the previous buffer in the zipper. `C-x C-w` writes the current text and binds the path. `C-x b` selects a buffer by its exact name. A refused path, a missed name, and Escape leave the buffers as they were |
 | Windows | No-TTY: `C-x 2` and `C-x 3` show two views of the current buffer. `C-x o` moves between views. `C-x 0` deletes the selected view. `C-x l` locks a view so a later split or delete leaves it in place. One view still frames as before |
 | Mode line | No-TTY: a tall window's last text row shows that window's buffer name. The echo row still shows the path, `untitled`, or `saved:` / `failed:`. A one-text-row window stays today's frame. Two tall views show two names |
+| Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

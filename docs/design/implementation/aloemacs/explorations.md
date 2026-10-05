@@ -20,7 +20,10 @@ Final human review of that series remains. The mode-line series is
 implemented (aloemacs-mode-line 000–001) at
 [`mode-line/`](mode-line/). Final human review of that series
 remains. The idle-echo follow-on is ready to implement at
-[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000.
+[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. Path completion is back with the designer at
+[`completion/`](completion/). The recursive scans move off
+`(AloemacsSession H)`. aloemacs-completion 000 is not ready to
+implement. That revision does not replace idle-echo.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -210,14 +213,20 @@ Leave these until a slice is blocked by them.
    remains. The idle name leaves that row in the standalone
    checkpoint [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000,
    which is ready to implement.
-7. **Faces**, then highlighting, then modes as libraries.
-8. Folding, then outline/notes, then a directory browser.
-9. LSP, then live eval, each with its own charter.
+7. **Path completion** — back with the designer at
+   [`completion/`](completion/). Tab completes find-file and
+   save-as. The recursive scans move off `(AloemacsSession H)`.
+   aloemacs-completion 000 is not ready to implement. Faces stay
+   after that revision.
+8. **Faces**, then highlighting, then modes as libraries.
+9. Folding, then outline/notes, then a directory browser.
+10. LSP, then live eval, each with its own charter.
 
 The motion pack is implemented (aloemacs-motion 000). Band 2 is
 implemented. Windows is implemented (aloemacs-windows 000–006);
 final human review remains. Mode line is implemented
 (aloemacs-mode-line 000–001) at [`mode-line/`](mode-line/);
-final human review remains. The next handoff is
-aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/). Faces stay
-next on this list. Modes, org, dired, and `M-x` stay later.
+final human review remains. aloemacs-idle-echo 000 at
+[`idle-echo/`](idle-echo/) stays ready to implement. Path
+completion is back with the designer at
+[`completion/`](completion/). Faces stay after that revision. Modes, org, dired, and `M-x` stay later.

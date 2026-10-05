@@ -131,7 +131,7 @@
      #t
      ,ring
      ,pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
@@ -750,7 +750,7 @@
          #f
          (List empty)
          ,no-pending
-         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+         (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
          (armed last-submission)
          (armed waiting-command)
      (let ((buffer ((AloemacsBuffers new

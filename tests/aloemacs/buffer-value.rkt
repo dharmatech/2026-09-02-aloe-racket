@@ -39,7 +39,7 @@
 (define (fresh-session contents path [indexed? #t])
   `(AloemacsSession new ,(singleton (editor contents indexed?) path)
      (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty) ,no-pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer (,(singleton (editor contents indexed?) path) current-buffer)))
@@ -129,7 +129,7 @@
        ,(singleton 'old-editor '(Option Some (Path new "/cwd/a.txt")))
        (Fs new fs-host) "saved" #t "old query" (Position new 4 2) #t #t
        (List of "newest" "older") (Option Some aloemacs-ctrl-x-keymap)
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer (,(singleton 'old-editor '(Option Some (Path new "/cwd/a.txt"))) current-buffer)))
@@ -149,7 +149,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (class name) (findf (lambda (d) (equal? (cadr d) name)) classes))

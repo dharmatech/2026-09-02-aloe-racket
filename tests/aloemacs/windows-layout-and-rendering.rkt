@@ -11,7 +11,7 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new ""))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand SaveAs))))
 (define (ev st expr) (driver-eval! st expr))
@@ -227,7 +227,7 @@
     (zipper (list (buffer 41 '(a editor) '(Option Some (Path new "/a\tbcdefghij"))) 'b) 0)))
   (paint st 'safe-path 9 6 (multi '("abcd|HIJ " "/a b|MNO " "----+RST " "tuvw|WXY " "/a b|unti")
                                   4 2 6 ""))
-  (def! st 'prompted (rebuild 'search #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2))))
+  (def! st 'prompted (rebuild 'search #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2 "" (List empty)))))
   (paint st 'prompted 9 6 (multi example-rows 6 5 6 "L A B"))
   (def! st 'ended '(prompted cancel-prompt))
   (paint st 'ended 9 6 (multi example-rows 4 2 6 "failing: "))
@@ -287,7 +287,7 @@
   (def! st 'b (buffer 9 (editor '(Text from-string "inactive") 0 4 2 3 13)))
   (def! st 's (session (zipper '(b a) 1) tree 3 #:columns 0 #:rows 0
     #:searching #t #:pending '(Option Some aloemacs-ctrl-x-keymap)
-    #:prompt '(Option Some (AloemacsPrompt new "draft: " "input" 2))
+    #:prompt '(Option Some (AloemacsPrompt new "draft: " "input" 2 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand SaveAs))))
   (define source (snapshot st 's))
   (define fitted-buffer (buffer 41 (editor text 10 9 10 6 1 #t) '(a path)))
@@ -344,7 +344,7 @@
   (def! st 'a (buffer 41 (editor '(Text from-string "abc\ndef"))))
   (define tree (right (leaf 71) (below (leaf 3) (leaf 55))))
   (def! st 's (session (zipper '(a) 0) tree 71 #:echo ""
-    #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4))))
+    #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4 "" (List empty)))))
   ;; Selected left is positive; only the nested right fails.
   (def! st 'fit '(s ensure-visible 7 3))
   (same st '((fit editor) text-rows) 1)
@@ -352,7 +352,7 @@
   (paint st 'fit 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
   (paint st 'fit 7 1 (single '("abc") 1 1 #:name "untitled" #:width 7))
   (def! st 'horizontal (session (zipper '(a) 0) (right (leaf 71) (leaf 3)) 71
-    #:echo "" #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4))))
+    #:echo "" #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4 "" (List empty)))))
   (paint st 'horizontal 7 1 (multi '("abc|abc") 1 1))
   (def! st 'one (rebuild 'horizontal #:windows (config (leaf 71) 71)))
   (paint st 'one 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
@@ -364,7 +364,7 @@
   (define t (right (leaf 71) (leaf 3 41 1 2 #t)))
   (def! st 's (session (zipper '(a) 0) t 71 #:echo "failed"
     #:pending '(Option Some aloemacs-ctrl-x-keymap)
-    #:prompt '(Option Some (AloemacsPrompt new "P: " "xy" 1))
+    #:prompt '(Option Some (AloemacsPrompt new "P: " "xy" 1 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand SaveAs))))
   (define sizes (box '((7 3) (1 2) (7 3))))
   (define keys (box '("ctrl-x" "left" "ctrl-x")))
@@ -400,7 +400,7 @@
   (check-equal? (unbox events)
     (append-map (lambda (frame) (list 'size 'size (list 'write frame) 'read)) expected))
   (check-equal? (unbox keys) '())
-  (same st '(s prompt) '(Option Some (AloemacsPrompt new "P: " "xy" 0)))
+  (same st '(s prompt) '(Option Some (AloemacsPrompt new "P: " "xy" 0 "" (List empty))))
   (same st '((s editor) text) '(Text from-string "abcdef\nghijkl"))
   (check-equal? (unbox calls) '()))
 
@@ -414,7 +414,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))

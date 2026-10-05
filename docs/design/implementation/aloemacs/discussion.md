@@ -35,11 +35,12 @@ prompt-command series is implemented and accepted at
 [`windows/`](windows/), aloemacs-windows 000–006. Final human
 review of that series remains. The mode-line series is implemented
 at [`mode-line/`](mode-line/), aloemacs-mode-line 000–001. Final
-human review of that series remains. The current handoff is the
-standalone checkpoint aloemacs-idle-echo 000 at
-[`idle-echo/checkpoints/000-blank-beside-mode-line.md`](idle-echo/checkpoints/000-blank-beside-mode-line.md).
-Do not write a charter for it. Do not reopen other product
-behavior in the implemented series.
+human review of that series remains. The standalone checkpoint aloemacs-idle-echo 000 at
+[`idle-echo/checkpoints/000-blank-beside-mode-line.md`](idle-echo/checkpoints/000-blank-beside-mode-line.md)
+is ready to implement. Do not write a charter for it. Path completion is back with the designer at
+[`completion/charter.md`](completion/charter.md). Do not revise
+its `spec.md` here.
+Do not reopen other product behavior in the implemented series.
 
 ## How this conversation works
 

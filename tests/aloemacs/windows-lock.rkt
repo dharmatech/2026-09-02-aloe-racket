@@ -12,7 +12,7 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new ""))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand SaveAs))))
 (define (ev st expr) (driver-eval! st expr))
@@ -74,7 +74,7 @@
 (define (config tree selected [columns 9] [rows 6])
   `(AloemacsWindows new ,tree ,selected ,columns ,rows))
 (define (rect x y columns rows) `(AloemacsWindowRect new ,x ,y ,columns ,rows))
-(define active-prompt '(Option Some (AloemacsPrompt new "P\t" "x\ry" 2)))
+(define active-prompt '(Option Some (AloemacsPrompt new "P\t" "x\ry" 2 "" (List empty))))
 (define waiting '(Option Some (AloemacsCommand SaveAs)))
 (define pending '(Option Some aloemacs-ctrl-x-keymap))
 (define (session bs tree [selected 7] #:columns [columns 9] #:rows [rows 6]
@@ -163,7 +163,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsCommand))
@@ -303,7 +303,7 @@
   (define b (buffer 12 (editor bt) '(Option Some (Path new "/b"))))
   (define (t [bid 41] [bit #t]) (right (leaf 7 bid 0 0 bit) (leaf 2 41 20 30)))
   (def! st 'raw (session (zipper (list a b)) (t 41 #f) 7 #:pending pending
-    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "/cwd/a.txt" 10))))
+    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "/cwd/a.txt" 10 "" (List empty)))))
   (def! st 'locked '(raw toggle-window-lock))
   (def! st 'selected `(locked selected-buffers ,(zipper (list a b) 1)))
   (same-session st 'selected (selection 'locked (zipper (list a b) 1) (t 12)))
@@ -318,12 +318,14 @@
   (effects calls '())
   ;; Full prompt lifecycle under a public lock, with no old-buffer target stored.
   (def! st 'idle (rebuild 'locked #:prompt no-prompt #:waiting no-command #:pending no-pending))
-  (for ([command '(FindFile SaveAs SelectBuffer)] [label '("Find file: " "Save as: " "Buffer: ")])
+  (for ([command '(FindFile SaveAs SelectBuffer)] [label '("Find file: " "Save as: " "Buffer: ")]
+        [text '("/" "/a" "")])
     (same-session st `(idle execute-command (AloemacsCommand ,command) "ignored")
-      (rebuild 'idle #:prompt `(Option Some (AloemacsPrompt new ,label "" 0))
+      (rebuild 'idle #:prompt `(Option Some (AloemacsPrompt new ,label ,text ,(string-length text) "" (List empty)))
         #:waiting `(Option Some (AloemacsCommand ,command)))))
+  (effects calls '((root? "/a") (parent "/a")))
   (def! st 'find-p (rebuild 'idle #:prompt
-    '(Option Some (AloemacsPrompt new "Find file: " "b.txt" 5))
+    '(Option Some (AloemacsPrompt new "Find file: " "b.txt" 5 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand FindFile))))
   (define found (buffer 42 (fresh "disk b") '(Option Some (Path new "/cwd/b.txt"))))
   (same-session st '(find-p handle-key "return")
@@ -332,7 +334,7 @@
   (effects calls '((resolve "b.txt") (kind "/cwd/b.txt") (resolve "/cwd/b.txt")
                   (kind "/cwd/b.txt") (resolve "/cwd/b.txt") (read "/cwd/b.txt")))
   (def! st 'select-p (rebuild 'idle #:prompt
-    '(Option Some (AloemacsPrompt new "Buffer: " "/b" 2))
+    '(Option Some (AloemacsPrompt new "Buffer: " "/b" 2 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand SelectBuffer))))
   (same-session st '(select-p handle-key "return")
     (rebuild (selection 'select-p (zipper (list a b) 1) (t 12))
@@ -655,7 +657,7 @@
   (def! st 'p (rebuild 's #:prompt active-prompt #:pending pending))
   (same-session st '(p handle-key "ctrl-x") 'p)
   (same-session st '(p handle-key "l") (rebuild 'p #:prompt
-    '(Option Some (AloemacsPrompt new "P\t" "x\rly" 3))))
+    '(Option Some (AloemacsPrompt new "P\t" "x\rly" 3 "" (List empty)))))
   (def! st 'search (rebuild 's #:searching #t #:query "" #:wrapped #f #:failing #f
     #:origin '(Position new 0 0)))
   (same-session st '(search handle-key "l") (rebuild 'search #:query "l" #:failing #t))
@@ -667,7 +669,7 @@
   (same-session st '((both handle-key "ctrl-x") handle-key "l")
     (rebuild 'both #:searching #f #:query "" #:origin '(Position new 0 0)
       #:wrapped #f #:failing #f #:pending pending
-      #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\rly" 3))))
+      #:prompt '(Option Some (AloemacsPrompt new "P\t" "x\rly" 3 "" (List empty)))))
   (def! st 'quit-s (rebuild 'both #:buffers
     (zipper (list (buffer 41 (editor ab-text #:quit #t))))))
   (for ([key '("ctrl-x" "l")]) (same-session st `(quit-s handle-key ,key) 'quit-s))

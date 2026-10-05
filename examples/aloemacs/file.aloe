@@ -5,13 +5,23 @@
   (fields
     (label String)
     (text String)
-    (column Int))
+    (column Int)
+    (completion-note String)
+    (completion-lines (List String)))
   (methods
     (row () String
-      ((self label) append (self text)))
+      (((self label) append (self text)) append (self completion-note)))
 
     (screen-column (columns Int) Int
       (columns min ((((self label) len) + (self column)) + 1)))
+
+    (with-completion (text String) (note String) (lines (List String))
+                     AloemacsPrompt
+      (AloemacsPrompt new (self label) text
+        (if (text = (self text)) (self column) (text len)) note lines))
+
+    (clear-completion () AloemacsPrompt
+      (AloemacsPrompt new (self label) (self text) (self column) "" (List empty)))
 
     (insert (character String) AloemacsPrompt
       (if ((character len) = 1)
@@ -20,7 +30,7 @@
               (let ((text (self text)) (column (self column)))
                 (AloemacsPrompt new (self label)
                   (((text take column) append character) append (text drop column))
-                  (column + 1))))
+                  (column + 1) "" (List empty))))
           self))
 
     (backward-delete () AloemacsPrompt
@@ -28,22 +38,55 @@
         (if (column > 0)
             (AloemacsPrompt new (self label)
               ((text take (column - 1)) append (text drop column))
-              (column - 1))
-            self)))
+              (column - 1) "" (List empty))
+            (self clear-completion))))
 
     (move-left () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text)
-        (0 max ((self column) - 1))))
+        (0 max ((self column) - 1)) (self completion-note) (self completion-lines)))
 
     (move-right () AloemacsPrompt
       (AloemacsPrompt new (self label) (self text)
-        (((self text) len) min ((self column) + 1))))
+        (((self text) len) min ((self column) + 1))
+        (self completion-note) (self completion-lines)))
 
     (line-start () AloemacsPrompt
-      (AloemacsPrompt new (self label) (self text) 0))
+      (AloemacsPrompt new (self label) (self text) 0
+        (self completion-note) (self completion-lines)))
 
     (line-end () AloemacsPrompt
-      (AloemacsPrompt new (self label) (self text) ((self text) len)))))
+      (AloemacsPrompt new (self label) (self text) ((self text) len)
+        (self completion-note) (self completion-lines)))))
+
+;; Recursive scans stay on a nongeneric receiver. The session owns Fs and
+;; the prompt result; this scanner only consumes character/list data.
+(define-class AloemacsCompletionScan
+  (fields)
+  (methods
+    (split-offset (text String) Int
+      (self scan-slashes text 0 0))
+
+    (scan-slashes (remaining String) (offset Int) (latest Int) Int
+      (if ((remaining len) = 0)
+          latest
+          (let ((advanced (offset + 1)))
+            (self scan-slashes (remaining drop 1) advanced
+              (if ((remaining take 1) = "/") advanced latest)))))
+
+    (common-prefix (names (List String)) String
+      (if (names empty?)
+          ""
+          (self prefix-in (names first) (names rest))))
+
+    (prefix-in (prefix String) (names (List String)) String
+      (if (names empty?)
+          prefix
+          (self prefix-in (self shared-prefix prefix (names first)) (names rest))))
+
+    (shared-prefix (prefix String) (name String) String
+      (if (name starts-with? prefix)
+          prefix
+          (self shared-prefix (prefix take ((prefix len) - 1)) name)))))
 
 (define-class AloemacsBuffer
   (fields
@@ -770,7 +813,7 @@
         ((self searching) self)
         (((self pending) present?) self)
         (((self prompt) present?) self)
-        (else (self with-active-prompt (AloemacsPrompt new label "" 0)))))
+        (else (self with-active-prompt (AloemacsPrompt new label "" 0 "" (List empty))))))
 
     (with-active-prompt (prompt AloemacsPrompt) (AloemacsSession H)
       (AloemacsSession new
@@ -800,7 +843,121 @@
         ((self searching) self)
         (((self pending) present?) self)
         (((self prompt) present?) self)
-        (else ((self start-prompt label) with-waiting-command command))))
+        (else
+          (let ((text
+                  (command case
+                    (FindFile () (self file-prompt-directory))
+                    (SaveAs ()
+                      ((self path) case
+                        (None () (self file-prompt-directory))
+                        (Some (path) (path text))))
+                    (else ""))))
+            ((self with-active-prompt
+               (AloemacsPrompt new label text (text len) "" (List empty)))
+             with-waiting-command command)))))
+
+    (file-prompt-directory () String
+      (let ((directory
+              ((self path) case
+                (None () (((self fs) current) text))
+                (Some (path)
+                  (((self fs) parent path) case
+                    (None () (path text))
+                    (Some (parent) (parent text)))))))
+        (if ((directory drop ((directory len) - 1)) = "/")
+            directory
+            (directory append "/"))))
+
+    (completion-note () String
+      ((self prompt) case
+        (None () "")
+        (Some (prompt) (prompt completion-note))))
+
+    (completion-lines () (List String)
+      ((self prompt) case
+        (None () (List empty))
+        (Some (prompt) (prompt completion-lines))))
+
+    (complete-prompt () (AloemacsSession H)
+      ((self prompt) case
+        (None () self)
+        (Some (prompt)
+          (if ((self waiting-command) case
+                (None () #f)
+                (Some (command)
+                  (command case
+                    (FindFile () #t)
+                    (SaveAs () #t)
+                    (else #f))))
+              (let ((scanner (AloemacsCompletionScan new))
+                    (text (prompt text)) (fs (self fs)))
+                (let ((offset (scanner split-offset text)))
+                  (let ((prefix (text take offset)) (leaf (text drop offset)))
+                    (let ((directory
+                            (if (prefix = "") (fs current) (fs path prefix))))
+                      (let ((entries
+                              ((fs inspect directory) case
+                                (None () (List empty))
+                                (Some (entry)
+                                  (entry case
+                                    (Directory (path) (fs entries path))
+                                    (else (List empty)))))))
+                        (let ((matches
+                                ((entries fold (List empty)
+                                   (fn (acc entry)
+                                     (let ((name (fs name (entry path))))
+                                       (if (name starts-with? leaf)
+                                           (if (name starts-with? ".")
+                                               (if (leaf starts-with? ".")
+                                                   (acc cons entry) acc)
+                                               (acc cons entry))
+                                           acc))))
+                                 reverse)))
+                          (cond
+                            ((matches empty?)
+                              (self with-active-prompt
+                                (prompt with-completion text " [No match]" (List empty))))
+                            (((matches len) = 1)
+                              (let ((entry (matches first)))
+                                (let ((name (fs name (entry path))))
+                                  (let ((replacement
+                                          ((prefix append name) append
+                                            (entry case
+                                              (Directory (path) "/")
+                                              (else "")))))
+                                    (self with-active-prompt
+                                      (prompt with-completion replacement
+                                        (if (replacement = text) " [Sole completion]" "")
+                                        (List empty)))))))
+                            (else
+                              (let ((common
+                                      (scanner common-prefix
+                                        (matches map (fn (entry) (fs name (entry path)))))))
+                                (if ((common len) > (leaf len))
+                                    (self with-active-prompt
+                                      (prompt with-completion (prefix append common)
+                                        "" (List empty)))
+                                    (let ((lines
+                                            (matches map
+                                              (fn (entry)
+                                                ((fs name (entry path)) append
+                                                  (entry case
+                                                    (Directory (path) "/")
+                                                    (else "")))))))
+                                      (let ((prepared
+                                              (if ((matches len) <= 8)
+                                                  lines
+                                                  (let ((first-seven
+                                                          (lines fold (List empty)
+                                                            (fn (acc name)
+                                                              (if ((acc len) < 7)
+                                                                  (acc cons name) acc)))))
+                                                    ((first-seven cons
+                                                       (("...(+" append (((matches len) - 7) text))
+                                                        append ")")) reverse)))))
+                                        (self with-active-prompt
+                                          (prompt with-completion text "" prepared))))))))))))))
+              self))))
 
     (run-submitted-command () (AloemacsSession H)
       ((self waiting-command) case
@@ -824,7 +981,7 @@
             (self buffers) (self fs) (self echo)
             (self searching) (self query) (self origin)
             (self wrapped) (self failing) (self kill-ring) (self pending)
-            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+            (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
             (Option Some (prompt text)) (self waiting-command) (self windows))
            run-submitted-command))))
 
@@ -844,6 +1001,7 @@
         (None () self)
         (Some (prompt)
           (cond
+            ((key = "tab") (self complete-prompt))
             ((key = "backspace") (self with-active-prompt (prompt backward-delete)))
             ((key = "left") (self with-active-prompt (prompt move-left)))
             ((key = "right") (self with-active-prompt (prompt move-right)))
@@ -1344,9 +1502,41 @@
     (request-quit () (AloemacsSession H)
       (self with-editor ((self editor) request-quit)))
 
+    (completion-row-count (rows Int) Int
+      (if (rows < 2)
+          0
+          (((self completion-lines) len) min (0 max (rows - 2)))))
+
+    (root-rect (columns Int) (rows Int) AloemacsWindowRect
+      (AloemacsWindowRect new 0 0 columns
+        (if (rows < 2) rows ((rows - 1) - (self completion-row-count rows)))))
+
+    (fit-rect (columns Int) (rows Int) AloemacsWindowRect
+      (let ((root (self root-rect columns rows)) (windows (self windows)))
+        (if ((windows tree) positive-layout? root)
+            (((windows tree) rect-for (windows selected) root) case
+              (None () root)
+              (Some (rect) rect))
+            root)))
+
+    ;; Accumulate only the first k addressed rows. Their count supplies each
+    ;; row's offset without indexing or recursive sends on this session.
+    (completion-frame (root AloemacsWindowRect) (columns Int) (rows Int) String
+      (let ((count (self completion-row-count rows)) (editor (self editor)))
+        (let ((painted
+                ((self completion-lines) fold (List empty)
+                  (fn (painted line)
+                    (if ((painted len) < count)
+                        (painted cons
+                          ((List of "\u001b[" ((((root rows) + (painted len)) + 1) text)
+                             ";1H" (editor safe-cells (line take columns)))
+                           fold "" (fn (acc part) (acc append part))))
+                        painted)))))
+          ((painted reverse) fold "" (fn (acc part) (acc append part))))))
+
     (frame (columns Int) (rows Int) String
       (let ((windows (self windows)))
-        (let ((root (windows text-rect columns rows)))
+        (let ((root (self root-rect columns rows)))
           (if ((windows tree) single?)
               (self single-frame columns rows)
               (if ((windows tree) positive-layout? root)
@@ -1376,10 +1566,11 @@
     (multi-frame (root AloemacsWindowRect) (columns Int) (rows Int) String
       (let ((editor (self editor)) (windows (self windows)))
         (let ((lines ((windows tree) frame-rows (self buffers) root))
-              (selected (windows fit-rect columns rows)))
+              (selected (self fit-rect columns rows)))
           (let ((body
-                  ((lines rest) fold (lines first)
-                    (fn (body line) ((body append "\r\n") append line))))
+                  (((lines rest) fold (lines first)
+                     (fn (body line) ((body append "\r\n") append line)))
+                   append (self completion-frame root columns rows)))
                 (text-cursor-row
                   ((((selected y) + ((editor point) line)) - (editor scroll-row)) + 1))
                 (text-cursor-column
@@ -1407,7 +1598,7 @@
     ;; one-view/fallback frames reserve the root's last row for its name.
     (single-frame (columns Int) (rows Int) String
       (let ((editor (self editor))
-            (root ((self windows) text-rect columns rows)))
+            (root (self root-rect columns rows)))
         (let ((body (editor frame columns (root text-rows))))
           (if (rows < 2)
               body
@@ -1430,6 +1621,7 @@
                                 ((self current-buffer) name) columns)))
                           fold "" (fn (acc part) (acc append part)))
                          "")
+                     (self completion-frame root columns rows)
                      "\u001b["
                      (rows text)
                      ";1H"
@@ -1445,17 +1637,16 @@
                    (fn (acc part) (acc append part)))))))))
 
     (ensure-visible (columns Int) (rows Int) (AloemacsSession H)
-      (let ((windows (self windows)))
-        (let ((rect (windows fit-rect columns rows)))
-          (let ((session
-                  (self with-editor
-                    ((self editor) ensure-visible (rect columns) (rect text-rows)))))
-            (AloemacsSession new
-              (session buffers) (session fs) (session echo)
-              (session searching) (session query) (session origin)
-              (session wrapped) (session failing) (session kill-ring) (session pending)
-              (session prompt) (session last-submission) (session waiting-command)
-              ((session windows) with-size columns rows))))))
+      (let ((rect (self fit-rect columns rows)))
+        (let ((session
+                (self with-editor
+                  ((self editor) ensure-visible (rect columns) (rect text-rows)))))
+          (AloemacsSession new
+            (session buffers) (session fs) (session echo)
+            (session searching) (session query) (session origin)
+            (session wrapped) (session failing) (session kill-ring) (session pending)
+            (session prompt) (session last-submission) (session waiting-command)
+            ((session windows) with-size columns rows)))))
 
     (file-contents (path Path) (Option String)
       (((self fs) inspect path) case

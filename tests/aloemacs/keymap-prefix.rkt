@@ -81,7 +81,7 @@
      #t
      (List of "Z\nY" "older")
      ,no-pending
-     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+     (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
@@ -213,7 +213,7 @@
        #f
        (List empty)
        ,no-pending
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new
@@ -240,17 +240,18 @@
   (check-equal? (length (writes failures)) 1)
   (same failing '(armed pending) '(Option Some aloemacs-ctrl-x-keymap)))
 
-(test-case "prefix prompt commands clear pending and start a waiting command without effects"
+(test-case "prefix prompt commands clear pending and start a waiting command with only permitted prefill queries"
   (define-values (st calls) (state))
   (rich! st)
   (def! st 'armed '(base handle-key "ctrl-x"))
   (for ([key '("find" "kill" "b")] [label '("Find file: " "Save as: " "Buffer: ")]
-        [command '(FindFile SaveAs SelectBuffer)])
-    (same-session st `(armed handle-key ,key)
+        [command '(FindFile SaveAs SelectBuffer)] [text '("/cwd/" "/cwd/a.txt" "")])
+    (def! st 'started `(armed handle-key ,key))
+    (same-session st 'started
       `(AloemacsSession new
          (base buffers) (base fs) "" (base searching) (base query) (base origin)
          (base wrapped) (base failing) (base kill-ring) ,no-pending
-         (Option Some (AloemacsPrompt new ,label "" 0))
+         (Option Some (AloemacsPrompt new ,label ,text ,(string-length text) "" (List empty)))
          (base last-submission) (Option Some (AloemacsCommand ,command))
      (let ((buffer ((base buffers) current-buffer)))
        (AloemacsWindows new
@@ -258,7 +259,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
          0 ((base windows) columns) ((base windows) rows))))))
-  (check-equal? (unbox calls) '()))
+  (check-equal? (reverse (unbox calls)) '((root? "/cwd/a.txt") (parent "/cwd/a.txt"))))
 
 (test-case "every unbound second key is consumed once; the following key dispatches globally"
   (define-values (st calls) (state))
@@ -373,7 +374,7 @@
        #f
        (List of "ring")
        ,no-pending
-       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0)))
+       (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty))))
        (if #t (Option None) (Option Some ""))
        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (let ((buffer ((AloemacsBuffers new

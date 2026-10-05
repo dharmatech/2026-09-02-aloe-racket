@@ -104,7 +104,7 @@
         [echo '("search: q " "wrapped: q " "failing: q ")])
     (def! st 'search `(status with-search (status editor) #t "q\t" (status origin) ,wrapped ,failing))
     (paint st 'search 20 4 (single "abc\r\ndef" 20 4 "untitled" echo) calls))
-  (def! st 'prompt '(search with-active-prompt (AloemacsPrompt new "Ask: " "abcd" 2)))
+  (def! st 'prompt '(search with-active-prompt (AloemacsPrompt new "Ask: " "abcd" 2 "" (List empty))))
   (paint st 'prompt 20 4 (single "abc\r\ndef" 20 4 "untitled" "Ask: abcd" 4 8) calls))
 
 (define (buffer id text name)

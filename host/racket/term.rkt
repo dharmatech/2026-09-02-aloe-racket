@@ -118,6 +118,10 @@
     [(and (eq? key 'end) (equal? (tkeymsg-mods message) '(ctrl))) "buffer-end"]
     [(and (eq? key 'prior) (equal? (tkeymsg-mods message) '())) "page-up"]
     [(and (eq? key 'next) (equal? (tkeymsg-mods message) '())) "page-down"]
+    [(and (eqv? key #\tab)
+          (equal? (tkeymsg-mods message) '())
+          (or (not character) (eqv? character #\tab)))
+     "tab"]
     [(and (char? character) (printable-character? character))
      (string character)]
     [(and (char? key) (printable-character? key))

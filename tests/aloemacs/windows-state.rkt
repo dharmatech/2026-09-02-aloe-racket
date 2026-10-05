@@ -9,7 +9,7 @@
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/typed-none"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
-(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0))))
+(define no-prompt '(if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty)))))
 (define no-submission '(if #t (Option None) (Option Some "")))
 (define no-command '(if #t (Option None) (Option Some (AloemacsCommand FindFile))))
 (define fields
@@ -92,7 +92,7 @@
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #t "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
      (Option Some aloemacs-ctrl-x-keymap)
-     (Option Some (AloemacsPrompt new "draft: " "input" 2))
+     (Option Some (AloemacsPrompt new "draft: " "input" 2 "" (List empty)))
      (Option Some "previous") (Option Some (AloemacsCommand SaveAs)) ,windows))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
@@ -205,8 +205,8 @@
     (list '(source with-prefix aloemacs-global-keymap)
           (rebuild 'source #:echo "" #:pending '(Option Some aloemacs-global-keymap)))
     (list '(source clear-prefix) (rebuild 'source #:pending no-pending))
-    (list '(source with-active-prompt (AloemacsPrompt new "new: " "x" 1))
-          (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "new: " "x" 1))))
+    (list '(source with-active-prompt (AloemacsPrompt new "new: " "x" 1 "" (List empty)))
+          (rebuild 'source #:prompt '(Option Some (AloemacsPrompt new "new: " "x" 1 "" (List empty)))))
     (list '(source with-waiting-command (AloemacsCommand SelectBuffer))
           (rebuild 'source #:waiting '(Option Some (AloemacsCommand SelectBuffer))))
     (list '(source clear-waiting-command) (rebuild 'source #:waiting no-command))
@@ -224,7 +224,7 @@
         [text '("inλput" "iput" "input" "input" "input" "input")]
         [column '(3 1 1 3 0 5)])
     (same-session st `(draft ,@send)
-      (rebuild 'draft #:prompt `(Option Some (AloemacsPrompt new "draft: " ,text ,column)))))
+      (rebuild 'draft #:prompt `(Option Some (AloemacsPrompt new "draft: " ,text ,column "" (List empty))))))
   (same-session st '(draft handle-key "ctrl-x") (rebuild 'draft))
   (same-session st '(draft prompt-key "\n") (rebuild 'draft))
   (same-session st '(draft submit-prompt)
@@ -233,9 +233,9 @@
     (rebuild 'draft #:prompt no-prompt #:waiting no-command))
   (def! st 'idle (rebuild 'draft #:prompt no-prompt))
   (same-session st '(idle start-prompt "Ask: ")
-    (rebuild 'idle #:prompt '(Option Some (AloemacsPrompt new "Ask: " "" 0))))
+    (rebuild 'idle #:prompt '(Option Some (AloemacsPrompt new "Ask: " "" 0 "" (List empty)))))
   (same-session st '(idle execute-command (AloemacsCommand FindFile) "find")
-    (rebuild 'idle #:prompt '(Option Some (AloemacsPrompt new "Find file: " "" 0))
+    (rebuild 'idle #:prompt '(Option Some (AloemacsPrompt new "Find file: " "/cwd/" 5 "" (List empty)))
       #:waiting '(Option Some (AloemacsCommand FindFile))))
   (same-session st '(idle handle-key "ctrl-x")
     (rebuild 'idle #:echo "" #:pending '(Option Some aloemacs-ctrl-x-keymap)))
@@ -243,7 +243,7 @@
   (same-session st '(prefixed handle-key "x") (rebuild 'prefixed #:pending no-pending))
   (same-session st '(prefixed handle-key "b")
     (rebuild 'prefixed #:pending no-pending
-      #:prompt '(Option Some (AloemacsPrompt new "Buffer: " "" 0))
+      #:prompt '(Option Some (AloemacsPrompt new "Buffer: " "" 0 "" (List empty)))
       #:waiting '(Option Some (AloemacsCommand SelectBuffer))))
   (def! st 'slot (rebuild 'idle #:waiting '(Option Some (AloemacsCommand SaveAs))))
   (same-session st '(slot cancel-prompt) (rebuild 'slot #:waiting no-command))
@@ -251,7 +251,8 @@
     (rebuild 'slot #:buffers (replacement 'slot 'rich '(Option Some (Path new "/cwd/previous")))
       #:echo "saved" #:waiting no-command))
   (assert-effects calls
-    `((resolve "previous") (kind "/cwd/previous") (resolve "/cwd/previous")
+    `((root? "/cwd/b.txt") (parent "/cwd/b.txt")
+      (resolve "previous") (kind "/cwd/previous") (resolve "/cwd/previous")
       (root? "/cwd/previous") (parent "/cwd/previous") (kind "/cwd") (resolve "/cwd")
       (write "/cwd/previous" ,rich-string)))
   (check-equal? (ev st 'source) original))
@@ -521,7 +522,7 @@
   (define-values (st calls) (state))
   (fixture! st)
   (def! st 'waiting (rebuild 'source #:searching #f #:pending no-pending
-    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "a.txt" 5))))
+    #:prompt '(Option Some (AloemacsPrompt new "Save as: " "a.txt" 5 "" (List empty)))))
   (define added (buffer 42 (fresh "inserted")))
   (for ([send '((select-buffer-submitted "untitled") (switch-buffer) (kill-buffer)
                 (add-buffer "inserted") (select-buffer-submitted "/cwd/b.txt"))]
@@ -539,7 +540,7 @@
     (assert-effects calls (write-calls "a.txt" "/cwd/a.txt" contents)))
   ;; Find-file completion adds relative to the new current after direct kill.
   (def! st 'finding (rebuild 'waiting
-    #:prompt '(Option Some (AloemacsPrompt new "Find file: " "new.txt" 7))
+    #:prompt '(Option Some (AloemacsPrompt new "Find file: " "new.txt" 7 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand FindFile))))
   (def! st 'removed '(finding kill-buffer))
   (define killed-views (removed-views views 9 27 1 2))
@@ -552,7 +553,7 @@
   (assert-effects calls '((resolve "new.txt") (kind "/cwd/new.txt") (resolve "/cwd/new.txt")))
   ;; Selection completion reuses current-name after selection changed current.
   (def! st 'selecting (rebuild 'waiting
-    #:prompt '(Option Some (AloemacsPrompt new "Buffer: " "untitled" 8))
+    #:prompt '(Option Some (AloemacsPrompt new "Buffer: " "untitled" 8 "" (List empty)))
     #:waiting '(Option Some (AloemacsCommand SelectBuffer))))
   (def! st 'changed '(selecting switch-buffer))
   (same-session st '(changed handle-key "return")
@@ -597,7 +598,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry
