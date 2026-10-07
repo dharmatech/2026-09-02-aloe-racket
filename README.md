@@ -89,6 +89,28 @@ A narrower path works the same way:
 TMPDIR=/tmp raco test -y tests/aloemacs
 ```
 
+For an optional per-file timing report of the complete suite, run:
+
+```sh
+TMPDIR=/tmp racket bin/suite-time.rkt
+```
+
+The report runs files serially with `raco test -y --process`, streams
+test diagnostics, and lists elapsed seconds, outcomes, and observed
+bytecode work, slowest first. `rebuilt` means compilation, recompilation,
+or timestamp update work was observed; `warm` means no such work was
+observed; `unknown` means observation was incomplete or unfamiliar.
+Durations include each child's startup, bytecode updates, and testing.
+The command rejects `info.rkt` under `tests/` because it does not support
+that discovery configuration.
+
+Each completed report, including one with test failures, atomically
+replaces the gitignored `.suite-time/previous.rktd`. The next report
+compares matching files with that record, showing previous outcomes
+and bytecode labels beside duration deltas. Interrupted or operationally
+aborted reports preserve the previous record. Timing differences do not
+fail tests. The ordinary test commands above do not update this history.
+
 `./bin/aloe` and `racket host/racket/aloemacs-run.rkt` load that
 bytecode and do not rebuild it. A launch, or a test run that omits
 `-y`, can load an old `.zo` of a module that was not itself edited,

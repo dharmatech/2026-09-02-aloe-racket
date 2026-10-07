@@ -70,11 +70,13 @@
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
          0 ,columns ,rows))))
 (define (same-session st actual expected)
-  (same st actual expected)
+  (def! st 'comparison-actual actual)
+  (def! st 'comparison-expected expected)
+  (same st 'comparison-actual 'comparison-expected)
   (for ([field (in-list (append session-fields '(current-buffer editor path)))])
-    (same st `(,actual ,field) `(,expected ,field)))
-  (check-true (ev st `(((,actual buffers) before) empty?)))
-  (check-true (ev st `(((,actual buffers) after) empty?))))
+    (same st `(comparison-actual ,field) `(comparison-expected ,field)))
+  (check-true (ev st '(((comparison-actual buffers) before) empty?)))
+  (check-true (ev st '(((comparison-actual buffers) after) empty?))))
 
 (define (loaded)
   (define st (make-driver))
@@ -138,6 +140,29 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
          0 0 0)))))
+
+(test-case "session comparison evaluates each side once and preserves fixture bindings"
+  (define-values (st calls) (state))
+  (rich! st)
+  (for ([name '(actual expected result saved)])
+    (def! st name `(source with-echo ,(symbol->string name))))
+  (define fixtures
+    (for/list ([name '(actual expected result saved)])
+      (cons name (ev st name))))
+  (define write-call
+    (list 'write "/cwd/a.txt" (ev st '((source text) to-string))))
+  (set-box! calls '())
+  (same-session st '(source save-key) '(source save-key))
+  ;; Count after all field and empty-list observations.
+  (check-equal? (writes calls) (list write-call write-call))
+  (set-box! calls '())
+  (def! st 'bound-save '(source save-key))
+  (check-equal? (writes calls) (list write-call))
+  (define calls-after-binding (unbox calls))
+  (same-session st 'bound-save 'bound-save)
+  (check-equal? (unbox calls) calls-after-binding)
+  (for ([fixture (in-list fixtures)])
+    (check-equal? (ev st (car fixture)) (cdr fixture))))
 
 (test-case "exact stored ownership, class order, and new method signatures"
   (define datums

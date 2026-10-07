@@ -20,13 +20,17 @@
 (define (same st actual expected)
   (check-not-exn (lambda () (ev st `(check ,actual ,expected)))))
 (define (same-session st actual expected)
-  (same st actual expected)
+  (def! st 'comparison-actual actual)
+  (def! st 'comparison-expected expected)
+  (same st 'comparison-actual 'comparison-expected)
   (for ([field (in-list (append session-fields '(current-buffer editor path)))])
-    (same st `(,actual ,field) `(,expected ,field)))
+    (same st `(comparison-actual ,field) `(comparison-expected ,field)))
   (for ([field (in-list editor-fields)])
-    (same st `((,actual editor) ,field) `((,expected editor) ,field)))
+    (same st `((comparison-actual editor) ,field)
+             `((comparison-expected editor) ,field)))
   (for ([size (in-list '((8 1) (20 4)))])
-    (check-equal? (ev st `(,actual frame ,@size)) (ev st `(,expected frame ,@size)))))
+    (check-equal? (ev st `(comparison-actual frame ,@size))
+                  (ev st `(comparison-expected frame ,@size)))))
 
 ;; Expected construction is independent of with-prefix/clear-prefix/dispatch.
 (define (rebuild s pending echo [editor `(,s editor)])
@@ -151,6 +155,29 @@
         (string-append "\e[?25l"
           (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
+
+(test-case "session comparison evaluates each side once and preserves fixture bindings"
+  (define-values (st calls) (state))
+  (rich! st)
+  (for ([name '(actual expected result saved)])
+    (def! st name `(base with-echo ,(symbol->string name))))
+  (define fixtures
+    (for/list ([name '(actual expected result saved)])
+      (cons name (ev st name))))
+  (define write-call
+    (list 'write "/cwd/a.txt" (ev st '((base text) to-string))))
+  (set-box! calls '())
+  (same-session st '(base save-key) '(base save-key))
+  ;; Count after all field and frame observations.
+  (check-equal? (writes calls) (list write-call write-call))
+  (set-box! calls '())
+  (def! st 'bound-save '(base save-key))
+  (check-equal? (writes calls) (list write-call))
+  (define calls-after-binding (unbox calls))
+  (same-session st 'bound-save 'bound-save)
+  (check-equal? (unbox calls) calls-after-binding)
+  (for ([fixture (in-list fixtures)])
+    (check-equal? (ev st (car fixture)) (cdr fixture))))
 
 (test-case "arming changes only pending and echo, without effects or history"
   (define-values (st calls) (state))
