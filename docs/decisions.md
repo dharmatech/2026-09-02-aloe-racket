@@ -230,3 +230,28 @@ String only, not every primitive.
 
 Decided: `Int` is lifted for derived Aloe methods through `define-methods`.
 `Float`, `Bool`, and `Symbol` remain closed to `define-methods` in this series.
+
+## Parenthetical construction (2026-10-07)
+
+Decided: labeled construction is the `new*` form in the selector position.
+Each label is a binding pair `(name expr)`, in the shape already used by
+`let`. Its car is the exact field source name and is not evaluated. The
+value expressions run in source order; afterward their stored payload is
+the positional `new` constructor's declaration-ordered payload. Checking
+walks declaration order with the existing field context, not a `let`
+expansion.
+
+A positional call whose equal-typed fields trade places still typechecks
+and changes meaning. The labeled spelling keeps values attached to their
+names. A field rename breaks its old label; a separate initialization name
+is not introduced.
+
+The colon experiment on `experiment/2026-10-05-labeled-construction` is a
+separate experiment, not this series. Square brackets were given no new
+meaning. Rejected: defaults, mixed calls, method labels,
+explicit-constructor labels, and a `make` selector.
+
+A later macro may replace this form only after its expansion is shown to
+preserve source-order evaluation and declaration-order checking, including
+the expected type a function expression receives from its field. This
+series builds no macro and does not have to prove that replacement.

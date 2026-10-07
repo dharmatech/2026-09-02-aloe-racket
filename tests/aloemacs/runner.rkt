@@ -22,36 +22,77 @@
 (define expected-main-datums
   '((load "file.aloe")
     (define aloemacs-editor
-      (AloemacsSession new
-        (AloemacsBuffers new
-          (List empty)
-          (AloemacsBuffer new
-            (AloemacsEditor new
-              (Text from-string "")
-              (Position new 0 0)
-              #f
-              0
-              0
-              (List empty) (if #t (Option None) (Option Some (Position new 0 0))) 0)
-            (if #t
-                (Option None)
-                (Option Some (Path new "/typed-none"))) 0)
-          (List empty))
-        (Fs new fs-host)
-        ""
-        #f
-        ""
-        (Position new 0 0)
-        #f
-        #f
-        (List empty)
-        (if #t (Option None) (Option Some aloemacs-global-keymap))
-        (if #t (Option None) (Option Some (AloemacsPrompt new "" "" 0 "" (List empty) (List empty) 0)))
-        (if #t (Option None) (Option Some ""))
-        (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
-        (AloemacsWindows new
-          (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f))
-          0 0 0)))))
+      (let ((initial-buffer
+              (AloemacsBuffer new*
+                (editor
+                  (AloemacsEditor new*
+                    (text (Text from-string ""))
+                    (point (Position new 0 0))
+                    (quit #f)
+                    (scroll-row 0)
+                    (scroll-col 0)
+                    (history (List empty))
+                    (mark
+                      (if #t
+                          (Option None)
+                          (Option Some (Position new 0 0))))
+                    (text-rows 0)))
+                (path
+                  (if #t
+                      (Option None)
+                      (Option Some (Path new "/typed-none"))))
+                (id 0)))
+            (inactive-prompt
+              (if #t
+                  (Option None)
+                  (Option Some
+                    (AloemacsPrompt new*
+                      (label "")
+                      (text "")
+                      (column 0)
+                      (completion-note "")
+                      (completion-lines (List empty))
+                      (completion-matches (List empty))
+                      (completion-start 0)))))
+            (initial-windows
+              (AloemacsWindows new*
+                (tree
+                  (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f)))
+                (selected 0)
+                (columns 0)
+                (rows 0))))
+        (let ((initial-buffers
+                (AloemacsBuffers new*
+                  (before (List empty))
+                  (current-buffer initial-buffer)
+                  (after (List empty))))
+              (initial-pending
+                (if #t
+                    (Option None)
+                    (Option Some aloemacs-global-keymap)))
+              (initial-last-submission
+                (if #t
+                    (Option None)
+                    (Option Some "")))
+              (initial-waiting-command
+                (if #t
+                    (Option None)
+                    (Option Some (AloemacsCommand FindFile)))))
+          (AloemacsSession new*
+            (buffers initial-buffers)
+            (fs (Fs new fs-host))
+            (echo "")
+            (searching #f)
+            (query "")
+            (origin (Position new 0 0))
+            (wrapped #f)
+            (failing #f)
+            (kill-ring (List empty))
+            (pending initial-pending)
+            (prompt inactive-prompt)
+            (last-submission initial-last-submission)
+            (waiting-command initial-waiting-command)
+            (windows initial-windows)))))))
 
 (define empty-frame
   "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1Huntitled\u001b[4;1H\u001b[1;1H\u001b[?25h")

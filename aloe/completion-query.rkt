@@ -14,6 +14,7 @@
                   check-expr-left
                   check-expr-right
                   check-expr?
+                  construction-binding-value
                   define-class-expr-methods
                   define-class-expr?
                   define-expr-value
@@ -27,6 +28,9 @@
                   int-expr?
                   load-expr?
                   method-declaration-body
+                  new-star-expr-bindings
+                  new-star-expr-receiver
+                  new-star-expr?
                   send-expr-arguments
                   send-expr-receiver
                   send-expr?
@@ -86,6 +90,10 @@
              (if (case-expr-else-body expression)
                  (list (case-expr-else-body expression))
                  '()))]
+    [(new-star-expr? expression)
+     (cons (new-star-expr-receiver expression)
+           (for/list ([binding (in-list (new-star-expr-bindings expression))])
+             (construction-binding-value binding)))]
     [(send-expr? expression)
      (cons (send-expr-receiver expression)
            (send-expr-arguments expression))]

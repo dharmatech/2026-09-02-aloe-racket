@@ -626,6 +626,8 @@
        (infer-function parameters body environment expected)]
       [(case-expr scrutinee clauses else-body _)
        (infer-case scrutinee clauses else-body environment expected)]
+      [(new-star-expr receiver bindings _)
+       (infer-new-star receiver bindings environment expected)]
       [(send-expr receiver selector arguments _ _)
        (infer-send receiver selector arguments environment expected)]))
   (when expected
@@ -1217,6 +1219,40 @@
    (method-declaration-return-type (method-match-method selected))
    environment
    (method-match-substitution selected)))
+
+(define (infer-new-star receiver-expression bindings environment expected)
+  (define receiver-type
+    (resolve-type (infer-expression receiver-expression environment #f)))
+  (unless (and (class-type? receiver-type)
+               (not (class-info-explicit-constructors?
+                     (class-type-class receiver-type))))
+    (raise-type-error
+     "ineligible new*: receiver must be a class declared with fields"))
+  (define class (class-type-class receiver-type))
+  (define constructor (class-constructor class 'new))
+  (unless constructor
+    (raise-type-error "ineligible new*: class has no generated new constructor"))
+  (define fields (constructor-declaration-fields constructor))
+  (define field-names (map field-declaration-name fields))
+  (define declared (make-hasheq (map (lambda (name) (cons name #t)) field-names)))
+  (define expressions (make-hasheq))
+  (for ([binding (in-list bindings)])
+    (define name (construction-binding-name binding))
+    (unless (hash-has-key? declared name)
+      (raise-type-error "unknown field ~a for new*" name))
+    (when (hash-has-key? expressions name)
+      (raise-type-error "duplicate field ~a for new*" name))
+    (hash-set! expressions name (construction-binding-value binding)))
+  (define missing
+    (filter (lambda (name) (not (hash-has-key? expressions name))) field-names))
+  (unless (null? missing)
+    (raise-type-error "missing fields for new*: ~a" missing))
+  ;; This view preserves the original children and their field context. The
+  ;; bindings themselves remain in written order for runtime evaluation.
+  (infer-construction
+   class constructor
+   (map (lambda (name) (hash-ref expressions name)) field-names)
+   environment expected))
 
 (define (infer-construction class constructor arguments environment expected)
   (define selector (constructor-declaration-selector constructor))

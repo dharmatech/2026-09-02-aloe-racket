@@ -21,7 +21,8 @@
          instance-value-constructor)
 
 (struct class-value
-  (name type-parameters protocol fields constructors [methods #:mutable]
+  (name type-parameters protocol fields constructors explicit-constructors?
+        [methods #:mutable]
         environment)
   #:transparent)
 (struct instance-value (class type-arguments constructor field-values)
@@ -89,6 +90,7 @@
                    protocol
                    class-fields
                    class-constructors
+                   (and constructors #t)
                    methods
                    environment))]
     [(define-methods-expr target methods _)
@@ -121,6 +123,8 @@
      (function-value parameters body environment)]
     [(case-expr scrutinee clauses else-body _)
      (eval-case scrutinee clauses else-body environment)]
+    [(new-star-expr receiver bindings _)
+     (eval-new-star receiver bindings environment)]
     [(send-expr receiver-expression selector argument-expressions _ _)
      (define receiver (eval-expr receiver-expression environment))
      (define arguments
@@ -763,6 +767,42 @@
               (eq? selector
                    (constructor-declaration-selector constructor)))
     constructor))
+
+(define (eval-new-star receiver-expression bindings environment)
+  (define receiver (eval-expr receiver-expression environment))
+  (unless (and (class-value? receiver)
+               (not (class-value-explicit-constructors? receiver)))
+    (error 'eval-aloe
+           "ineligible new*: receiver must be a class declared with fields"))
+  (define constructor (find-constructor receiver 'new))
+  (unless constructor
+    (error 'eval-aloe "ineligible new*: class has no generated new constructor"))
+  (define fields (constructor-declaration-fields constructor))
+  (define indices
+    (for/hasheq ([field (in-list fields)] [index (in-naturals)])
+      (values (field-declaration-name field) index)))
+  (define seen (make-hasheq))
+  (for ([binding (in-list bindings)])
+    (define name (construction-binding-name binding))
+    (unless (hash-has-key? indices name)
+      (error 'eval-aloe "unknown field ~a for new*" name))
+    (when (hash-has-key? seen name)
+      (error 'eval-aloe "duplicate field ~a for new*" name))
+    (hash-set! seen name #t))
+  (define missing
+    (for/list ([field (in-list fields)]
+               #:unless (hash-has-key? seen (field-declaration-name field)))
+      (field-declaration-name field)))
+  (unless (null? missing)
+    (error 'eval-aloe "missing fields for new*: ~a" missing))
+  ;; Validate the complete name set before running any value effects, then
+  ;; record source-order results at their declaration indices.
+  (define arguments (make-vector (length fields)))
+  (for ([binding (in-list bindings)])
+    (vector-set! arguments
+                 (hash-ref indices (construction-binding-name binding))
+                 (eval-expr (construction-binding-value binding) environment)))
+  (construct-instance receiver 'new (vector->list arguments)))
 
 (define (construct-instance class selector arguments)
   (define constructor (find-constructor class selector))

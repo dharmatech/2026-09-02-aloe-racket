@@ -23,6 +23,8 @@
          (struct-out fn-expr)
          (struct-out case-clause)
          (struct-out case-expr)
+         (struct-out construction-binding)
+         (struct-out new-star-expr)
          (struct-out send-expr)
          parse-datum
          parse-program
@@ -52,6 +54,8 @@
 (struct fn-expr (parameters body loc) #:transparent)
 (struct case-clause (selector payload-names body) #:transparent)
 (struct case-expr (scrutinee clauses else-body loc) #:transparent)
+(struct construction-binding (name value) #:transparent)
+(struct new-star-expr (receiver bindings loc) #:transparent)
 (struct send-expr (receiver selector arguments loc selector-loc) #:transparent)
 
 (define (expression-loc expression)
@@ -69,6 +73,7 @@
     [(define-methods-expr _ _ loc) loc]
     [(fn-expr _ _ loc) loc]
     [(case-expr _ _ _ loc) loc]
+    [(new-star-expr _ _ loc) loc]
     [(send-expr _ _ _ loc _) loc]
     [_
      (raise-argument-error
@@ -419,6 +424,26 @@
              else-body
              (syntax-location form)))
 
+(define (parse-new-star-syntax receiver-form binding-forms form)
+  ;; Validate every pair before parsing the receiver or any value.
+  (define bindings
+    (for/list ([binding-form (in-list binding-forms)])
+      (define items (syntax->list binding-form))
+      (unless (and items
+                   (= (length items) 2)
+                   (symbol? (syntax-e (car items))))
+        (raise-arguments-error
+         'parse-datum
+         "malformed new* binding; expected (name expression)"
+         "binding" (syntax->datum binding-form)))
+      items))
+  (new-star-expr
+   (parse-syntax-expression receiver-form)
+   (for/list ([binding (in-list bindings)])
+     (construction-binding (syntax-e (car binding))
+                           (parse-syntax-expression (cadr binding))))
+   (syntax-location form)))
+
 (define (desugar-let-syntax bindings-form body-form form)
   (define datum (syntax->datum form))
   (define binding-forms (syntax->list bindings-form))
@@ -688,6 +713,10 @@
           (>= (length items) 2)
           (eq? (syntax-e (cadr items)) 'case))
      (parse-case-syntax (car items) (cddr items) form)]
+    [(and items
+          (>= (length items) 2)
+          (eq? (syntax-e (cadr items)) 'new*))
+     (parse-new-star-syntax (car items) (cddr items) form)]
     [(and items (= (length items) 1))
      (raise-arguments-error
       'parse-datum

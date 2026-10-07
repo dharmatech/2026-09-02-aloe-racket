@@ -91,6 +91,10 @@
        (check-location-free (case-clause-body clause)))
      (when else-body
        (check-location-free else-body))]
+    [(new-star-expr receiver bindings _)
+     (check-location-free receiver)
+     (for ([binding (in-list bindings)])
+       (check-location-free (construction-binding-value binding)))]
     [(send-expr receiver _ arguments _ selector-loc)
      (check-false selector-loc)
      (check-location-free receiver)

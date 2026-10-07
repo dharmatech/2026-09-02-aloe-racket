@@ -47,6 +47,8 @@
      (append (list scrutinee)
              (map case-clause-body clauses)
              (if else-body (list else-body) '()))]
+    [(new-star-expr receiver bindings _)
+     (cons receiver (map construction-binding-value bindings))]
     [(send-expr receiver _ arguments _ _)
      (cons receiver arguments)]))
 
@@ -118,9 +120,9 @@
                 [else
                  (define selector (single-symbol original-text))
                  (and selector
-                      ;; `case` in literal selector position is parser syntax,
+                      ;; Reserved second-position tokens are parser syntax,
                       ;; never an ordinary Aloe send selector.
-                      (not (eq? selector 'case))
+                      (not (memq selector '(case new*)))
                       (selector-completion-site
                        expressions target original-text start mapped-span))])))))
 

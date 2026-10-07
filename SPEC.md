@@ -156,7 +156,10 @@ Constructors are not types, subtypes, or top-level bindings.
 - Constructor names are not callable without the class object: there is no
   `(Some "x")` construction form.
 
-Labeled construction (`make`) is out of scope.
+For a class declared with `(fields ...)`, positional `(receiver new arg
+...)` and fully labeled `(receiver new* (name expr) ...)` build the same
+singleton `new` constructor. The latter is syntax, not a send; see
+section 4.11. It adds no constructor or reflected message.
 
 `List` is not constructed with field-`new`. See section 6.
 
@@ -347,6 +350,46 @@ scrutinee is evaluated once. Its constructor selects one clause, whose payload
 names bind the stored payload values in declaration order. Only the selected
 body is evaluated. An optional final `else` handles every constructor not
 named by an earlier clause.
+
+### 4.11 `new*`
+
+`(receiver-expr new* (field-name value-expr) ...)` is syntax in the second
+position, where `new*` is reserved. The tail is a list of binding pairs
+in the `let` shape. Each pair is a proper list of two elements whose first
+element is the field's exact source symbol. Pair shapes are validated
+before the receiver or values are checked; a malformed pair is a syntax
+error. An empty tail is well formed.
+
+The receiver is checked by the existing expression rules. Its type must
+be a class object declared with `(fields ...)`; otherwise the form is
+ineligible `new*`. Explicit `(constructors ...)` classes are ineligible,
+even if a declared constructor is named `new`. Computed receivers with
+the eligible class-object type are allowed.
+
+Names are checked in written order. The first unknown or duplicate field
+is reported, whichever occurs first. If all written names are valid and
+unique, every absent field is reported in declaration order as missing
+field, not arity. These checks precede value checking. Positional `new`
+retains its arity rule.
+
+When the names exactly cover the fields, values are checked in field
+declaration order with the same expected types and generic inference as
+positional construction. A labeled call is accepted exactly when its
+positional counterpart in declaration order is accepted. Checking does
+not expand the form into `let`.
+
+The receiver is evaluated once, then the value expressions once each in
+written order, in the surrounding environment. The `new*` token and names
+are not evaluated. Pair names introduce no bindings. After evaluation,
+results form the existing `new` constructor's immutable payload in field
+declaration order. An empty `(fields)` class accepts an empty tail under
+the existing generic inference rules.
+
+Reader and identifier rules are unchanged. A field named `x:` uses
+`(x: expr)`; the colon is part of its ordinary source name. Elsewhere
+`new*` remains an ordinary source name. Square brackets gain no meaning.
+There are no defaults, mixed tails, or labels on other sends or explicit
+constructors. Reflection exposes the existing `new` row, not `new*`.
 
 ---
 
@@ -597,7 +640,6 @@ copies into one result String.
 - inheritance, `super` (protocols in 3.3 are not inheritance)
 - mutation, setters
 - full Julia/CLOS multimethods (receiver is not special)
-- labeled `make`
 - `begin`
 - macros
 - modules beyond `load`
@@ -617,6 +659,11 @@ Must run (after the Boids file’s definitions, or equivalent stubs):
 3. `((Point new 1.0 2.0) + (Point new 3.0 4.0))` → `(Point new 4.0 6.0)`
 4. `((List of 1 2 3) len)` → `3`
 5. The last two lines of `examples/boids.aloe`: `(demo step)` twice, each result a `Sim`
+
+Labeled Point goldens:
+
+1. `(Point new* (x 1) (y 2))` → a `(Point Int)`, equal to `(Point new 1 2)`
+2. `((Point new* (y 2) (x 1)) x)` → `1`
 
 Must be type errors:
 

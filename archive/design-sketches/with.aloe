@@ -1,0 +1,48 @@
+
+
+
+
+
+    (with-origin (scroll-row Int) (scroll-col Int) AloemacsEditor
+      (AloemacsEditor new
+        (self text) (self point) (self quit) scroll-row scroll-col
+        (self history) (self mark) (self text-rows)))
+
+
+(editor with scroll-row 0)
+
+(with editor scroll-row 0)
+
+;; We have many `with-*` methods like this one:
+
+    (with-mark (mark (Option Position)) AloemacsEditor
+      (AloemacsEditor new
+        (self text)
+        (self point)
+        (self quit)
+        (self scroll-row)
+        (self scroll-col)
+        (self history)
+        mark
+        (self text-rows)))
+
+;; Consider:
+;; Something like this:
+
+(editor with mark val)
+
+;; or
+
+(with editor mark val) ;; with as a special form?
+
+
+;; Multiple values
+
+(editor with (text ...) (point ...))
+
+;; special form:
+
+(with editor (text ...) (point ...))
+
+
+(with p0 (x 20) (y 30))
