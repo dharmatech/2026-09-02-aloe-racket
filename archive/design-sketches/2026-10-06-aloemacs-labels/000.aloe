@@ -1,0 +1,74 @@
+
+(define aloemacs-editor
+  (AloemacsSession new*
+    (buffers
+      (AloemacsBuffers new*
+        (before (List empty))
+        (current-buffer
+          (AloemacsBuffer new*
+            (editor
+              (AloemacsEditor new*
+                (text (Text from-string ""))
+                (point (Position new* (line 0) (column 0)))
+                (quit #f)
+                (scroll-row 0)
+                (scroll-col 0)
+                (history (List empty))
+                (mark
+                  (if #t
+                      (Option None)
+                      (Option Some
+                        (Position new* (line 0) (column 0)))))
+                (text-rows 0)))
+            (path
+              (if #t
+                  (Option None)
+                  (Option Some
+                    (Path new* (text "/typed-none")))))
+            (id 0)))
+        (after (List empty))))
+    (fs (Fs new* (host fs-host)))
+    (echo "")
+    (searching #f)
+    (query "")
+    (origin (Position new* (line 0) (column 0)))
+    (wrapped #f)
+    (failing #f)
+    (kill-ring (List empty))
+    (pending
+      (if #t
+          (Option None)
+          (Option Some aloemacs-global-keymap)))
+    (prompt
+      (if #t
+          (Option None)
+          (Option Some
+            (AloemacsPrompt new*
+              (label "")
+              (text "")
+              (column 0)
+              (completion-note "")
+              (completion-lines (List empty))
+              (completion-matches (List empty))
+              (completion-start 0)))))
+    (last-submission
+      (if #t
+          (Option None)
+          (Option Some "")))
+    (waiting-command
+      (if #t
+          (Option None)
+          (Option Some (AloemacsCommand FindFile))))
+    (windows
+      (AloemacsWindows new*
+        (tree
+          (AloemacsWindowTree Leaf
+            (AloemacsView new*
+              (id 0)
+              (buffer-id 0)
+              (scroll-row 0)
+              (scroll-col 0)
+              (locked #f))))
+        (selected 0)
+        (columns 0)
+        (rows 0)))))

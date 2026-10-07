@@ -1,0 +1,91 @@
+The second `let` puts the remaining multiline values immediately above the session constructor. It can use `initial-buffer` from the outer `let`:
+
+```lisp
+(define aloemacs-editor
+  (let ((initial-buffer
+          (AloemacsBuffer new*
+            (editor
+              (AloemacsEditor new*
+                (text       (Text from-string ""))
+                (point      (Position new* (line 0) (column 0)))
+                (quit       #f)
+                (scroll-row 0)
+                (scroll-col 0)
+                (history    (List empty))
+                (mark
+                  (if #t
+                      (Option None)
+                      (Option Some
+                        (Position new* (line 0) (column 0)))))
+                (text-rows  0)))
+            (path
+              (if #t
+                  (Option None)
+                  (Option Some
+                    (Path new* (text "/typed-none")))))
+            (id 0)))
+
+        (inactive-prompt
+          (if #t
+              (Option None)
+              (Option Some
+                (AloemacsPrompt new*
+                  (label              "")
+                  (text               "")
+                  (column             0)
+                  (completion-note    "")
+                  (completion-lines   (List empty))
+                  (completion-matches (List empty))
+                  (completion-start   0)))))
+
+        (initial-windows
+          (AloemacsWindows new*
+            (tree
+              (AloemacsWindowTree Leaf
+                (AloemacsView new*
+                  (id         0)
+                  (buffer-id  0)
+                  (scroll-row 0)
+                  (scroll-col 0)
+                  (locked     #f))))
+            (selected 0)
+            (columns  0)
+            (rows     0))))
+
+    (let ((initial-buffers
+            (AloemacsBuffers new*
+              (before         (List empty))
+              (current-buffer initial-buffer)
+              (after          (List empty))))
+
+          (initial-pending
+            (if #t
+                (Option None)
+                (Option Some aloemacs-global-keymap)))
+
+          (initial-last-submission
+            (if #t
+                (Option None)
+                (Option Some "")))
+
+          (initial-waiting-command
+            (if #t
+                (Option None)
+                (Option Some (AloemacsCommand FindFile)))))
+
+      (AloemacsSession new*
+        (buffers         initial-buffers)
+        (fs              (Fs new* (host fs-host)))
+        (echo            "")
+        (searching       #f)
+        (query           "")
+        (origin          (Position new* (line 0) (column 0)))
+        (wrapped         #f)
+        (failing         #f)
+        (kill-ring       (List empty))
+        (pending         initial-pending)
+        (prompt          inactive-prompt)
+        (last-submission initial-last-submission)
+        (waiting-command initial-waiting-command)
+        (windows         initial-windows)))))
+```
