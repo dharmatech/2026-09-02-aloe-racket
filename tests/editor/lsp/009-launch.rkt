@@ -287,7 +287,7 @@
       (when (directory-exists? temporary-root)
         (delete-directory/files temporary-root)))))
 
-(define (repository-snapshot)
+(define (repository-snapshot [root normalized-repository-root])
   (define (walk directory relative-directory)
     (apply
      append
@@ -297,7 +297,10 @@
                         path<?))]
                 #:unless
                 (and (equal? relative-directory (string->path "."))
-                     (equal? entry (string->path ".git"))))
+                     (equal? entry (string->path ".git")))
+                #:unless
+                (and (equal? entry (string->path "compiled"))
+                     (directory-exists? (build-path directory entry))))
        (define path (build-path directory entry))
        (define relative-path (build-path relative-directory entry))
        (cond
@@ -310,7 +313,7 @@
                       (file->bytes path)))]
          [else
           (list (list (path->string relative-path) 'other))]))))
-  (walk normalized-repository-root (string->path ".")))
+  (walk root (string->path ".")))
 
 (define (copy-environment-with-user-home user-home)
   (define environment
@@ -453,6 +456,46 @@
      (check-equal? (directory-list launch-directory) '())))
   (check-equal? (repository-snapshot) source-before)
   (check-equal? (file->bytes info-path) info-before))
+
+(test-case "repository snapshot skips compiled directories only"
+  (define root
+    (make-temporary-directory #:base-dir (string->path "/tmp")))
+  (define root-git-head #"ref: refs/heads/main\n")
+  (define nested-git-config #"[core]\n\tbare = false\n")
+  (define nested-text #"recorded nested text\n")
+  (define nested-dependency #"(skipped nested dependency)\n")
+  (define compiled-file #"regular file named compiled\n")
+  (define root-bytecode #"skipped root bytecode\n")
+  (define source #"#lang racket/base\n")
+  (define (write-fixture relative-path content)
+    (define path (build-path root relative-path))
+    (make-parent-directory* path)
+    (call-with-output-file path
+      (lambda (output)
+        (write-bytes content output))))
+  (dynamic-wind
+    void
+    (lambda ()
+      (write-fixture ".git/HEAD" root-git-head)
+      (write-fixture "a/.git/config" nested-git-config)
+      (write-fixture "a/b.txt" nested-text)
+      (write-fixture "a/compiled/y_rkt.dep" nested-dependency)
+      (write-fixture "c/compiled" compiled-file)
+      (write-fixture "compiled/x_rkt.zo" root-bytecode)
+      (write-fixture "src.rkt" source)
+      (check-equal?
+       (repository-snapshot root)
+       (list
+        (list "./a" 'directory)
+        (list "./a/.git" 'directory)
+        (list "./a/.git/config" 'file nested-git-config)
+        (list "./a/b.txt" 'file nested-text)
+        (list "./c" 'directory)
+        (list "./c/compiled" 'file compiled-file)
+        (list "./src.rkt" 'file source))))
+    (lambda ()
+      (when (directory-exists? root)
+        (delete-directory/files root)))))
 
 (test-case "production source has one narrow main submodule"
   (define source (file->string lsp-module-path))

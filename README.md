@@ -80,13 +80,14 @@ Tests refresh bytecode for the modules they load, including test-only
 modules the command above does not reach:
 
 ```sh
-TMPDIR=/tmp raco test -y tests
+TMPDIR=/tmp raco test -j 4 -y tests
 ```
 
-A narrower path works the same way:
+The command runs up to four test files at once, each in its own
+process. A narrower path works the same way:
 
 ```sh
-TMPDIR=/tmp raco test -y tests/aloemacs
+TMPDIR=/tmp raco test -j 4 -y tests/aloemacs
 ```
 
 For an optional per-file timing report of the complete suite, run:
@@ -95,8 +96,9 @@ For an optional per-file timing report of the complete suite, run:
 TMPDIR=/tmp racket bin/suite-time.rkt
 ```
 
-The report runs files serially with `raco test -y --process`, streams
-test diagnostics, and lists elapsed seconds, outcomes, and observed
+While the ordinary command runs four files at once, the report
+runs files serially with `raco test -y --process`, streams test
+diagnostics, and lists elapsed seconds, outcomes, and observed
 bytecode work, slowest first. `rebuilt` means compilation, recompilation,
 or timestamp update work was observed; `warm` means no such work was
 observed; `unknown` means observation was incomplete or unfamiliar.

@@ -50,5 +50,6 @@ specify them.
 
 Series stop: all three layers in the accepted specification are
 implemented and verified. There is no next checkpoint in this scope.
-Any further helper repair, checker change, or parallel-testing work
-requires its own exploration.
+Any further helper repair or checker change requires its own
+exploration. Parallel test jobs are chartered at
+[`../suite-jobs/`](../suite-jobs/).

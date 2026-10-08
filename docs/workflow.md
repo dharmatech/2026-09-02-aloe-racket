@@ -112,14 +112,15 @@ checkpoint says so.
 From the project root, tests are:
 
 ```sh
-TMPDIR=/tmp raco test -y <paths>
+TMPDIR=/tmp raco test -j 4 -y <paths>
 ```
 
 `<paths>` is the checkpoint's test file, then any wider suite that
-checkpoint names. `-y` is required. It rebuilds Racket bytecode for
+checkpoint names. `-j 4` runs up to four test files at once, each in
+its own process. `-y` is required. It rebuilds Racket bytecode for
 changed `.rkt` modules and for modules that depend on them. A
-checkpoint that writes `raco test` without `-y` is still run with
-`-y`.
+checkpoint that writes `raco test` without `-j` or without `-y` is
+still run with `-j 4` and `-y`.
 
 `compiled/` is gitignored. Do not commit it.
 
@@ -131,8 +132,9 @@ raco make host/racket/aloemacs-run.rkt bin/aloe
 ```
 
 before launching. `.aloe` edits do not need that rebuild. Do not put
-`raco make` on every launch. Do not add `-j` unless the checkpoint
-asks for it.
+`raco make` on every launch. Do not add `-j` to `raco make`, and do
+not change the test command's `-j 4`, unless a checkpoint asks
+otherwise.
 
 ## Checkpoint size
 
