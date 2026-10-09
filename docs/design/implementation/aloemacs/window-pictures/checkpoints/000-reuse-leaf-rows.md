@@ -63,9 +63,11 @@ skips both the repeated leaf build and the stale walk. The walk
 still happens the first time a leaf is painted at a new origin.
 
 An edit changes the history length, so every leaf of that buffer
-misses, including a leaf whose scroll stayed put. Each of those leaves walks `focus-at` from the cursor back to
-its own origin. Typing or a held Backspace deep in this file stays
-near the measured 136 ms. This slice leaves that cost in place.
+misses, including a leaf whose scroll stayed put. Each of those
+leaves walks `focus-at` from the cursor back to its own origin.
+At the top of the file that is four rebuilds, about 54 ms, already
+past a 30 ms repeat. Deep in the file the walks add the rest, near
+the measured 136 ms. This slice leaves both costs in place.
 
 ## Authority, identity, and starting point
 
@@ -117,9 +119,12 @@ bytes already in the working tree.
   `tests/aloemacs/` and `tests/parenthetical-construction/`, only
   to pass the new picture argument
 - Class-order inventories and exact `AloemacsView` field lists in
-  those same trees. Fourteen inventories name `AloemacsModeLine`
-  and then `AloemacsView`; insert `AloemacsLeafPicture` immediately
-  before `AloemacsView`. Five field lists stop at `locked`; add
+  those same trees. Fifteen inventories name `AloemacsModeLine`
+  followed by `AloemacsView`. Fourteen keep both names on one
+  line. `tests/aloemacs/completion-page-session.rkt` breaks the
+  list after `AloemacsModeLine`. Insert `AloemacsLeafPicture`
+  immediately before `AloemacsView` in all fifteen. Five field
+  lists stop at `locked`; add
   `(picture (Option AloemacsLeafPicture))` as the last field.
   These edits stay in this slice.
 
@@ -175,13 +180,14 @@ Add one last field to `AloemacsView`:
 (picture (Option AloemacsLeafPicture))
 ```
 
-Every `(AloemacsView new a b c d e)` outside `archive/` becomes
-`(AloemacsView new a b c d e (Option None))`. A named `new*` gains
-`(picture (Option None))`. A helper that builds a view adds that
-argument once, inside the helper. An expected view value gains it
-too. Existing negative arity checks stay failures: omitting the
-picture is still a type error, and an `Int` in that position is
-still a type error.
+Every `(AloemacsView new a b c d e)` in `examples/` and `tests/`
+becomes `(AloemacsView new a b c d e (Option None))`. A named
+`new*` gains `(picture (Option None))`. A helper that builds a
+view adds that argument once, inside the helper. An expected view
+value gains it too. Existing negative arity checks stay failures:
+omitting the picture is still a type error, and an `Int` in that
+position is still a type error. Constructors in `docs/` stay as
+they were written.
 
 Updates that already send `view with` keep the picture. Do not
 rebuild those views with `AloemacsView new`. A split may copy a
@@ -255,11 +261,21 @@ the repeat misses. A skipped record would leave the old picture
 in place across both keys. Dropping pictures on that skip is what
 keeps the later split from painting the pre-undo rows.
 
+Every text change except `visited` changes `((editor history) len)`.
+`visited` clears pictures on its own. Undo grouping, or a cap on
+that length, would let one typed key leave unselected windows
+showing stale rows. This slice does not add a revision counter
+for that.
+
 `frame` after `record-pictures`, with the same `columns` and
 `rows`, paints the same string as `frame` on the session from
 before that record. Later edits, undos, visits, resizes, and
 scroll changes paint the same string as a session that never
-recorded a picture.
+recorded a picture, when `record-pictures` has run since the last
+undo or edit. The runner does that before every frame. A caller
+that undoes and then edits, then sends `frame` with no record
+between them, can still paint the old rows. That caller is
+outside this slice.
 
 ### Runner
 
@@ -299,8 +315,9 @@ Line 0 begins with `"0 "` and line 800 begins with `"800 "`.
 Fit with `ensure-visible` at 220 columns and 54 rows before the
 first split. Three `split-right` sends produce four leaves. The
 three that are not selected still have `scroll-row` 0. If a split
-is refused, stop and report that. Do not force the selected leaf
-to a particular column.
+is refused, stop and report that. The byte checks leave the
+selected leaf where those splits put it. The deep timing case
+below moves it to the widest leaf before the deep fit.
 
 `page-down` moves the point and leaves every `scroll-row` alone.
 `ensure-visible` stores the new origin on the selected view.
@@ -380,12 +397,25 @@ and `frame` as one interval. Use
 `current-inexact-monotonic-milliseconds`. The median is the third
 value after sorting the five durations ascending.
 
+The first-screen samples stay on the leaf the splits selected.
+All four pictures match there, so that leaf's width is not the
+cost. For the deep four-window samples, send `other-window` until
+the selected leaf's rectangle is the widest, and do that before
+the deep `page-down`. Three `split-right` sends leave the
+original leaf selected at 27 columns. The other widths are 27,
+54, and 109. The deep fit then stores the origin on the
+109-column leaf. The other scrolls stay 0. A bar that timed the
+27-column leaf would pass while a held Down in the wide leaf is
+the slower paint.
+
 Three medians, each strictly under **30** milliseconds:
 
-- four windows, first screen
-- four windows, after the deep fit above: selected point line at
-  least 800, selected `scroll-row` greater than 700, unselected
-  scrolls still 0 before the warm record
+- four windows, first screen, selected leaf left where the splits
+  put it
+- four windows, after the wide-leaf deep fit: selected point line
+  at least 800, selected `scroll-row` greater than 700, selected
+  leaf the widest, unselected scrolls still 0 before the warm
+  record
 - one window, selected point line at least 800 after the same
   `page-down` and `ensure-visible` fit
 
