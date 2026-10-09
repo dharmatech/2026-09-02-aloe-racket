@@ -1,0 +1,19 @@
+;; Design sketch, 2026-10-08. Not language law. The editor does not load it.
+;; Same candidate as the other files in this folder.
+;;
+;; A second program with its own View, loaded beside the editor.
+;; A bare import of file.aloe would define View twice in this file.
+;; The prefix keeps the local class and renames every name file.aloe
+;; exports, including Session and Buffer, not only View.
+;; aloemacs:View is still the class defined in file.aloe.
+
+(import "file.aloe" (prefix aloemacs:))
+
+(define-class View
+  (fields
+    (title String))
+  (methods))
+
+(define ours (View new "map"))
+
+(define theirs (aloemacs:View new 0 0 0 0 #f))

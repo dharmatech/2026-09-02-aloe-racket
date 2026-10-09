@@ -1,0 +1,94 @@
+;; Design sketch, 2026-10-08. Not language law. The editor does not load it.
+;; Same candidate as main.aloe in this folder.
+;;
+;; The editor files are imported with one chosen prefix, aloemacs:.
+;; View is written aloemacs:View. That prefix is not derived from the
+;; directory, and it is not derived from file.aloe. Both editor files can
+;; share it only while they define different names.
+;; Text, Path, Option, and Fs stay bare, as they are in the real program.
+
+(import "../../lib/option.aloe")
+(import "../../lib/text.aloe")
+(import "../../lib/fs.aloe")
+(import "editor.aloe" (prefix aloemacs:))
+(import "file.aloe" (prefix aloemacs:))
+
+(define editor
+  (let ((initial-buffer
+          (aloemacs:Buffer new*
+            (editor
+              (aloemacs:Editor new*
+                (text       (Text from-string ""))
+                (point      (Position new 0 0))
+                (quit       #f)
+                (scroll-row 0)
+                (scroll-col 0)
+                (history    (List empty))
+                (mark
+                  (if #t
+                      (Option None)
+                      (Option Some (Position new 0 0))))
+                (text-rows  0)))
+            (path
+              (if #t
+                  (Option None)
+                  (Option Some (Path new "/typed-none"))))
+            (id 0)))
+
+        (inactive-prompt
+          (if #t
+              (Option None)
+              (Option Some
+                (aloemacs:Prompt new*
+                  (label              "")
+                  (text               "")
+                  (column             0)
+                  (completion-note    "")
+                  (completion-lines   (List empty))
+                  (completion-matches (List empty))
+                  (completion-start   0)))))
+
+        (initial-windows
+          (aloemacs:Windows new*
+            (tree
+              (aloemacs:WindowTree Leaf (aloemacs:View new 0 0 0 0 #f)))
+            (selected 0)
+            (columns  0)
+            (rows     0))))
+
+    (let ((initial-buffers
+            (aloemacs:Buffers new*
+              (before         (List empty))
+              (current-buffer initial-buffer)
+              (after          (List empty))))
+
+          (initial-pending
+            (if #t
+                (Option None)
+                (Option Some aloemacs:global-keymap)))
+
+          (initial-last-submission
+            (if #t
+                (Option None)
+                (Option Some "")))
+
+          (initial-waiting-command
+            (if #t
+                (Option None)
+                (Option Some (aloemacs:Command FindFile)))))
+
+      (aloemacs:Session new*
+        (buffers         initial-buffers)
+        (fs              (Fs new fs-host))
+        (echo            "")
+        (searching       #f)
+        (query           "")
+        (origin          (Position new 0 0))
+        (wrapped         #f)
+        (failing         #f)
+        (kill-ring       (List empty))
+        (pending         initial-pending)
+        (prompt          inactive-prompt)
+        (last-submission initial-last-submission)
+        (waiting-command initial-waiting-command)
+        (windows         initial-windows)))))

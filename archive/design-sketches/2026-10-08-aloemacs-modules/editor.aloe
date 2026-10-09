@@ -1,0 +1,43 @@
+;; Design sketch, 2026-10-08. Not language law. The editor does not load it.
+;;
+;; One candidate, so the names are visible:
+;; - A file exports every name it defines.
+;; - (import "path.aloe") brings those names in bare.
+;; - An imported file's own imports stay in that file.
+;; - (import "path.aloe" (prefix aloemacs:)) renames them here.
+;; - The prefix is written at the import. The folder is not a module.
+;; - lib/ is unchanged. text.aloe does not export Option.
+;;
+;; The real editor.aloe has the rest of these methods. They are omitted.
+;; Inside this file the class is Editor. Callers learn whose editor it is
+;; only from their own import.
+
+(import "../../lib/option.aloe")
+(import "../../lib/text.aloe")
+
+(define-class UndoFrame
+  (fields
+    (text Text)
+    (point Position)
+    (scroll-row Int)
+    (scroll-col Int))
+  (methods))
+
+(define safe-cell-controls
+  "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000a\u000b\u000c\u000d\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f\u007f")
+
+(define-class Editor
+  (fields
+    (text Text)
+    (point Position)
+    (quit Bool)
+    (scroll-row Int)
+    (scroll-col Int)
+    (history (List UndoFrame))
+    (mark (Option Position))
+    (text-rows Int))
+  (methods
+    (with-origin (scroll-row Int) (scroll-col Int) Editor
+      (self with
+        (scroll-row scroll-row)
+        (scroll-col scroll-col)))))

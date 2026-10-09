@@ -1,0 +1,66 @@
+;; Design sketch, 2026-10-08. Not language law. The editor does not load it.
+;; Same candidate as editor.aloe in this folder.
+;;
+;; This file is where View, Session, Buffer, and the window classes live
+;; today. Under "one file is one module" their module is file.aloe, even
+;; though the folder is examples/aloemacs/.
+;;
+;; Prompt, Buffers, Windows, Command, Keymap, Binding, and almost every
+;; method are omitted. The names below are the prefixes removed and nothing
+;; else. global-keymap stands in for the keymap tables.
+
+(import "../../lib/option.aloe")
+(import "../../lib/text.aloe")
+(import "../../lib/fs.aloe")
+(import "editor.aloe")
+
+(define-class Buffer
+  (fields
+    (editor Editor)
+    (path (Option Path))
+    (id Int))
+  (methods
+    (with-path (path Path) Buffer
+      (self with (path (Option Some path))))))
+
+(define-class View
+  (fields
+    (id Int)
+    (buffer-id Int)
+    (scroll-row Int)
+    (scroll-col Int)
+    (locked Bool))
+  (methods))
+
+(define-class WindowTree
+  (constructors
+    (Leaf (fields (view View)))
+    (Below (fields (top WindowTree) (bottom WindowTree)))
+    (Right (fields (left WindowTree) (right WindowTree))))
+  (methods
+    (leaves () (List View)
+      (self case
+        (Leaf (view) (List of view))
+        (else (List empty))))))
+
+(define-class (Session H)
+  (fields
+    (buffers Buffers)
+    (fs (Fs H))
+    (echo String)
+    (searching Bool)
+    (query String)
+    (origin Position)
+    (wrapped Bool)
+    (failing Bool)
+    (kill-ring (List String))
+    (pending (Option (Keymap Binding)))
+    (prompt (Option Prompt))
+    (last-submission (Option String))
+    (waiting-command (Option Command))
+    (windows Windows))
+  (methods
+    (editor () Editor
+      ((self current-buffer) editor))))
+
+(define global-keymap (Keymap empty))

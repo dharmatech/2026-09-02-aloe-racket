@@ -1,0 +1,93 @@
+;; Design sketch, 2026-10-08. Not language law. The editor does not load it.
+;; Same candidate as the other files in this folder.
+;;
+;; Bare imports. Nothing in this file collides, so View is just View.
+;; The folder name aloemacs appears nowhere in the program.
+;; main.aloe has to import every file it names, because file.aloe does not
+;; pass Editor, Text, Option, Path, or Fs through.
+
+(import "../../lib/option.aloe")
+(import "../../lib/text.aloe")
+(import "../../lib/fs.aloe")
+(import "editor.aloe")
+(import "file.aloe")
+
+(define editor
+  (let ((initial-buffer
+          (Buffer new*
+            (editor
+              (Editor new*
+                (text       (Text from-string ""))
+                (point      (Position new 0 0))
+                (quit       #f)
+                (scroll-row 0)
+                (scroll-col 0)
+                (history    (List empty))
+                (mark
+                  (if #t
+                      (Option None)
+                      (Option Some (Position new 0 0))))
+                (text-rows  0)))
+            (path
+              (if #t
+                  (Option None)
+                  (Option Some (Path new "/typed-none"))))
+            (id 0)))
+
+        (inactive-prompt
+          (if #t
+              (Option None)
+              (Option Some
+                (Prompt new*
+                  (label              "")
+                  (text               "")
+                  (column             0)
+                  (completion-note    "")
+                  (completion-lines   (List empty))
+                  (completion-matches (List empty))
+                  (completion-start   0)))))
+
+        (initial-windows
+          (Windows new*
+            (tree
+              (WindowTree Leaf (View new 0 0 0 0 #f)))
+            (selected 0)
+            (columns  0)
+            (rows     0))))
+
+    (let ((initial-buffers
+            (Buffers new*
+              (before         (List empty))
+              (current-buffer initial-buffer)
+              (after          (List empty))))
+
+          (initial-pending
+            (if #t
+                (Option None)
+                (Option Some global-keymap)))
+
+          (initial-last-submission
+            (if #t
+                (Option None)
+                (Option Some "")))
+
+          (initial-waiting-command
+            (if #t
+                (Option None)
+                (Option Some (Command FindFile)))))
+
+      (Session new*
+        (buffers         initial-buffers)
+        (fs              (Fs new fs-host))
+        (echo            "")
+        (searching       #f)
+        (query           "")
+        (origin          (Position new 0 0))
+        (wrapped         #f)
+        (failing         #f)
+        (kill-ring       (List empty))
+        (pending         initial-pending)
+        (prompt          inactive-prompt)
+        (last-submission initial-last-submission)
+        (waiting-command initial-waiting-command)
+        (windows         initial-windows)))))
