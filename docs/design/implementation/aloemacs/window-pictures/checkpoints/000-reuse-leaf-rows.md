@@ -110,6 +110,12 @@ bytes already in the working tree.
 - Every other constructor or expected value of `AloemacsView` in
   `tests/aloemacs/` and `tests/parenthetical-construction/`, only
   to pass the new picture argument
+- Class-order inventories and exact `AloemacsView` field lists in
+  those same trees. Fourteen inventories name `AloemacsModeLine`
+  and then `AloemacsView`; insert `AloemacsLeafPicture` immediately
+  before `AloemacsView`. Five field lists stop at `locked`; add
+  `(picture (Option AloemacsLeafPicture))` as the last field.
+  These edits stay in this slice.
 
 ### Must leave untouched
 
@@ -273,18 +279,28 @@ three that are not selected still have `scroll-row` 0. If a split
 is refused, stop and report that. Do not force the selected leaf
 to a particular column.
 
+`page-down` moves the point and leaves every `scroll-row` alone.
+`ensure-visible` stores the new origin on the selected view.
+
 ### Same bytes
 
 At the first screen, and again after `page-down` until the selected
-point line is at least 800:
+point line is at least 800, then `ensure-visible` at 220 columns
+and 54 rows:
 
 - The unselected leaves still have `scroll-row` 0. The selected
-  leaf's `scroll-row` at the deep position is greater than 700.
+  leaf's `scroll-row` after that fit is greater than 700.
 - `(session frame 220 54)` equals
   `((session record-pictures 220 54) frame 220 54)`.
 - One `move-down` on the session that has not recorded, then
   `frame`, equals `record-pictures` and `frame` after the same
   `move-down` on the recorded session.
+- On the deep fitted session, one `move-down` then
+  `ensure-visible` on the session that has not recorded, then
+  `frame`, equals `record-pictures` and `frame` after the same
+  `move-down` and `ensure-visible` on the recorded session. The
+  selected `scroll-row` has increased. The unselected scrolls are
+  still 0.
 
 Then, on the deep recorded session: `insert` of `"q"`,
 `record-pictures`, and `frame`. The string differs from the
@@ -305,30 +321,45 @@ after it.
 
 ### Timing bar
 
-Prepare `record-pictures` and `frame` with `driver-prepare!`
-before the samples, as the runner prepares them. Each timed sample
-is only those two prepared calls. `move-down` is prepared too and
-runs outside the timer. Typechecking stays outside the timer.
+Prepare `ensure-visible`, `record-pictures`, and `frame` with
+`driver-prepare!` before the samples, as the runner prepares them.
+Each timed sample is only those three prepared calls, in that
+order. `move-down` is prepared too and runs outside the timer.
+Typechecking stays outside the timer.
 
-Warm once with an untimed `record-pictures` at the position under
-test. Then five samples. Each sample sends one `move-down`, then
-times `record-pictures` and `frame` as one interval. Use
+`move-down` changes the point and leaves `scroll-row` alone. The
+following `ensure-visible` stores the origin on the selected view.
+When that origin changes, the selected picture misses and
+`record-pictures` rebuilds that leaf. The other leaves still
+match. A sample that skips the fit stays on four cache hits even
+at line 800.
+
+Warm once with an untimed `ensure-visible` and `record-pictures`
+at the position under test. Then five samples. Each sample sends
+one `move-down`, then times `ensure-visible`, `record-pictures`,
+and `frame` as one interval. Use
 `current-inexact-monotonic-milliseconds`. The median is the third
 value after sorting the five durations ascending.
 
 Three medians, each strictly under **30** milliseconds:
 
 - four windows, first screen
-- four windows, selected point line at least 800, unselected
-  scrolls still 0 before the samples
-- one window, selected point line at least 800
+- four windows, after the deep fit above: selected point line at
+  least 800, selected `scroll-row` greater than 700, unselected
+  scrolls still 0 before the warm record
+- one window, selected point line at least 800 after the same
+  `page-down` and `ensure-visible` fit
 
 On failure, the Rackunit message includes the median in
 milliseconds. `printf` all three medians when they pass.
 
-The first record at a new origin is outside the timer. It may cost
-what a cold frame costs today. The timed samples are the paint a
-held key repeats.
+The warm record is the first paint at that origin. It may cost
+what a cold frame costs today, including the stale walk the first
+time an unselected leaf is pictured there. The timed samples are
+the paint a held key repeats. On the first screen the fit leaves
+every scroll at 0, so all four pictures match. Once the selected
+window is scrolling, each sample rebuilds that one leaf and reuses
+the other three.
 
 If a four-window median is 30 ms or more, stop and report all three
 numbers. Do not raise the bar. Do not change `safe-cells`, List, or
