@@ -51,7 +51,7 @@
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (AloemacsWindows new
-       (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f))
+       (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f (Option None)))
        0 0 0)))
 
 (define session-fields

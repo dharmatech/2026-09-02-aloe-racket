@@ -49,6 +49,10 @@
          (aloemacs-editor ensure-visible ,columns ,rows)))
      (driver-prepare!
       state
+      `(define aloemacs-editor
+         (aloemacs-editor record-pictures ,columns ,rows)))
+     (driver-prepare!
+      state
       `(term write
          (aloemacs-editor frame ,columns ,rows)))))
   (define handle-key
@@ -60,19 +64,21 @@
   (let loop ([previous-columns #f]
              [previous-rows #f]
              [previous-fit #f]
+             [previous-record #f]
              [previous-frame #f])
     (define columns (read-columns))
     (define rows (read-rows))
-    (define-values (fit frame)
+    (define-values (fit record frame)
       (if (and (equal? columns previous-columns)
                (equal? rows previous-rows))
-          (values previous-fit previous-frame)
+          (values previous-fit previous-record previous-frame)
           (prepare-viewport columns rows)))
     (fit)
+    (record)
     (frame)
     (handle-key)
     (unless (quit?)
-      (loop columns rows fit frame))))
+      (loop columns rows fit record frame))))
 
 (define (run-aloemacs-with-term term [path #f])
   (define fs-host (make-fs-receiver))

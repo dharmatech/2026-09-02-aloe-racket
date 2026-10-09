@@ -68,7 +68,7 @@
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
 (define (leaf id [bid 41] [row 0] [col 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,row ,col ,lock)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,row ,col ,lock (Option None))))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (config tree selected [columns 9] [rows 6])
@@ -170,7 +170,7 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsCommand))

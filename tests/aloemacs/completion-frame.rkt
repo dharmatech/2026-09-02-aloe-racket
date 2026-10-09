@@ -31,7 +31,7 @@
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h))

@@ -71,7 +71,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 ;; Expectations only construct and read values; they do not invoke lookup,
 ;; selected-buffers, or select-buffer-submitted to obtain an expected focus.
@@ -90,7 +90,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows))))
 (define (replace-current s new-editor)
   `(AloemacsBuffers new ((,s buffers) before)

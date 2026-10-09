@@ -3,13 +3,12 @@
 Local performance repair. Not Aloe law. Not Gel. Not a global
 checkpoint. The bytes on screen stay the bytes `frame` paints today.
 
-Standalone checkpoint from the aloemacs high-level discussion. **No
-charter. No spec.md. No checkpoint manager.** If the implementer
-proves the slice is too big, stop and promote it to a charter.
+**Status: Implemented.** Standalone checkpoint. **No charter. No
+spec.md. No checkpoint manager.**
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-reuse-leaf-rows.md`](checkpoints/000-reuse-leaf-rows.md) | The implementer's whole assignment |
+| [`checkpoints/000-reuse-leaf-rows.md`](checkpoints/000-reuse-leaf-rows.md) | **Implemented.** Reuse unchanged leaf rows |
 
 Parent map: [`../README.md`](../README.md).
 
@@ -24,6 +23,7 @@ behind the bar is
 `archive/design-sketches/2026-10-09-aloemacs-multi-window-scroll/profile-investigation-grok.md`.
 That report is not part of the assignment.
 
-Hand this checkpoint to an implementer:
-
-> Read `docs/workflow.md`. You are the implementer. Your assignment is `docs/design/implementation/aloemacs/window-pictures/checkpoints/000-reuse-leaf-rows.md`. If you have been told to read that file, it is the whole assignment.
+Reported verification: `tests/aloemacs/window-pictures.rkt`, 23 checks.
+At 220×54 the medians were 2.47 ms for four windows on the first
+screen, 23.62 ms for four windows with the wide leaf past line 800,
+and 14.89 ms for one window at that depth. Each is under the 30 ms bar.

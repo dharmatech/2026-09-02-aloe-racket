@@ -276,13 +276,42 @@
     (plain () String
       "\u001b[0m")))
 
+;; A leaf's finished rows and every input that built them.
+(define-class AloemacsLeafPicture
+  (fields
+    (buffer-id Int)
+    (history-length Int)
+    (scroll-row Int)
+    (scroll-col Int)
+    (columns Int)
+    (rows Int)
+    (name String)
+    (selected Bool)
+    (lines (List String)))
+  (methods
+    (matches? (buffer-id Int) (history-length Int)
+              (scroll-row Int) (scroll-col Int)
+              (columns Int) (rows Int)
+              (name String) (selected Bool) Bool
+      ((List of
+         ((self buffer-id) = buffer-id)
+         ((self history-length) = history-length)
+         ((self scroll-row) = scroll-row)
+         ((self scroll-col) = scroll-col)
+         ((self columns) = columns)
+         ((self rows) = rows)
+         ((self name) = name)
+         (if selected (self selected) (if (self selected) #f #t)))
+       fold #t (fn (all? same?) (if all? same? #f))))))
+
 (define-class AloemacsView
   (fields
     (id Int)
     (buffer-id Int)
     (scroll-row Int)
     (scroll-col Int)
-    (locked Bool))
+    (locked Bool)
+    (picture (Option AloemacsLeafPicture)))
   (methods))
 
 (define-class AloemacsWindowTree
@@ -359,6 +388,34 @@
     (any-locked? () Bool
       ((self leaves) fold #f
         (fn (locked? view) (if locked? #t (view locked)))))
+
+    (pictured? () Bool
+      ((self leaves) fold #f
+        (fn (pictured? view) (if pictured? #t ((view picture) present?)))))
+
+    (without-pictures () AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (AloemacsWindowTree Leaf (view with (picture (Option None)))))
+        (Below (top bottom)
+          (AloemacsWindowTree Below (top without-pictures) (bottom without-pictures)))
+        (Right (left right)
+          (AloemacsWindowTree Right (left without-pictures) (right without-pictures)))))
+
+    (without-pictures-of (buffer-id Int) AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((view buffer-id) = buffer-id)
+              (AloemacsWindowTree Leaf (view with (picture (Option None))))
+              self))
+        (Below (top bottom)
+          (AloemacsWindowTree Below
+            (top without-pictures-of buffer-id)
+            (bottom without-pictures-of buffer-id)))
+        (Right (left right)
+          (AloemacsWindowTree Right
+            (left without-pictures-of buffer-id)
+            (right without-pictures-of buffer-id)))))
 
     ;; Find the immediate sibling, not the sibling of a containing subtree.
     (sibling-for (id Int) (Option AloemacsWindowTree)
@@ -588,27 +645,84 @@
           ((self blank-rows rect (remaining - 1)) cons (rect pad-row ""))))
 
     ;; A tall leaf's last row is its bar, lighter on the selected view.
+    (built-rows (view AloemacsView) (buffers AloemacsBuffers)
+                (rect AloemacsWindowRect) (selected Int) (List String)
+      ;; find-id returns a local focused collection; never install it.
+      ((buffers find-id (view buffer-id)) case
+        (None () (self blank-rows rect (rect rows)))
+        (Some (focused)
+          (let ((buffer (focused current-buffer)))
+            (let ((editor (buffer editor)))
+              (let ((lines
+                      ((editor frame-rows (rect columns) (rect text-rows)
+                         (view scroll-row) (view scroll-col))
+                       map (fn (line) (rect pad-row line)))))
+                (if ((rect rows) >= 2)
+                    ((lines reverse) fold
+                      (List of ((AloemacsModeLine new) bar
+                        (editor safe-cells
+                          ((AloemacsModeLine new) row (buffer name) (rect columns)))
+                        ((view id) = selected)))
+                      (fn (rows line) (rows cons line)))
+                    lines)))))))
+
+    ;; The recorded rows, while every input that built them is unchanged.
+    (reused-rows (view AloemacsView) (buffers AloemacsBuffers)
+                 (rect AloemacsWindowRect) (selected Int) (Option (List String))
+      ((view picture) case
+        (None () (Option None))
+        (Some (picture)
+          ((buffers find-id (view buffer-id)) case
+            (None () (Option None))
+            (Some (focused)
+              (let ((buffer (focused current-buffer)))
+                (if (picture matches? (view buffer-id)
+                      (((buffer editor) history) len)
+                      (view scroll-row) (view scroll-col)
+                      (rect columns) (rect rows)
+                      (buffer name) ((view id) = selected))
+                    (Option Some (picture lines))
+                    (Option None))))))))
+
+    ;; A missing buffer gets no picture.
+    (picture-for (view AloemacsView) (buffers AloemacsBuffers)
+                 (rect AloemacsWindowRect) (selected Int) (Option AloemacsLeafPicture)
+      ((buffers find-id (view buffer-id)) case
+        (None () (Option None))
+        (Some (focused)
+          (let ((buffer (focused current-buffer)))
+            (Option Some
+              (AloemacsLeafPicture new
+                (view buffer-id) (((buffer editor) history) len)
+                (view scroll-row) (view scroll-col)
+                (rect columns) (rect rows)
+                (buffer name) ((view id) = selected)
+                (self built-rows view buffers rect selected)))))))
+
+    ;; Walk the leaves as frame-rows does. Keep each matching picture.
+    (with-pictures (buffers AloemacsBuffers) (rect AloemacsWindowRect) (selected Int)
+                   AloemacsWindowTree
+      (self case
+        (Leaf (view)
+          (if ((self reused-rows view buffers rect selected) present?)
+              self
+              (AloemacsWindowTree Leaf
+                (view with (picture (self picture-for view buffers rect selected))))))
+        (Below (top bottom)
+          (AloemacsWindowTree Below
+            (top with-pictures buffers (rect top) selected)
+            (bottom with-pictures buffers (rect bottom) selected)))
+        (Right (left right)
+          (AloemacsWindowTree Right
+            (left with-pictures buffers (rect left) selected)
+            (right with-pictures buffers (rect right) selected)))))
+
     (frame-rows (buffers AloemacsBuffers) (rect AloemacsWindowRect) (selected Int) (List String)
       (self case
         (Leaf (view)
-          ;; find-id returns a local focused collection; never install it.
-          ((buffers find-id (view buffer-id)) case
-            (None () (self blank-rows rect (rect rows)))
-            (Some (focused)
-              (let ((buffer (focused current-buffer)))
-                (let ((editor (buffer editor)))
-                  (let ((lines
-                          ((editor frame-rows (rect columns) (rect text-rows)
-                             (view scroll-row) (view scroll-col))
-                           map (fn (line) (rect pad-row line)))))
-                    (if ((rect rows) >= 2)
-                        ((lines reverse) fold
-                          (List of ((AloemacsModeLine new) bar
-                            (editor safe-cells
-                              ((AloemacsModeLine new) row (buffer name) (rect columns)))
-                            ((view id) = selected)))
-                          (fn (rows line) (rows cons line)))
-                        lines)))))))
+          ((self reused-rows view buffers rect selected) case
+            (Some (lines) lines)
+            (None () (self built-rows view buffers rect selected))))
         (Below (top bottom)
           (((top frame-rows buffers (rect top) selected) reverse)
            fold
@@ -1486,7 +1600,11 @@
           (pending (Option None))
           (prompt (Option None))
           (waiting-command (Option None))
-          (windows ((self windows) with-buffer buffer)))))
+          (windows
+            ;; The new editor keeps this buffer id and can keep history length 0.
+            (let ((windows ((self windows) with-buffer buffer)))
+              (windows with
+                (tree ((windows tree) without-pictures-of (buffer id)))))))))
 
     (text () Text
       ((self editor) text))
@@ -1685,6 +1803,25 @@
                 (self with-editor
                   ((self editor) ensure-visible (rect columns) (rect text-rows)))))
           (session with (windows ((session windows) with-size columns rows))))))
+
+    ;; Record each leaf's rows at the root frame paints. One view, or a root
+    ;; with no positive layout, records nothing and drops every picture.
+    (record-pictures (columns Int) (rows Int) (AloemacsSession H)
+      (let ((windows (self windows)) (root (self root-rect columns rows)))
+        (if (if ((windows tree) single?) #f ((windows tree) positive-layout? root))
+            (self with
+              (windows
+                (windows with
+                  (tree
+                    ((windows tree) with-pictures (self buffers) root
+                      (windows selected))))))
+            (self without-pictures))))
+
+    (without-pictures () (AloemacsSession H)
+      (let ((windows (self windows)))
+        (if ((windows tree) pictured?)
+            (self with (windows (windows with (tree ((windows tree) without-pictures)))))
+            self)))
 
     (file-contents (path Path) (Option String)
       (((self fs) inspect path) case

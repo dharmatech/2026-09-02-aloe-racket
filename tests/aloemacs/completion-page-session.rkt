@@ -107,7 +107,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 ;; Only constructors and reads appear in expected reconstructions.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -125,7 +125,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows)))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
@@ -191,7 +191,7 @@
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine
-      AloemacsView AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
+      AloemacsLeafPicture AloemacsView AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsPrompt))
     '(fields (label String) (text String) (column Int) (completion-note String)
@@ -424,10 +424,10 @@
     #:pending '(Option Some aloemacs-ctrl-x-keymap)
     #:windows '(AloemacsWindows new
        (AloemacsWindowTree Right
-         (AloemacsWindowTree Leaf (AloemacsView new 7 1 2 3 #t))
+         (AloemacsWindowTree Leaf (AloemacsView new 7 1 2 3 #t (Option None)))
          (AloemacsWindowTree Below
-           (AloemacsWindowTree Leaf (AloemacsView new 9 1 0 1 #f))
-           (AloemacsWindowTree Leaf (AloemacsView new 11 0 1 0 #t)))) 7 43 13)))
+           (AloemacsWindowTree Leaf (AloemacsView new 9 1 0 1 #f (Option None)))
+           (AloemacsWindowTree Leaf (AloemacsView new 11 0 1 0 #t (Option None))))) 7 43 13)))
   (define original (ev st 's))
   (def! st 'middle '(s handle-key "page-down"))
   (expect-page st 'middle 's 7 middle-page)

@@ -70,7 +70,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 
 ;; Expectations explicitly rebuild all fields. They never invoke the selection
@@ -85,7 +85,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ((,s windows) columns) ((,s windows) rows)))))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
@@ -103,7 +103,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows))))
 (define (with-editor s editor #:columns [columns `((,s windows) columns)]
                      #:rows [rows `((,s windows) rows)])

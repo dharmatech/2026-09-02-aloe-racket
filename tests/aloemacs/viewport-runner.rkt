@@ -105,6 +105,7 @@
     (regexp-match-positions* (regexp (regexp-quote phrase)) source))
   (for ([phrase (in-list '("(term columns)" "(term rows)"
                           "aloemacs-editor ensure-visible"
+                          "aloemacs-editor record-pictures"
                           "aloemacs-editor frame"
                           "(term write" "(term read-key)"))])
     (check-equal? (length (positions phrase)) 1 phrase))
@@ -112,6 +113,7 @@
   (check-true (< (start "(term columns)")
                  (start "(term rows)")
                  (start "aloemacs-editor ensure-visible")
+                 (start "aloemacs-editor record-pictures")
                  (start "(term write")
                  (start "aloemacs-editor frame")
                  (start "(term read-key)"))))

@@ -46,7 +46,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 
 ;; Independent full-value reconstruction; no production rebuild/dispatcher is
@@ -67,7 +67,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows))))
 (define (same-session st actual expected)
   (def! st 'comparison-actual actual)
@@ -138,7 +138,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0)))))
 
 (test-case "session comparison evaluates each side once and preserves fixture bindings"
@@ -174,7 +174,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (class name) (findf (lambda (d) (equal? (cadr d) name)) classes))

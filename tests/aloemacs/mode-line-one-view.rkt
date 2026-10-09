@@ -171,7 +171,7 @@
     (s fs) "saved" #t "query" (Position new 1 2) #t #t (List of "ring" "older")
     (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
     (Option Some "prior") (Option Some (AloemacsCommand FindFile))
-    (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 0 0 #t)) 7 80 24)))
+    (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 0 0 #t (Option None))) 7 80 24)))
   (define before (ev st 'rich))
   (def! st 'fit '(rich ensure-visible 3 4))
   (check-not-exn (lambda () (ev st '(check fit
@@ -183,7 +183,7 @@
       (rich fs) "saved" #t "query" (Position new 1 2) #t #t (List of "ring" "older")
       (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
       (Option Some "prior") (Option Some (AloemacsCommand FindFile))
-      (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 2 4 #t)) 7 3 4))))))
+      (AloemacsWindows new (AloemacsWindowTree Leaf (AloemacsView new 7 0 2 4 #t (Option None))) 7 3 4))))))
   (check-equal? (ev st 'rich) before)
   (paint st 'fit 3 4 (frame "\r\nd-l" 2 3 3 4 "/cwd/a" "A:abc" 4 3) calls)
   (define fitted (ev st 'fit))
@@ -199,8 +199,8 @@
      (s kill-ring) (s pending) (s prompt) (s last-submission) (s waiting-command)
      (AloemacsWindows new
        (AloemacsWindowTree Right
-         (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #t))
-         (AloemacsWindowTree Leaf (AloemacsView new 1 0 99 3 #t))) 0 12 4)))
+         (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #t (Option None)))
+         (AloemacsWindowTree Leaf (AloemacsView new 1 0 99 3 #t (Option None)))) 0 12 4)))
   (def! st 'small '(s ensure-visible 2 4))
   (check-equal? (ev st '((small editor) text-rows)) 2)
   (check-equal? (ev st '((small editor) scroll-row)) 2)

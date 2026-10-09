@@ -51,7 +51,7 @@
 ;; concrete visit-order list, independently of the product's recursive sends.
 (define views '((71 9 7 11 #t) (3 41 5 6 #f) (55 9 2 3 #t)
                 (8 27 9 13 #t) (24 9 4 8 #f)))
-(define (leaf v) `(AloemacsWindowTree Leaf (AloemacsView new ,@v)))
+(define (leaf v) `(AloemacsWindowTree Leaf (AloemacsView new ,@v (Option None))))
 (define (tree vs)
   `(AloemacsWindowTree Below
      (AloemacsWindowTree Right ,(leaf (list-ref vs 0))
@@ -294,7 +294,7 @@
         `(((actual buffers) find-id 9) case
            (None () ,(fresh "impossible")) (Some (buffers) ((buffers current-buffer) editor))) ed)
       (same st `(((actual windows) tree) find-view ,id)
-        `(Option Some (AloemacsView new ,@(findf (lambda (v) (= (car v) id)) views))))))
+        `(Option Some (AloemacsView new ,@(findf (lambda (v) (= (car v) id)) views) (Option None))))))
   (same-session st '(source with-editor (a editor))
     (rebuild 'source #:buffers (replacement 'source '(a editor))
       #:windows (config (selected-views views 55 9 1 1))))
@@ -500,7 +500,7 @@
       (config (selected-views survivor-views 55 42 0 0))))
   (for ([id '(71 24)])
     (same st `(((actual windows) tree) find-view ,id)
-      `(Option Some (AloemacsView new ,id 27 1 2 ,(if (= id 71) #t #f)))))
+      `(Option Some (AloemacsView new ,id 27 1 2 ,(if (= id 71) #t #f) (Option None)))))
   (check-equal? (ev st 'source) original)
   (assert-effects calls '()))
 
@@ -600,11 +600,11 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry
-         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))
+         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
            (AloemacsWindowTree (constructors (Leaf (fields (view AloemacsView)))
              (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
              (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree)))))

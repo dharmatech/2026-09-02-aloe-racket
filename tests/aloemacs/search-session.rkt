@@ -55,7 +55,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 
 (define (define! state name expression)
@@ -300,7 +300,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ((base windows) columns) ((base windows) rows)))))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a " #:name "untitled" #:width 12))

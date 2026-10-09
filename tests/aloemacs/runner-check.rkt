@@ -213,9 +213,9 @@
   (check-true (< median 20)
               (format "Down-cycle median: ~a ms (must be under 20 ms)" median))
   (printf "Down-cycle median: ~a ms\n" median)
-  (check-equal? (unbox count) 6))
+  (check-equal? (unbox count) 7))
 
-(test-case "resize A to B to A prepares fit and frame for each current pair"
+(test-case "resize A to B to A prepares fit, record, and frame for each current pair"
   (define fixture
     (make-scripted-term '((20 8) (21 8) (20 8)) '("down" "down" "escape")))
   (define count (box 0))
@@ -223,6 +223,6 @@
     (run-aloemacs-with-hosts
      (scripted-term-receiver fixture)
      (make-fs-double "/cwd" (hash "/cwd" 'directory))))
-  (check-equal? (unbox count) 10)
+  (check-equal? (unbox count) 13)
   (check-equal? (unbox (scripted-term-remaining fixture)) spare-keys)
   (check-equal? (unbox (scripted-term-size-calls fixture)) 6))

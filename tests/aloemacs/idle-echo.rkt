@@ -121,7 +121,7 @@
        #f 0 0 (List empty) (Option None) 17)
      (Option Some (Path new ,name)) ,id))
 (define (leaf id buffer-id)
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,buffer-id 0 0 #f)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,buffer-id 0 0 #f (Option None))))
 (define (stacked! st selected)
   (def! st 'top (buffer 41 "top\nmore" "/top"))
   (def! st 'bottom (buffer 9 "bottom\nmore" "/bottom"))

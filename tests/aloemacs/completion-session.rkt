@@ -101,7 +101,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 ;; Only constructors and reads appear in expected reconstructions.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -119,7 +119,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows)))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
@@ -178,7 +178,7 @@
   (define (declaration name) (findf (lambda (d) (equal? (cadr d) name)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (check-equal? (caddr (declaration '(AloemacsSession H)))
@@ -583,10 +583,10 @@
   (def! st 'source (rebuild 'source #:windows
     '(AloemacsWindows new
        (AloemacsWindowTree Right
-         (AloemacsWindowTree Leaf (AloemacsView new 7 1 2 3 #t))
+         (AloemacsWindowTree Leaf (AloemacsView new 7 1 2 3 #t (Option None)))
          (AloemacsWindowTree Below
-           (AloemacsWindowTree Leaf (AloemacsView new 9 1 0 1 #f))
-           (AloemacsWindowTree Leaf (AloemacsView new 11 0 1 0 #t))))
+           (AloemacsWindowTree Leaf (AloemacsView new 9 1 0 1 #f (Option None)))
+           (AloemacsWindowTree Leaf (AloemacsView new 11 0 1 0 #t (Option None)))))
        7 43 13)))
   (define original (ev st 'source))
   (def! st 'started '(source start-command-prompt (AloemacsCommand SaveAs) "Find file: "))
@@ -720,8 +720,8 @@
   (def! st 'split (rebuild 's #:windows
     '(AloemacsWindows new
        (AloemacsWindowTree Right
-         (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f))
-         (AloemacsWindowTree Leaf (AloemacsView new 1 0 0 0 #t))) 0 9 4)))
+         (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f (Option None)))
+         (AloemacsWindowTree Leaf (AloemacsView new 1 0 0 0 #t (Option None)))) 0 9 4)))
   (def! st 'split `(split with-active-prompt ,(p "x" 0 " [No match]")))
   (check-equal? (ev st '(split frame 9 4))
     "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1HFind file\e[4;9H\e[?25h")

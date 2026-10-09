@@ -107,11 +107,10 @@ remains. **Idle echo** is ready to implement at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. When the
 selected window paints a mode line, an idle echo row is blank. A
 selected window with no mode line still shows the name there.
-Save, search, and prompt messages stay. **Window pictures** is ready
-to implement at [`window-pictures/`](window-pictures/),
-aloemacs-window-pictures 000. A multi-window frame reuses a leaf's
-recorded rows when that leaf's inputs are unchanged. One window
-still uses the editor frame. **Completion** has an accepted spec at
+Save, search, and prompt messages stay. **Window pictures** is implemented at
+[`window-pictures/`](window-pictures/), aloemacs-window-pictures 000.
+A multi-window frame reuses a leaf's recorded rows when that leaf's
+inputs are unchanged. One window still uses the editor frame. **Completion** has an accepted spec at
 [`completion/`](completion/). Tab completes find-file and save-as;
 recursive scans belong to the nongeneric `AloemacsCompletionScan`,
 while Fs queries and results stay on `(AloemacsSession H)`.
@@ -167,7 +166,7 @@ Locked frame-cost repair. A standalone checkpoint, not a new layer.
 
 | Identity | Path | This conversation |
 |---|---|---|
-| window-pictures | [`window-pictures/`](window-pictures/) | **Ready to implement.** aloemacs-window-pictures 000 |
+| window-pictures | [`window-pictures/`](window-pictures/) | **Implemented.** aloemacs-window-pictures 000 |
 
 ## Not in this map
 

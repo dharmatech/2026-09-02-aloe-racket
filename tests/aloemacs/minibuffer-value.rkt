@@ -82,7 +82,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 
 ;; All expectations rebuild independently of production session helpers.
@@ -101,7 +101,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ,columns ,rows))))
 (define (replace-current s editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
@@ -164,7 +164,7 @@
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define prompt (findf (lambda (d) (eq? (cadr d) 'AloemacsPrompt)) classes))
@@ -334,7 +334,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
   (check-false (ev startup '((aloemacs-editor prompt) present?)))
   (check-false (ev startup '((aloemacs-editor last-submission) present?)))

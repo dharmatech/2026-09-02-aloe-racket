@@ -63,7 +63,7 @@
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
 (define (windows id row col [columns 80] [rows 24] [view 17] [locked #t])
   `(AloemacsWindows new
-     (AloemacsWindowTree Leaf (AloemacsView new ,view ,id ,row ,col ,locked))
+     (AloemacsWindowTree Leaf (AloemacsView new ,view ,id ,row ,col ,locked (Option None)))
      ,view ,columns ,rows))
 ;; Independent raw constructors: these expectations never call a window helper
 ;; or the session transition being tested.
@@ -130,11 +130,11 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry
-         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))
+         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
            (AloemacsWindowTree (constructors
              (Leaf (fields (view AloemacsView)))
              (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
@@ -167,7 +167,7 @@
 (test-case "pure mixed recursive tree traversal, lookup and concrete types"
   (define st (loaded))
   (for ([name '(v31 v4 v19 v2)] [id '(31 4 19 2)])
-    (def! st name `(AloemacsView new ,id 9 3 5 #t)))
+    (def! st name `(AloemacsView new ,id 9 3 5 #t (Option None))))
   (def! st 'tree '(AloemacsWindowTree Below
     (AloemacsWindowTree Right (AloemacsWindowTree Leaf v31) (AloemacsWindowTree Leaf v4))
     (AloemacsWindowTree Below (AloemacsWindowTree Leaf v19) (AloemacsWindowTree Leaf v2))))
@@ -186,9 +186,9 @@
                 (((AloemacsWindows new tree 19 80 24) selected) Int))])
     (check-equal? (type st (car entry)) (cadr entry)))
   (for ([bad '((AloemacsView new 0 0 0 0) (AloemacsView new 0 0 0 0 #f 0)
-               (AloemacsView new "0" 0 0 0 #f) (AloemacsView new 0 #f 0 0 #f)
-               (AloemacsView new 0 0 "0" 0 #f) (AloemacsView new 0 0 0 #f #f)
-               (AloemacsView new 0 0 0 0 0) (AloemacsWindowTree Leaf 0)
+               (AloemacsView new "0" 0 0 0 #f (Option None)) (AloemacsView new 0 #f 0 0 #f (Option None))
+               (AloemacsView new 0 0 "0" 0 #f (Option None)) (AloemacsView new 0 0 0 #f #f (Option None))
+               (AloemacsView new 0 0 0 0 0 (Option None)) (AloemacsWindowTree Leaf 0)
                (AloemacsWindowTree Below tree v4) (AloemacsWindowTree Right v4 tree)
                (AloemacsWindowTree Leaf v4 v4) (AloemacsWindowTree Below tree)
                (AloemacsWindowTree Right tree tree tree) (AloemacsWindowTree new v4)

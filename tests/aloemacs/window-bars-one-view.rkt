@@ -43,7 +43,7 @@
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
@@ -152,7 +152,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (payload name) (caddr (findf (lambda (d) (equal? (cadr d) name)) classes)))
@@ -160,7 +160,7 @@
   (check-equal? (payload 'AloemacsBuffer)
                 '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (payload 'AloemacsView)
-                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))
+                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)
@@ -210,7 +210,7 @@
                 ((AloemacsModeLine new) bar "x" "t") ((AloemacsModeLine new) bar "x" 1)
                 ((AloemacsModeLine new) bar #t "x")
                 ("x" bar "x" #t) (1 bar "x" #t) (AloemacsModeLine bar "x" #t)
-                ((AloemacsView new 0 0 0 0 #f) bar "x" #t)
+                ((AloemacsView new 0 0 0 0 #f (Option None)) bar "x" #t)
                 ((AloemacsWindowRect new 0 0 3 4) bar "x" #t))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st expr)) (format "reject ~s" expr))))
 

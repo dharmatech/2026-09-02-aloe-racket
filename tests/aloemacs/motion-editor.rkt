@@ -125,7 +125,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))

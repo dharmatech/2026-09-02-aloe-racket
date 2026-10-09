@@ -60,7 +60,7 @@
   `(AloemacsBuffers new (List of ,@(reverse (take buffers focus))) ,(list-ref buffers focus)
      (List of ,@(drop buffers (add1 focus)))))
 (define (leaf id [buffer-id 41] [row 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,buffer-id ,row ,left ,lock)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,buffer-id ,row ,left ,lock (Option None))))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
@@ -305,7 +305,7 @@
   (def! st 'short '(far visited "x\n" (Path new "/short")))
   (paint st 'short 9 3 (multi (list "    |x   " (beside (dark "/sho") (light "/sho"))) 1 6 3 ""))
   (same st '(((short windows) tree) find-view 71)
-    '(Option Some (AloemacsView new 71 41 99 101 #t)))
+    '(Option Some (AloemacsView new 71 41 99 101 #t (Option None))))
   (check-equal? (unbox calls) '()))
 
 (test-case "selected-only minimal fit preserves every rich payload, lock, inactive origin and full size"
@@ -447,10 +447,10 @@
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView AloemacsWindowTree
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
-  (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))
+  (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
                 (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
                 (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
                 (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))

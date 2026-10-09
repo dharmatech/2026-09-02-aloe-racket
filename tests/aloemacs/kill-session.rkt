@@ -59,7 +59,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 0 0))))
 
 (define (ev st expr) (driver-eval! st expr))
@@ -128,7 +128,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
          0 ((aloemacs-editor windows) columns) ((aloemacs-editor windows) rows)))))))
   (def! st 'base (session "ab\ncd" 0 0))
   (key! st 'marked 'base "mark")

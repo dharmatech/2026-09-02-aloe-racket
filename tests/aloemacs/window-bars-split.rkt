@@ -48,7 +48,7 @@
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock)))
+  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
@@ -196,7 +196,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
@@ -274,8 +274,8 @@
   (def! st 'rb '(r split-below))
   (same st '((rb windows) tree) (right (below (leaf 7) (leaf 9)) (leaf 8)))
   (same st '(((rb windows) tree) leaves)
-    '(List of (AloemacsView new 7 41 0 0 #f) (AloemacsView new 9 41 0 0 #f)
-              (AloemacsView new 8 41 0 0 #f)))
+    '(List of (AloemacsView new 7 41 0 0 #f (Option None)) (AloemacsView new 9 41 0 0 #f (Option None))
+              (AloemacsView new 8 41 0 0 #f (Option None))))
   (define (rects! s expected)
     (for ([entry expected])
       (same st `(((,s windows) tree) rect-for ,(car entry) ,(rect 0 0 9 5))
@@ -636,7 +636,7 @@
       (def! st 'moved `((fit ,send) ensure-visible 4 ,h))
       (check-equal? (ev st '((moved point) line)) line)
       (check-equal? (ev st '((moved editor) scroll-row)) top)
-      (same st '(((moved windows) tree) find-view 7) '(Option Some (AloemacsView new 7 41 8 2 #t)))
+      (same st '(((moved windows) tree) find-view 7) '(Option Some (AloemacsView new 7 41 8 2 #t (Option None))))
       (same st '((moved editor) history) history)))
   ;; A split fits once at the selected child's text height; the fresh child
   ;; keeps the pre-split origin.

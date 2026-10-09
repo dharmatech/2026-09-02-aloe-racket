@@ -20,7 +20,7 @@
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
   (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
-    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsView
+    '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
       (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (define (payload name) (caddr (findf (lambda (d) (equal? (cadr d) name)) classes)))
@@ -28,7 +28,7 @@
   (check-equal? (payload 'AloemacsBuffer)
                 '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (payload 'AloemacsView)
-                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool)))
+                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)
