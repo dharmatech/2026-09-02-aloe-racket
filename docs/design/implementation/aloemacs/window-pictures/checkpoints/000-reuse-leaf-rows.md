@@ -261,9 +261,14 @@ the repeat misses. A skipped record would leave the old picture
 in place across both keys. Dropping pictures on that skip is what
 keeps the later split from painting the pre-undo rows.
 
-Every text change except `visited` changes `((editor history) len)`.
-`visited` clears pictures on its own. Undo grouping, or a cap on
-that length, would let one typed key leave unselected windows
+Every text change except `visited`, and except killing the last
+buffer, changes `((editor history) len)`. `visited` clears
+pictures on its own. Killing the last buffer keeps that buffer's
+id and installs an empty untitled editor at history length 0.
+When the killed buffer was a visited file with no edits, the text
+changes and the length stays 0. The name changes from the path to
+`untitled`, so the picture misses. Undo grouping, or a cap on
+history length, would let one typed key leave unselected windows
 showing stale rows. This slice does not add a revision counter
 for that.
 
@@ -271,10 +276,12 @@ for that.
 `rows`, paints the same string as `frame` on the session from
 before that record. Later edits, undos, visits, resizes, and
 scroll changes paint the same string as a session that never
-recorded a picture, when `record-pictures` has run since the last
-undo or edit. The runner does that before every frame. A caller
-that undoes and then edits, then sends `frame` with no record
-between them, can still paint the old rows. That caller is
+recorded a picture when a record has run between an undo and the
+next edit. The runner records after every key, so that record
+happens. A record that runs only after the edit compares the
+restored history length with the picture stored before the undo,
+keeps those rows, and the frame is stale. A caller that undoes
+and then edits, with no record between the undo and the edit, is
 outside this slice.
 
 ### Runner
