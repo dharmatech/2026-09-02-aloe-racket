@@ -24,9 +24,9 @@
     (text-rows Int))
   (methods
     (with-origin (scroll-row Int) (scroll-col Int) AloemacsEditor
-      (AloemacsEditor new
-        (self text) (self point) (self quit) scroll-row scroll-col
-        (self history) (self mark) (self text-rows)))
+      (self with
+        (scroll-row scroll-row)
+        (scroll-col scroll-col)))
 
     (fit-origin (point Int) (origin Int) (size Int) Int
       ((if (point < origin)
@@ -37,15 +37,10 @@
 
     (ensure-visible (columns Int) (rows Int) AloemacsEditor
       (let ((point (self point)))
-        (AloemacsEditor new
-          (self text)
-          point
-          (self quit)
-          (self fit-origin (point line) (self scroll-row) rows)
-          (self fit-origin (point column) (self scroll-col) columns)
-          (self history)
-          (self mark)
-          rows)))
+        (self with
+          (scroll-row (self fit-origin (point line) (self scroll-row) rows))
+          (scroll-col (self fit-origin (point column) (self scroll-col) columns))
+          (text-rows rows))))
 
     (frame-ansi (body String) (cursor-row Int) (cursor-column Int) String
       ((List of
@@ -121,26 +116,10 @@
       self)
 
     (with-mark (mark (Option Position)) AloemacsEditor
-      (AloemacsEditor new
-        (self text)
-        (self point)
-        (self quit)
-        (self scroll-row)
-        (self scroll-col)
-        (self history)
-        mark
-        (self text-rows)))
+      (self with (mark mark)))
 
     (clear-mark () AloemacsEditor
-      (AloemacsEditor new
-        (self text)
-        (self point)
-        (self quit)
-        (self scroll-row)
-        (self scroll-col)
-        (self history)
-        (Option None)
-        (self text-rows)))
+      (self with (mark (Option None))))
 
     (keep-valid-mark () AloemacsEditor
       ((self mark) case
@@ -151,45 +130,32 @@
               (self clear-mark)))))
 
     (with-text-and-point (text Text) (point Position) AloemacsEditor
-      (AloemacsEditor new
-        text
-        point
-        (self quit)
-        (self scroll-row)
-        (self scroll-col)
-        (self history)
-        (self mark)
-        (self text-rows)))
+      (self with
+        (text text)
+        (point point)))
 
     (from-edit (result EditResult) AloemacsEditor
-      (AloemacsEditor new
-        (result text)
-        (result position)
-        (self quit)
-        (self scroll-row)
-        (self scroll-col)
-        ((self history) cons
-          (UndoFrame new
-            (self text)
-            (self point)
-            (self scroll-row)
-            (self scroll-col)))
-        (self mark)
-        (self text-rows)))
+      (self with
+        (text (result text))
+        (point (result position))
+        (history
+          ((self history) cons
+            (UndoFrame new
+              (self text)
+              (self point)
+              (self scroll-row)
+              (self scroll-col))))))
 
     (undo () AloemacsEditor
       (if ((self history) empty?)
           (self unchanged)
           (let ((frame ((self history) first)))
-            (AloemacsEditor new
-              (frame text)
-              (frame point)
-              (self quit)
-              (frame scroll-row)
-              (frame scroll-col)
-              ((self history) rest)
-              (self mark)
-              (self text-rows)))))
+            (self with
+              (text (frame text))
+              (point (frame point))
+              (scroll-row (frame scroll-row))
+              (scroll-col (frame scroll-col))
+              (history ((self history) rest))))))
 
     (insert (string String) AloemacsEditor
       (((self text) insert (self point) string) case
@@ -372,15 +338,7 @@
         (self at-focused last (last line-length))))
 
     (request-quit () AloemacsEditor
-      (AloemacsEditor new
-        (self text)
-        (self point)
-        #t
-        (self scroll-row)
-        (self scroll-col)
-        (self history)
-        (self mark)
-        (self text-rows)))
+      (self with (quit #t)))
 
     (handle-key (key String) AloemacsEditor
       (cond
