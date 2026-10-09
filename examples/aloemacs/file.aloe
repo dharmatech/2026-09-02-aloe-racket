@@ -258,7 +258,23 @@
             (clipped append (self fill (width - (clipped len)))))))
 
     (fill (remaining Int) String
-      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))))
+      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
+
+    ;; Display chrome around a visible row that safe cells already produced.
+    ;; It never clips, pads or inspects the row.
+    (bar (row String) (selected? Bool) String
+      (if ((row len) = 0)
+          ""
+          (((if selected? (self light) (self dark)) append row) append (self plain))))
+
+    (light () String
+      "\u001b[38;5;16;48;5;250m")
+
+    (dark () String
+      "\u001b[38;5;252;48;5;239m")
+
+    (plain () String
+      "\u001b[0m")))
 
 (define-class AloemacsView
   (fields
@@ -491,14 +507,15 @@
     (earlier (extent Int) Int
       (((extent - (self divider extent)) + 1) / 2))
 
+    ;; Below reserves no row; the top takes the odd row.
     (top () AloemacsWindowRect
-      (self with (rows (self earlier (self rows)))))
+      (self with (rows (((self rows) + 1) / 2))))
 
     (bottom () AloemacsWindowRect
-      (let ((earlier (self earlier (self rows))) (divider (self divider (self rows))))
+      (let ((earlier (((self rows) + 1) / 2)))
         (self with
-          (y (((self y) + earlier) + divider))
-          (rows (((self rows) - divider) - earlier)))))
+          (y ((self y) + earlier))
+          (rows ((self rows) - earlier)))))
 
     (left () AloemacsWindowRect
       (self with (columns (self earlier (self columns)))))
@@ -508,12 +525,6 @@
         (self with
           (x (((self x) + earlier) + divider))
           (columns (((self columns) - divider) - earlier)))))
-
-    (divider-row () Int
-      ((self y) + (self earlier (self rows))))
-
-    (divider-column () Int
-      ((self x) + (self earlier (self columns))))
 
     (spaces (remaining Int) String
       (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
@@ -563,58 +574,21 @@
           (if (left positive-layout? (rect left))
               (right positive-layout? (rect right)) #f))))
 
-    ;; Each divider extends one cell beyond its subtree edge. These pure
-    ;; geometry queries supply junctions without inspecting buffer characters.
-    (horizontal-divider? (rect AloemacsWindowRect) (x Int) (y Int) Bool
-      (self case
-        (Leaf (view) #f)
-        (Below (top bottom)
-          (if (if (y = (rect divider-row))
-                  (if (x >= ((rect x) - 1))
-                      (x <= ((rect x) + (rect columns))) #f) #f)
-              #t
-              (if (top horizontal-divider? (rect top) x y)
-                  #t (bottom horizontal-divider? (rect bottom) x y))))
-        (Right (left right)
-          (if (left horizontal-divider? (rect left) x y)
-              #t (right horizontal-divider? (rect right) x y)))))
-
-    (vertical-divider? (rect AloemacsWindowRect) (x Int) (y Int) Bool
-      (self case
-        (Leaf (view) #f)
-        (Below (top bottom)
-          (if (top vertical-divider? (rect top) x y)
-              #t (bottom vertical-divider? (rect bottom) x y)))
-        (Right (left right)
-          (if (if (x = (rect divider-column))
-                  (if (y >= ((rect y) - 1))
-                      (y <= ((rect y) + (rect rows))) #f) #f)
-              #t
-              (if (left vertical-divider? (rect left) x y)
-                  #t (right vertical-divider? (rect right) x y))))))
-
-    (below-divider (rect AloemacsWindowRect) (x Int) (remaining Int) String
-      (if (remaining <= 0)
-          ""
-          ((if (self vertical-divider? rect x (rect divider-row)) "+" "-")
-           append (self below-divider rect (x + 1) (remaining - 1)))))
-
-    (right-rows (rect AloemacsWindowRect) (left-rows (List String))
-                (right-rows (List String)) (y Int) (List String)
+    ;; Right reserves one column and paints its divider on every row.
+    (right-rows (left-rows (List String)) (right-rows (List String)) (List String)
       (if (left-rows empty?)
           (List empty)
-          ((self right-rows rect (left-rows rest) (right-rows rest) (y + 1))
+          ((self right-rows (left-rows rest) (right-rows rest))
            cons
-           (((left-rows first)
-             append (if (self horizontal-divider? rect (rect divider-column) y) "+" "|"))
-            append (right-rows first)))))
+           (((left-rows first) append "|") append (right-rows first)))))
 
     (blank-rows (rect AloemacsWindowRect) (remaining Int) (List String)
       (if (remaining <= 0)
           (List empty)
           ((self blank-rows rect (remaining - 1)) cons (rect pad-row ""))))
 
-    (frame-rows (buffers AloemacsBuffers) (rect AloemacsWindowRect) (List String)
+    ;; A tall leaf's last row is its bar, lighter on the selected view.
+    (frame-rows (buffers AloemacsBuffers) (rect AloemacsWindowRect) (selected Int) (List String)
       (self case
         (Leaf (view)
           ;; find-id returns a local focused collection; never install it.
@@ -629,20 +603,21 @@
                            map (fn (line) (rect pad-row line)))))
                     (if ((rect rows) >= 2)
                         ((lines reverse) fold
-                          (List of (editor safe-cells
-                            ((AloemacsModeLine new) row (buffer name) (rect columns))))
+                          (List of ((AloemacsModeLine new) bar
+                            (editor safe-cells
+                              ((AloemacsModeLine new) row (buffer name) (rect columns)))
+                            ((view id) = selected)))
                           (fn (rows line) (rows cons line)))
                         lines)))))))
         (Below (top bottom)
-          (((top frame-rows buffers (rect top)) reverse)
+          (((top frame-rows buffers (rect top) selected) reverse)
            fold
-           ((bottom frame-rows buffers (rect bottom))
-            cons (self below-divider rect (rect x) (rect columns)))
+           (bottom frame-rows buffers (rect bottom) selected)
            (fn (rows row) (rows cons row))))
         (Right (left right)
-          (self right-rows rect
-            (left frame-rows buffers (rect left))
-            (right frame-rows buffers (rect right)) (rect y)))))))
+          (self right-rows
+            (left frame-rows buffers (rect left) selected)
+            (right frame-rows buffers (rect right) selected)))))))
 
 (define-class AloemacsWindows
   (fields
@@ -677,8 +652,9 @@
                      (self text-rect (self columns) (self rows))) case
                     (None () #f)
                     (Some (rect)
+                      ;; Below needs two rows per child, so each has a bar.
                       (if (rect positive?)
-                          ((if below? (rect rows) (rect columns)) >= 3)
+                          (if below? ((rect rows) >= 4) ((rect columns) >= 3))
                           #f)))))))))
 
     (with-split (scroll-row Int) (scroll-col Int) (below? Bool) AloemacsWindows
@@ -1629,7 +1605,7 @@
 
     (multi-frame (root AloemacsWindowRect) (columns Int) (rows Int) String
       (let ((editor (self editor)) (windows (self windows)))
-        (let ((lines ((windows tree) frame-rows (self buffers) root))
+        (let ((lines ((windows tree) frame-rows (self buffers) root (windows selected)))
               (selected (self fit-rect columns rows)))
           (let ((body
                   (((lines rest) fold (lines first)
@@ -1659,7 +1635,8 @@
                 cursor-row cursor-column))))))
 
     ;; Keep the editor prefix and its intermediate cursor sequences. Tall
-    ;; one-view/fallback frames reserve the root's last row for its name.
+    ;; one-view/fallback frames reserve the root's last row for its name,
+    ;; painted as the selected bar.
     (single-frame (columns Int) (rows Int) String
       (let ((editor (self editor))
             (root (self root-rect columns rows)))
@@ -1680,9 +1657,11 @@
                      "\u001b[?25l"
                      (if ((root rows) >= 2)
                          ((List of "\u001b[" ((root rows) text) ";1H"
-                            (editor safe-cells
-                              ((AloemacsModeLine new) row
-                                ((self current-buffer) name) columns)))
+                            ((AloemacsModeLine new) bar
+                              (editor safe-cells
+                                ((AloemacsModeLine new) row
+                                  ((self current-buffer) name) columns))
+                              #t))
                           fold "" (fn (acc part) (acc append part)))
                          "")
                      (self completion-frame root columns rows)

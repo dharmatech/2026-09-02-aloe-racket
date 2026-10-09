@@ -41,7 +41,9 @@ is ready to implement. Do not write a charter for it. Path completion is back wi
 [`completion/charter.md`](completion/charter.md). Do not revise
 its `spec.md` here. Completion paging is chartered at
 [`completion-page/charter.md`](completion-page/charter.md). Do not
-write its `spec.md` here.
+write its `spec.md` here. Window bars are chartered at
+[`window-bars/charter.md`](window-bars/charter.md). Do not write
+its `spec.md` here.
 Do not reopen other product behavior in the implemented series.
 
 ## How this conversation works

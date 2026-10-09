@@ -563,8 +563,10 @@
 (test-case "selected-rectangle/fallback fit, resize, repeated fit, unknown sizes and frame purity"
   (define-values (st calls) (state))
   (fixture! st)
-  (for ([size '((1 2) (2 1) (12 4) (80 24))]
-        [row '(2 2 2 2)] [col '(4 3 3 3)] [text-rows '(1 1 2 4)])
+  ;; (1 2), (2 1) and (2 4) fall back to the root: a Below at extent one, or a
+  ;; Right below three columns. At (80 24) selected view 55 is (41,6,39,6).
+  (for ([size '((1 2) (2 1) (2 4) (80 24))]
+        [row '(2 2 2 2)] [col '(4 3 3 3)] [text-rows '(1 1 2 5)])
     (define ed (editor #:row row #:left col #:rows text-rows))
     (same-session st `(source ensure-visible ,@size)
       (rebuild 'source #:buffers (replacement 'source ed)
@@ -572,9 +574,9 @@
     (def! st 'fitted `(source ensure-visible ,@size))
     (same-session st `(fitted ensure-visible ,@size) (rebuild 'fitted)))
   (def! st 'small '(source ensure-visible 1 2))
-  (same-session st '(small ensure-visible 12 4)
+  (same-session st '(small ensure-visible 2 4)
     (rebuild 'small #:buffers (replacement 'small (editor #:left 4 #:rows 2))
-      #:windows (config (selected-views views 55 9 2 4) 55 12 4)))
+      #:windows (config (selected-views views 55 9 2 4) 55 2 4)))
   (for ([size '((0 0) (1 2))])
     (def! st 's (session (zipper '(a b c) 1) (config views 55 (car size) (cadr size))))
     (for ([send '((with-echo "failed") (move-left) (switch-buffer) (kill-buffer)
@@ -588,7 +590,7 @@
   (define snapshot (ev st 'one))
   (check-equal? (ev st '(one frame 8 3))
     (string-append "\e[?25l\e[2J\e[Hrd-long\e[1;2H\e[?25h"
-                   "\e[?25l\e[2;1H/cwd/b.t\e[3;1Hdraft: i\e[3;8H\e[?25h"))
+                   "\e[?25l\e[2;1H\e[38;5;16;48;5;250m/cwd/b.t\e[0m\e[3;1Hdraft: i\e[3;8H\e[?25h"))
   (check-equal? (ev st 'one) snapshot)
   (assert-effects calls '()))
 

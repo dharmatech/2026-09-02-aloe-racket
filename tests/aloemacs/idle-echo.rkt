@@ -42,11 +42,19 @@
 (define (mode name width)
   (define label (clip (string-append name " ") width))
   (safe (string-append label (make-string (- width (string-length label)) #\-))))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+;; Split name rows are bars: LIGHT on the selected view, DARK on the others.
+(define DARK "\e[38;5;252;48;5;239m")
+(define (painted row selected?)
+  (if selected? (light row) (if (string=? row "") "" (string-append DARK row PLAIN))))
 (define (single body width rows name echo [final-row 1] [final-column 2])
   (string-append "\e[?25l\e[2J\e[H" body (cursor 1 2) "\e[?25h"
     (if (< rows 2) ""
         (string-append "\e[?25l"
-          (if (>= rows 3) (string-append (cursor (sub1 rows) 1) (mode name width)) "")
+          (if (>= rows 3) (string-append (cursor (sub1 rows) 1) (light (mode name width))) "")
           (cursor rows 1) (safe (clip echo width))
           (cursor final-row final-column) "\e[?25h"))))
 (define (multi lines width rows echo cursor-row)
@@ -129,19 +137,23 @@
 
 (test-case "uneven split uses the selected leaf height and its buffer name"
   (define-values (st calls) (state))
-  (define lines (list "top         " (mode "/top" 12) "------------" "bottom      "))
+  ;; A three-row root gives a two-row top leaf (text and bar) and a one-row
+  ;; bottom leaf of text only.
+  (define (lines selected) (list "top         " (painted (mode "/top" 12) (= selected 7))
+                                 "bottom      "))
   (stacked! st 7)
-  (paint st 'v 12 5 (multi lines 12 5 "" 1) calls)
+  (paint st 'v 12 4 (multi (lines 7) 12 4 "" 1) calls)
   (stacked! st 3)
-  (paint st 'v 12 5 (multi lines 12 5 "/bottom" 4) calls))
+  (paint st 'v 12 4 (multi (lines 3) 12 4 "/bottom" 3) calls))
 
 (test-case "both split leaves paint their names and the idle echo is empty"
   (define-values (st calls) (state))
-  (define lines (list "top         " (mode "/top" 12) "------------"
-                      "bottom      " (mode "/bottom" 12)))
+  (define (lines selected) (list "top         " "more        "
+                                 (painted (mode "/top" 12) (= selected 7))
+                                 "bottom      " (painted (mode "/bottom" 12) (= selected 3))))
   (for ([selected '(7 3)] [row '(1 4)])
     (stacked! st selected)
-    (paint st 'v 12 6 (multi lines 12 6 "" row) calls)))
+    (paint st 'v 12 6 (multi (lines selected) 12 6 "" row) calls)))
 
 (test-case "too-small split fallback judges the root height from frame arguments"
   (define-values (st calls) (state))

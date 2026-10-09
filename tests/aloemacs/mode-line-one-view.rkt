@@ -50,12 +50,18 @@
 (define (name-row name width)
   (define label (clip (string-append name " ") width))
   (safe (string-append label (make-string (- width (string-length label)) #\-))))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+;; Split bars are LIGHT on the selected view and DARK on every other view.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define DARK "\e[38;5;252;48;5;239m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
 ;; Independent chrome; body is literal data, never a product frame.
 (define (frame body row col width rows name echo [final-row row] [final-col col])
   (string-append (direct body row col)
     (if (= rows 1) ""
         (string-append "\e[?25l"
-          (if (>= rows 3) (string-append (cursor (sub1 rows) 1) (name-row name width)) "")
+          (if (>= rows 3) (string-append (cursor (sub1 rows) 1) (light (name-row name width))) "")
           (cursor rows 1) (safe (clip echo width))
           (cursor final-row final-col) "\e[?25h"))))
 (define (paint st s width rows expected calls)
@@ -208,7 +214,8 @@
   ;; Completed 001: each tall leaf reserves its final row for its name.
   (check-equal? (ev st '((grown editor) text-rows)) 2)
   (paint st 'grown 9 4
-    (string-append "\e[?25l\e[2J\e[Hwo  |    \r\nhree|    \r\nunti|unti"
+    (string-append "\e[?25l\e[2J\e[Hwo  |    \r\nhree|    \r\n"
+                   LIGHT "unti" PLAIN "|" DARK "unti" PLAIN
                    "\e[4;1H\e[2;2H\e[?25h") calls)
   (check-equal? (ev st '(((grown windows) tree) case (Right (a b) b) (else ((grown windows) tree))))
                 (ev st inactive)))

@@ -26,6 +26,9 @@ remains. The idle-echo follow-on is ready to implement at
 implement. That revision does not replace idle-echo. Paging the
 painted list is chartered at [`completion-page/`](completion-page/).
 The designer writes that spec. It is not a completion checkpoint.
+Window bars are chartered at [`window-bars/`](window-bars/). The
+designer writes that spec. The mode line becomes the horizontal
+edge, with a lighter bar on the selected window.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -132,7 +135,7 @@ view of a buffer, not a second copy of the editor class.
 | # | Exploration | Note |
 |---|---|---|
 | 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line is the separate item 10 |
-| 10 | **Mode line** | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). A per-window row shows the buffer name on a dash fill. The echo row stays the message row. A leaf shorter than two rows keeps today's text frame. Final human review remains. A mode name waits until language modes exist |
+| 10 | **Mode line** | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). A per-window row shows the buffer name on a dash fill. The echo row stays the message row. A leaf shorter than two rows keeps today's text frame. Final human review remains. A mode name waits until language modes exist. **Window bars** is chartered at [`window-bars/`](window-bars/): that row is the horizontal edge, the Below dash rule goes away, and the selected bar is lighter than the others. The designer writes `spec.md`. The vertical-bar character stays |
 
 ---
 
@@ -214,7 +217,8 @@ Leave these until a slice is blocked by them.
    name. The echo row stays the message row. Final human review
    remains. The idle name leaves that row in the standalone
    checkpoint [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000,
-   which is ready to implement.
+   which is ready to implement. **Window bars** is chartered at
+   [`window-bars/`](window-bars/). The designer writes `spec.md`.
 7. **Path completion** — back with the designer at
    [`completion/`](completion/). Tab completes find-file and
    save-as. The recursive scans move off `(AloemacsSession H)`.

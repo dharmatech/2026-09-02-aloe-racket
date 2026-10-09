@@ -22,12 +22,16 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
 (define (complete-frame body row column [label ""] [echo-row 5]
                         #:name [name "/cwd/a.txt"] #:width [width 8])
   (string-append "\e[?25l\e[2J\e[H" (text-body body echo-row)
     (format "\e[~a;~aH\e[?25h" row column)
     (format "\e[?25l\e[~a;1H~a\e[~a;1H~a\e[~a;~aH\e[?25h"
-      (sub1 echo-row) (mode-row name width) echo-row label row column)))
+      (sub1 echo-row) (light (mode-row name width)) echo-row label row column)))
 
 (struct scripted-term (receiver remaining-keys size-calls events) #:transparent)
 
@@ -145,9 +149,9 @@
                            (file-double source) "a.txt")
   (check-script fixture sizes frames keys)
   (check-equal? (list-ref frames 3)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H\u001b[3;1H\u001b[?25h")
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[5;1H\u001b[3;1H\u001b[?25h")
   (check-equal? (list-ref frames 4)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H/cwd/a.t\u001b[5;1H\u001b[2;1H\u001b[?25h"))
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[5;1H\u001b[2;1H\u001b[?25h"))
 
 (test-case "vertical shrink shifts only on exit and growth holds the origin"
   (define keys '("down" "down" "down" "f1" "up" "f1" "escape"))

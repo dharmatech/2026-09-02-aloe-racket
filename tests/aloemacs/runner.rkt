@@ -95,10 +95,10 @@
             (windows initial-windows)))))))
 
 (define empty-frame
-  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1Huntitled\u001b[4;1H\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250muntitled\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
 
 (define x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1Huntitled\u001b[4;1H\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250muntitled\u001b[0m\u001b[4;1H\u001b[1;2H\u001b[?25h")
 
 (define (source-datums path)
   (call-with-input-file path

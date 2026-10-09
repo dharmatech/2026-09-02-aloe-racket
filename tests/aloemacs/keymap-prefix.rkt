@@ -147,13 +147,17 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
 (define (frame body row column rows label #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
     (if rows (text-body body rows) body)
     (format "\e[~a;~aH\e[?25h" row column)
     (if (and rows (>= rows 2))
         (string-append "\e[?25l"
-          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows label row column)) "")))
 
 (test-case "session comparison evaluates each side once and preserves fixture bindings"

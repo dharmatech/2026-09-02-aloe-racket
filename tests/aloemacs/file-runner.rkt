@@ -14,16 +14,16 @@
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 
 (define empty-frame
-  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1Huntitled\u001b[4;1H\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250muntitled\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
 
 (define loaded-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H/cwd/a.t\u001b[4;1H\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
 
 (define inserted-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H/cwd/new\u001b[4;1H\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/new\u001b[0m\u001b[4;1H\u001b[1;2H\u001b[?25h")
 
 (define saved-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H/cwd/new\u001b[4;1Hsaved: /\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/new\u001b[0m\u001b[4;1Hsaved: /\u001b[1;2H\u001b[?25h")
 
 (struct scripted-term
   (receiver remaining-keys key-calls size-calls events)

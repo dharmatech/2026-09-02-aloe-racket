@@ -116,6 +116,13 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty. Split
+;; name rows are LIGHT on the selected view and DARK on every other view.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define DARK "\e[38;5;252;48;5;239m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+(define (dark row) (if (string=? row "") "" (string-append DARK row PLAIN)))
 (define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
                 #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
@@ -123,7 +130,7 @@
     (format "\e[~a;~aH\e[?25h" row col)
     (if echo-row
         (string-append "\e[?25l"
-          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (paint st s columns rows expected)
   (define before (for/list ([expr (list s `(,s buffers) `(,s windows) `((,s editor) text))])
@@ -271,14 +278,15 @@
     (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 3) 3 5 2 3 2)) b))))
   ;; Start fitted. Shrink forces selected-only fallback and changes nominal geometry
   ;; despite the lock; growth restores composition, keeping inactive EOF origins.
-  (paint st 's 9 6 (multi '("pqr |Z   " "unti|    " "----+    " "    |    " "unti|unti")
+  (paint st 's 9 6 (multi (list "pqr |Z   " "vwx |    " (string-append (light "unti") "|    ")
+                                "    |    " (string-append (dark "unti") "|" (dark "unti")))
                          1 3 6 ""))
   (def! st 'small '(s ensure-visible 2 3))
   (same-session st 'small (rebuild 's #:buffers (zipper (list
     (buffer 41 (editor text 2 5 2 4 1)) b)) #:windows (config (t 2 4) 7 2 3)))
   (paint st 'small 2 3 (single '("qr" "wx") 1 2 3 "" #:name "untitled" #:width 2))
   (same st `(((s windows) tree) rect-for 7 ,(rect 0 0 9 5))
-    `(Option Some ,(rect 0 0 4 2)))
+    `(Option Some ,(rect 0 0 4 3)))
   (same st `(((small windows) tree) rect-for 7 ,(rect 0 0 2 2))
     `(Option Some ,(rect 0 0 1 1)))
   ;; A nominal split is still refused even though fallback occupies the whole screen.
@@ -289,9 +297,11 @@
   (paint st 'tiny 1 1 (single '("r") 1 1 #f #:name "untitled" #:width 1))
   (def! st 'grown '(tiny ensure-visible 13 8))
   (same-session st 'grown (rebuild 'tiny #:buffers (zipper (list
-    (buffer 41 (editor text 2 5 2 5 2)) b)) #:windows (config (t 2 5) 7 13 8)))
-  (paint st 'grown 13 8 (multi '("r     |Z     " "x     |      " "untitl|      "
-                               "------+      " "      |      " "      |      " "untitl|untitl")
+    (buffer 41 (editor text 2 5 2 5 3)) b)) #:windows (config (t 2 5) 7 13 8)))
+  (paint st 'grown 13 8 (multi (list "r     |Z     " "x     |      " "      |      "
+                                     (string-append (light "untitl") "|      ")
+                                     "      |      " "      |      "
+                                     (string-append (dark "untitl") "|" (dark "untitl")))
                              1 1 8 ""))
   (same-session st '(grown ensure-visible 13 8) 'grown)
   (effects calls '()))
@@ -349,9 +359,11 @@
     (define actual-keys (map (lambda (key) (if (equal? key "SPLIT") split-key key)) keys))
     (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
     (define failed (single '("abc" "def" "" "" "") 1 1 6 "failed: /" #:name "/cwd/a.txt" #:width 9))
+    ;; Original view 0 stays selected with the LIGHT bar; new view 1 is DARK.
     (define split-frame (multi (if below?
-      '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
-      '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")) 1 1 6 ""))
+      (list "abc      " "def      " (light "/cwd/a.tx") "abc      " (dark "/cwd/a.tx"))
+      (list "abc |abc " "def |def " "    |    " "    |    "
+            (string-append (light "/cwd") "|" (dark "/cwd")))) 1 1 6 ""))
     ;; Frames precede the corresponding key, so each refusal is visible next turn.
     (define frames (list start start start start failed start failed start failed start
                          start start split-frame split-frame start))
@@ -420,16 +432,18 @@
     (list
       (list (lambda (bit) (right (leaf 7) (below (leaf 2 41 0 0 bit) (leaf 3))))
             (lambda (bit) (below (leaf 2 41 0 0 bit) (leaf 3))) '(7 2 3) 9 6
-            (rect 5 0 4 2) (rect 0 0 9 2) #f 2)
+            (rect 5 0 4 3) (rect 0 0 9 3) #f 2)
       (list (lambda (bit) (below (right (leaf 3) (leaf 2 41 0 0 bit)) (leaf 7)))
             (lambda (bit) (right (leaf 3) (leaf 2 41 0 0 bit))) '(3 2 7) 9 6
-            (rect 5 0 4 2) (rect 5 0 4 5) #f 3)
+            (rect 5 0 4 3) (rect 5 0 4 5) #f 3)
       (list (lambda (bit) (right (leaf 7) (right (leaf 2 41 0 0 bit) (leaf 3))))
             (lambda (bit) (right (leaf 2 41 0 0 bit) (leaf 3))) '(7 2 3) 1 2
             (rect 1 0 0 1) (rect 0 0 0 1) #f 2)
-      (list (lambda (bit) (below (leaf 7) (below (leaf 2 41 0 0 bit) (leaf 3))))
-            (lambda (bit) (below (leaf 2 41 0 0 bit) (leaf 3))) '(7 2 3) 9 2
-            (rect 0 1 9 0) (rect 0 0 9 0) #f 2)
+      ;; Only y changes at zero height: a zero height is the bottom of a
+      ;; one-row Below, so the lock sits under a top that moves up one row.
+      (list (lambda (bit) (below (leaf 7) (below (below (leaf 3) (leaf 2 41 0 0 bit)) (leaf 4))))
+            (lambda (bit) (below (below (leaf 3) (leaf 2 41 0 0 bit)) (leaf 4))) '(7 3 2 4) 9 3
+            (rect 0 2 9 0) (rect 0 1 9 0) #f 2)
       (list (lambda (bit) (right (right (right (leaf 2 41 0 0 bit) (leaf 3)) (leaf 4)) (leaf 7)))
             (lambda (bit) (right (right (leaf 2 41 0 0 bit) (leaf 3)) (leaf 4)))
             '(2 3 4 7) 7 6 (rect 0 0 0 5) (rect 0 0 1 5) #f 2)
@@ -467,7 +481,7 @@
   (define (t bit) (right (below (leaf 7) (leaf 3)) (leaf 2 41 0 0 bit)))
   (def! st 'raw (session (zipper '(a)) (t #f) 7 #:rows 10 #:echo ""))
   (lock-through-cycle! st 'raw '(7 3 2) 2)
-  (for ([op '(split-below split-right)] [height '(1 3)])
+  (for ([op '(split-below split-right)] [height '(2 4)])
     (define expected-tree (right (below ((if (eq? op 'split-below) below right)
                                         (leaf 7) (leaf 8)) (leaf 3)) (leaf 2 41 0 0 #t)))
     (same-session st `(locked ,op) (rebuild 'locked
@@ -584,7 +598,8 @@
   (simple! st)
   (define t (right (leaf 7) (leaf 2)))
   (define locked-t (right (leaf 7 41 0 0 #t) (leaf 2)))
-  (define rows '("abc |abc " "def |def " "    |    " "    |    " "unti|unti"))
+  (define rows (list "abc |abc " "def |def " "    |    " "    |    "
+                    (string-append (light "unti") "|" (dark "unti"))))
   (for* ([token '("" "saved" "failed")] [mode '(idle prompt search both)])
     (define prompt? (and (memq mode '(prompt both)) #t))
     (define search? (and (memq mode '(search both)) #t))
@@ -608,15 +623,17 @@
     (def! st 'unlocked '(locked toggle-window-lock))
     (for ([op '(split-below split-right)])
       (define split-t (right ((if (eq? op 'split-below) below right) (leaf 7) (leaf 8)) (leaf 2)))
-      (define ed (editor ab-text 0 0 0 0 (if (eq? op 'split-below) 1 4)))
+      (define ed (editor ab-text 0 0 0 0 (if (eq? op 'split-below) 2 4)))
       (same-session st `(unlocked ,op) (rebuild 'unlocked
         #:buffers (zipper (list (buffer 41 ed))) #:windows (config split-t 7)
         #:echo (if active? token "")))
       (def! st 'success `(unlocked ,op))
       (paint st 'success 9 6
         (multi (if (eq? op 'split-below)
-                   '("abc |abc " "unti|def " "----+    " "abc |    " "unti|unti")
-                   '("ab|a|abc " "de|d|def " "  | |    " "  | |    " "un|u|unti"))
+                   (list "abc |abc " "def |def " (string-append (light "unti") "|    ")
+                         "abc |    " (string-append (dark "unti") "|" (dark "unti")))
+                   (list "ab|a|abc " "de|d|def " "  | |    " "  | |    "
+                         (string-append (light "un") "|" (dark "u") "|" (dark "unti"))))
                (if prompt? 6 1) (if prompt? 5 1) 6 (if active? shown ""))))
     (same-session st '(unlocked delete-window)
       (rebuild 'unlocked #:windows (config (leaf 2) 2)))

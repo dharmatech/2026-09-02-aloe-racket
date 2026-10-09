@@ -106,6 +106,15 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; Name rows are bars: LIGHT for one-view frames and the selected split view,
+;; DARK for every other split view. An empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define DARK "\e[38;5;252;48;5;239m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+(define (dark row) (if (string=? row "") "" (string-append DARK row PLAIN)))
+;; A Right joins its children's cells with | on every row.
+(define (beside . cells) (string-join cells "|"))
 (define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
                 #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
@@ -113,7 +122,7 @@
     (format "\e[~a;~aH\e[?25h" row col)
     (if echo-row
         (string-append "\e[?25l"
-          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (snapshot st s)
   (for/list ([expr (list s `(,s buffers) `((,s buffers) before)
@@ -129,21 +138,25 @@
   (define st (loaded))
   (def! st 'a (leaf 71))
   (def! st 'b (leaf 3))
+  ;; Right reserves one divider column; Below reserves no row and its top
+  ;; takes the odd row.
   (for ([extent '(0 1 2 3 4 5 6 7 8 9)]
         [earlier '(0 0 1 1 2 2 3 3 4 4)]
         [later '(0 0 0 1 1 2 2 3 3 4)]
-        [offset '(0 1 2 2 3 3 4 4 5 5)])
+        [offset '(0 1 2 2 3 3 4 4 5 5)]
+        [top '(0 1 1 2 2 3 3 4 4 5)]
+        [bottom '(0 0 1 1 2 2 3 3 4 4)])
     (def! st 't '(AloemacsWindowTree Right a b))
     (same st `(t rect-for 71 ,(rect 2 4 extent 5)) `(Option Some ,(rect 2 4 earlier 5)))
     (same st `(t rect-for 3 ,(rect 2 4 extent 5)) `(Option Some ,(rect (+ 2 offset) 4 later 5)))
     (check-equal? (ev st `(t positive-layout? ,(rect 2 4 extent 5))) (>= extent 3))
     (def! st 't '(AloemacsWindowTree Below a b))
-    (same st `(t rect-for 71 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 4 5 earlier)))
-    (same st `(t rect-for 3 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 (+ 4 offset) 5 later)))
-    (check-equal? (ev st `(t positive-layout? ,(rect 2 4 5 extent))) (>= extent 3)))
+    (same st `(t rect-for 71 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 4 5 top)))
+    (same st `(t rect-for 3 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 (+ 4 top) 5 bottom)))
+    (check-equal? (ev st `(t positive-layout? ,(rect 2 4 5 extent))) (>= extent 2)))
   (define t (right (below (leaf 71) (leaf 3)) (leaf 55)))
   (def! st 't t)
-  (for ([id '(71 3 55)] [r '((0 0 4 2) (0 3 4 2) (5 0 4 5))])
+  (for ([id '(71 3 55)] [r '((0 0 4 3) (0 3 4 2) (5 0 4 5))])
     (same st `(t rect-for ,id ,(rect 0 0 9 5)) `(Option Some ,(apply rect r))))
   (same st `(t rect-for 999 ,(rect 0 0 9 5))
     `(if #t (Option None) (Option Some ,(rect 0 0 9 5))))
@@ -191,7 +204,10 @@
 (define a-lines '("abcdef" "ghijkl" "mnopqr" "stuvwx" "yz0123" ""))
 (define b-lines '("ABCDE" "FGHIJ" "KLMNO" "PQRST" "UVWXY"))
 (define example-tree (right (below (leaf 71 41) (leaf 3 41 3 1 #t)) (leaf 55 9 1 2)))
-(define example-rows '("abcd|HIJ " "/cwd|MNO " "----+RST " "tuvw|WXY " "/cwd|unti"))
+;; At 9 by 6, view 71 is (0,0,4,3), view 3 (0,3,4,2) and view 55 (5,0,4,5);
+;; view 3 is selected.
+(define example-rows (list "abcd|HIJ " "ghij|MNO " (beside (dark "/cwd") "RST ") "tuvw|WXY "
+                           (beside (light "/cwd") (dark "unti"))))
 (define (example! st)
   (def! st 'a (buffer 41 (editor (indexed a-lines 2) 3 2 3 1 2)
                      '(Option Some (Path new "/cwd/a.txt"))))
@@ -208,10 +224,13 @@
   ;; Construct a different selected leaf/current origin without any entry API.
   (def! st 'b-selected (buffer 9 (editor (indexed b-lines 3) 3 4 1 2 5)))
   (def! st 'r (session (zipper '(a b-selected) 1) example-tree 55 #:echo ""))
-  (paint st 'r 9 6 (multi example-rows 3 8 6 ""))
+  (paint st 'r 9 6 (multi (list "abcd|HIJ " "ghij|MNO " (beside (dark "/cwd") "RST ") "tuvw|WXY "
+                                (beside (dark "/cwd") (light "unti")))
+                          3 8 6 ""))
   (def! st 'a-top (buffer 41 (editor (indexed a-lines 2) 1 2)))
   (def! st 'top (session (zipper '(a-top b) 0) example-tree 71 #:echo ""))
-  (paint st 'top 9 6 (multi '("abcd|HIJ " "unti|MNO " "----+RST " "tuvw|WXY " "unti|unti")
+  (paint st 'top 9 6 (multi (list "abcd|HIJ " "ghij|MNO " (beside (light "unti") "RST ") "tuvw|WXY "
+                                  (beside (dark "unti") (dark "unti")))
                             2 3 6 ""))
   (for ([token '("" "saved" "failed")]
         [shown '("" "saved: /c" "failed: /")])
@@ -225,7 +244,8 @@
     (paint st 'search 9 6 (multi example-rows 4 2 6 shown)))
   (def! st 'safe-path (rebuild 's #:buffers
     (zipper (list (buffer 41 '(a editor) '(Option Some (Path new "/a\tbcdefghij"))) 'b) 0)))
-  (paint st 'safe-path 9 6 (multi '("abcd|HIJ " "/a b|MNO " "----+RST " "tuvw|WXY " "/a b|unti")
+  (paint st 'safe-path 9 6 (multi (list "abcd|HIJ " "ghij|MNO " (beside (dark "/a b") "RST ")
+                                        "tuvw|WXY " (beside (light "/a b") (dark "unti")))
                                   4 2 6 ""))
   (def! st 'prompted (rebuild 'search #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2 "" (List empty) (List empty) 0))))
   (paint st 'prompted 9 6 (multi example-rows 6 5 6 "L A B"))
@@ -244,23 +264,34 @@
                  (below (right l r) n) (below l (right r n))
                  (right (below l r) (below n m))
                  (below (right l r) (right n m)))]
-        [rows (list '("a  |a  " "unt|   " "---+   " "a  |   " "unt|unt")
-                    '("a  |a  " "   |unt" "   +---" "   |a  " "unt|unt")
-                    '("a  |a  " "unt|unt" "---+---" "a      " "untitle")
-                    '("a      " "untitle" "---+---" "a  |a  " "unt|unt")
-                    '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt")
-                    '("a  |a  " "unt|unt" "---+---" "a  |a  " "unt|unt"))])
+        ;; A five-row Below gives three rows then two, with no rule row; a
+        ;; Right paints | on every row, beside bars too.
+        [rows (list (list "a  |a  " "   |   " (beside (light "unt") "   ") "a  |   "
+                          (beside (dark "unt") (dark "unt")))
+                    (list "a  |a  " "   |   " (beside "   " (dark "unt")) "   |a  "
+                          (beside (light "unt") (dark "unt")))
+                    (list "a  |a  " "   |   " (beside (light "unt") (dark "unt")) "a      "
+                          (dark "untitle"))
+                    (list "a      " "       " (light "untitle") "a  |a  "
+                          (beside (dark "unt") (dark "unt")))
+                    (list "a  |a  " "   |   " (beside (light "unt") (dark "unt")) "a  |a  "
+                          (beside (dark "unt") (dark "unt")))
+                    (list "a  |a  " "   |   " (beside (light "unt") (dark "unt")) "a  |a  "
+                          (beside (dark "unt") (dark "unt"))))])
     (def! st 's (session (zipper '(a) 0) t 71 #:echo ""))
     (paint st 's 7 6 (multi rows 1 1 6 "")))
-  ;; A grandchild divider reaches the ancestor, through its subtree edge.
+  ;; A grandchild Below spends no row; both Right dividers stay | on every row.
   (def! st 's (session (zipper '(a) 0)
     (right (right l (below r n)) m) 71 #:echo ""))
-  (paint st 's 11 6 (multi '("a |a |a    " "  |un|     " "  +--+     " "  |a |     " "un|un|untit")
+  (paint st 's 11 6 (multi (list "a |a |a    " "  |  |     " (beside "  " (dark "un") "     ")
+                                 "  |a |     " (beside (light "un") (dark "un") (dark "untit")))
                             1 1 6 ""))
-  ;; Identical punctuation next to a divider does not affect its orientation.
+  ;; Identical punctuation next to a divider stays buffer text.
   (def! st 'punct (buffer 41 (editor '(Text from-string "---\n|||\n+++\n---\n|||"))))
   (def! st 's (session (zipper '(punct) 0) (right l r) 71 #:echo ""))
-  (paint st 's 7 6 (multi '("---|---" "|||||||" "+++|+++" "---|---" "unt|unt") 1 1 6 ""))
+  (paint st 's 7 6 (multi (list "---|---" "|||||||" "+++|+++" "---|---"
+                                (beside (light "unt") (dark "unt")))
+                          1 1 6 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "shared edit and visit preserve inactive origins beyond EOF and exact zipper focus during paint"
@@ -270,9 +301,9 @@
   (def! st 'far (rebuild 's #:windows (config t 3 80 24)))
   ;; Shared edit replaces one owned editor; the far view remains blank.
   (def! st 'edited '(far insert "λ"))
-  (paint st 'edited 9 3 (multi '("    |tλuv" "/cwd|/cwd") 1 8 3 ""))
+  (paint st 'edited 9 3 (multi (list "    |tλuv" (beside (dark "/cwd") (light "/cwd"))) 1 8 3 ""))
   (def! st 'short '(far visited "x\n" (Path new "/short")))
-  (paint st 'short 9 3 (multi '("    |x   " "/sho|/sho") 1 6 3 ""))
+  (paint st 'short 9 3 (multi (list "    |x   " (beside (dark "/sho") (light "/sho"))) 1 6 3 ""))
   (same st '(((short windows) tree) find-view 71)
     '(Option Some (AloemacsView new 71 41 99 101 #t)))
   (check-equal? (unbox calls) '()))
@@ -320,7 +351,7 @@
   (define tree (below (leaf 71 41 2 1 #t) (leaf 3 41 8 1 #t)))
   (def! st 'a (buffer 41 (editor text 8 2 8 1 0)))
   (def! st 's (session (zipper '(a) 0) tree 3 #:echo ""))
-  (def! st 'fit '(s ensure-visible 7 8)) ; full leaves 3, text heights 2
+  (def! st 'fit '(s ensure-visible 7 8)) ; leaves 4 and 3 rows; selected text height 2
   (same st '((fit editor) text-rows) 2)
   (same st '((fit page-down) point) '(Position new 9 2))
   (same st '((fit page-up) point) '(Position new 7 2))
@@ -335,17 +366,19 @@
   (same-session st 'grown (rebuild 'tiny #:buffers
     (zipper (list (buffer 41 (editor text 8 2 8 1 2) '(a path))) 0)
     #:windows (config tree 3 7 8)))
-  (paint st 'grown 7 8 (multi '("bcdef2 " "bcdef3 " "untitle" "-------" "bcdef8 " "bcdef9 " "untitle")
+  (paint st 'grown 7 8 (multi (list "bcdef2 " "bcdef3 " "bcdef4 " (dark "untitle")
+                                    "bcdef8 " "bcdef9 " (light "untitle"))
                               5 2 8 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "global fallback despite positive selected rectangle; one-row split and prompt rules"
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor '(Text from-string "abc\ndef"))))
-  (define tree (right (leaf 71) (below (leaf 3) (leaf 55))))
+  (define tree (right (leaf 71) (below (leaf 3) (below (leaf 55) (leaf 8)))))
   (def! st 's (session (zipper '(a) 0) tree 71 #:echo ""
     #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4 "" (List empty) (List empty) 0))))
-  ;; Selected left is positive; only the nested right fails.
+  ;; Selected left is positive; only the nested right fails: its two rows give
+  ;; the inner Below one row, which leaves view 8 none.
   (def! st 'fit '(s ensure-visible 7 3))
   (same st '((fit editor) text-rows) 1)
   (same st '((fit windows) tree) tree)
@@ -380,9 +413,9 @@
       (lambda () (record 'read) (begin0 (car (unbox keys)) (set-box! keys (cdr (unbox keys)))))
       (lambda () (record 'size) (apply values (car (unbox sizes))))))
   (define expected
-    (list (multi '("abc|ijk" "unt|unt") 3 5 3 "P: xy")
+    (list (multi (list "abc|ijk" (beside (light "unt") (dark "unt"))) 3 5 3 "P: xy")
           (single '("a") 1 1 2 "P" 2 1 #:name "untitled" #:width 1)
-          (multi '("abc|ijk" "unt|unt") 3 4 3 "P: xy")))
+          (multi (list "abc|ijk" (beside (light "unt") (dark "unt"))) 3 4 3 "P: xy")))
   (for ([frame expected] [size '((7 3) (1 2) (7 3))])
     (define before (ev st 's))
     (def! st 'columns '(term columns))

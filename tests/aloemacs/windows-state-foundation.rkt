@@ -437,13 +437,17 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
 (define (ansi body row column [echo-row #f] [echo ""] [prompt-row row] [prompt-column column] #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
     (if echo-row (text-body body echo-row) body)
     (format "\e[~a;~aH\e[?25h" row column)
     (if (and echo-row (>= echo-row 2))
         (string-append "\e[?25l"
-          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo prompt-row prompt-column)) "")))
 (test-case "positive fit remembers full size, mirrors minimal origins and preserves complete frames"
   (define-values (st calls) (state))

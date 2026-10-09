@@ -116,6 +116,13 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty. Split
+;; name rows are LIGHT on the selected view and DARK on every other view.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define DARK "\e[38;5;252;48;5;239m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+(define (dark row) (if (string=? row "") "" (string-append DARK row PLAIN)))
 (define (single lines row col [echo-row #f] [echo ""] [final-row row] [final-col col]
                 #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
@@ -123,7 +130,7 @@
     (format "\e[~a;~aH\e[?25h" row col)
     (if echo-row
         (string-append "\e[?25l"
-          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (mode-row name width)) "")
+          (if (>= echo-row 3) (format "\e[~a;1H~a" (sub1 echo-row) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" echo-row echo final-row final-col)) "")))
 (define (paint st s columns rows expected)
   (define before (for/list ([expr (list s `(,s buffers) `(,s windows) `((,s editor) text))])
@@ -276,11 +283,12 @@
   (same-session st 'fitted (rebuild 'entered
     #:buffers (zipper (list (buffer 41 (editor text 2 5 2 2 1))))
     #:windows (config fit-tree 2)))
-  (paint st 'fitted 9 6
-    (multi '("abcd|bcde" "unti|hijk" "----+nopq" "opqr|tuvw" "unti|unti") 4 4 6 "saved: un"))
+  ;; Top 70 is (0,0,4,3), selected 2 is (0,3,4,2), and 40 is (5,0,4,5).
+  (define rows (list "abcd|bcde" "ghij|hijk" (string-append (dark "unti") "|nopq") "opqr|tuvw"
+                     (string-append (light "unti") "|" (dark "unti"))))
+  (paint st 'fitted 9 6 (multi rows 4 4 6 "saved: un"))
   (def! st 'prompted (rebuild 'fitted #:prompt active-prompt))
-  (paint st 'prompted 9 6
-    (multi '("abcd|bcde" "unti|hijk" "----+nopq" "opqr|tuvw" "unti|unti") 6 5 6 "P x y"))
+  (paint st 'prompted 9 6 (multi rows 6 5 6 "P x y"))
   (same-session st '(fitted ensure-visible 9 6) 'fitted)
   (check-equal? (unbox calls) '()))
 
@@ -302,7 +310,8 @@
     (zipper (list (buffer 41 (editor edited-text 0 2 0 0 5 #:history history #:mark no-mark))))
     #:windows (config t 7)))
   (def! st 'fit '(back ensure-visible 9 6))
-  (paint st 'fit 9 6 (multi '("aXbc|ef  " "def |    " "    |    " "    |    " "unti|unti") 1 3))
+  (paint st 'fit 9 6 (multi (list "aXbc|ef  " "def |    " "    |    " "    |    "
+                                  (string-append (light "unti") "|" (dark "unti"))) 1 3))
   (same-session st '(back undo) (rebuild 'back #:buffers
     (zipper (list (buffer 41 (editor text 0 1 1 1 5 #:history '(List empty) #:mark no-mark))))
     #:windows (config (right (leaf 7 41 1 1) (leaf 3 41 1 1)) 7)))
@@ -348,8 +357,8 @@
   (same-session st '(s delete-window) (reset-entry 's
     (zipper (list (buffer 12 (editor text 0 1 8 9 29)) unseen a)) promoted 80))
   (def! st 'r '(s delete-window))
-  (same st `(((r windows) tree) rect-for 80 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 0 9 1)))
-  (same st `(((r windows) tree) rect-for 4 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 2 9 0)))
+  (same st `(((r windows) tree) rect-for 80 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 0 9 2)))
+  (same st `(((r windows) tree) rect-for 4 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 2 9 1)))
   (same st `(((r windows) tree) rect-for 1 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 3 9 2)))
   (same st `(((s windows) tree) rect-for 1 ,(rect 0 0 9 5)) `(Option Some ,(rect 0 3 9 2)))
   ;; Leaf sibling in a nested parent; another view of the removed buffer stays.
@@ -369,15 +378,16 @@
       (list (right (leaf 7) (leaf 2 41 0 0 #t)) (leaf 2 41 0 0 #t) 2 9 6
             (rect 5 0 4 5) (rect 0 0 9 5) #f)
       (list (below (leaf 2 41 0 0 #t) (leaf 7)) (leaf 2 41 0 0 #t) 2 9 6
-            (rect 0 0 9 2) (rect 0 0 9 5) #f)
+            (rect 0 0 9 3) (rect 0 0 9 5) #f)
       ;; Only x changes: the locked width stays zero during fallback.
       (list (right (leaf 7) (right (leaf 2 41 0 0 #t) (leaf 3)))
             (right (leaf 2 41 0 0 #t) (leaf 3)) 2 1 2
             (rect 1 0 0 1) (rect 0 0 0 1) #f)
-      ;; Only y changes: the locked height stays zero during fallback.
-      (list (below (leaf 7) (below (leaf 2 41 0 0 #t) (leaf 3)))
-            (below (leaf 2 41 0 0 #t) (leaf 3)) 2 9 2
-            (rect 0 1 9 0) (rect 0 0 9 0) #f)
+      ;; Only y changes: the locked height stays zero during fallback. A zero
+      ;; height is the bottom of a one-row Below, so the lock sits under a top.
+      (list (below (leaf 7) (below (below (leaf 3) (leaf 2 41 0 0 #t)) (leaf 4)))
+            (below (below (leaf 3) (leaf 2 41 0 0 #t)) (leaf 4)) 2 9 3
+            (rect 0 2 9 0) (rect 0 1 9 0) #f)
       (list (right (right (right (leaf 2 41 0 0 #t) (leaf 3)) (leaf 4)) (leaf 7))
             (right (right (leaf 2 41 0 0 #t) (leaf 3)) (leaf 4)) 2 7 6
             (rect 0 0 0 5) (rect 0 0 1 5) #f)
@@ -460,19 +470,29 @@
   (for ([split-key '("2" "3")])
     (define below? (equal? split-key "2"))
     (define keys (list "ctrl-x" split-key "ctrl-x" "o" "x" "ctrl-x" "0" "escape"))
-    (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (2 3) (9 6) (9 6)))
+    ;; The resize leaves a zero nominal axis in both orientations: two columns
+    ;; split Right, and one root row split Below.
+    (define sizes `((9 6) (9 6) (9 6) (9 6) (9 6) ,(if below? '(2 2) '(2 3)) (9 6) (9 6)))
     (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
-    (define split-rows (if below?
-      '("abc      " "/cwd/a.tx" "---------" "abc      " "/cwd/a.tx")
-      '("abc |abc " "def |def " "    |    " "    |    " "/cwd|/cwd")))
+    ;; View 0 is the original and view 1 the new one; the selected bar is LIGHT.
+    (define (bars selected name) (list ((if (= selected 0) light dark) name)
+                                       ((if (= selected 1) light dark) name)))
+    (define (split-rows selected) (if below?
+      (let ([bar (bars selected "/cwd/a.tx")])
+        (list "abc      " "def      " (car bar) "abc      " (cadr bar)))
+      (list "abc |abc " "def |def " "    |    " "    |    "
+            (string-join (bars selected "/cwd") "|"))))
     (define edited-rows (if below?
-      '("xabc     " "/cwd/a.tx" "---------" "xabc     " "/cwd/a.tx")
-      '("xabc|xabc" "def |def " "    |    " "    |    " "/cwd|/cwd")))
+      (let ([bar (bars 1 "/cwd/a.tx")])
+        (list "xabc     " "def      " (car bar) "xabc     " (cadr bar)))
+      (list "xabc|xabc" "def |def " "    |    " "    |    " (string-join (bars 1 "/cwd") "|"))))
     (define frames
-      (list start start (multi split-rows 1 1 6 "")
-        (multi split-rows 1 1 6 "")
-        (multi split-rows (if below? 4 1) (if below? 1 6) 6 "")
-        (single '("xa" "de") 1 2 3 "" #:name "/cwd/a.txt" #:width 2)
+      (list start start (multi (split-rows 0) 1 1 6 "")
+        (multi (split-rows 0) 1 1 6 "")
+        (multi (split-rows 1) (if below? 4 1) (if below? 1 6) 6 "")
+        (if below?
+            (single '("xa") 1 2 2 "/c" #:name "/cwd/a.txt" #:width 2)
+            (single '("xa" "de") 1 2 3 "" #:name "/cwd/a.txt" #:width 2))
         (multi edited-rows (if below? 4 1) (if below? 2 7) 6 "")
         (single '("xabc" "def" "" "" "") 1 2 6 "" #:name "/cwd/a.txt" #:width 9)))
     (define-values (host calls disk) (counted-fs))
@@ -593,7 +613,8 @@
     (if (eq? (car op) 'delete-window)
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
                                  (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9))
-        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "unti|unti")
+        (paint st 'r 9 6 (multi (list "abc |abc " "def |def " "    |    " "    |    "
+                                      (string-append (dark "unti") "|" (light "unti")))
                                  (if prompt? 6 1) (if prompt? 5 6) 6 shown))))
   (for* ([token '("" "saved" "failed")] [mode '(neither prompt search both)]
          [t (list (leaf 7) (right (leaf 7 41 0 0 #t) (leaf 2))
@@ -610,7 +631,8 @@
     (if (equal? t (leaf 7))
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
                                  (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9))
-        (paint st 'r 9 6 (multi '("abc |abc " "def |def " "    |    " "    |    " "unti|unti")
+        (paint st 'r 9 6 (multi (list "abc |abc " "def |def " "    |    " "    |    "
+                                      (string-append (light "unti") "|" (dark "unti")))
                                  (if prompt? 6 1) (if prompt? 5 1) 6 shown))))
   (check-equal? (unbox calls) '()))
 

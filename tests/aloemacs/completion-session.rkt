@@ -157,13 +157,20 @@
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+;; Split name rows are bars: LIGHT on the selected view, DARK on the others.
+(define DARK "\e[38;5;252;48;5;239m")
+(define (dark row) (if (string=? row "") "" (string-append DARK row PLAIN)))
 (define (frame body row column rows shown cursor-row cursor-column #:name [name "untitled"] #:width [width 0])
   (string-append "\e[?25l\e[2J\e[H"
     (if rows (text-body body rows) body)
     (format "\e[~a;~aH\e[?25h" row column)
     (if (and rows (>= rows 2))
         (string-append "\e[?25l"
-          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (mode-row name width)) "")
+          (if (>= rows 3) (format "\e[~a;1H~a" (sub1 rows) (light (mode-row name width))) "")
           (format "\e[~a;1H~a\e[~a;~aH\e[?25h" rows shown cursor-row cursor-column)) "")))
 
 (test-case "exact fourteen fields, helper signatures, command and production map inventories"
@@ -691,11 +698,12 @@
           (string-append "\e[?25l\e[2J\e[H"
             (string-join
               (append (list "body|body") (make-list (sub1 text-height) "    |    ")
-                      (if (>= root 2) (list "unti|unti") '())) "\r\n"))
+                      (if (>= root 2) (list (string-append (light "unti") "|" (dark "unti"))) '()))
+              "\r\n"))
           (string-append (editor-frame body 1 1)
             (if (< height 2) ""
                 (string-append "\e[?25l"
-                  (if (>= root 2) (format "\e[~a;1H~a" root (mode-row "untitled" width)) ""))))))
+                  (if (>= root 2) (format "\e[~a;1H~a" root (light (mode-row "untitled" width))) ""))))))
     (string-append prefix suffix
       (if (< height 2)
           (if split? "\e[1;1H\e[?25h" "")
@@ -716,7 +724,7 @@
          (AloemacsWindowTree Leaf (AloemacsView new 1 0 0 0 #t))) 0 9 4)))
   (def! st 'split `(split with-active-prompt ,(p "x" 0 " [No match]")))
   (check-equal? (ev st '(split frame 9 4))
-    "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\nunti|unti\e[4;1HFind file\e[4;9H\e[?25h")
+    "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1HFind file\e[4;9H\e[?25h")
   (def! st 'listed `(split with-active-prompt ,(p "x" 0 " [No match]" '("a" "b"))))
   (for* ([width '(1 9)] [height '(1 2 4 8)])
     (def! st 'listed-fit `(listed ensure-visible ,width ,height))

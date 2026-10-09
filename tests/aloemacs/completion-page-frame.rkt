@@ -112,17 +112,25 @@
   (for/list ([i (in-range top (+ top h))])
     (define row (if (< i (length lines)) (list-ref lines i) ""))
     (safe (clip (substring row (min left (string-length row))) w))))
-(define (leaf-cells lines w h top left name)
+(define (leaf-cells lines w h top left name selected?)
   (append (for/list ([row (in-list (text-cells lines w (text-height h) top left))])
             (string-append row (make-string (- w (string-length row)) #\space)))
-          (if (>= h 2) (list (mode name w)) '())))
+          (if (>= h 2) (list (painted (mode name w) selected?)) '())))
 (define (side a b) (map (lambda (l r) (string-append l "|" r)) a b))
+;; One-view name rows are the LIGHT bar; an empty row stays empty.
+(define LIGHT "\e[38;5;16;48;5;250m")
+(define PLAIN "\e[0m")
+(define (light row) (if (string=? row "") "" (string-append LIGHT row PLAIN)))
+;; Split name rows are bars: LIGHT on the selected view, DARK on the others.
+(define DARK "\e[38;5;252;48;5;239m")
+(define (painted row selected?)
+  (if selected? (light row) (if (string=? row "") "" (string-append DARK row PLAIN))))
 (define (single body text-row text-col w h name echo lines final-row final-col)
   (string-append "\e[?25l\e[2J\e[H" body (cursor text-row text-col) "\e[?25h"
     (if (< h 2) ""
         (string-append "\e[?25l"
           (if (>= (root-height lines h) 2)
-              (string-append (cursor (root-height lines h) 1) (mode name w)) "")
+              (string-append (cursor (root-height lines h) 1) (light (mode name w))) "")
           (list-suffix lines w h) (cursor h 1) (safe (clip echo w))
           (cursor final-row final-col) "\e[?25h"))))
 (define (multi rows w h echo lines final-row final-col)
@@ -161,7 +169,7 @@
         (if (< h 2) 1 h) (if (< h 2) 1 (min w 4))) calls)))
   ;; Literal complete goldens guard the independent frame builder as well.
   (paint st 'middle 9 12
-    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1Huntitled \e[4;1Ha08\e[5;1Ha09\e[6;1Ha10\e[7;1Ha11\e[8;1Ha12\e[9;1Ha13\e[10;1Ha14\e[11;1H...(+11)\e[12;1HP:x\e[12;4H\e[?25h" calls)
+    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled \e[0m\e[4;1Ha08\e[5;1Ha09\e[6;1Ha10\e[7;1Ha11\e[8;1Ha12\e[9;1Ha13\e[10;1Ha14\e[11;1H...(+11)\e[12;1HP:x\e[12;4H\e[?25h" calls)
   (paint st 'tail 9 5
     "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h\e[?25l\e[2;1Ha15\e[3;1Ha16\e[4;1Ha17\e[5;1HP:x\e[5;4H\e[?25h" calls)
   (paint st 's 1 10
@@ -217,11 +225,11 @@
       (define root (root-height lines 12))
       (define split-rows
         (if (equal? tree (right l r))
-            (side (leaf-cells a-lines 4 root 0 0 "/a")
-                  (leaf-cells a-lines 4 root 3 1 "/a"))
-            (let* ([early (quotient root 2)] [late (- root early 1)])
-              (append (leaf-cells a-lines 9 early 0 0 "/a") '("---------")
-                      (leaf-cells a-lines 9 late 3 1 "/a")))))
+            (side (leaf-cells a-lines 4 root 0 0 "/a" #t)
+                  (leaf-cells a-lines 4 root 3 1 "/a" #f))
+            (let* ([early (quotient (add1 root) 2)] [late (- root early)])
+              (append (leaf-cells a-lines 9 early 0 0 "/a" #t)
+                      (leaf-cells a-lines 9 late 3 1 "/a" #f)))))
       (paint st source 9 12 (multi split-rows 9 12 "P:x" lines 12 4) calls)
       (def! st 'fitted `(,source ensure-visible 9 12))
       (same st '(fitted prompt) `(,source prompt))
@@ -229,22 +237,23 @@
         (if (equal? tree (right l r)) (right (leaf 7 41 (if (eq? source 's) 2 0) 0 #t) r)
             (below (leaf 7 41 (if (eq? source 's) 3 2) 0 #t) r)))))
   ;; A positive selected leaf cannot rescue a zero-height leaf elsewhere.
+  ;; Eight listed names leave a one-row root, so the Below's bottom has no rows.
   (define tree (right l (below r (leaf 55 41 2 1 #t))))
   (def! st 's (session (zipper '(a)) tree))
-  (same st '(s root-rect 9 11) '(AloemacsWindowRect new 0 0 9 2))
-  (same st '(((s windows) tree) rect-for 7 (AloemacsWindowRect new 0 0 9 2))
-    '(Option Some (AloemacsWindowRect new 0 0 4 2)))
-  (check-false (ev st '(((s windows) tree) positive-layout? (s root-rect 9 11))))
-  (same st '(s fit-rect 9 11) '(AloemacsWindowRect new 0 0 9 2))
-  (def! st 'fitted '(s ensure-visible 9 11))
+  (same st '(s root-rect 9 10) '(AloemacsWindowRect new 0 0 9 1))
+  (same st '(((s windows) tree) rect-for 7 (AloemacsWindowRect new 0 0 9 1))
+    '(Option Some (AloemacsWindowRect new 0 0 4 1)))
+  (check-false (ev st '(((s windows) tree) positive-layout? (s root-rect 9 10))))
+  (same st '(s fit-rect 9 10) '(AloemacsWindowRect new 0 0 9 1))
+  (def! st 'fitted '(s ensure-visible 9 10))
   (check-equal? (ev st '((fitted editor) scroll-row)) 3)
   (check-equal? (ev st '((fitted editor) text-rows)) 1)
   (same st '(fitted prompt) '(s prompt))
-  (paint st 'fitted 9 11 (single "stuvwx" 1 3 9 11 "/a" "P:x" first-page 11 4) calls)
+  (paint st 'fitted 9 10 (single "stuvwx" 1 3 9 10 "/a" "P:x" first-page 10 4) calls)
   (def! st 'tail '((fitted handle-key "page-down") handle-key "page-down"))
-  (def! st 'tail-fit '(tail ensure-visible 9 11))
+  (def! st 'tail-fit '(tail ensure-visible 9 10))
   (same st '(tail-fit prompt) '(tail prompt))
-  (same st '(tail-fit fit-rect 9 11) '(AloemacsWindowRect new 0 0 4 5))
+  (same st '(tail-fit fit-rect 9 10) '(AloemacsWindowRect new 0 0 4 4))
   (check-equal? (unbox calls) '()))
 
 (test-case "unchanged production runner: page both ways, resize, refresh, typed Return, cancel and quit"
