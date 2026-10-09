@@ -107,7 +107,11 @@ remains. **Idle echo** is ready to implement at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. When the
 selected window paints a mode line, an idle echo row is blank. A
 selected window with no mode line still shows the name there.
-Save, search, and prompt messages stay. **Completion** has an accepted spec at
+Save, search, and prompt messages stay. **Window pictures** is ready
+to implement at [`window-pictures/`](window-pictures/),
+aloemacs-window-pictures 000. A multi-window frame reuses a leaf's
+recorded rows when that leaf's inputs are unchanged. One window
+still uses the editor frame. **Completion** has an accepted spec at
 [`completion/`](completion/). Tab completes find-file and save-as;
 recursive scans belong to the nongeneric `AloemacsCompletionScan`,
 while Fs queries and results stay on `(AloemacsSession H)`.
@@ -157,6 +161,14 @@ Locked display change. A standalone checkpoint, not a new layer.
 |---|---|---|
 | idle-echo | [`idle-echo/`](idle-echo/) | **Ready to implement.** aloemacs-idle-echo 000 |
 
+## Performance
+
+Locked frame-cost repair. A standalone checkpoint, not a new layer.
+
+| Identity | Path | This conversation |
+|---|---|---|
+| window-pictures | [`window-pictures/`](window-pictures/) | **Ready to implement.** aloemacs-window-pictures 000 |
+
 ## Not in this map
 
 Easy to smuggle in. They are not.
@@ -191,6 +203,7 @@ Easy to smuggle in. They are not.
 | Prompt commands | No-TTY: `C-x C-f` opens a path and leaves the previous buffer in the zipper. `C-x C-w` writes the current text and binds the path. `C-x b` selects a buffer by its exact name. A refused path, a missed name, and Escape leave the buffers as they were |
 | Windows | No-TTY: `C-x 2` and `C-x 3` show two views of the current buffer. `C-x o` moves between views. `C-x 0` deletes the selected view. `C-x l` locks a view so a later split or delete leaves it in place. One view still frames as before |
 | Mode line | No-TTY: a tall window's last text row shows that window's buffer name. The echo row still shows the path, `untitled`, or `saved:` / `failed:`. A one-text-row window stays today's frame. Two tall views show two names |
+| Window pictures | No-TTY: four columns of one buffer paint the same bytes after their leaf rows are recorded. A later Down still paints those bytes. The recorded paint stays under the key-repeat interval at the first screen and deep in the file |
 | Window bars | No-TTY: a tall one-view frame paints the lighter bar on the name row and leaves the echo row outside it. Two tall views stacked have no dash-rule row between them. The selected bar is lighter and the other is darker. A right split still has its vertical bar |
 | Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
 

@@ -20,7 +20,9 @@ Final human review of that series remains. The mode-line series is
 implemented (aloemacs-mode-line 000–001) at
 [`mode-line/`](mode-line/). Final human review of that series
 remains. The idle-echo follow-on is ready to implement at
-[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. Path completion is back with the designer at
+[`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. The multi-window frame repair is ready to implement at
+[`window-pictures/`](window-pictures/), aloemacs-window-pictures 000.
+Path completion is back with the designer at
 [`completion/`](completion/). The recursive scans move off
 `(AloemacsSession H)`. aloemacs-completion 000 is not ready to
 implement. That revision does not replace idle-echo. Paging the
