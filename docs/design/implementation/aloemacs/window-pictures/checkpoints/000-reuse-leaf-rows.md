@@ -28,7 +28,7 @@ not make unselected windows follow the selected window's scroll.
 ## Why this is the repair
 
 The measurement is
-`archive/design-sketches/2026-10-09-aloemacs-multi-window-scroll/report.md`.
+`archive/design-sketches/2026-10-09-aloemacs-multi-window-scroll/profile-investigation-grok.md`.
 That file is evidence. This checkpoint is the assignment.
 
 The runner fits the viewport, writes one frame, then reads one key.
@@ -59,8 +59,13 @@ to 136 ms.
 A Down that has not changed a leaf's text, scroll, rectangle, name,
 or selection does not change that leaf's rows. The cursor is a
 terminal address written after the body. Reusing the recorded rows
-skips both the repeated leaf build and the stale walk. The walk still
-happens the first time a leaf is painted at a new origin.
+skips both the repeated leaf build and the stale walk. The walk
+still happens the first time a leaf is painted at a new origin.
+
+An edit changes the history length, so every leaf of that buffer
+misses, including a leaf whose scroll stayed put. Each of those leaves walks `focus-at` from the cursor back to
+its own origin. Typing or a held Backspace deep in this file stays
+near the measured 136 ms. This slice leaves that cost in place.
 
 ## Authority, identity, and starting point
 
@@ -99,7 +104,8 @@ bytes already in the working tree.
 ### May edit
 
 - `examples/aloemacs/file.aloe` — the picture class, the view
-  field, leaf-row reuse, `record-pictures`, and the `visited` clear
+  field, leaf-row reuse, `record-pictures`, the skip clear, and
+  the `visited` clear
 - `examples/aloemacs/main.aloe` — only the initial `AloemacsView`
   constructor, to pass the new picture argument
 - `host/racket/aloemacs-run.rkt` — call `record-pictures` after
@@ -179,8 +185,14 @@ still a type error.
 
 Updates that already send `view with` keep the picture. Do not
 rebuild those views with `AloemacsView new`. A split may copy a
-picture onto the fresh view. The fresh rectangle differs, so the
-next record rebuilds that leaf.
+picture onto the fresh view. A picture recorded for the rectangle
+being split misses on the fresh leaf, because that leaf is
+smaller, and the next record rebuilds it. A picture recorded for
+the half the fresh leaf is about to occupy matches. At 220
+columns a right split is 110, one bar column, and 109, so the
+fresh leaf is the 109-column side. Closing the selected leaf
+keeps the survivor's picture at that 109-column size. The skip
+clear drops that picture before a later split can copy it.
 
 ### One builder
 
@@ -213,9 +225,12 @@ uses. It does not fit the cursor and it does not change scroll,
 point, echo, or selection.
 
 When the tree is a single leaf, or the layout at that root is not
-positive, return `self` unchanged. Do not build rows and do not
-write a picture. The one-window path stays `ensure-visible` plus
-`AloemacsEditor.frame`.
+positive, do not build rows and do not write a picture. Drop every
+stored picture. If every picture is already `(Option None)`,
+return `self` unchanged. Otherwise return the session whose
+leaves hold `(Option None)`. The one-window path stays
+`ensure-visible` plus `AloemacsEditor.frame`, and that painter
+does not read pictures.
 
 Otherwise walk the leaves the way `frame-rows` walks them. A leaf
 whose picture matches keeps that picture. Any other leaf stores
@@ -226,11 +241,19 @@ above. Return the session whose tree holds those pictures.
 buffer being replaced, including leaves that are not selected.
 Replacing that editor keeps the buffer id and can leave history
 length at 0, so a key compare would reuse the previous file's
-rows. No other command clears pictures. Motion, search,
-`other-window`, and `ensure-visible` leave them in place. An edit
-changes history length, a rename changes `(buffer name)`, and a
-selection change flips `selected`. The next record rebuilds the
-leaves whose keys no longer match.
+rows. A skipped record is the other clear. Motion, search,
+`other-window`, and `ensure-visible` leave pictures in place. An
+edit changes history length, a rename changes `(buffer name)`, and
+a selection change flips `selected`. The next record rebuilds the
+leaves whose keys no longer match, and an edit rebuilds every
+leaf of that buffer.
+
+History length can repeat. Undo lowers it, and a later edit can
+raise it to a length a picture already stores, with different
+text. A record between those two keys stores the lower length, so
+the repeat misses. A skipped record would leave the old picture
+in place across both keys. Dropping pictures on that skip is what
+keeps the later split from painting the pre-undo rows.
 
 `frame` after `record-pictures`, with the same `columns` and
 `rows`, paints the same string as `frame` on the session from
@@ -304,8 +327,9 @@ and 54 rows:
 
 Then, on the deep recorded session: `insert` of `"q"`,
 `record-pictures`, and `frame`. The string differs from the
-pre-insert frame and contains `"q"`. `undo`, `record-pictures`, and
-`frame` equal the pre-insert frame.
+pre-insert frame and contains `"q"`. Every leaf of that buffer
+was rebuilt. `undo`, `record-pictures`, and `frame` equal the
+pre-insert frame.
 
 Visit a path while the buffer's history is still empty, split to
 four windows, and record. `visited` of that same path with different
@@ -315,9 +339,24 @@ picture. The unselected leaves must not keep the previous file's
 rows. History length is still 0 and the path text is unchanged, so
 this is the case the `visited` clear exists for.
 
-A one-window session at this geometry is unchanged by
-`record-pictures`: the session before the send equals the session
-after it.
+A one-window session at this geometry has never recorded.
+`record-pictures` returns it unchanged: the session before the
+send equals the session after it.
+
+Close, undo, and a different insert, then split again. From a
+fitted one-window session at 220 columns and 54 rows: `insert` of
+`"a"`, `split-right`, and `record-pictures`. Then `delete-window`
+and `record-pictures` again. That second record skips. The
+surviving leaf's picture is `(Option None)`. Then `undo`,
+`insert` of `"b"`, `split-right`, `record-pictures`, and `frame`
+equal `frame` on a session that took the same steps and never
+received `record-pictures`. The history length is back where the
+first record stored it, and the text differs. Both frames show
+the `"b"` insert in the unselected leaf.
+
+A recorded multi-window session sent `record-pictures` of `0` and
+`0` takes the other skip. The root is not positive. Every leaf's
+picture is `(Option None)`.
 
 ### Timing bar
 
@@ -394,4 +433,8 @@ Stop. Do not issue 001.
 - Caching the echo row, the completion addresses, or the cursor
   address
 - Recording pictures from `ensure-visible` or from `single-frame`
+- Reusing a leaf across an edit. A changed history length rebuilds
+  every leaf of that buffer
+- A buffer revision that only increases. The skip clear and the
+  `visited` clear cover this slice
 - Mutation, in Aloe or in the terminal buffer

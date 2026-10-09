@@ -21,7 +21,7 @@ A multi-window frame reuses each leaf's recorded rows while that
 leaf's scroll, buffer history, name, selection, and rectangle stay
 the same. One window still uses the editor frame. The measurement
 behind the bar is
-`archive/design-sketches/2026-10-09-aloemacs-multi-window-scroll/report.md`.
+`archive/design-sketches/2026-10-09-aloemacs-multi-window-scroll/profile-investigation-grok.md`.
 That report is not part of the assignment.
 
 Hand this checkpoint to an implementer:
