@@ -18,9 +18,10 @@ Series identity is **aloemacs-window-point**. Checkpoint 000 is spoken
 `checkpoints/000-window-point.md`. Numbers are three digits, start at
 000, and are never renumbered. The intended series is that one
 checkpoint. The manager adds a later number only when 000 would not
-fit one implementer conversation, and that number continues the same
-handoff. Do not write global checkpoint numbers. Do not write
-`spec.md` in the discussion that issued this charter.
+fit one implementer conversation. That number keeps the handoff, the
+entry clamp, and the same-buffer search branch in one checkpoint.
+Do not write global checkpoint numbers. Do not write `spec.md` in
+the discussion that issued this charter.
 
 Each window showing a buffer keeps the cursor it had there. `C-x o`
 restores that cursor and that window's origin before the fit. An edit

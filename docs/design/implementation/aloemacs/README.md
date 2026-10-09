@@ -79,7 +79,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 19 | Completion | [`completion/`](completion/) | **Spec accepted.** aloemacs-completion 000 is ready to implement; 001 waits for review of 000. | 16–18 (prompt commands, windows, mode line) |
 | 20 | Completion page | [`completion-page/`](completion-page/) | **Charter.** Designer writes `spec.md`. | 19 (painted completion list) |
 | 21 | Window bars | [`window-bars/`](window-bars/) | **Charter.** Designer writes `spec.md`. | 17, 18 (windows, mode line) |
-| 22 | Window point | [`window-point/`](window-point/) | **Charter.** Designer writes `spec.md`. | 17 (windows) |
+| 22 | Window point | [`window-point/`](window-point/) | **Charter.** Designer writes `spec.md`. | 17 (windows), window-pictures 000 |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
