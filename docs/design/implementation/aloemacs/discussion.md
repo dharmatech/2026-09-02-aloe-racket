@@ -37,7 +37,10 @@ review of that series remains. The mode-line series is implemented
 at [`mode-line/`](mode-line/), aloemacs-mode-line 000–001. Final
 human review of that series remains. The standalone checkpoint aloemacs-idle-echo 000 at
 [`idle-echo/checkpoints/000-blank-beside-mode-line.md`](idle-echo/checkpoints/000-blank-beside-mode-line.md)
-is ready to implement. Do not write a charter for it. Path completion is back with the designer at
+is ready to implement. Do not write a charter for it. The standalone
+checkpoint aloemacs-window-pictures 000 at
+[`window-pictures/`](window-pictures/) is implemented. Do not issue
+001. Path completion is back with the designer at
 [`completion/charter.md`](completion/charter.md). Do not revise
 its `spec.md` here. Completion paging is chartered at
 [`completion-page/charter.md`](completion-page/charter.md). Do not
@@ -82,6 +85,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Windows | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). Final human review remains |
 | Mode line | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). Final human review remains |
 | Idle echo | **Ready to implement.** Standalone aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/) |
+| Window pictures | **Implemented.** Standalone aloemacs-window-pictures 000 at [`window-pictures/`](window-pictures/). Do not issue 001 |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |

@@ -115,6 +115,12 @@ bytes already in the working tree.
 - `tests/aloemacs/window-pictures.rkt` (new)
 - `tests/aloemacs/viewport-runner.rkt` — the source-order check,
   so `record-pictures` is part of the one loop
+- `tests/aloemacs/runner-check.rkt` — only the two
+  `driver-prepare!` counts and the resize test's name. A steady
+  size prepares seven forms: columns, rows, handle-key, quit, and
+  one fit, record, and frame. Three sizes prepare thirteen: those
+  four, plus one triple for each size. The resize name says fit,
+  record, and frame.
 - Every other constructor or expected value of `AloemacsView` in
   `tests/aloemacs/` and `tests/parenthetical-construction/`, only
   to pass the new picture argument
@@ -306,6 +312,10 @@ mentions each of these once, in this order: `(term columns)`,
 `aloemacs-editor frame`, `(term read-key)`. Keep that order check,
 with `record-pictures` added. `tests/aloemacs/file-runner.rkt`
 still requires the string `aloemacs-editor frame`.
+`tests/aloemacs/runner-check.rkt` counts every `driver-prepare!`.
+The four forms prepared once are columns, rows, handle-key, and
+quit. Each size adds ensure-visible, record-pictures, and frame,
+so a steady size expects 7 and the three-size resize expects 13.
 
 ## Tests
 
