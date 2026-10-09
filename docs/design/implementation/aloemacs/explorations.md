@@ -30,7 +30,10 @@ painted list is chartered at [`completion-page/`](completion-page/).
 The designer writes that spec. It is not a completion checkpoint.
 Window bars are chartered at [`window-bars/`](window-bars/). The
 designer writes that spec. The mode line becomes the horizontal
-edge, with a lighter bar on the selected window.
+edge, with a lighter bar on the selected window. Window point is
+chartered at [`window-point/`](window-point/). The designer writes
+that spec. Each window showing a buffer keeps its own cursor, and
+`C-x o` restores it before the fit.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -136,7 +139,7 @@ view of a buffer, not a second copy of the editor class.
 
 | # | Exploration | Note |
 |---|---|---|
-| 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line is the separate item 10 |
+| 9 | **Windows** (split right, split below, delete, other-window) | **Implemented.** aloemacs-windows 000–006 at [`windows/`](windows/). A window is a view of a buffer. Split below (`C-x 2`), split right (`C-x 3`), other-window (`C-x o`), delete (`C-x 0`), and lock (`C-x l`). Final human review remains. The mode line is the separate item 10. **Window point** is chartered at [`window-point/`](window-point/): each window showing a buffer keeps its own cursor, and `C-x o` restores that cursor before the fit. The designer writes `spec.md` |
 | 10 | **Mode line** | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). A per-window row shows the buffer name on a dash fill. The echo row stays the message row. A leaf shorter than two rows keeps today's text frame. Final human review remains. A mode name waits until language modes exist. **Window bars** is chartered at [`window-bars/`](window-bars/): that row is the horizontal edge, the Below dash rule goes away, and the selected bar is lighter than the others. The designer writes `spec.md`. The vertical-bar character stays |
 
 ---
@@ -213,7 +216,8 @@ Leave these until a slice is blocked by them.
    aloemacs-prompt-commands 000–002.
 5. **Windows + lock** — implemented at [`windows/`](windows/),
    aloemacs-windows 000–006. A window is a view of a buffer.
-   Final human review remains.
+   Final human review remains. **Window point** is chartered at
+   [`window-point/`](window-point/). The designer writes `spec.md`.
 6. **Mode line** — implemented at [`mode-line/`](mode-line/),
    aloemacs-mode-line 000–001. A per-window row shows the buffer
    name. The echo row stays the message row. Final human review

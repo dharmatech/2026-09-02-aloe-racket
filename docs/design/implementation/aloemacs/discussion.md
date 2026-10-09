@@ -46,6 +46,8 @@ its `spec.md` here. Completion paging is chartered at
 [`completion-page/charter.md`](completion-page/charter.md). Do not
 write its `spec.md` here. Window bars are chartered at
 [`window-bars/charter.md`](window-bars/charter.md). Do not write
+its `spec.md` here. Window point is chartered at
+[`window-point/charter.md`](window-point/charter.md). Do not write
 its `spec.md` here.
 Do not reopen other product behavior in the implemented series.
 
@@ -86,6 +88,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Mode line | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). Final human review remains |
 | Idle echo | **Ready to implement.** Standalone aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/) |
 | Window pictures | **Implemented.** Standalone aloemacs-window-pictures 000 at [`window-pictures/`](window-pictures/). Do not issue 001 |
+| Window point | **Charter.** Designer writes `spec.md`. [`window-point/`](window-point/) |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |
