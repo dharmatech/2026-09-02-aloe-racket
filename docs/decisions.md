@@ -255,3 +255,14 @@ A later macro may replace this form only after its expansion is shown to
 preserve source-order evaluation and declaration-order checking, including
 the expected type a function expression receives from its field. This
 series builds no macro and does not have to prove that replacement.
+
+## Field update `with` (2026-10-08)
+
+Decided: selector-position `with` updates a concrete `(fields ...)` instance.
+The tail is a nonempty list of `(name expr)` pairs in the `new*` shape. Pair
+names are literal fields and bind nothing. The result keeps the receiver's
+class and type arguments. Unwritten fields keep their stored values. Values
+are checked in declaration order and evaluated in written order against the
+original receiver. Rejected for this slice: `with*`, a prefix `with`, a flat
+tail, instance `new*` as a partial update, punning, nested field paths,
+generated per-field methods, constructor-class updates, and a Mirror row.

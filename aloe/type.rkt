@@ -576,7 +576,8 @@
     (typecheck-program expressions environment))
   VOID)
 
-(define (infer-expression expression environment expected)
+(define (infer-expression expression environment expected
+                          [mismatch-context #f])
   (define inferred
     (match expression
       [(int-expr _ _) INT]
@@ -628,10 +629,21 @@
        (infer-case scrutinee clauses else-body environment expected)]
       [(new-star-expr receiver bindings _)
        (infer-new-star receiver bindings environment expected)]
+      [(with-expr receiver bindings _)
+       (infer-with receiver bindings environment)]
       [(send-expr receiver selector arguments _ _)
        (infer-send receiver selector arguments environment expected)]))
   (when expected
-    (unify-types! inferred expected))
+    ;; A context names what the expected type belongs to, such as a with
+    ;; field, in the mismatch report.
+    (unify-types!
+     inferred
+     expected
+     (and mismatch-context
+          (format "type mismatch for ~a: expected ~a, got ~a"
+                  mismatch-context
+                  (type->datum expected)
+                  (type->datum inferred)))))
   (retain-expression-observation! expression inferred environment)
   (observe-selector-receiver! expression inferred environment)
   inferred)
@@ -1253,6 +1265,44 @@
    class constructor
    (map (lambda (name) (hash-ref expressions name)) field-names)
    environment expected))
+
+(define (infer-with receiver-expression bindings environment)
+  (define receiver-type
+    (resolve-type (infer-expression receiver-expression environment #f)))
+  (unless (and (instance-type? receiver-type)
+               (not (class-info-explicit-constructors?
+                     (instance-type-class receiver-type))))
+    (raise-type-error
+     "ineligible with: receiver must be an instance of a class declared with fields, got ~a"
+     (type->datum receiver-type)))
+  (define class (instance-type-class receiver-type))
+  (define constructor (class-constructor class 'new))
+  (unless constructor
+    (raise-type-error "ineligible with: class has no generated new constructor"))
+  (define fields (constructor-declaration-fields constructor))
+  (define declared
+    (make-hasheq
+     (map (lambda (field) (cons (field-declaration-name field) #t)) fields)))
+  (define expressions (make-hasheq))
+  (for ([binding (in-list bindings)])
+    (define name (construction-binding-name binding))
+    (unless (hash-has-key? declared name)
+      (raise-type-error "unknown field ~a for with" name))
+    (when (hash-has-key? expressions name)
+      (raise-type-error "duplicate field ~a for with" name))
+    (hash-set! expressions name (construction-binding-value binding)))
+  ;; Written values are checked in declaration order against the receiver's
+  ;; instantiation. Unwritten fields keep their stored, already-checked values.
+  (define substitution (instance-substitution receiver-type))
+  (for ([field (in-list fields)])
+    (define name (field-declaration-name field))
+    (when (hash-has-key? expressions name)
+      (infer-expression
+       (hash-ref expressions name)
+       environment
+       (type-from-sexpr (field-declaration-type field) environment substitution)
+       (format "with field ~a" name))))
+  receiver-type)
 
 (define (infer-construction class constructor arguments environment expected)
   (define selector (constructor-declaration-selector constructor))

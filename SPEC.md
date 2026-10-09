@@ -161,6 +161,10 @@ For a class declared with `(fields ...)`, positional `(receiver new arg
 singleton `new` constructor. The latter is syntax, not a send; see
 section 4.11. It adds no constructor or reflected message.
 
+An instance of a `(fields ...)` class is updated by `(receiver with (name
+expr) ...)`. That is syntax, not a send; see section 4.12. It builds a new
+instance with the same `new` constructor and adds no reflected message.
+
 `List` is not constructed with field-`new`. See section 6.
 
 ### 3.3 Protocols (0.2 experiment)
@@ -391,6 +395,50 @@ Reader and identifier rules are unchanged. A field named `x:` uses
 There are no defaults, mixed tails, or labels on other sends or explicit
 constructors. Reflection exposes the existing `new` row, not `new*`.
 
+### 4.12 `with`
+
+`(receiver-expr with (field-name value-expr) ...)` is syntax in the second
+position, where `with` is reserved. The tail is a nonempty list of binding
+pairs in the `new*` shape. Each pair is a proper list of two elements whose
+first element is the field's exact source symbol. Pair shapes are validated
+and an empty tail is rejected before the receiver or values are checked; a
+malformed pair or an empty tail is a syntax error. The flat spelling
+`(receiver with name expr)` is not accepted.
+
+The receiver is checked by the existing expression rules, and its errors are
+reported first. Its type must be a concrete instance of a class declared with
+`(fields ...)`; otherwise the form is ineligible `with`. Class objects,
+`List`, primitive values, protocol-typed values, and instances of explicit
+`(constructors ...)` classes are ineligible, even if a declared constructor
+is named `new`. Computed receivers with one eligible instance type are
+allowed. A `(fields)` class has no legal `with`.
+
+Names are checked in written order. The first unknown or duplicate field is
+reported, whichever occurs first. There is no missing-field error; one pair
+is enough on a class of many fields. These checks precede value checking.
+
+Written values are checked in field declaration order, each against that
+field's type at the receiver's instantiation. The result type is the
+receiver's type, including its known type arguments; a replacement does not
+change one. A receiver type argument that is still unknown may be determined
+by ordinary unification with a replacement. Unwritten fields are not checked
+again. Checking does not expand the form into `let` or `new*`.
+
+The receiver is evaluated once, then the value expressions once each in
+written order, in the surrounding environment. Each value sees the original
+receiver, not an earlier replacement. The `with` token and names are not
+evaluated, and pair names introduce no bindings. The result is built by the
+receiver's class with the existing `new` constructor. Its payload, in field
+declaration order, holds the written results and, in every other slot, the
+value stored in the receiver. Stored values are copied; they are not
+re-evaluated or read by a send.
+
+Elsewhere `with` remains an ordinary source name: `(define with 3)` is a
+definition, and `(with p (x 1))` is an ordinary combination whose receiver is
+the variable `with`. A method may be named `with`, but it cannot be sent,
+because that position is this syntax. Square brackets gain no meaning.
+Reflection exposes the existing field and `new` rows, not `with`.
+
 ---
 
 ## 5. Types
@@ -469,6 +517,11 @@ Bidirectional:
   duplicate, and impossible constructors are errors; missing constructors are
   reported in declaration order. Payload binders have the selected
   constructor's field types within that clause only.
+- `with` requires a concrete `(fields ...)` instance, not a class object, an
+  explicit-constructor instance, or a protocol-typed value. Its result type is
+  the receiver's type. Unknown and duplicate fields are reported from written
+  order; replacements are then checked in declaration order against the
+  receiver's field types. An empty tail is a syntax error.
 - There is no send-site `(type ...)` header. `List empty` retains its existing
   expected-type behavior.
 
@@ -664,6 +717,11 @@ Labeled Point goldens:
 
 1. `(Point new* (x 1) (y 2))` → a `(Point Int)`, equal to `(Point new 1 2)`
 2. `((Point new* (y 2) (x 1)) x)` → `1`
+
+Field update Point goldens:
+
+1. `((Point new 1 2) with (x 3))` → a `(Point Int)`, equal to `(Point new 3 2)`
+2. `((Point new 1 2) with (x 1.0))` — type error; `x` is `Int`
 
 Must be type errors:
 

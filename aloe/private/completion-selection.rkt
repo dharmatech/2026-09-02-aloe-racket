@@ -49,6 +49,8 @@
              (if else-body (list else-body) '()))]
     [(new-star-expr receiver bindings _)
      (cons receiver (map construction-binding-value bindings))]
+    [(with-expr receiver bindings _)
+     (cons receiver (map construction-binding-value bindings))]
     [(send-expr receiver _ arguments _ _)
      (cons receiver arguments)]))
 
@@ -122,7 +124,7 @@
                  (and selector
                       ;; Reserved second-position tokens are parser syntax,
                       ;; never an ordinary Aloe send selector.
-                      (not (memq selector '(case new*)))
+                      (not (memq selector '(case new* with)))
                       (selector-completion-site
                        expressions target original-text start mapped-span))])))))
 

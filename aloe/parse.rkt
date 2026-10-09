@@ -25,6 +25,7 @@
          (struct-out case-expr)
          (struct-out construction-binding)
          (struct-out new-star-expr)
+         (struct-out with-expr)
          (struct-out send-expr)
          parse-datum
          parse-program
@@ -56,6 +57,7 @@
 (struct case-expr (scrutinee clauses else-body loc) #:transparent)
 (struct construction-binding (name value) #:transparent)
 (struct new-star-expr (receiver bindings loc) #:transparent)
+(struct with-expr (receiver bindings loc) #:transparent)
 (struct send-expr (receiver selector arguments loc selector-loc) #:transparent)
 
 (define (expression-loc expression)
@@ -74,6 +76,7 @@
     [(fn-expr _ _ loc) loc]
     [(case-expr _ _ _ loc) loc]
     [(new-star-expr _ _ loc) loc]
+    [(with-expr _ _ loc) loc]
     [(send-expr _ _ _ loc _) loc]
     [_
      (raise-argument-error
@@ -424,24 +427,45 @@
              else-body
              (syntax-location form)))
 
+(define (validate-construction-binding-forms token binding-forms)
+  (for/list ([binding-form (in-list binding-forms)])
+    (define items (syntax->list binding-form))
+    (unless (and items
+                 (= (length items) 2)
+                 (symbol? (syntax-e (car items))))
+      (raise-arguments-error
+       'parse-datum
+       (format "malformed ~a binding; expected (name expression)" token)
+       "binding" (syntax->datum binding-form)))
+    items))
+
+(define (parse-construction-bindings bindings)
+  (for/list ([binding (in-list bindings)])
+    (construction-binding (syntax-e (car binding))
+                          (parse-syntax-expression (cadr binding)))))
+
 (define (parse-new-star-syntax receiver-form binding-forms form)
   ;; Validate every pair before parsing the receiver or any value.
   (define bindings
-    (for/list ([binding-form (in-list binding-forms)])
-      (define items (syntax->list binding-form))
-      (unless (and items
-                   (= (length items) 2)
-                   (symbol? (syntax-e (car items))))
-        (raise-arguments-error
-         'parse-datum
-         "malformed new* binding; expected (name expression)"
-         "binding" (syntax->datum binding-form)))
-      items))
+    (validate-construction-binding-forms 'new* binding-forms))
   (new-star-expr
    (parse-syntax-expression receiver-form)
-   (for/list ([binding (in-list bindings)])
-     (construction-binding (syntax-e (car binding))
-                           (parse-syntax-expression (cadr binding))))
+   (parse-construction-bindings bindings)
+   (syntax-location form)))
+
+(define (parse-with-syntax receiver-form binding-forms form)
+  ;; Reject an empty tail and validate every pair before parsing the
+  ;; receiver or any value.
+  (when (null? binding-forms)
+    (raise-arguments-error
+     'parse-datum
+     "with requires at least one (name expression) binding"
+     "datum" (syntax->datum form)))
+  (define bindings
+    (validate-construction-binding-forms 'with binding-forms))
+  (with-expr
+   (parse-syntax-expression receiver-form)
+   (parse-construction-bindings bindings)
    (syntax-location form)))
 
 (define (desugar-let-syntax bindings-form body-form form)
@@ -717,6 +741,10 @@
           (>= (length items) 2)
           (eq? (syntax-e (cadr items)) 'new*))
      (parse-new-star-syntax (car items) (cddr items) form)]
+    [(and items
+          (>= (length items) 2)
+          (eq? (syntax-e (cadr items)) 'with))
+     (parse-with-syntax (car items) (cddr items) form)]
     [(and items (= (length items) 1))
      (raise-arguments-error
       'parse-datum

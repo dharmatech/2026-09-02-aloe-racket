@@ -125,6 +125,8 @@
      (eval-case scrutinee clauses else-body environment)]
     [(new-star-expr receiver bindings _)
      (eval-new-star receiver bindings environment)]
+    [(with-expr receiver bindings _)
+     (eval-with receiver bindings environment)]
     [(send-expr receiver-expression selector argument-expressions _ _)
      (define receiver (eval-expr receiver-expression environment))
      (define arguments
@@ -803,6 +805,42 @@
                  (hash-ref indices (construction-binding-name binding))
                  (eval-expr (construction-binding-value binding) environment)))
   (construct-instance receiver 'new (vector->list arguments)))
+
+(define (eval-with receiver-expression bindings environment)
+  (define receiver (eval-expr receiver-expression environment))
+  (define class (and (instance-value? receiver) (instance-value-class receiver)))
+  (unless (and (class-value? class)
+               (not (class-value-explicit-constructors? class)))
+    (error 'eval-aloe
+           "ineligible with: receiver must be an instance of a class declared with fields"))
+  (define constructor (find-constructor class 'new))
+  (unless constructor
+    (error 'eval-aloe "ineligible with: class has no generated new constructor"))
+  (define fields (constructor-declaration-fields constructor))
+  (define declared
+    (for/hasheq ([field (in-list fields)])
+      (values (field-declaration-name field) #t)))
+  (define seen (make-hasheq))
+  (for ([binding (in-list bindings)])
+    (define name (construction-binding-name binding))
+    (unless (hash-has-key? declared name)
+      (error 'eval-aloe "unknown field ~a for with" name))
+    (when (hash-has-key? seen name)
+      (error 'eval-aloe "duplicate field ~a for with" name))
+    (hash-set! seen name #t))
+  ;; Validate every name before running any value effects. Values run in
+  ;; source order against the original receiver; unwritten slots copy the
+  ;; receiver's stored payload.
+  (define results
+    (for/hasheq ([binding (in-list bindings)])
+      (values (construction-binding-name binding)
+              (eval-expr (construction-binding-value binding) environment))))
+  (construct-instance
+   class
+   'new
+   (for/list ([field (in-list fields)]
+              [stored (in-vector (instance-value-field-values receiver))])
+     (hash-ref results (field-declaration-name field) (lambda () stored)))))
 
 (define (construct-instance class selector arguments)
   (define constructor (find-constructor class selector))

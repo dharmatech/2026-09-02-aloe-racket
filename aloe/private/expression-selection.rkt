@@ -31,6 +31,8 @@
              (if else-body (list else-body) '()))]
     [(new-star-expr receiver bindings _)
      (cons receiver (map construction-binding-value bindings))]
+    [(with-expr receiver bindings _)
+     (cons receiver (map construction-binding-value bindings))]
     [(send-expr receiver _ arguments _ _)
      (cons receiver arguments)]))
 

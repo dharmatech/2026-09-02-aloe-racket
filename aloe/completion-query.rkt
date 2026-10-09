@@ -35,7 +35,10 @@
                   send-expr-receiver
                   send-expr?
                   string-expr?
-                  variable-expr?)
+                  variable-expr?
+                  with-expr-bindings
+                  with-expr-receiver
+                  with-expr?)
          (only-in "private/completion-selection.rkt"
                   recover-selector-completion-site
                   selector-completion-site-expressions
@@ -93,6 +96,10 @@
     [(new-star-expr? expression)
      (cons (new-star-expr-receiver expression)
            (for/list ([binding (in-list (new-star-expr-bindings expression))])
+             (construction-binding-value binding)))]
+    [(with-expr? expression)
+     (cons (with-expr-receiver expression)
+           (for/list ([binding (in-list (with-expr-bindings expression))])
              (construction-binding-value binding)))]
     [(send-expr? expression)
      (cons (send-expr-receiver expression)
