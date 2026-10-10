@@ -61,16 +61,18 @@
 (define (zipper order focus)
   `(AloemacsBuffers new (List of ,@(reverse (take order focus)))
      ,(list-ref order focus) (List of ,@(drop order (add1 focus)))))
-(define (windows id row col [columns 80] [rows 24] [view 17] [locked #t])
+(define (windows id row col [columns 80] [rows 24] [view 17] [locked #t] #:point point)
   `(AloemacsWindows new
-     (AloemacsWindowTree Leaf (AloemacsView new ,view ,id ,row ,col ,locked (Option None)))
+     (AloemacsWindowTree Leaf
+       (AloemacsView new ,view ,id ,row ,col ,point ,locked (Option None)))
      ,view ,columns ,rows))
 ;; Independent raw constructors: these expectations never call a window helper
 ;; or the session transition being tested.
 (define (for-buffers buffers [columns 80] [rows 24])
   (windows `((,buffers current-buffer) id)
            `(((,buffers current-buffer) editor) scroll-row)
-           `(((,buffers current-buffer) editor) scroll-col) columns rows))
+           `(((,buffers current-buffer) editor) scroll-col) columns rows
+           #:point `(((,buffers current-buffer) editor) point)))
 (define (session buffers)
   `(AloemacsSession new ,buffers (Fs new fs-host) "saved" #t "old query"
      (Position new 4 2) #t #t (List of "newest" "older")
@@ -97,7 +99,8 @@
     #:windows (for-buffers buffers)))
 (define (with-editor s ed)
   (rebuild s #:buffers (replace s ed)
-    #:windows (windows `((,s current-buffer) id) `(,ed scroll-row) `(,ed scroll-col))))
+    #:windows (windows `((,s current-buffer) id) `(,ed scroll-row) `(,ed scroll-col)
+                       #:point `(,ed point))))
 (define rich-editor
   '(AloemacsEditor new
      (Text indexed (List of "second" "first") "third-long" (List of "fourth" "fifth") 2)
@@ -134,7 +137,7 @@
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
   (for ([entry
-         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
+         '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
            (AloemacsWindowTree (constructors
              (Leaf (fields (view AloemacsView)))
              (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
@@ -167,7 +170,7 @@
 (test-case "pure mixed recursive tree traversal, lookup and concrete types"
   (define st (loaded))
   (for ([name '(v31 v4 v19 v2)] [id '(31 4 19 2)])
-    (def! st name `(AloemacsView new ,id 9 3 5 #t (Option None))))
+    (def! st name `(AloemacsView new ,id 9 3 5 (Position new 0 0) #t (Option None))))
   (def! st 'tree '(AloemacsWindowTree Below
     (AloemacsWindowTree Right (AloemacsWindowTree Leaf v31) (AloemacsWindowTree Leaf v4))
     (AloemacsWindowTree Below (AloemacsWindowTree Leaf v19) (AloemacsWindowTree Leaf v2))))
@@ -185,10 +188,16 @@
                 (((AloemacsWindows new tree 19 80 24) tree) AloemacsWindowTree)
                 (((AloemacsWindows new tree 19 80 24) selected) Int))])
     (check-equal? (type st (car entry)) (cadr entry)))
-  (for ([bad '((AloemacsView new 0 0 0 0) (AloemacsView new 0 0 0 0 #f 0)
-               (AloemacsView new "0" 0 0 0 #f (Option None)) (AloemacsView new 0 #f 0 0 #f (Option None))
-               (AloemacsView new 0 0 "0" 0 #f (Option None)) (AloemacsView new 0 0 0 #f #f (Option None))
-               (AloemacsView new 0 0 0 0 0 (Option None)) (AloemacsWindowTree Leaf 0)
+  (for ([bad '((AloemacsView new 0 0 0 0) (AloemacsView new 0 0 0 0 #f (Option None))
+               (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None) 0)
+               (AloemacsView new 0 0 0 0 0 #f (Option None))
+               (AloemacsView new 0 0 0 0 (Position new 0 0) #f 0)
+               (AloemacsView new "0" 0 0 0 (Position new 0 0) #f (Option None))
+               (AloemacsView new 0 #f 0 0 (Position new 0 0) #f (Option None))
+               (AloemacsView new 0 0 "0" 0 (Position new 0 0) #f (Option None))
+               (AloemacsView new 0 0 0 #f (Position new 0 0) #f (Option None))
+               (AloemacsView new 0 0 0 0 (Position new 0 0) 0 (Option None))
+               (AloemacsWindowTree Leaf 0)
                (AloemacsWindowTree Below tree v4) (AloemacsWindowTree Right v4 tree)
                (AloemacsWindowTree Leaf v4 v4) (AloemacsWindowTree Below tree)
                (AloemacsWindowTree Right tree tree tree) (AloemacsWindowTree new v4)
@@ -215,7 +224,7 @@
     (check-exn exn:fail:aloe-type? (lambda () (ev st bad))))
   (check-equal? (type st '(source windows)) 'AloemacsWindows)
   (ev st `(load ,(path->string main-path)))
-  (same st '(aloemacs-editor windows) (windows 0 0 0 0 0 0 #f))
+  (same st '(aloemacs-editor windows) (windows 0 0 0 0 0 0 #f #:point '(Position new 0 0)))
   (same st '(aloemacs-editor editor) (fresh "" #t))
   (same st '(aloemacs-editor buffers) (zipper (list `(AloemacsBuffer new ,(fresh "" #t) ,no-path 0)) 0))
   (for ([field '(echo query)]) (check-equal? (ev st `(aloemacs-editor ,field)) ""))
@@ -227,14 +236,17 @@
     (check-exn exn:fail:aloe-type? (lambda () (ev st bad))))
   (for ([key '("x")])
     (def! st 'next `(aloemacs-editor handle-key "ctrl-x"))
-    (same st `((next handle-key ,key) windows) (windows 0 0 0 0 0 0 #f))
+    (same st `((next handle-key ,key) windows)
+          (windows 0 0 0 0 0 0 #f #:point '(Position new 0 0)))
     (same st `((next handle-key ,key) text) '(aloemacs-editor text)))
   (for ([key '("return" "backspace" "left" "right" "up" "down" "line-start"
                "line-end" "page-up" "page-down" "buffer-start" "buffer-end"
                "escape" "undo" "mark" "kill" "kill-line" "yank" "find"
                "save" "ctrl-x" "λ" "unknown")])
     (def! st 'next `(aloemacs-editor handle-key ,key))
-    (same st '(next windows) (windows 0 0 0 0 0 0 #f)))
+    ;; A key that moves the point stores it on the selected view.
+    (define point (case key [("return") '(1 0)] [("λ") '(0 1)] [else '(0 0)]))
+    (same st '(next windows) (windows 0 0 0 0 0 0 #f #:point `(Position new ,@point))))
   (check-equal? (unbox calls) '()))
 
 (test-case "with-origin preserves exact cold and focused indexed rich payloads beyond EOF"
@@ -268,10 +280,11 @@
   (same-session st '(source with-editor (a editor)) (with-editor 'source '(a editor)))
   (same-session st '(source with-kill-state (a editor) (List of "cut"))
     (rebuild 'source #:buffers (replace 'source '(a editor)) #:echo "" #:ring '(List of "cut")
-      #:windows (windows 9 0 0)))
+      #:windows (windows 9 0 0 #:point '(Position new 0 0))))
   (same-session st '(source with-search (a editor) #f "new" (Position new 3 1) #f #t)
     (rebuild 'source #:buffers (replace 'source '(a editor)) #:searching #f #:query "new"
-      #:origin '(Position new 3 1) #:wrapped #f #:failing #t #:windows (windows 9 0 0)))
+      #:origin '(Position new 3 1) #:wrapped #f #:failing #t
+      #:windows (windows 9 0 0 #:point '(Position new 0 0))))
   (for ([entry (list
     (list '(source unchanged) (rebuild 'source))
     (list '(source with-echo "failed") (rebuild 'source #:echo "failed"))
@@ -296,7 +309,8 @@
                                      (List of "fifth") 3)
        (Position new 3 0) #f 2 3 (rich-editor history) (rich-editor mark) 4))
   (same-session st '(searching search-key "f")
-    (rebuild 'searching #:buffers (replace 'searching hit-ed) #:query "f"))
+    (rebuild 'searching #:buffers (replace 'searching hit-ed) #:query "f"
+      #:windows (windows 9 2 3 #:point '(Position new 3 0))))
   (same-session st '(searching search-key "z") (rebuild 'searching #:query "z" #:failing #t))
   (def! st 'draft (rebuild 'source #:searching #f #:pending no-pending #:waiting no-command))
   (same-session st '(draft prompt-key "x")
@@ -339,7 +353,7 @@
       (rebuild 's #:buffers (replace 's (fresh "visit") '(Option Some (Path new "/visit")))
         #:echo "" #:searching #f #:query "" #:origin '(Position new 0 0) #:wrapped #f #:failing #f
         #:ring '(List empty) #:pending no-pending #:prompt no-prompt #:waiting no-command
-        #:windows (windows 9 0 0)))
+        #:windows (windows 9 0 0 #:point '(Position new 0 0))))
     (check-equal? (ev st 's) original))
   ;; Last-buffer removal uses the predecessor, with its stored origin intact.
   (def! st 'last (session (zipper '(a b) 1)))
@@ -394,7 +408,7 @@
     (rebuild 'source #:buffers (replace 'source (fresh "λ\r\nb\n") '(Option Some (Path new "/cwd/a.txt")))
       #:echo "" #:searching #f #:query "" #:origin '(Position new 0 0) #:wrapped #f #:failing #f
       #:ring '(List empty) #:pending no-pending #:prompt no-prompt #:waiting no-command
-      #:windows (windows 9 0 0)))
+      #:windows (windows 9 0 0 #:point '(Position new 0 0))))
   (same st '(source visit (Path new "a.txt")) `(Option Some ,visited))
   (check-equal? (unbox calls) (read-calls "a.txt" "/cwd/a.txt"))
   (set-box! calls '())
@@ -456,7 +470,8 @@
     '(AloemacsEditor new (rich-editor text) (rich-editor point) #f 2 4
                          (rich-editor history) (rich-editor mark) 1))
   (same-session st '(source ensure-visible 1 2)
-    (rebuild 'source #:buffers (replace 'source fitted-editor) #:windows (windows 9 2 4 1 2)))
+    (rebuild 'source #:buffers (replace 'source fitted-editor)
+      #:windows (windows 9 2 4 1 2 #:point '(rich-editor point))))
   (def! st 'fitted '(source ensure-visible 1 2))
   (same st '(fitted ensure-visible 1 2) 'fitted)
   (for ([send '((with-echo "failed") (move-left) (switch-buffer) (kill-buffer)
@@ -464,10 +479,10 @@
     (same st `(((fitted ,@send) windows) columns) 1)
     (same st `(((fitted ,@send) windows) rows) 2))
   (def! st 'single '(fitted ensure-visible 2 1))
-  (same st '(single windows) (windows 9 2 4 2 1))
+  (same st '(single windows) (windows 9 2 4 2 1 #:point '(rich-editor point)))
   (same st '((single editor) text-rows) 1)
   (def! st 'grown '(single ensure-visible 12 4))
-  (same st '(grown windows) (windows 9 2 4 12 4))
+  (same st '(grown windows) (windows 9 2 4 12 4 #:point '(rich-editor point)))
   (same st '((grown editor) text-rows) 2)
   ;; Fitting brings an origin beyond point back only as far as required.
   (def! st 'far-editor
@@ -478,7 +493,7 @@
     (rebuild 'far #:buffers (replace 'far
       '(AloemacsEditor new (rich-editor text) (rich-editor point) #f 2 4
                            (rich-editor history) (rich-editor mark) 2))
-      #:windows (windows 9 2 4 8 4)))
+      #:windows (windows 9 2 4 8 4 #:point '(rich-editor point))))
   (define snapshot (ev st 'source))
   ;; Stored origin, active prompt and the intermediate editor cursor are exact.
   (check-equal? (ev st '(source frame 8 3))
@@ -499,7 +514,8 @@
   (define-values (st calls) (state))
   (def! st 'empty (session (zipper (list (buffer 33 "")) 0)))
   (def! st 'blank (rebuild 'empty #:searching #f #:echo "" #:pending no-pending
-                          #:prompt no-prompt #:windows (windows 33 0 0 0 0)))
+                          #:prompt no-prompt
+                          #:windows (windows 33 0 0 0 0 #:point '(Position new 0 0))))
   (define blank-before (ev st 'blank))
   (check-equal? (ev st '(blank frame 8 3)) (ansi "\r\n" 1 1 3 "" #:name "untitled" #:width 8))
   (check-equal? (ev st '(blank frame 1 1)) (ansi "" 1 1 #:name "untitled" #:width 8))
@@ -507,7 +523,7 @@
   (def! st 'controls (session (zipper (list (buffer 44 "a\u001bb\tc\u007f")) 0)))
   (def! st 'safe (rebuild 'controls #:searching #f
     #:prompt '(Option Some (AloemacsPrompt new "L\t" "A\rB" 2 "" (List empty) (List empty) 0))
-    #:windows (windows 44 0 0 0 0)))
+    #:windows (windows 44 0 0 0 0 #:point '(Position new 0 0))))
   (define safe-before (ev st 'safe))
   (check-equal? (ev st '(safe frame 4 2)) (ansi "a b " 1 1 2 "L A " 2 4 #:name "untitled" #:width 4))
   (check-equal? (ev st '(safe frame 1 2)) (ansi "a" 1 1 2 "L" 2 1 #:name "untitled" #:width 1))

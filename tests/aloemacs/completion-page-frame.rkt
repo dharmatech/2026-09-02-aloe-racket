@@ -30,8 +30,9 @@
 (define (zipper bs [focus 0])
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
-(define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
+(define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h))
@@ -155,7 +156,7 @@
 
 (test-case "complete cached page frames at all heights and widths preserve raw snapshot and cursor"
   (define-values (st calls names) (state))
-  (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7)))
+  (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7 #:point '(0 0))))
   (def! st 'middle '(s handle-key "page-down"))
   (def! st 'tail '(middle handle-key "page-down"))
   (for ([s '(s middle tail)] [start '(0 7 14)] [lines (list first-page middle-page tail-page)])
@@ -183,7 +184,7 @@
   (define-values (st calls names) (state))
   (define rows (for/list ([i (in-range 12)]) (format "abcdef~a" i)))
   (def! st 'a (buffer 41 (editor rows 4 5 0 0 17 #f 2) "/a"))
-  (def! st 's (session (zipper '(a)) (leaf 7)))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(4 5))))
   (def! st 'fit '(s ensure-visible 9 12))
   (same st '(fit prompt) '(s prompt))
   (check-equal? (ev st '((fit editor) text-rows)) 2)
@@ -215,8 +216,8 @@
 (test-case "visible shared splits and list-induced global fallback retain modes, origins and locks"
   (define-values (st calls names) (state))
   (def! st 'a (buffer 41 (editor a-lines 3 2 0 0 17 #f 2) "/a"))
-  (define l (leaf 7 41 0 0 #t))
-  (define r (leaf 3 41 3 1 #t))
+  (define l (leaf 7 41 0 0 #t #:point '(3 2)))
+  (define r (leaf 3 41 3 1 #t #:point '(3 2)))
   (for ([tree (list (right l r) (below l r))])
     (def! st 's (session (zipper '(a)) tree))
     (def! st 'tail '((s handle-key "page-down") handle-key "page-down"))
@@ -234,11 +235,12 @@
       (def! st 'fitted `(,source ensure-visible 9 12))
       (same st '(fitted prompt) `(,source prompt))
       (same st '((fitted windows) tree)
-        (if (equal? tree (right l r)) (right (leaf 7 41 (if (eq? source 's) 2 0) 0 #t) r)
-            (below (leaf 7 41 (if (eq? source 's) 3 2) 0 #t) r)))))
+        (if (equal? tree (right l r))
+            (right (leaf 7 41 (if (eq? source 's) 2 0) 0 #t #:point '(3 2)) r)
+            (below (leaf 7 41 (if (eq? source 's) 3 2) 0 #t #:point '(3 2)) r)))))
   ;; A positive selected leaf cannot rescue a zero-height leaf elsewhere.
   ;; Eight listed names leave a one-row root, so the Below's bottom has no rows.
-  (define tree (right l (below r (leaf 55 41 2 1 #t))))
+  (define tree (right l (below r (leaf 55 41 2 1 #t #:point '(3 2)))))
   (def! st 's (session (zipper '(a)) tree))
   (same st '(s root-rect 9 10) '(AloemacsWindowRect new 0 0 9 1))
   (same st '(((s windows) tree) rect-for 7 (AloemacsWindowRect new 0 0 9 1))

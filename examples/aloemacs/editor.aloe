@@ -28,6 +28,18 @@
         (scroll-row scroll-row)
         (scroll-col scroll-col)))
 
+    ;; Clamp a stored window point into this text and focus its line.
+    (install (point Position) (scroll-row Int) (scroll-col Int) AloemacsEditor
+      (let ((focused
+              (((self text) focus-at (point line)) case
+                (Some (focused) focused)
+                (None () (self focus-end ((self text) indexed-value))))))
+        ((self with-text-and-point focused
+           (if (focused valid-position? point)
+               point
+               (Position new (focused focus-line) (focused line-length))))
+         with-origin scroll-row scroll-col)))
+
     (fit-origin (point Int) (origin Int) (size Int) Int
       ((if (point < origin)
            point

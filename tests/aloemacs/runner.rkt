@@ -57,7 +57,8 @@
             (initial-windows
               (AloemacsWindows new*
                 (tree
-                  (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f (Option None))))
+                  (AloemacsWindowTree Leaf
+                    (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None))))
                 (selected 0)
                 (columns 0)
                 (rows 0))))

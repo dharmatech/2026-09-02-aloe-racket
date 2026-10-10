@@ -310,6 +310,7 @@
     (buffer-id Int)
     (scroll-row Int)
     (scroll-col Int)
+    (point Position)
     (locked Bool)
     (picture (Option AloemacsLeafPicture)))
   (methods))
@@ -455,7 +456,7 @@
                   self)))))
 
     (with-split (id Int) (fresh-id Int) (scroll-row Int) (scroll-col Int)
-                (below? Bool) AloemacsWindowTree
+                (point Position) (below? Bool) AloemacsWindowTree
       (self case
         (Leaf (view)
           (if ((view id) = id)
@@ -465,6 +466,7 @@
                           (id id)
                           (scroll-row scroll-row)
                           (scroll-col scroll-col)
+                          (point point)
                           (locked #f))))
                     (fresh
                       (AloemacsWindowTree Leaf
@@ -472,6 +474,7 @@
                           (id fresh-id)
                           (scroll-row scroll-row)
                           (scroll-col scroll-col)
+                          (point point)
                           (locked #f)))))
                 (if below?
                     (AloemacsWindowTree Below original fresh)
@@ -480,18 +483,18 @@
         (Below (top bottom)
           (if ((top find-view id) present?)
               (AloemacsWindowTree Below
-                (top with-split id fresh-id scroll-row scroll-col below?) bottom)
+                (top with-split id fresh-id scroll-row scroll-col point below?) bottom)
               (if ((bottom find-view id) present?)
                   (AloemacsWindowTree Below top
-                    (bottom with-split id fresh-id scroll-row scroll-col below?))
+                    (bottom with-split id fresh-id scroll-row scroll-col point below?))
                   self)))
         (Right (left right)
           (if ((left find-view id) present?)
               (AloemacsWindowTree Right
-                (left with-split id fresh-id scroll-row scroll-col below?) right)
+                (left with-split id fresh-id scroll-row scroll-col point below?) right)
               (if ((right find-view id) present?)
                   (AloemacsWindowTree Right left
-                    (right with-split id fresh-id scroll-row scroll-col below?))
+                    (right with-split id fresh-id scroll-row scroll-col point below?))
                   self)))))
 
     (with-view-buffer (id Int) (buffer AloemacsBuffer) AloemacsWindowTree
@@ -504,7 +507,8 @@
                     (id id)
                     (buffer-id (buffer id))
                     (scroll-row (editor scroll-row))
-                    (scroll-col (editor scroll-col)))))
+                    (scroll-col (editor scroll-col))
+                    (point (editor point)))))
               self))
         (Below (top bottom)
           (if ((top find-view id) present?)
@@ -520,7 +524,8 @@
                   self)))))
 
     (retarget-buffer (removed-id Int) (buffer-id Int)
-                     (scroll-row Int) (scroll-col Int) AloemacsWindowTree
+                     (scroll-row Int) (scroll-col Int) (point Position)
+                     AloemacsWindowTree
       (self case
         (Leaf (view)
           (if ((view buffer-id) = removed-id)
@@ -528,16 +533,17 @@
                 (view with
                   (buffer-id buffer-id)
                   (scroll-row scroll-row)
-                  (scroll-col scroll-col)))
+                  (scroll-col scroll-col)
+                  (point point)))
               self))
         (Below (top bottom)
           (AloemacsWindowTree Below
-            (top retarget-buffer removed-id buffer-id scroll-row scroll-col)
-            (bottom retarget-buffer removed-id buffer-id scroll-row scroll-col)))
+            (top retarget-buffer removed-id buffer-id scroll-row scroll-col point)
+            (bottom retarget-buffer removed-id buffer-id scroll-row scroll-col point)))
         (Right (left right)
           (AloemacsWindowTree Right
-            (left retarget-buffer removed-id buffer-id scroll-row scroll-col)
-            (right retarget-buffer removed-id buffer-id scroll-row scroll-col)))))))
+            (left retarget-buffer removed-id buffer-id scroll-row scroll-col point)
+            (right retarget-buffer removed-id buffer-id scroll-row scroll-col point)))))))
 
 (define-class AloemacsWindowRect
   (fields
@@ -771,11 +777,12 @@
                           (if below? ((rect rows) >= 4) ((rect columns) >= 3))
                           #f)))))))))
 
-    (with-split (scroll-row Int) (scroll-col Int) (below? Bool) AloemacsWindows
+    (with-split (scroll-row Int) (scroll-col Int) (point Position) (below? Bool)
+                AloemacsWindows
       (self with
         (tree
           ((self tree) with-split (self selected) ((self tree) fresh-id)
-            scroll-row scroll-col below?))))
+            scroll-row scroll-col point below?))))
 
     (with-toggled-lock () AloemacsWindows
       (self with (tree ((self tree) with-toggled-lock (self selected)))))
@@ -791,12 +798,13 @@
       (self with (tree ((self tree) with-view-buffer (self selected) buffer))))
 
     (without-buffer (removed-id Int) (replacement AloemacsBuffer) AloemacsWindows
-      ;; Capture the replacement origin before traversing any affected view.
+      ;; Capture the replacement point and origin before traversing any
+      ;; affected view.
       (let ((editor (replacement editor)))
         (self with
           (tree
             ((self tree) retarget-buffer removed-id (replacement id)
-              (editor scroll-row) (editor scroll-col))))))
+              (editor scroll-row) (editor scroll-col) (editor point))))))
 
     (with-size (columns Int) (rows Int) AloemacsWindows
       (if (columns > 0)
@@ -1275,41 +1283,50 @@
       (let ((windows (self windows))
             (active? (if (self searching) #t ((self prompt) present?))))
         (if (windows split-allowed? below?)
-            ;; Capture both origins before fitting the selected original once.
+            ;; Capture both points and origins before fitting the selected
+            ;; original once.
             (let ((editor (self editor)))
               ((self with
                  (echo (if active? (self echo) ""))
                  (windows
-                   (windows with-split (editor scroll-row) (editor scroll-col) below?)))
+                   (windows with-split (editor scroll-row) (editor scroll-col)
+                     (editor point) below?)))
                ensure-visible (windows columns) (windows rows)))
             (if active? self (self with-echo "failed")))))
 
-    ;; The callers store the departing live origin before changing selection.
-    ;; Entry changes only buffer focus/origins and the buffer-ID reset fields.
+    ;; The callers store the departing live point and origin before changing
+    ;; selection. Entry installs the entered view's place, stores it on that
+    ;; view, and applies the buffer-ID reset fields.
     (enter-view (tree AloemacsWindowTree) (view AloemacsView) (AloemacsSession H)
       (((self buffers) find-id (view buffer-id)) case
         (None () self)
         (Some (focused)
           (let ((same-buffer? (((self current-buffer) id) = (view buffer-id)))
                 (buffer (focused current-buffer)))
-            (self with
-              (buffers
-                (focused with-current-buffer
-                  (buffer with-editor
-                    ((buffer editor) with-origin (view scroll-row) (view scroll-col)))))
-              (echo
-                (if same-buffer? (self echo)
-                    (if ((self prompt) present?) (self echo) "")))
-              (searching (if same-buffer? (self searching) #f))
-              (query (if same-buffer? (self query) ""))
-              (origin (if same-buffer? (self origin) (Position new 0 0)))
-              (wrapped (if same-buffer? (self wrapped) #f))
-              (failing (if same-buffer? (self failing) #f))
-              (pending (if same-buffer? (self pending) (Option None)))
-              (windows
-                ((self windows) with
-                  (tree tree)
-                  (selected (view id)))))))))
+            (let ((entered
+                    (buffer with-editor
+                      ((buffer editor) install
+                        ;; A same-buffer entry during search keeps the match.
+                        (if (if same-buffer? (self searching) #f)
+                            ((buffer editor) point)
+                            (view point))
+                        (view scroll-row) (view scroll-col)))))
+              (self with
+                (buffers (focused with-current-buffer entered))
+                (echo
+                  (if same-buffer? (self echo)
+                      (if ((self prompt) present?) (self echo) "")))
+                (searching (if same-buffer? (self searching) #f))
+                (query (if same-buffer? (self query) ""))
+                (origin (if same-buffer? (self origin) (Position new 0 0)))
+                (wrapped (if same-buffer? (self wrapped) #f))
+                (failing (if same-buffer? (self failing) #f))
+                (pending (if same-buffer? (self pending) (Option None)))
+                (windows
+                  (((self windows) with
+                     (tree tree)
+                     (selected (view id)))
+                   with-buffer entered))))))))
 
     (other-window () (AloemacsSession H)
       (if (((self windows) tree) single?)

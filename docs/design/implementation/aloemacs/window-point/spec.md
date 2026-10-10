@@ -430,7 +430,9 @@ is views 0, 3, 2, 1. Their rectangles are `(0, 0, 10, 23)`,
 2. `other-window`. View 0 at `(0, 0)`, origin `(0, 0)`, cursor
    `ESC[1;1H`. View 1 stores `(3, 0)` and `(0, 0)`.
 3. `other-window`. View 1 at `(3, 0)`, origin `(0, 0)`, cursor
-   `ESC[16;1H`. Each fit along the way changes nothing.
+   `ESC[16;1H`. Each fit along the way leaves point, origin, Text,
+   and both views unchanged, and records that leaf's text-row count,
+   11 on view 0 and 10 on view 1.
 
 ## 6. Every other write
 

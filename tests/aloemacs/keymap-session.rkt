@@ -144,7 +144,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 0 0))))
 
 ;; Build expected echo results without using the new with-echo helper.
@@ -177,7 +178,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ((,s windows) columns) ((,s windows) rows)))))
 
 ;; Independent expected-value construction for prefix installation/clearing.
@@ -210,7 +212,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ((,s windows) columns) ((,s windows) rows)))))
 
 (define (expected s row)
@@ -459,7 +462,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ((,s windows) columns) ((,s windows) rows))))))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
@@ -812,7 +816,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ((armed windows) columns) ((armed windows) rows)))))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))

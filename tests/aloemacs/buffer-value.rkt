@@ -46,7 +46,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 0 0))))
 
 ;; Independent full-value reconstruction; no production rebuild/dispatcher is
@@ -67,7 +68,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ,columns ,rows))))
 (define (same-session st actual expected)
   (def! st 'comparison-actual actual)
@@ -138,7 +140,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 0 0)))))
 
 (test-case "session comparison evaluates each side once and preserves fixture bindings"

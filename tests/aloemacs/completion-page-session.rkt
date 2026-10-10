@@ -107,7 +107,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 0 0))))
 ;; Only constructors and reads appear in expected reconstructions.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -125,7 +126,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ,columns ,rows)))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
@@ -424,10 +426,13 @@
     #:pending '(Option Some aloemacs-ctrl-x-keymap)
     #:windows '(AloemacsWindows new
        (AloemacsWindowTree Right
-         (AloemacsWindowTree Leaf (AloemacsView new 7 1 2 3 #t (Option None)))
+         (AloemacsWindowTree Leaf
+           (AloemacsView new 7 1 2 3 (Position new 2 4) #t (Option None)))
          (AloemacsWindowTree Below
-           (AloemacsWindowTree Leaf (AloemacsView new 9 1 0 1 #f (Option None)))
-           (AloemacsWindowTree Leaf (AloemacsView new 11 0 1 0 #t (Option None))))) 7 43 13)))
+           (AloemacsWindowTree Leaf
+             (AloemacsView new 9 1 0 1 (Position new 2 4) #f (Option None)))
+           (AloemacsWindowTree Leaf
+             (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None))))) 7 43 13)))
   (define original (ev st 's))
   (def! st 'middle '(s handle-key "page-down"))
   (expect-page st 'middle 's 7 middle-page)

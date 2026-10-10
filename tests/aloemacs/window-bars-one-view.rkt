@@ -42,8 +42,9 @@
 (define (zipper bs [focus 0])
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
-(define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
+(define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
@@ -160,7 +161,7 @@
   (check-equal? (payload 'AloemacsBuffer)
                 '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (payload 'AloemacsView)
-                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
+                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)
@@ -210,7 +211,7 @@
                 ((AloemacsModeLine new) bar "x" "t") ((AloemacsModeLine new) bar "x" 1)
                 ((AloemacsModeLine new) bar #t "x")
                 ("x" bar "x" #t) (1 bar "x" #t) (AloemacsModeLine bar "x" #t)
-                ((AloemacsView new 0 0 0 0 #f (Option None)) bar "x" #t)
+                ((AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None)) bar "x" #t)
                 ((AloemacsWindowRect new 0 0 3 4) bar "x" #t))])
     (check-exn exn:fail:aloe-type? (lambda () (ev st expr)) (format "reject ~s" expr))))
 
@@ -354,7 +355,8 @@
 (define b-lines "ABCDE\nFGHIJ\nKLMNO\nPQRST\nUVWXY")
 ;; Right below three columns supplies the zero axis; the Below has extent five.
 (define fallback-tree
-  (below (right (leaf 0 41 0 0) (leaf 1 9 1 2 #t)) (leaf 2 41 2 1 #t)))
+  (below (right (leaf 0 41 0 0 #:point '(3 1)) (leaf 1 9 1 2 #t #:point '(1 1)))
+         (leaf 2 41 2 1 #t #:point '(3 1))))
 
 (test-case "too-small fallback paints one LIGHT bar, short root is plain, growth restores split bars"
   (define-values (st calls) (state))
@@ -391,17 +393,20 @@
   (check-equal? (occurrences expected DARK) 2)
   (check-equal? (occurrences expected PLAIN) 3)
   (same st '((grown windows) tree)
-    (below (right (leaf 0 41 3 0) (leaf 1 9 1 2 #t)) (leaf 2 41 2 1 #t)))
+    (below (right (leaf 0 41 3 0 #:point '(3 1)) (leaf 1 9 1 2 #t #:point '(1 1)))
+           (leaf 2 41 2 1 #t #:point '(3 1))))
   (for ([s '(small tiny grown)])
     (check-equal? (ev st `((,s windows) selected)) 0))
   (same st '((small windows) tree)
-    (below (right (leaf 0 41 0 0) (leaf 1 9 1 2 #t)) (leaf 2 41 2 1 #t)))
+    (below (right (leaf 0 41 0 0 #:point '(3 1)) (leaf 1 9 1 2 #t #:point '(1 1)))
+           (leaf 2 41 2 1 #t #:point '(3 1))))
   ;; A zero selected leaf also frames its own buffer through the one-view bar.
   (def! st 'w (session (zipper '(a b) 1) fallback-tree 1))
   (def! st 'zero '(w ensure-visible 2 6))
   (paint-one st 'zero calls "AB\r\nFG\r\nKL\r\nPQ" 2 2 2 6 "/b" "")
   (same st '((zero windows) tree)
-    (below (right (leaf 0 41 0 0) (leaf 1 9 0 0 #t)) (leaf 2 41 2 1 #t)))
+    (below (right (leaf 0 41 0 0 #:point '(3 1)) (leaf 1 9 0 0 #t #:point '(1 1)))
+           (leaf 2 41 2 1 #t #:point '(3 1))))
   (check-equal? (unbox calls) '()))
 
 (test-case "positive split frames paint LIGHT and DARK bars; prompts keep the selected bar"
@@ -419,20 +424,21 @@
     (check-equal? (occurrences expected PLAIN) 2))
   (define side (list "abcd|ijkl" "ghij|opqr" "mnop|uvwx" "stuv|0123"
                      (string-append LIGHT "/a -" PLAIN "|" DARK "/a -" PLAIN)))
-  (split (right (leaf 0) (leaf 1 41 1 2)) side "" 1 1)
+  (split (right (leaf 0 #:point '(0 0)) (leaf 1 41 1 2 #:point '(0 0))) side "" 1 1)
   (define stacked (list "abcdef   " "ghijkl   " (string-append LIGHT "/a ------" PLAIN)
                         "ijkl     " (string-append DARK "/a ------" PLAIN)))
-  (split (below (leaf 0) (leaf 1 41 1 2)) stacked "" 1 1)
+  (split (below (leaf 0 #:point '(0 0)) (leaf 1 41 1 2 #:point '(0 0))) stacked "" 1 1)
   (def! st 'p '(v with-active-prompt (AloemacsPrompt new "P:" "x" 1 "" (List empty) (List empty) 0)))
   (paint st 'p 9 6
     (string-append "\e[?25l\e[2J\e[H" (string-join stacked "\r\n")
                    "\e[6;1HP:x\e[6;4H\e[?25h") calls)
-  (def! st 'v (session (zipper '(a)) (right (leaf 0) (leaf 1 41 1 2)) 0))
+  (def! st 'v (session (zipper '(a)) (right (leaf 0 #:point '(0 0))
+                                            (leaf 1 41 1 2 #:point '(0 0))) 0))
   (def! st 'p '(v with-active-prompt (AloemacsPrompt new "P:" "x" 1 "" (List empty) (List empty) 0)))
   (paint st 'p 9 6
     (string-append "\e[?25l\e[2J\e[H" (string-join side "\r\n") "\e[6;1HP:x\e[6;4H\e[?25h") calls)
   ;; One view: the prompt owns the cursor and the bar stays LIGHT.
-  (def! st 'one (session (zipper '(a)) (leaf 0) 0))
+  (def! st 'one (session (zipper '(a)) (leaf 0 #:point '(0 0)) 0))
   (def! st 'asked '(one with-active-prompt (AloemacsPrompt new "P:" "x" 1 "" (List empty) (List empty) 0)))
   (paint-one st 'asked calls "abcdef\r\nghijkl\r\nmnopqr\r\nstuvwx" 1 1 9 6 "/a" "P:x"
              #:final (list 6 4))

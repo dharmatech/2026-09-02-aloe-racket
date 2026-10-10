@@ -67,8 +67,9 @@
 (define (zipper bs [focus 0])
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
-(define (leaf id [bid 41] [row 0] [col 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,row ,col ,lock (Option None))))
+(define (leaf id [bid 41] [row 0] [col 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,bid ,row ,col (Position new ,@point) ,lock (Option None))))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (config tree selected [columns 9] [rows 6])
@@ -141,7 +142,7 @@
 (define ab-text (indexed '("abc" "def")))
 (define (simple! st)
   (def! st 'a (buffer 41 (editor ab-text)))
-  (def! st 's (session (zipper '(a)) (leaf 7))))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(0 0)))))
 (define commands
   '(Newline BackwardDelete MoveLeft MoveRight MoveUp MoveDown LineStart LineEnd
     PageUp PageDown BufferStart BufferEnd RequestQuit Undo SetMark Kill KillLine
@@ -219,7 +220,8 @@
          ,(zipper (list (buffer 0 (editor '(Text from-string "")
            #:history '(List empty) #:mark no-mark))))
          (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty)
-         ,no-pending ,no-prompt ,no-submission ,no-command ,(config (leaf 0 0) 0 0 0)))
+         ,no-pending ,no-prompt ,no-submission ,no-command
+         ,(config (leaf 0 0 #:point '(0 0)) 0 0 0)))
     (check-equal? (unbox calls) '())))
 
 (test-case "minimum and odd/even extents: exact geometry, IDs, selection and one selected fit"
@@ -237,8 +239,8 @@
       (define rows (if vertical? (add1 extent) 6))
       (define text (indexed '("abcdefghi" "jklmnopqr" "stuvwxyz" "last")))
       (def! st 'a (buffer 41 (editor text 0 0)))
-      (def! st 's (session (zipper '(a)) (leaf 7) #:columns columns #:rows rows))
-      (define t ((if vertical? below right) (leaf 7) (leaf 8)))
+      (def! st 's (session (zipper '(a)) (leaf 7 #:point '(0 0)) #:columns columns #:rows rows))
+      (define t ((if vertical? below right) (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0))))
       (define h (if vertical? early 5))
       (define ed (editor text 0 0 0 0 (if (>= h 2) (sub1 h) h)))
       (same-session st `(s ,(car o))
@@ -251,14 +253,14 @@
         `(Option Some ,(if vertical? (rect 0 offset columns late) (rect offset 0 late 5))))
       (same-session st `(result ensure-visible ,columns ,rows) 'result)))
   ;; Below needs four nominal rows: at extent three it refuses.
-  (def! st 's (session (zipper '(a)) (leaf 7) #:columns 9 #:rows 4))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(0 0)) #:columns 9 #:rows 4))
   (same-session st '(s split-below) (rebuild 's #:echo "failed"))
   ;; At one terminal row, Right can still split; Below cannot.
   (simple! st)
-  (def! st 'one (rebuild 's #:windows (config (leaf 7) 7 3 1)))
+  (def! st 'one (rebuild 's #:windows (config (leaf 7 #:point '(0 0)) 7 3 1)))
   (same-session st '(one split-right)
     (rebuild 'one #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
-      #:windows (config (right (leaf 7) (leaf 8)) 7 3 1) #:echo ""))
+      #:windows (config (right (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0))) 7 3 1) #:echo ""))
   (def! st 'r '(one split-right))
   (paint st 'r 3 1 (multi '("a|a") 1 1 #f))
   (same-session st '(one split-below) (rebuild 'one #:echo "failed"))
@@ -268,19 +270,19 @@
   (define-values (st calls) (state))
   (simple! st)
   (for ([size '((0 0) (0 6) (9 0) (-1 6) (9 -1))])
-    (def! st 'raw (rebuild 's #:windows (apply config (leaf 7) 7 size)))
+    (def! st 'raw (rebuild 's #:windows (apply config (leaf 7 #:point '(0 0)) 7 size)))
     (for ([o orientations])
       (same-session st `(raw ,(car o)) (rebuild 'raw #:echo "failed"))))
   (for ([o orientations])
     (for ([extent '(1 2)])
       (define vertical? (eq? (car o) 'split-below))
       (def! st 'raw (rebuild 's #:windows
-        (config (leaf 7) 7 (if vertical? 9 extent) (if vertical? (add1 extent) 6))))
+        (config (leaf 7 #:point '(0 0)) 7 (if vertical? 9 extent) (if vertical? (add1 extent) 6))))
       (same-session st `(raw ,(car o)) (rebuild 'raw #:echo "failed")))
-    (def! st 'locked (rebuild 's #:windows (config (leaf 7 41 0 0 #t) 7)))
+    (def! st 'locked (rebuild 's #:windows (config (leaf 7 41 0 0 #t #:point '(0 0)) 7)))
     (same-session st `(locked ,(car o)) (rebuild 'locked #:echo "failed")))
   ;; Selected bottom has zero height, though full-screen fallback is 9 x 1.
-  (define zero-row (below (leaf 99 41 8 2 #t) (leaf 7)))
+  (define zero-row (below (leaf 99 41 8 2 #t #:point '(0 0)) (leaf 7 #:point '(0 0))))
   (def! st 'zero (rebuild 's #:windows (config zero-row 7 9 2)))
   (same st '((zero windows) fit-rect 9 2) (rect 0 0 9 1))
   (same st `(((zero windows) tree) rect-for 7 ,(rect 0 0 9 1))
@@ -289,7 +291,7 @@
     (same-session st `(zero ,(car o)) (rebuild 'zero #:echo "failed")))
   ;; Zero selected width must also forbid Below despite its nominal height 5.
   (def! st 'zero (rebuild 's #:windows
-    (config (right (leaf 99 41 8 2 #t) (leaf 7)) 7 1 6)))
+    (config (right (leaf 99 41 8 2 #t #:point '(0 0)) (leaf 7 #:point '(0 0))) 7 1 6)))
   (same st '((zero windows) fit-rect 1 6) (rect 0 0 1 5))
   (for ([o orientations])
     (same-session st `(zero ,(car o)) (rebuild 'zero #:echo "failed")))
@@ -298,12 +300,13 @@
   ;; bottom of a nested Below at extent one.
   ;; Right succeeds using selected width 4, then fallback text fit uses 9 x 1.
   (define bad-sibling
-    (below (leaf 99 41 33 44 #t) (below (leaf 3 41 55 66) (leaf 5 41 77 88))))
-  (define t (right (leaf 7) bad-sibling))
+    (below (leaf 99 41 33 44 #t #:point '(0 0)) (below (leaf 3 41 55 66 #:point '(0 0))
+                                                       (leaf 5 41 77 88 #:point '(0 0)))))
+  (define t (right (leaf 7 #:point '(0 0)) bad-sibling))
   (def! st 'raw (rebuild 's #:windows (config t 7 9 3)))
   (same st '((raw windows) fit-rect 9 3) (rect 0 0 9 2))
   (same-session st '(raw split-below) (rebuild 'raw #:echo "failed"))
-  (define rt (right (right (leaf 7) (leaf 100)) bad-sibling))
+  (define rt (right (right (leaf 7 #:point '(0 0)) (leaf 100 #:point '(0 0))) bad-sibling))
   (same-session st '(raw split-right)
     (rebuild 'raw #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 1))))
       #:windows (config rt 7 9 3) #:echo ""))
@@ -319,8 +322,8 @@
                      '(Option Some (Path new "/cwd/a.txt"))))
   (def! st 'b (buffer 9 (editor '(Text from-string "other") 0 2 77 88 13)))
   (def! st 'c (buffer 101 (editor '(Text from-string "unshown"))))
-  (define sibling (right (leaf 99 9 77 88 #t) (leaf 3 41 99 101 #t)))
-  (define tree (below (leaf 7 41 2 3) sibling))
+  (define sibling (right (leaf 99 9 77 88 #t #:point '(0 2)) (leaf 3 41 99 101 #t #:point '(10 9))))
+  (define tree (below (leaf 7 41 2 3 #:point '(10 9)) sibling))
   (for ([o orientations])
     (def! st 's (session (zipper '(b a c) 1) tree #:columns 9 #:rows 13
       #:searching #t #:prompt active-prompt #:pending pending))
@@ -329,7 +332,7 @@
     (define fitted-col (if vertical? 3 6))
     (define h (if vertical? 2 5))
     (define replacement ((if vertical? below right)
-      (leaf 7 41 fitted-row fitted-col) (leaf 100 41 2 3)))
+      (leaf 7 41 fitted-row fitted-col #:point '(10 9)) (leaf 100 41 2 3 #:point '(10 9))))
     (define expected-tree (below replacement sibling))
     (same-session st `(s ,(car o))
       (rebuild 's #:buffers (zipper (list 'b (buffer 41
@@ -337,10 +340,10 @@
         #:windows (config expected-tree 7 9 13)))
     (def! st 'r `(s ,(car o)))
     (same st '(((r windows) tree) leaves)
-      `(List of (AloemacsView new 7 41 ,fitted-row ,fitted-col #f (Option None))
-                (AloemacsView new 100 41 2 3 #f (Option None))
-                (AloemacsView new 99 9 77 88 #t (Option None))
-                (AloemacsView new 3 41 99 101 #t (Option None))))
+      `(List of (AloemacsView new 7 41 ,fitted-row ,fitted-col (Position new 10 9) #f (Option None))
+                (AloemacsView new 100 41 2 3 (Position new 10 9) #f (Option None))
+                (AloemacsView new 99 9 77 88 (Position new 0 2) #t (Option None))
+                (AloemacsView new 3 41 99 101 (Position new 10 9) #t (Option None))))
     (for ([id '(99 3)] [r '((0 6 4 6) (5 6 4 6))])
       (same st `(((r windows) tree) rect-for ,id ,(rect 0 0 9 12))
         `(Option Some ,(apply rect r)))))
@@ -349,10 +352,10 @@
 (test-case "repeated and mixed real splits retain binary order and full T/cross frames"
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor (indexed '("a")))))
-  (def! st 's (session (zipper '(a)) (leaf 7) #:columns 7 #:rows 6))
-  (define l (leaf 7))
-  (define n (leaf 8))
-  (define m (leaf 9))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(0 0)) #:columns 7 #:rows 6))
+  (define l (leaf 7 #:point '(0 0)))
+  (define n (leaf 8 #:point '(0 0)))
+  (define m (leaf 9 #:point '(0 0)))
   (def! st 'r '(s split-right))
   (same st '((r windows) tree) (right l n))
   (paint st 'r 7 6 (multi (list "a  |a  " "   |   " "   |   " "   |   "
@@ -360,8 +363,9 @@
   (def! st 'rb '(r split-below))
   (same st '((rb windows) tree) (right (below l m) n))
   (same st '(((rb windows) tree) leaves)
-    '(List of (AloemacsView new 7 41 0 0 #f (Option None)) (AloemacsView new 9 41 0 0 #f (Option None))
-              (AloemacsView new 8 41 0 0 #f (Option None))))
+    '(List of (AloemacsView new 7 41 0 0 (Position new 0 0) #f (Option None))
+              (AloemacsView new 9 41 0 0 (Position new 0 0) #f (Option None))
+              (AloemacsView new 8 41 0 0 (Position new 0 0) #f (Option None))))
   (paint st 'rb 7 6 (multi (list "a  |a  " "   |   " (string-append (light "unt") "|   ")
                                  "a  |   " (string-append (dark "unt") "|" (dark "unt")))
                            1 1 6 ""))
@@ -373,7 +377,7 @@
   ;; Arrange another selected leaf with raw constructors, never an entry API.
   (def! st 'other (rebuild 'rb #:windows (config (right (below l m) n) 8 7 6)))
   (def! st 'cross '(other split-below))
-  (same st '((cross windows) tree) (right (below l m) (below n (leaf 10))))
+  (same st '((cross windows) tree) (right (below l m) (below n (leaf 10 #:point '(0 0)))))
   (paint st 'cross 7 6
     (multi (list "a  |a  " "   |   " (string-append (dark "unt") "|" (light "unt"))
                  "a  |a  " (string-append (dark "unt") "|" (dark "unt"))) 1 5 6 ""))
@@ -401,11 +405,11 @@
   (define-values (st calls) (state))
   (define text (indexed '("abcd" "efgh" "ijkl" "mnop" "qrst" "uvwx" "yz01")))
   (def! st 'a (buffer 41 (editor text 3 2 1 1 6)))
-  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1) #:columns 7 #:rows 6))
+  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1 #:point '(3 2)) #:columns 7 #:rows 6))
   (def! st 'b '(s split-below))
   (same-session st 'b (rebuild 's #:echo ""
     #:buffers (zipper (list (buffer 41 (editor text 3 2 2 1 2))))
-    #:windows (config (below (leaf 7 41 2 1) (leaf 8 41 1 1)) 7 7 6)))
+    #:windows (config (below (leaf 7 41 2 1 #:point '(3 2)) (leaf 8 41 1 1 #:point '(3 2))) 7 7 6)))
   (paint st 'b 7 6 (multi (list "jkl    " "nop    " (light "untitle") "fgh    " (dark "untitle"))
                           2 2 6 ""))
   (def! st 'edited '(b insert "λ"))
@@ -413,7 +417,8 @@
   (define undo-history `(List of (UndoFrame new ,text (Position new 3 2) 2 1)
     (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2)))
   (same-session st 'edited (rebuild 'b #:buffers (zipper (list (buffer 41
-    (editor changed 3 3 2 1 2 #:history undo-history))))))
+    (editor changed 3 3 2 1 2 #:history undo-history))))
+    #:windows (config (below (leaf 7 41 2 1 #:point '(3 3)) (leaf 8 41 1 1 #:point '(3 2))) 7 7 6)))
   (paint st 'edited 7 6 (multi (list "jkl    " "nλop   " (light "untitle") "fgh    " (dark "untitle"))
                                2 3 6 ""))
   (def! st 'undone '(edited undo))
@@ -431,7 +436,8 @@
   (paint st 'overlap 7 8
     (multi (list "jλkl   " "nop    " "rst    " (light "untitle") "fgh    " "jλkl   " (dark "untitle"))
            1 3 8 ""))
-  (same st '(((overlap windows) tree) find-view 8) '(Option Some (AloemacsView new 8 41 1 1 #f (Option None))))
+  (same st '(((overlap windows) tree) find-view 8)
+        '(Option Some (AloemacsView new 8 41 1 1 (Position new 3 2) #f (Option None))))
   (same st '((overlap editor) mark) '(Option Some (Position new 0 1)))
   (same st '(((overlap undo) editor) text) (indexed '("abcd" "efgh" "ijkl" "mnop" "qrst" "uvwx" "yz01") 2))
   ;; A shared deletion shortens below the inactive origin; it must stay there.
@@ -444,13 +450,16 @@
   (same-session st 'short (rebuild 'marked #:echo ""
     #:buffers (zipper (list (buffer 41 (editor (indexed '("")) 0 0 2 1 2
       #:history deleted-history #:mark no-mark))))
-    #:ring '(List of "abcd\nefgh\nijkl\nmnop\nqrst\nuvwx\nyz01" "newest" "older")))
+    #:ring '(List of "abcd\nefgh\nijkl\nmnop\nqrst\nuvwx\nyz01" "newest" "older")
+    #:windows (config (below (leaf 7 41 2 1 #:point '(0 0)) (leaf 8 41 1 1 #:point '(3 2))) 7 7 6)))
   (def! st 'short-fit '(short ensure-visible 7 6))
-  (same st '((short-fit windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
+  (same st '((short-fit windows) tree)
+        (below (leaf 7 #:point '(0 0)) (leaf 8 41 1 1 #:point '(3 2))))
   (paint st 'short-fit 7 6
     (multi (list "       " "       " (light "untitle") "       " (dark "untitle")) 1 1 6 ""))
   (def! st 'visited '(b visited "x" (Path new "/short")))
-  (same st '((visited windows) tree) (below (leaf 7) (leaf 8 41 1 1)))
+  (same st '((visited windows) tree)
+        (below (leaf 7 #:point '(0 0)) (leaf 8 41 1 1 #:point '(3 2))))
   (def! st 'vfit '(visited ensure-visible 7 6))
   (paint st 'vfit 7 6
     (multi (list "x      " "       " (light "/short ") "       " (dark "/short ")) 1 1 6 ""))
@@ -463,7 +472,7 @@
   (define a (buffer 41 (editor ab-text 0 0 0 0 2)))
   (define fresh-text (indexed '("fresh")))
   (define fresh (buffer 42 (editor fresh-text #:history '(List empty) #:mark no-mark)))
-  (define selected-new (below (leaf 7 42) (leaf 8)))
+  (define selected-new (below (leaf 7 42 #:point '(0 0)) (leaf 8 #:point '(0 0))))
   (define (selected s bs tree)
     (rebuild s #:buffers bs #:windows (config tree 7) #:echo "" #:searching #f
       #:query "" #:origin '(Position new 0 0) #:wrapped #f #:failing #f #:pending no-pending))
@@ -474,21 +483,24 @@
     (zipper (list a (buffer 42 (editor fresh-text #:history '(List empty) #:mark no-mark)
                            '(Option Some (Path new "/fresh")))) 1) selected-new))
   (same-session st '(added switch-buffer)
-    (selected 'added (zipper (list a fresh)) (below (leaf 7) (leaf 8))))
+    (selected 'added (zipper (list a fresh)) (below (leaf 7 #:point '(0 0))
+                                                    (leaf 8 #:point '(0 0)))))
   (same-session st '(added selected-buffers (AloemacsBuffers new
     (List empty) (p current-buffer) (List of (added current-buffer))))
-    (selected 'added (zipper (list a fresh)) (below (leaf 7) (leaf 8))))
+    (selected 'added (zipper (list a fresh)) (below (leaf 7 #:point '(0 0))
+                                                    (leaf 8 #:point '(0 0)))))
   (same-session st '(added select-buffer-submitted "untitled")
     (selected 'added (zipper (list a fresh) 1) selected-new))
   (same-session st '(added kill-buffer)
-    (selected 'added (zipper (list a)) (below (leaf 7) (leaf 8))))
+    (selected 'added (zipper (list a)) (below (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0)))))
   (define empty (buffer 41 (editor (indexed '("")) #:history '(List empty) #:mark no-mark)))
   (same-session st '(p kill-buffer)
-    (selected 'p (zipper (list empty)) (below (leaf 7) (leaf 8))))
+    (selected 'p (zipper (list empty)) (below (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0)))))
   ;; All leaves of the killed ID retarget, including its inactive sibling.
   (def! st 'back '(added switch-buffer))
   (same-session st '(back kill-buffer)
-    (selected 'back (zipper (list fresh)) (below (leaf 7 42) (leaf 8 42))))
+    (selected 'back (zipper (list fresh)) (below (leaf 7 42 #:point '(0 0))
+                                                 (leaf 8 42 #:point '(0 0)))))
   (same-session st '(p with-current-path (Path new "/renamed"))
     (rebuild 'p #:buffers (zipper (list (buffer 41 '(p editor) '(Option Some (Path new "/renamed")))))))
   (check-equal? (unbox calls) '())
@@ -532,7 +544,7 @@
     (define prompted? (memq mode '(prompt both)))
     (define searching? (and (memq mode '(search both)) #t))
     (define preserved? (or prompted? searching?))
-    (define t (leaf 7 41 0 0 (not success?)))
+    (define t (leaf 7 41 0 0 (not success?) #:point '(0 0)))
     (def! st 'raw (session (zipper '(a)) t #:echo token #:searching searching?
       #:prompt (if prompted? active-prompt no-prompt) #:pending pending))
     (define vertical? (eq? (car o) 'split-below))
@@ -541,7 +553,8 @@
       (if success?
           (rebuild 'raw #:echo result-token
             #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 2 4)))))
-            #:windows (config ((if vertical? below right) (leaf 7) (leaf 8)) 7))
+            #:windows (config ((if vertical? below right) (leaf 7 #:point '(0 0))
+                               (leaf 8 #:point '(0 0))) 7))
           (if preserved? 'raw (rebuild 'raw #:echo result-token))))
     (same-session st `(raw ,(car o)) expected)
     (same-session st `(raw execute-command (AloemacsCommand ,(cadr o)) "ignore-this") expected)
@@ -561,7 +574,7 @@
         (paint st 'r 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown crow ccol #:name "untitled" #:width 9))))
   ;; Unknown-size refusals with active owners also return the whole session.
   (for* ([token '("" "saved" "failed")] [mode '(prompt search both)] [o orientations])
-    (def! st 'raw (session (zipper '(a)) (leaf 7) #:columns 0 #:rows 0 #:echo token
+    (def! st 'raw (session (zipper '(a)) (leaf 7 #:point '(0 0)) #:columns 0 #:rows 0 #:echo token
       #:searching (and (memq mode '(search both)) #t)
       #:prompt (if (memq mode '(prompt both)) active-prompt no-prompt) #:pending pending))
     (same-session st `(raw ,(car o)) 'raw))
@@ -572,7 +585,7 @@
   (simple! st)
   (for ([o orientations])
     (define vertical? (eq? (car o) 'split-below))
-    (define t ((if vertical? below right) (leaf 7) (leaf 8)))
+    (define t ((if vertical? below right) (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0))))
     (define bs (zipper (list (buffer 41 (editor ab-text 0 0 0 0 (if vertical? 2 4))))))
     (define expected (rebuild 's #:buffers bs #:windows (config t 7) #:echo ""))
     (for ([actual (list `(s ,(car o))
@@ -589,7 +602,7 @@
     (same-session st `(prefixed ,(car o))
       (rebuild 'prefixed #:buffers bs #:windows (config t 7)))
     (same-session st `(prefixed handle-key ,(caddr o)) expected)
-    (def! st 'locked (rebuild 's #:echo "" #:windows (config (leaf 7 41 0 0 #t) 7)))
+    (def! st 'locked (rebuild 's #:echo "" #:windows (config (leaf 7 41 0 0 #t #:point '(0 0)) 7)))
     (define refused (rebuild 'locked #:echo "failed"))
     (for ([actual (list `(locked ,(car o))
                        `(locked execute-command (AloemacsCommand ,(cadr o)) "ignored")
@@ -613,7 +626,8 @@
       (rebuild 's #:echo "" #:buffers (zipper (list (buffer 41
         (editor (indexed (list (string-append key "abc") "def")) 0 1
           #:history `(List of (UndoFrame new ,ab-text (Position new 0 0) 0 0)
-            (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2)))))))))
+            (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2))))))
+        #:windows (config (leaf 7 #:point '(0 1)) 7))))
   (for ([key '("x" "escape" "ctrl-x" "unknown" "" "left")])
     (same-session st `((s handle-key "ctrl-x") handle-key ,key) (rebuild 's #:echo "")))
   (for ([key '("split-below" "split-right")])
@@ -639,7 +653,7 @@
   (same-session st '(exit handle-key "2")
     (rebuild 'exit #:pending no-pending #:buffers
       (zipper (list (buffer 41 (editor ab-text 0 0 0 0 2))))
-      #:windows (config (below (leaf 7) (leaf 8)) 7)))
+      #:windows (config (below (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0))) 7)))
   (check-equal? (unbox calls) '()))
 
 (test-case "general selection remains absent"
@@ -713,13 +727,16 @@
     (same st '((s windows) selected) 0)
     (when (>= index 4)
       (same st '((s windows) tree)
-        (below (right (leaf 0 0 0 (if (>= index 5) 1 0)) (leaf 2 0)) (leaf 1 0)))
+        (below (right (leaf 0 0 0 (if (>= index 5) 1 0) #:point (if (>= index 5) '(0 1) '(0 0)))
+                      (leaf 2 0 #:point '(0 0)))
+               (leaf 1 0 #:point '(0 0))))
       ;; The selected 4 x 3 leaf has two text rows; the 1 x 2 fallback has one.
       (same st '((s editor) text-rows) (if (= index 5) 1 2)))
     (def! st 's `(s handle-key ,key)))
   (same st '(s quit) #t)
   (same st '(s pending) no-pending)
   (same st '((s windows) tree)
-    (below (right (leaf 0 0 0 1) (leaf 2 0)) (leaf 1 0)))
+    (below (right (leaf 0 0 0 1 #:point '(0 1)) (leaf 2 0 #:point '(0 0)))
+           (leaf 1 0 #:point '(0 0))))
   (check-equal? (filter (lambda (c) (eq? (car c) 'write)) (unbox direct-calls))
                 '((write "/cwd/a.txt" "xabc\ndef"))))

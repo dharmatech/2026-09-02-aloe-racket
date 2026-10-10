@@ -199,8 +199,8 @@
       (def! 'c (record 'c))
       (check-equal? (picture-count 'c) 0)
       (same '(((c windows) tree) leaves)
-            `(List of (AloemacsView new 1 ,(ev '((c current-buffer) id)) 0 0 #f
-                        (Option None)))))
+            `(List of (AloemacsView new 1 ,(ev '((c current-buffer) id)) 0 0
+                        (Position new 0 1) #f (Option None)))))
     (def! 'c (maybe '(((c undo) insert "b") split-right)))
     (check-equal? (history-length 'c) 1)
     (frame 'c))
@@ -216,7 +216,8 @@
   (check-equal? (picture-count 'zero) 0))
 
 (test-case "the picture argument is required and typed"
-  (for ([bad '((AloemacsView new 0 0 0 0 #f) (AloemacsView new 0 0 0 0 #f 0))])
+  (for ([bad '((AloemacsView new 0 0 0 0 (Position new 0 0) #f)
+               (AloemacsView new 0 0 0 0 (Position new 0 0) #f 0))])
     (check-exn exn:fail:aloe-type? (lambda () (ev bad)) (format "reject ~s" bad))))
 
 ;; Timing bar. Each sample is one untimed Down, then the runner's three

@@ -30,8 +30,9 @@
 (define (zipper bs [focus 0])
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
-(define (leaf id [bid 41] [top 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,top ,left ,lock (Option None))))
+(define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h))
@@ -175,7 +176,8 @@
   (define-values (st calls names) (state))
   (for* ([n '(0 1 2 8)] [h '(-2 0 1 2 3 5 10 12)])
     (define lines (for/list ([i (in-range n)]) (format "name~a" i)))
-    (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7) 7 lines))
+    (def! st 's (session (zipper (list (buffer 41 (editor '("body")))))
+                         (leaf 7 #:point '(0 0)) 7 lines))
     (check-equal? (ev st `(s completion-row-count ,h)) (count-rows lines h))
     (same st `(s root-rect 9 ,h) `(AloemacsWindowRect new 0 0 9 ,(root-height lines h))))
   (for ([h '(1 2 3 5 10 12)] [k '(0 0 1 3 8 8)] [root '(1 1 1 1 1 3)])
@@ -187,14 +189,16 @@
     (same st `(absent root-rect 9 ,h)
       `(AloemacsWindowRect new 0 0 9 ,(if (< h 2) h (sub1 h)))))
   ;; A selected lookup miss falls back to the root in an otherwise positive tree.
-  (def! st 'missing (rebuild 's #:windows (windows (right (leaf 7) (leaf 3)) 99)))
+  (def! st 'missing (rebuild 's #:windows (windows (right (leaf 7 #:point '(0 0))
+                                                          (leaf 3 #:point '(0 0))) 99)))
   (same st '(missing fit-rect 9 12) '(AloemacsWindowRect new 0 0 9 3))
   (check-equal? (unbox calls) '()))
 
 (test-case "one-view complete ANSI: raw names, slashes, summary and terminal truncation"
   (define-values (st calls names) (state))
   (define lines '("dir/" "\e[31m" "a\n\r\t\u0001\u007fZ" "abc\e" "five" "six" "seven" "...(+2)"))
-  (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7) 7 lines))
+  (def! st 's (session (zipper (list (buffer 41 (editor '("body")))))
+                       (leaf 7 #:point '(0 0)) 7 lines))
   (for* ([w '(1 3 9 40)] [h '(1 2 3 5 10 12)])
     (define root (root-height lines h))
     (define body (string-join (text-cells '("body") w (text-height root) 0 0) "\r\n"))
@@ -216,8 +220,8 @@
   (define-values (st calls names) (state))
   (def! st 'a (buffer 41 (editor a-lines 3 2 3 1 17 #f 2) "/a"))
   (def! st 'b (buffer 9 (editor b-lines 3 4 99 101 13 #f 3) "/b"))
-  (define l (leaf 7))
-  (define r (leaf 3 41 3 1 #t))
+  (define l (leaf 7 #:point '(3 2)))
+  (define r (leaf 3 41 3 1 #t #:point '(3 2)))
   (define bs (zipper '(b a) 1))
   (for ([tree (list (right l r) (below l r))]
         [rect '((5 0 4 5) (0 3 9 2))]
@@ -253,12 +257,12 @@
   (paint st 's 9 4
     "\e[?25l\e[2J\e[Htuvwx\e[1;2H\e[?25h\e[?25l\e[2;1Halpha.txt\e[3;1Hdir/\e[4;1HP:x\e[4;4H\e[?25h" calls)
   ;; Nonselected b renders at its view's origin, not its editor's far origin.
-  (define mixed (right (below l r) (leaf 55 9 1 2 #t)))
+  (define mixed (right (below l r) (leaf 55 9 1 2 #t #:point '(3 4))))
   (def! st 's (session bs mixed 3))
   (paint st 's 9 8
     "\e[?25l\e[2J\e[Habcd|HIJ \r\nghij|MNO \r\n\e[38;5;252;48;5;239m/a -\e[0m|RST \r\ntuvw|WXY \r\n\e[38;5;16;48;5;250m/a -\e[0m|\e[38;5;252;48;5;239m/b -\e[0m\e[6;1Halpha.txt\e[7;1Hdir/\e[8;1HP:x\e[8;4H\e[?25h" calls)
-  (for ([tree (list (right (below l r) (below (leaf 55) (leaf 8)))
-                   (below (right l r) (right (leaf 55) (leaf 8))))]
+  (for ([tree (list (right (below l r) (below (leaf 55 #:point '(3 2)) (leaf 8 #:point '(3 2))))
+                   (below (right l r) (right (leaf 55 #:point '(3 2)) (leaf 8 #:point '(3 2)))))]
         [rows (list (list "abcd|abcd" "ghij|ghij" (string-append (dark "/a -") "|" (dark "/a -"))
                           "tuvw|abcd" (string-append (light "/a -") "|" (dark "/a -")))
                     (list "abcd|tuvw" "ghij|z012" (string-append (dark "/a -") "|" (light "/a -"))
@@ -273,8 +277,9 @@
 
 (test-case "global fallback tests every leaf even when selected nominal rectangle is positive"
   (define-values (st calls names) (state))
-  (define tree (right (leaf 7 41 0 0 #t)
-                      (below (leaf 3 41 99 101 #t) (leaf 55 41 2 1 #t))))
+  (define tree (right (leaf 7 41 0 0 #t #:point '(3 2))
+                      (below (leaf 3 41 99 101 #t #:point '(3 2))
+                             (leaf 55 41 2 1 #t #:point '(3 2)))))
   (def! st 'a (buffer 41 (editor a-lines 3 2 0 0 17 #f 2) "/a"))
   (def! st 's (session (zipper '(a)) tree))
   ;; At terminal h=4, listed root h=1, selected left is 4x1 but the right
@@ -288,8 +293,9 @@
   (def! st 'fit '(s ensure-visible 9 4))
   (same st 'fit (rebuild 's
     #:buffers (zipper (list (buffer 41 (editor a-lines 3 2 3 0 1 #f 2) "/a")))
-    #:windows (windows (right (leaf 7 41 3 0 #t)
-                         (below (leaf 3 41 99 101 #t) (leaf 55 41 2 1 #t))) 7 9 4)))
+    #:windows (windows (right (leaf 7 41 3 0 #t #:point '(3 2))
+                         (below (leaf 3 41 99 101 #t #:point '(3 2))
+                                (leaf 55 41 2 1 #t #:point '(3 2)))) 7 9 4)))
   (paint st 'fit 9 4
     "\e[?25l\e[2J\e[Hstuvwx\e[1;3H\e[?25h\e[?25l\e[2;1Halpha.txt\e[3;1Hdir/\e[4;1HP:x\e[4;4H\e[?25h" calls)
   (same st '(fit ensure-visible 9 4) 'fit)
@@ -308,14 +314,15 @@
   (define lines (for/list ([i (in-range 12)]) (format "abcdef~a" i)))
   (def! st 'a (buffer 41 (editor lines 4 5 0 0 17 #t 2) "/a"))
   (def! st 'b (buffer 9 (editor b-lines 3 4 99 101 13 #f 3) "/b"))
-  (define tree (below (leaf 7 41 8 2 #t) (leaf 3 41 0 0 #t)))
+  (define tree (below (leaf 7 41 8 2 #t #:point '(4 5)) (leaf 3 41 0 0 #t #:point '(4 5))))
   (def! st 's (session (zipper '(b a) 1) tree 3))
   (def! st 's (rebuild 's #:searching #t #:query "q\t"
                 #:pending '(Option Some aloemacs-ctrl-x-keymap)))
   (define before (ev st 's))
   (for ([h '(6 10 12)] [height '(1 2 3)] [origin '(4 3 2)] [distance '(1 1 2)])
     (def! st 'fit `(s ensure-visible 4 ,h))
-    (define fitted-tree (below (leaf 7 41 8 2 #t) (leaf 3 41 origin 2 #t)))
+    (define fitted-tree (below (leaf 7 41 8 2 #t #:point '(4 5))
+                               (leaf 3 41 origin 2 #t #:point '(4 5))))
     (same st 'fit (rebuild 's
       #:buffers (zipper (list 'b (buffer 41 (editor lines 4 5 origin 2 height #t 2) "/a")) 1)
       #:windows (windows fitted-tree 3 4 h)))
@@ -362,7 +369,8 @@
   (for ([n '(2 8 9)])
     (define listing (take candidates n))
     (define-values (st calls names) (state 'FsHost listing))
-    (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7) 7 '()))
+    (def! st 's (session (zipper (list (buffer 41 (editor '("body")))))
+                         (leaf 7 #:point '(0 0)) 7 '()))
     (def! st 's (rebuild 's #:prompt (prepared '() "/cwd/" 5)))
     (def! st 'done '(s handle-key "tab"))
     (define display (map (lambda (entry)
@@ -385,7 +393,7 @@
   (define-values (st calls names) (state))
   (define lines (for/list ([i (in-range 8)]) (format "abcdef~a" i)))
   (def! st 'a (buffer 41 (editor lines 4 5 0 0 17 #f 2) "/a"))
-  (def! st 's (session (zipper '(a)) (leaf 7) 7 '()))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(4 5)) 7 '()))
   (def! st 's (rebuild 's #:prompt (prepared '() "/cwd/alp" 1)))
   (def! st 's '(s handle-key "tab"))
   (same st '(s prompt) (prepared '("alpha.txt" "alpine.txt") "/cwd/alp" 1 "P:" "" '("alpha.txt" "alpine.txt")))
@@ -431,20 +439,21 @@
 (test-case "direct split keeps command geometry and prompt, then fits through the list-aware fallback"
   (define-values (st calls names) (state))
   (def! st 'a (buffer 41 (editor a-lines 3 2 1 1 17 #f 2) "/a"))
-  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1)))
+  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1 #:point '(3 2))))
   ;; Three nominal rows refuse a below split and keep the prompting session.
-  (def! st 's (rebuild 's #:windows (windows (leaf 7 41 1 1) 7 9 4)))
+  (def! st 's (rebuild 's #:windows (windows (leaf 7 41 1 1 #:point '(3 2)) 7 9 4)))
   (check-false (ev st '((s windows) split-allowed? #t)))
   (same st '(s split-below) 's)
   ;; Four nominal rows split, while three listed names leave a one-row root.
   (define lines '("alpha.txt" "alpine.txt" "dir/"))
-  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1) 7 lines))
-  (def! st 's (rebuild 's #:windows (windows (leaf 7 41 1 1) 7 9 5)))
+  (def! st 's (session (zipper '(a)) (leaf 7 41 1 1 #:point '(3 2)) 7 lines))
+  (def! st 's (rebuild 's #:windows (windows (leaf 7 41 1 1 #:point '(3 2)) 7 9 5)))
   (check-true (ev st '((s windows) split-allowed? #t)))
   (def! st 'split '(s split-below))
   (same st 'split (rebuild 's
     #:buffers (zipper (list (buffer 41 (editor a-lines 3 2 3 1 1 #f 2) "/a")))
-    #:windows (windows (below (leaf 7 41 3 1) (leaf 8 41 1 1)) 7 9 5)))
+    #:windows (windows (below (leaf 7 41 3 1 #:point '(3 2))
+                              (leaf 8 41 1 1 #:point '(3 2))) 7 9 5)))
   (same st '(split prompt) '(s prompt))
   (paint st 'split 9 5
     (single "tuvwx" 1 2 9 5 "/a" "P:x" lines 5 4) calls)
@@ -452,7 +461,8 @@
 
 (test-case "complete no-list frames retain idle, notes, search and saved/failed bytes"
   (define-values (st calls names) (state))
-  (def! st 's (session (zipper (list (buffer 41 (editor '("body"))))) (leaf 7) 7 '()))
+  (def! st 's (session (zipper (list (buffer 41 (editor '("body")))))
+                       (leaf 7 #:point '(0 0)) 7 '()))
   (def! st 's (rebuild 's #:echo "" #:prompt no-prompt))
   (paint st 's 9 1 "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h" calls)
   (paint st 's 9 2 "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h\e[?25l\e[2;1Huntitled\e[1;1H\e[?25h" calls)
@@ -468,9 +478,11 @@
   (def! st 'noted (rebuild 's #:prompt (prepared '() "x" 1 "P:" " [No match]")))
   (paint st 'noted 9 4
     "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled \e[0m\e[4;1HP:x [No m\e[4;4H\e[?25h" calls)
-  (def! st 'split (rebuild 's #:windows (windows (right (leaf 7) (leaf 3)) 7)))
+  (def! st 'split (rebuild 's #:windows (windows (right (leaf 7 #:point '(0 0))
+                                                        (leaf 3 #:point '(0 0))) 7)))
   (paint st 'split 9 4 "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1H\e[1;1H\e[?25h" calls)
-  (def! st 'fallback (rebuild 's #:windows (windows (below (leaf 7) (leaf 3)) 7)))
+  (def! st 'fallback (rebuild 's #:windows (windows (below (leaf 7 #:point '(0 0))
+                                                           (leaf 3 #:point '(0 0))) 7)))
   (paint st 'fallback 9 2 "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h\e[?25l\e[2;1Huntitled\e[1;1H\e[?25h" calls)
   (check-equal? (unbox calls) '()))
 

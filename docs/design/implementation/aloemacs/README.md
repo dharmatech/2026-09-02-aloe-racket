@@ -79,7 +79,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 19 | Completion | [`completion/`](completion/) | **Spec accepted.** aloemacs-completion 000 is ready to implement; 001 waits for review of 000. | 16–18 (prompt commands, windows, mode line) |
 | 20 | Completion page | [`completion-page/`](completion-page/) | **Charter.** Designer writes `spec.md`. | 19 (painted completion list) |
 | 21 | Window bars | [`window-bars/`](window-bars/) | **Charter.** Designer writes `spec.md`. | 17, 18 (windows, mode line) |
-| 22 | Window point | [`window-point/`](window-point/) | **Charter.** Designer writes `spec.md`. | 17 (windows), window-pictures 000 |
+| 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -123,13 +123,13 @@ paints. The designer writes `spec.md`. **Window bars** is chartered at
 [`window-bars/`](window-bars/). The mode line is the horizontal edge
 of a window. A Below split spends no dash-rule row. The selected
 mode line is a lighter bar and the others are darker. The designer
-writes `spec.md`. **Window point** is chartered at
-[`window-point/`](window-point/). Each window showing a buffer keeps
-its own cursor. `C-x o` restores that cursor and that window's origin
-before the fit. An edit leaves the other windows on their stored line
-and column. A window that leaves a buffer and returns takes the
-buffer's current cursor. The designer writes `spec.md`. Ranked later
-work lives in
+writes `spec.md`. **Window point** is implemented and accepted at
+[`window-point/`](window-point/), aloemacs-window-point 000. Each
+window showing a buffer keeps its own cursor. `C-x o` restores that
+cursor and that window's origin before the fit. An edit leaves the
+other windows on their stored line and column. A window that leaves a
+buffer and returns takes the buffer's current cursor. Do not issue
+001. Ranked later work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.

@@ -79,7 +79,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 0 0))))
 ;; Independent expected values use only constructors and reads. In particular,
 ;; they never send with-path, with-current-path, or save-as-submitted.
@@ -98,7 +99,8 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 (buffer id)
-             ((buffer editor) scroll-row) ((buffer editor) scroll-col) #f (Option None)))
+             ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
+             #f (Option None)))
          0 ,columns ,rows))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)

@@ -67,8 +67,9 @@
 (define (zipper bs [focus 0])
   `(AloemacsBuffers new (List of ,@(reverse (take bs focus))) ,(list-ref bs focus)
      (List of ,@(drop bs (add1 focus)))))
-(define (leaf id [bid 41] [row 0] [col 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,bid ,row ,col ,lock (Option None))))
+(define (leaf id [bid 41] [row 0] [col 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,bid ,row ,col (Position new ,@point) ,lock (Option None))))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (config tree selected [columns 9] [rows 6])
@@ -141,7 +142,7 @@
 (define ab-text (indexed '("abc" "def")))
 (define (simple! st)
   (def! st 'a (buffer 41 (editor ab-text)))
-  (def! st 's (session (zipper '(a)) (leaf 7))))
+  (def! st 's (session (zipper '(a)) (leaf 7 #:point '(0 0)))))
 
 (define commands
   '(Newline BackwardDelete MoveLeft MoveRight MoveUp MoveDown LineStart LineEnd
@@ -229,7 +230,8 @@
          ,(zipper (list (buffer 0 (editor '(Text from-string "")
            #:history '(List empty) #:mark no-mark))))
          (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty)
-         ,no-pending ,no-prompt ,no-submission ,no-command ,(config (leaf 0 0) 0 0 0)))
+         ,no-pending ,no-prompt ,no-submission ,no-command
+         ,(config (leaf 0 0 #:point '(0 0)) 0 0 0)))
     (effects calls '())))
 
 (test-case "bit-only toggle and involution preserve rich raw state, mixed trees and beyond-EOF origins"
@@ -241,9 +243,9 @@
   (for* ([locked? '(#f #t)] [size '((0 0) (19 12))] [mixed? '(#f #t)])
     (define (tree bit)
       (if mixed?
-          (right (below (leaf 70 12 40 50 #t) (leaf 2 41 99 101))
-                 (below (leaf 40 41 1 2 bit) (leaf 1 12 30 40 #t)))
-          (leaf 40 41 1 2 bit)))
+          (right (below (leaf 70 12 40 50 #t #:point '(3 2)) (leaf 2 41 99 101 #:point '(1 3)))
+                 (below (leaf 40 41 1 2 bit #:point '(1 3)) (leaf 1 12 30 40 #t #:point '(3 2))))
+          (leaf 40 41 1 2 bit #:point '(1 3))))
     (def! st 'raw (session bs (tree locked?) 40 #:columns (car size) #:rows (cadr size)
                           #:searching #t #:prompt active-prompt #:pending pending))
     (same-session st '(raw toggle-window-lock)
@@ -260,22 +262,27 @@
   (define text (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 2))
   (define a (buffer 41 (editor text 2 5 2 3 2)))
   (define b (buffer 12 (editor (indexed '("Z")))))
-  (define (t row col [bit #t])
-    (right (below (leaf 7 41 row col bit) (leaf 2 41 40 50)) (leaf 40 12)))
-  (def! st 'raw (session (zipper (list a b)) (t 2 3 #f) 7 #:echo ""))
+  ;; View 7 stores the selected point; the other views keep their buffers' points.
+  (define (t row col [bit #t] #:point point)
+    (right (below (leaf 7 41 row col bit #:point point) (leaf 2 41 40 50 #:point '(2 5)))
+           (leaf 40 12 #:point '(0 0))))
+  (def! st 'raw (session (zipper (list a b)) (t 2 3 #f #:point '(2 5)) 7 #:echo ""))
   (def! st 's '(raw toggle-window-lock))
-  (same-session st 's (rebuild 'raw #:windows (config (t 2 3) 7)))
+  (same-session st 's (rebuild 'raw #:windows (config (t 2 3 #:point '(2 5)) 7)))
   (define pushed `(List of (UndoFrame new ,text (Position new 2 5) 2 3)
     (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2)))
   (same-session st '(s insert "λ") (rebuild 's #:buffers (zipper (list
     (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqλr" "stuvwx") 2)
-      2 6 2 3 2 #:history pushed)) b))))
+      2 6 2 3 2 #:history pushed)) b))
+    #:windows (config (t 2 3 #:point '(2 6)) 7)))
   (def! st 'edited '(s insert "λ"))
   (same-session st '(edited undo) 's)
   (same-session st '(s page-up) (rebuild 's #:buffers (zipper (list
-    (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 1) 1 5 2 3 2)) b))))
+    (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 1) 1 5 2 3 2)) b))
+    #:windows (config (t 2 3 #:point '(1 5)) 7)))
   (same-session st '(s page-down) (rebuild 's #:buffers (zipper (list
-    (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 3) 3 5 2 3 2)) b))))
+    (buffer 41 (editor (indexed '("abcdef" "ghijkl" "mnopqr" "stuvwx") 3) 3 5 2 3 2)) b))
+    #:windows (config (t 2 3 #:point '(3 5)) 7)))
   ;; Start fitted. Shrink forces selected-only fallback and changes nominal geometry
   ;; despite the lock; growth restores composition, keeping inactive EOF origins.
   (paint st 's 9 6 (multi (list "pqr |Z   " "vwx |    " (string-append (light "unti") "|    ")
@@ -283,7 +290,7 @@
                          1 3 6 ""))
   (def! st 'small '(s ensure-visible 2 3))
   (same-session st 'small (rebuild 's #:buffers (zipper (list
-    (buffer 41 (editor text 2 5 2 4 1)) b)) #:windows (config (t 2 4) 7 2 3)))
+    (buffer 41 (editor text 2 5 2 4 1)) b)) #:windows (config (t 2 4 #:point '(2 5)) 7 2 3)))
   (paint st 'small 2 3 (single '("qr" "wx") 1 2 3 "" #:name "untitled" #:width 2))
   (same st `(((s windows) tree) rect-for 7 ,(rect 0 0 9 5))
     `(Option Some ,(rect 0 0 4 3)))
@@ -293,11 +300,11 @@
   (same-session st '(small split-below) (rebuild 'small #:echo "failed"))
   (def! st 'tiny '(small ensure-visible 1 1))
   (same-session st 'tiny (rebuild 'small #:buffers (zipper (list
-    (buffer 41 (editor text 2 5 2 5 1)) b)) #:windows (config (t 2 5) 7 1 1)))
+    (buffer 41 (editor text 2 5 2 5 1)) b)) #:windows (config (t 2 5 #:point '(2 5)) 7 1 1)))
   (paint st 'tiny 1 1 (single '("r") 1 1 #f #:name "untitled" #:width 1))
   (def! st 'grown '(tiny ensure-visible 13 8))
   (same-session st 'grown (rebuild 'tiny #:buffers (zipper (list
-    (buffer 41 (editor text 2 5 2 5 3)) b)) #:windows (config (t 2 5) 7 13 8)))
+    (buffer 41 (editor text 2 5 2 5 3)) b)) #:windows (config (t 2 5 #:point '(2 5)) 7 13 8)))
   (paint st 'grown 13 8 (multi (list "r     |Z     " "x     |      " "      |      "
                                      (string-append (light "untitl") "|      ")
                                      "      |      " "      |      "
@@ -311,7 +318,8 @@
   (define a (buffer 41 (editor ab-text) '(Option Some (Path new "/a"))))
   (define bt (indexed '("B")))
   (define b (buffer 12 (editor bt) '(Option Some (Path new "/b"))))
-  (define (t [bid 41] [bit #t]) (right (leaf 7 bid 0 0 bit) (leaf 2 41 20 30)))
+  (define (t [bid 41] [bit #t]) (right (leaf 7 bid 0 0 bit #:point '(0 0))
+                                       (leaf 2 41 20 30 #:point '(0 0))))
   (def! st 'raw (session (zipper (list a b)) (t 41 #f) 7 #:pending pending
     #:prompt '(Option Some (AloemacsPrompt new "Save as: " "/cwd/a.txt" 10 "" (List empty) (List empty) 0))))
   (def! st 'locked '(raw toggle-window-lock))
@@ -400,15 +408,15 @@
       (define split? (and (>= i 12) (< i 14)))
       (define locked? (and (>= i 2) (< i 10)))
       (define expected-tree (if split?
-        ((if below? below right) (leaf 0 0) (leaf 1 0))
-        (leaf (if (= i 14) 1 0) 0 0 0 locked?)))
+        ((if below? below right) (leaf 0 0 #:point '(0 0)) (leaf 1 0 #:point '(0 0)))
+        (leaf (if (= i 14) 1 0) 0 0 0 locked? #:point '(0 0))))
       (same st '(s windows) (config expected-tree (if (= i 14) 1 0)))
       (same st '(s echo) (if (memq i '(4 6 8)) "failed" ""))
       (same st '(s point) '(Position new 0 0))
       (paint st 's 9 6 frame)
       (def! st 's `(s handle-key ,key)))
     (same st '(s quit) #t)
-    (same st '(s windows) (config (leaf 1 0) 1))
+    (same st '(s windows) (config (leaf 1 0 #:point '(0 0)) 1))
     (same st '(s text) (indexed '("abc" "def")))
     (effects direct-calls '())))
 
@@ -430,32 +438,55 @@
   ;; Each row records old/new x,y,width,height, including position-only changes.
   (define cases
     (list
-      (list (lambda (bit) (right (leaf 7) (below (leaf 2 41 0 0 bit) (leaf 3))))
-            (lambda (bit) (below (leaf 2 41 0 0 bit) (leaf 3))) '(7 2 3) 9 6
+      (list (lambda (bit) (right (leaf 7 #:point '(0 0)) (below (leaf 2 41 0 0 bit #:point '(0 0))
+                                                                (leaf 3 #:point '(0 0)))))
+            (lambda (bit) (below (leaf 2 41 0 0 bit #:point '(0 0))
+                                 (leaf 3 #:point '(0 0)))) '(7 2 3) 9 6
             (rect 5 0 4 3) (rect 0 0 9 3) #f 2)
-      (list (lambda (bit) (below (right (leaf 3) (leaf 2 41 0 0 bit)) (leaf 7)))
-            (lambda (bit) (right (leaf 3) (leaf 2 41 0 0 bit))) '(3 2 7) 9 6
+      (list (lambda (bit) (below (right (leaf 3 #:point '(0 0)) (leaf 2 41 0 0 bit #:point '(0 0)))
+                                 (leaf 7 #:point '(0 0))))
+            (lambda (bit) (right (leaf 3 #:point '(0 0))
+                                 (leaf 2 41 0 0 bit #:point '(0 0)))) '(3 2 7) 9 6
             (rect 5 0 4 3) (rect 5 0 4 5) #f 3)
-      (list (lambda (bit) (right (leaf 7) (right (leaf 2 41 0 0 bit) (leaf 3))))
-            (lambda (bit) (right (leaf 2 41 0 0 bit) (leaf 3))) '(7 2 3) 1 2
+      (list (lambda (bit) (right (leaf 7 #:point '(0 0)) (right (leaf 2 41 0 0 bit #:point '(0 0))
+                                                                (leaf 3 #:point '(0 0)))))
+            (lambda (bit) (right (leaf 2 41 0 0 bit #:point '(0 0))
+                                 (leaf 3 #:point '(0 0)))) '(7 2 3) 1 2
             (rect 1 0 0 1) (rect 0 0 0 1) #f 2)
       ;; Only y changes at zero height: a zero height is the bottom of a
       ;; one-row Below, so the lock sits under a top that moves up one row.
-      (list (lambda (bit) (below (leaf 7) (below (below (leaf 3) (leaf 2 41 0 0 bit)) (leaf 4))))
-            (lambda (bit) (below (below (leaf 3) (leaf 2 41 0 0 bit)) (leaf 4))) '(7 3 2 4) 9 3
+      (list (lambda (bit)
+              (below (leaf 7 #:point '(0 0))
+                     (below (below (leaf 3 #:point '(0 0)) (leaf 2 41 0 0 bit #:point '(0 0)))
+                            (leaf 4 #:point '(0 0)))))
+            (lambda (bit) (below (below (leaf 3 #:point '(0 0)) (leaf 2 41 0 0 bit #:point '(0 0)))
+                                 (leaf 4 #:point '(0 0)))) '(7 3 2 4) 9 3
             (rect 0 2 9 0) (rect 0 1 9 0) #f 2)
-      (list (lambda (bit) (right (right (right (leaf 2 41 0 0 bit) (leaf 3)) (leaf 4)) (leaf 7)))
-            (lambda (bit) (right (right (leaf 2 41 0 0 bit) (leaf 3)) (leaf 4)))
+      (list (lambda (bit)
+              (right (right (right (leaf 2 41 0 0 bit #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                            (leaf 4 #:point '(0 0)))
+                     (leaf 7 #:point '(0 0))))
+            (lambda (bit) (right (right (leaf 2 41 0 0 bit #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                                 (leaf 4 #:point '(0 0))))
             '(2 3 4 7) 7 6 (rect 0 0 0 5) (rect 0 0 1 5) #f 2)
       (list (lambda (bit)
-              (right (right (right (right (right (leaf 2 41 0 0 bit) (leaf 3))
-                                   (leaf 4)) (leaf 5)) (leaf 6)) (leaf 7)))
+              (right (right (right (right (right (leaf 2 41 0 0 bit #:point '(0 0))
+                                                 (leaf 3 #:point '(0 0)))
+                                          (leaf 4 #:point '(0 0)))
+                                   (leaf 5 #:point '(0 0)))
+                            (leaf 6 #:point '(0 0)))
+                     (leaf 7 #:point '(0 0))))
             (lambda (bit)
-              (right (right (right (right (leaf 2 41 0 0 bit) (leaf 3)) (leaf 4))
-                            (leaf 5)) (leaf 6)))
+              (right (right (right (right (leaf 2 41 0 0 bit #:point '(0 0))
+                                          (leaf 3 #:point '(0 0)))
+                                   (leaf 4 #:point '(0 0)))
+                            (leaf 5 #:point '(0 0)))
+                     (leaf 6 #:point '(0 0))))
             '(2 3 4 5 6 7) 9 6 (rect 0 0 0 5) (rect 0 0 0 5) #t 2)
-      (list (lambda (bit) (right (below (leaf 7) (leaf 3)) (leaf 2 41 0 0 bit)))
-            (lambda (bit) (right (leaf 3) (leaf 2 41 0 0 bit))) '(7 3 2) 9 6
+      (list (lambda (bit) (right (below (leaf 7 #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                                 (leaf 2 41 0 0 bit #:point '(0 0))))
+            (lambda (bit) (right (leaf 3 #:point '(0 0))
+                                 (leaf 2 41 0 0 bit #:point '(0 0)))) '(7 3 2) 9 6
             (rect 5 0 4 5) (rect 5 0 4 5) #t 3)))
   (for ([c cases])
     (define make-tree (list-ref c 0)) (define make-candidate (list-ref c 1))
@@ -478,19 +509,23 @@
     (for ([_ (in-range steps)]) (def! st 'entered '(entered other-window)))
     (same-session st 'entered (rebuild 'locked #:windows (config (make-tree #t) 2 columns rows))))
   ;; A public lock outside the local split's parent cannot prevent either split.
-  (define (t bit) (right (below (leaf 7) (leaf 3)) (leaf 2 41 0 0 bit)))
+  (define (t bit) (right (below (leaf 7 #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                         (leaf 2 41 0 0 bit #:point '(0 0))))
   (def! st 'raw (session (zipper '(a)) (t #f) 7 #:rows 10 #:echo ""))
   (lock-through-cycle! st 'raw '(7 3 2) 2)
   (for ([op '(split-below split-right)] [height '(2 4)])
     (define expected-tree (right (below ((if (eq? op 'split-below) below right)
-                                        (leaf 7) (leaf 8)) (leaf 3)) (leaf 2 41 0 0 #t)))
+                                         (leaf 7 #:point '(0 0)) (leaf 8 #:point '(0 0)))
+                                        (leaf 3 #:point '(0 0)))
+                                 (leaf 2 41 0 0 #t #:point '(0 0))))
     (same-session st `(locked ,op) (rebuild 'locked
       #:buffers (zipper (list (buffer 41 (editor ab-text 0 0 0 0 height))))
       #:windows (config expected-tree 7 9 10)))
     (same st `(,expected-tree rect-for 2 ,(rect 0 0 9 9)) `(Option Some ,(rect 5 0 4 9))))
   ;; Unknown-size fixtures keep the conservative sibling-only guard.
   (for ([size '((0 0) (0 6) (9 0))])
-    (define (t bit) (right (leaf 7) (below (leaf 3) (leaf 2 41 0 0 bit))))
+    (define (t bit) (right (leaf 7 #:point '(0 0)) (below (leaf 3 #:point '(0 0))
+                                                          (leaf 2 41 0 0 bit #:point '(0 0)))))
     (def! st 'raw (session (zipper '(a)) (t #f) 7 #:columns (car size) #:rows (cadr size)))
     (lock-through-cycle! st 'raw '(7 3 2) 2)
     (same-session st 'locked (rebuild 'raw #:windows (config (t #t) 7 (car size) (cadr size))))
@@ -498,21 +533,28 @@
     (def! st 'p (rebuild 'locked #:prompt active-prompt))
     (same-session st '(p delete-window) 'p))
   (for ([size '((0 0) (0 6) (9 0))])
-    (define (t bit) (right (below (leaf 7) (leaf 3)) (leaf 2 41 0 0 bit)))
+    (define (t bit) (right (below (leaf 7 #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                           (leaf 2 41 0 0 bit #:point '(0 0))))
     (def! st 'raw (session (zipper '(a)) (t #f) 7 #:columns (car size) #:rows (cadr size)))
     (lock-through-cycle! st 'raw '(7 3 2) 2)
     (same-session st '(locked delete-window) (rebuild 'locked #:windows
-      (config (right (leaf 3) (leaf 2 41 0 0 #t)) 3 (car size) (cadr size)))))
+      (config (right (leaf 3 #:point '(0 0)) (leaf 2 41 0 0 #t #:point '(0 0))) 3 (car size)
+              (cadr size)))))
   (effects calls '()))
 
 (test-case "public locks survive selected-only retargeting, exact file effects and all-view buffer kills"
   (define-values (st calls) (state))
   (define a (buffer 41 (editor ab-text) '(Option Some (Path new "/cwd/a.txt"))))
-  (define b (buffer 12 (editor ab-text 1 1 1 1 17) '(Option Some (Path new "/b"))))
+  ;; Buffer 12's Text is focused on its point's line, where entry leaves it.
+  (define b (buffer 12 (editor (indexed '("abc" "def") 1) 1 1 1 1 17)
+                    '(Option Some (Path new "/b"))))
   (def! st 'a a)
   (def! st 'b b)
+  ;; View 7 stores its buffer's point: (0, 0) on 41 and 42, (1, 1) on 12.
   (define (t [id 41] [row 0] [col 0] [bits #t])
-    (right (below (leaf 7 id row col bits) (leaf 2 41 20 30 bits)) (leaf 40 12 1 1 bits)))
+    (right (below (leaf 7 id row col bits #:point (if (= id 12) '(1 1) '(0 0)))
+                  (leaf 2 41 20 30 bits #:point '(0 0)))
+           (leaf 40 12 1 1 bits #:point '(1 1))))
   (def! st 'raw (session (zipper (list a b)) (t 41 0 0 #f) 7 #:pending pending
     #:prompt active-prompt #:searching #t))
   (def! st 'first '(raw toggle-window-lock))
@@ -577,27 +619,29 @@
   (effects calls '((resolve "b.txt") (kind "/cwd/b.txt") (resolve "/cwd/b.txt")
                   (kind "/cwd/b.txt") (resolve "/cwd/b.txt") (read "/cwd/b.txt")))
   ;; Both locked views of killed ID 41 retarget; the pre-existing view of 12 stays exact.
-  (define killed-tree (right (below (leaf 7 12 1 1 #t) (leaf 2 12 1 1 #t))
-                            (leaf 40 12 1 1 #t)))
+  (define killed-tree (right (below (leaf 7 12 1 1 #t #:point '(1 1))
+                                    (leaf 2 12 1 1 #t #:point '(1 1)))
+                            (leaf 40 12 1 1 #t #:point '(1 1))))
   (same-session st '(s kill-buffer) (selection 's (zipper (list b)) killed-tree))
   ;; A surviving replacement view's own origin must not be overwritten by the
   ;; captured replacement editor origin, even when both are publicly locked.
   (def! st 'kill-s (rebuild 's #:windows
-    (config (right (below (leaf 7 41 0 0 #t) (leaf 2 41 20 30 #t))
-                   (leaf 40 12 77 88 #t)) 7)))
+    (config (right (below (leaf 7 41 0 0 #t #:point '(0 0)) (leaf 2 41 20 30 #t #:point '(0 0)))
+                   (leaf 40 12 77 88 #t #:point '(1 1))) 7)))
   (same-session st '(kill-s kill-buffer) (selection 'kill-s (zipper (list b))
-    (right (below (leaf 7 12 1 1 #t) (leaf 2 12 1 1 #t)) (leaf 40 12 77 88 #t))))
+    (right (below (leaf 7 12 1 1 #t #:point '(1 1)) (leaf 2 12 1 1 #t #:point '(1 1)))
+           (leaf 40 12 77 88 #t #:point '(1 1)))))
   (def! st 'one (rebuild 's #:buffers (zipper (list a)) #:windows
-    (config (right (leaf 7 41 0 0 #t) (leaf 2 41 20 30 #t)) 7)))
+    (config (right (leaf 7 41 0 0 #t #:point '(0 0)) (leaf 2 41 20 30 #t #:point '(0 0))) 7)))
   (same-session st '(one kill-buffer) (selection 'one (zipper (list (buffer 41 (fresh ""))))
-    (right (leaf 7 41 0 0 #t) (leaf 2 41 0 0 #t))))
+    (right (leaf 7 41 0 0 #t #:point '(0 0)) (leaf 2 41 0 0 #t #:point '(0 0)))))
   (effects calls '()))
 
 (test-case "all stored tokens and active rows: toggle only, public refusals and unlock successes"
   (define-values (st calls) (state))
   (simple! st)
-  (define t (right (leaf 7) (leaf 2)))
-  (define locked-t (right (leaf 7 41 0 0 #t) (leaf 2)))
+  (define t (right (leaf 7 #:point '(0 0)) (leaf 2 #:point '(0 0))))
+  (define locked-t (right (leaf 7 41 0 0 #t #:point '(0 0)) (leaf 2 #:point '(0 0))))
   (define rows (list "abc |abc " "def |def " "    |    " "    |    "
                     (string-append (light "unti") "|" (dark "unti"))))
   (for* ([token '("" "saved" "failed")] [mode '(idle prompt search both)])
@@ -622,7 +666,8 @@
     ;; Unlock, then all three existing operations succeed, preserving active state.
     (def! st 'unlocked '(locked toggle-window-lock))
     (for ([op '(split-below split-right)])
-      (define split-t (right ((if (eq? op 'split-below) below right) (leaf 7) (leaf 8)) (leaf 2)))
+      (define split-t (right ((if (eq? op 'split-below) below right) (leaf 7 #:point '(0 0))
+                              (leaf 8 #:point '(0 0))) (leaf 2 #:point '(0 0))))
       (define ed (editor ab-text 0 0 0 0 (if (eq? op 'split-below) 2 4)))
       (same-session st `(unlocked ,op) (rebuild 'unlocked
         #:buffers (zipper (list (buffer 41 ed))) #:windows (config split-t 7)
@@ -636,12 +681,12 @@
                          (string-append (light "un") "|" (dark "u") "|" (dark "unti"))))
                (if prompt? 6 1) (if prompt? 5 1) 6 (if active? shown ""))))
     (same-session st '(unlocked delete-window)
-      (rebuild 'unlocked #:windows (config (leaf 2) 2)))
+      (rebuild 'unlocked #:windows (config (leaf 2 #:point '(0 0)) 2)))
     (def! st 'deleted '(unlocked delete-window))
     (paint st 'deleted 9 6 (single '("abc" "def" "" "" "") 1 1 6 shown
                                  (if prompt? 6 1) (if prompt? 5 1) #:name "untitled" #:width 9)))
   ;; The sole leaf remains protected by the last-view rule after unlocking.
-  (def! st 'one (session (zipper '(a)) (leaf 7) #:echo ""))
+  (def! st 'one (session (zipper '(a)) (leaf 7 #:point '(0 0)) #:echo ""))
   (same-session st '(((one toggle-window-lock) toggle-window-lock) delete-window)
     (rebuild 'one #:echo "failed"))
   (effects calls '()))
@@ -650,7 +695,7 @@
   (define-values (st calls) (state))
   (simple! st)
   (def! st 's (rebuild 's #:echo ""))
-  (define locked (config (leaf 7 41 0 0 #t) 7))
+  (define locked (config (leaf 7 41 0 0 #t #:point '(0 0)) 7))
   (for ([actual '((s toggle-window-lock)
                  (s execute-command (AloemacsCommand ToggleWindowLock) "unused")
                  ((s handle-key "ctrl-x") handle-key "l"))])
@@ -667,7 +712,8 @@
   (define inserted (editor (indexed '("labc" "def")) 0 1
     #:history `(List of (UndoFrame new ,ab-text (Position new 0 0) 0 0)
                        (UndoFrame new (Text from-string "previous") (Position new 0 2) 1 2))))
-  (same-session st '(s handle-key "l") (rebuild 's #:buffers (zipper (list (buffer 41 inserted)))))
+  (same-session st '(s handle-key "l") (rebuild 's #:buffers (zipper (list (buffer 41 inserted)))
+    #:windows (config (leaf 7 #:point '(0 1)) 7)))
   (for ([key '("x" "escape" "unknown" "" "left" "ctrl-x")])
     (same-session st `((s handle-key "ctrl-x") handle-key ,key) 's))
   (same-session st '(s handle-key "toggle-window-lock") 's)

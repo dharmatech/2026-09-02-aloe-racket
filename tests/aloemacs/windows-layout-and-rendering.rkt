@@ -59,8 +59,9 @@
 (define (zipper buffers focus)
   `(AloemacsBuffers new (List of ,@(reverse (take buffers focus))) ,(list-ref buffers focus)
      (List of ,@(drop buffers (add1 focus)))))
-(define (leaf id [buffer-id 41] [row 0] [left 0] [lock #f])
-  `(AloemacsWindowTree Leaf (AloemacsView new ,id ,buffer-id ,row ,left ,lock (Option None))))
+(define (leaf id [buffer-id 41] [row 0] [left 0] [lock #f] #:point point)
+  `(AloemacsWindowTree Leaf
+     (AloemacsView new ,id ,buffer-id ,row ,left (Position new ,@point) ,lock (Option None))))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
@@ -136,8 +137,8 @@
 
 (test-case "nominal rectangles: minimum, odd/even, zero axes and exact tree nesting"
   (define st (loaded))
-  (def! st 'a (leaf 71))
-  (def! st 'b (leaf 3))
+  (def! st 'a (leaf 71 #:point '(0 0)))
+  (def! st 'b (leaf 3 #:point '(0 0)))
   ;; Right reserves one divider column; Below reserves no row and its top
   ;; takes the odd row.
   (for ([extent '(0 1 2 3 4 5 6 7 8 9)]
@@ -154,7 +155,8 @@
     (same st `(t rect-for 71 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 4 5 top)))
     (same st `(t rect-for 3 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 (+ 4 top) 5 bottom)))
     (check-equal? (ev st `(t positive-layout? ,(rect 2 4 5 extent))) (>= extent 2)))
-  (define t (right (below (leaf 71) (leaf 3)) (leaf 55)))
+  (define t (right (below (leaf 71 #:point '(0 0)) (leaf 3 #:point '(0 0)))
+                   (leaf 55 #:point '(0 0))))
   (def! st 't t)
   (for ([id '(71 3 55)] [r '((0 0 4 3) (0 3 4 2) (5 0 4 5))])
     (same st `(t rect-for ,id ,(rect 0 0 9 5)) `(Option Some ,(apply rect r))))
@@ -162,7 +164,9 @@
     `(if #t (Option None) (Option Some ,(rect 0 0 9 5))))
   (same st '((t leaves) map (fn (v) (v id))) '(List of 71 3 55))
   ;; Same-direction nesting remains binary; a 13-cell axis is 6 | 3 | 2.
-  (def! st 'deep (right (leaf 71) (right (leaf 3) (right (leaf 55) (leaf 8)))))
+  (def! st 'deep (right (leaf 71 #:point '(0 0)) (right (leaf 3 #:point '(0 0))
+                                                        (right (leaf 55 #:point '(0 0))
+                                                               (leaf 8 #:point '(0 0))))))
   (for ([id '(71 3 55 8)] [r '((0 0 6 2) (7 0 3 2) (11 0 1 2) (13 0 0 2))])
     (same st `(deep rect-for ,id ,(rect 0 0 13 2)) `(Option Some ,(apply rect r))))
   (check-false (ev st `(deep positive-layout? ,(rect 0 0 13 2))))
@@ -203,7 +207,10 @@
 
 (define a-lines '("abcdef" "ghijkl" "mnopqr" "stuvwx" "yz0123" ""))
 (define b-lines '("ABCDE" "FGHIJ" "KLMNO" "PQRST" "UVWXY"))
-(define example-tree (right (below (leaf 71 41) (leaf 3 41 3 1 #t)) (leaf 55 9 1 2)))
+;; Views of 41 store a-point, the point of the fixture's buffer 41.
+(define (example-tree a-point)
+  (right (below (leaf 71 41 #:point a-point) (leaf 3 41 3 1 #t #:point a-point))
+         (leaf 55 9 1 2 #:point '(3 4))))
 ;; At 9 by 6, view 71 is (0,0,4,3), view 3 (0,3,4,2) and view 55 (5,0,4,5);
 ;; view 3 is selected.
 (define example-rows (list "abcd|HIJ " "ghij|MNO " (beside (dark "/cwd") "RST ") "tuvw|WXY "
@@ -212,7 +219,7 @@
   (def! st 'a (buffer 41 (editor (indexed a-lines 2) 3 2 3 1 2)
                      '(Option Some (Path new "/cwd/a.txt"))))
   (def! st 'b (buffer 9 (editor (indexed b-lines 3) 3 4 2 3 5)))
-  (def! st 's (session (zipper '(a b) 0) example-tree 3 #:echo "")))
+  (def! st 's (session (zipper '(a b) 0) (example-tree '(3 2)) 3 #:echo "")))
 
 (test-case "complete mixed frame, selected offsets, full-width echo and exactly one ANSI envelope"
   (define-values (st calls) (state))
@@ -223,12 +230,12 @@
     (check-equal? (length (regexp-match* (regexp (regexp-quote piece)) output)) 1))
   ;; Construct a different selected leaf/current origin without any entry API.
   (def! st 'b-selected (buffer 9 (editor (indexed b-lines 3) 3 4 1 2 5)))
-  (def! st 'r (session (zipper '(a b-selected) 1) example-tree 55 #:echo ""))
+  (def! st 'r (session (zipper '(a b-selected) 1) (example-tree '(3 2)) 55 #:echo ""))
   (paint st 'r 9 6 (multi (list "abcd|HIJ " "ghij|MNO " (beside (dark "/cwd") "RST ") "tuvw|WXY "
                                 (beside (dark "/cwd") (light "unti")))
                           3 8 6 ""))
   (def! st 'a-top (buffer 41 (editor (indexed a-lines 2) 1 2)))
-  (def! st 'top (session (zipper '(a-top b) 0) example-tree 71 #:echo ""))
+  (def! st 'top (session (zipper '(a-top b) 0) (example-tree '(1 2)) 71 #:echo ""))
   (paint st 'top 9 6 (multi (list "abcd|HIJ " "ghij|MNO " (beside (light "unti") "RST ") "tuvw|WXY "
                                   (beside (dark "unti") (dark "unti")))
                             2 3 6 ""))
@@ -256,10 +263,10 @@
 (test-case "junctions in both orientations, aligned cross, nested edges and punctuation independence"
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor '(Text from-string "a"))))
-  (define l (leaf 71))
-  (define r (leaf 3))
-  (define n (leaf 55))
-  (define m (leaf 8))
+  (define l (leaf 71 #:point '(0 0)))
+  (define r (leaf 3 #:point '(0 0)))
+  (define n (leaf 55 #:point '(0 0)))
+  (define m (leaf 8 #:point '(0 0)))
   (for ([t (list (right (below l r) n) (right l (below r n))
                  (below (right l r) n) (below l (right r n))
                  (right (below l r) (below n m))
@@ -297,7 +304,7 @@
 (test-case "shared edit and visit preserve inactive origins beyond EOF and exact zipper focus during paint"
   (define-values (st calls) (state))
   (example! st)
-  (define t (right (leaf 71 41 99 101 #t) (leaf 3 41 3 1)))
+  (define t (right (leaf 71 41 99 101 #t #:point '(3 2)) (leaf 3 41 3 1 #:point '(3 2))))
   (def! st 'far (rebuild 's #:windows (config t 3 80 24)))
   ;; Shared edit replaces one owned editor; the far view remains blank.
   (def! st 'edited '(far insert "λ"))
@@ -305,15 +312,19 @@
   (def! st 'short '(far visited "x\n" (Path new "/short")))
   (paint st 'short 9 3 (multi (list "    |x   " (beside (dark "/sho") (light "/sho"))) 1 6 3 ""))
   (same st '(((short windows) tree) find-view 71)
-    '(Option Some (AloemacsView new 71 41 99 101 #t (Option None))))
+    '(Option Some (AloemacsView new 71 41 99 101 (Position new 3 2) #t (Option None))))
   (check-equal? (unbox calls) '()))
 
 (test-case "selected-only minimal fit preserves every rich payload, lock, inactive origin and full size"
   (define-values (st calls) (state))
   (define ls (for/list ([i (in-range 20)]) (format "line~a-abcdefghijk" i)))
   (define text (indexed ls 12))
-  (define tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 2 3 #t)) (leaf 55 9 99 101)))
-  (define fitted-tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 10 6 #t)) (leaf 55 9 99 101)))
+  (define tree (right (below (leaf 71 41 7 11 #t #:point '(10 9))
+                             (leaf 3 41 2 3 #t #:point '(10 9)))
+                      (leaf 55 9 99 101 #:point '(0 4))))
+  (define fitted-tree (right (below (leaf 71 41 7 11 #t #:point '(10 9))
+                                    (leaf 3 41 10 6 #t #:point '(10 9)))
+                             (leaf 55 9 99 101 #:point '(0 4))))
   (def! st 'a (buffer 41 (editor text 10 9 2 3 17 #t) '(Option Some (Path new "/cwd/a.txt"))))
   (def! st 'b (buffer 9 (editor '(Text from-string "inactive") 0 4 2 3 13)))
   (def! st 's (session (zipper '(b a) 1) tree 3 #:columns 0 #:rows 0
@@ -329,12 +340,15 @@
   (same-session st '(fit ensure-visible 9 6) 'fit)
   ;; Point before the old origin: move back exactly to point on both axes.
   (def! st 'far-a (buffer 41 (editor text 10 9 99 101 17 #t) '(a path)))
-  (define far-tree (right (below (leaf 71 41 7 11 #t) (leaf 3 41 99 101 #t)) (leaf 55 9 99 101)))
+  (define far-tree (right (below (leaf 71 41 7 11 #t #:point '(10 9))
+                                 (leaf 3 41 99 101 #t #:point '(10 9)))
+                          (leaf 55 9 99 101 #:point '(0 4))))
   (def! st 'far (rebuild 's #:buffers (zipper '(b far-a) 1) #:windows (config far-tree 3)))
   (same-session st '(far ensure-visible 9 6)
     (rebuild 'far #:buffers (zipper (list 'b (buffer 41 (editor text 10 9 10 9 1 #t) '(a path))) 1)
-      #:windows (config (right (below (leaf 71 41 7 11 #t) (leaf 3 41 10 9 #t))
-                              (leaf 55 9 99 101)) 3 9 6)))
+      #:windows (config (right (below (leaf 71 41 7 11 #t #:point '(10 9))
+                                      (leaf 3 41 10 9 #t #:point '(10 9)))
+                              (leaf 55 9 99 101 #:point '(0 4))) 3 9 6)))
   (define before (snapshot st 'fit))
   (ev st '(fit frame 19 10)) ; a supplied size different from remembered size
   (check-equal? (snapshot st 'fit) before)
@@ -348,7 +362,7 @@
   (define-values (st calls) (state))
   (define ls (for/list ([i (in-range 15)]) (format "abcdef~a" i)))
   (define text (indexed ls 8))
-  (define tree (below (leaf 71 41 2 1 #t) (leaf 3 41 8 1 #t)))
+  (define tree (below (leaf 71 41 2 1 #t #:point '(8 2)) (leaf 3 41 8 1 #t #:point '(8 2))))
   (def! st 'a (buffer 41 (editor text 8 2 8 1 0)))
   (def! st 's (session (zipper '(a) 0) tree 3 #:echo ""))
   (def! st 'fit '(s ensure-visible 7 8)) ; leaves 4 and 3 rows; selected text height 2
@@ -374,7 +388,9 @@
 (test-case "global fallback despite positive selected rectangle; one-row split and prompt rules"
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor '(Text from-string "abc\ndef"))))
-  (define tree (right (leaf 71) (below (leaf 3) (below (leaf 55) (leaf 8)))))
+  (define tree (right (leaf 71 #:point '(0 0)) (below (leaf 3 #:point '(0 0))
+                                                      (below (leaf 55 #:point '(0 0))
+                                                             (leaf 8 #:point '(0 0))))))
   (def! st 's (session (zipper '(a) 0) tree 71 #:echo ""
     #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4 "" (List empty) (List empty) 0))))
   ;; Selected left is positive; only the nested right fails: its two rows give
@@ -384,17 +400,18 @@
   (same st '((fit windows) tree) tree)
   (paint st 'fit 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
   (paint st 'fit 7 1 (single '("abc") 1 1 #:name "untitled" #:width 7))
-  (def! st 'horizontal (session (zipper '(a) 0) (right (leaf 71) (leaf 3)) 71
+  (def! st 'horizontal (session (zipper '(a) 0) (right (leaf 71 #:point '(0 0))
+                                                       (leaf 3 #:point '(0 0))) 71
     #:echo "" #:prompt '(Option Some (AloemacsPrompt new "P: " "long" 4 "" (List empty) (List empty) 0))))
   (paint st 'horizontal 7 1 (multi '("abc|abc") 1 1))
-  (def! st 'one (rebuild 'horizontal #:windows (config (leaf 71) 71)))
+  (def! st 'one (rebuild 'horizontal #:windows (config (leaf 71 #:point '(0 0)) 71)))
   (paint st 'one 7 3 (single '("abc" "def") 1 1 3 "P: long" 3 7 #:name "untitled" #:width 7))
   (check-equal? (unbox calls) '()))
 
 (test-case "checked scripted Term loop fits, paints, writes once, then reads/handles; shrink and growth"
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor '(Text from-string "abcdef\nghijkl"))))
-  (define t (right (leaf 71) (leaf 3 41 1 2 #t)))
+  (define t (right (leaf 71 #:point '(0 0)) (leaf 3 41 1 2 #t #:point '(0 0))))
   (def! st 's (session (zipper '(a) 0) t 71 #:echo "failed"
     #:pending '(Option Some aloemacs-ctrl-x-keymap)
     #:prompt '(Option Some (AloemacsPrompt new "P: " "xy" 1 "" (List empty) (List empty) 0))
@@ -450,7 +467,7 @@
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
       AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
-  (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
+  (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
                 (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
                 (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
                 (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
@@ -472,7 +489,7 @@
               (history (List UndoFrame)) (mark (Option Position)) (text-rows Int))))
   (define-values (st calls) (state))
   (def! st 'a (buffer 41 (editor '(Text from-string "a"))))
-  (def! st 's (session (zipper '(a) 0) (leaf 71) 71 #:echo ""))
+  (def! st 's (session (zipper '(a) 0) (leaf 71 #:point '(0 0)) 71 #:echo ""))
   (same st '((aloemacs-ctrl-x-keymap bindings) map (fn (b) (b key)))
     '(List of "save" "find" "kill" "b" "2" "3" "0" "o" "l"))
   (same st '((aloemacs-global-keymap bindings) map (fn (b) (b key)))
@@ -483,7 +500,8 @@
     (check-exn exn:fail:aloe-type? (lambda () (ev st bad))))
   (for ([key '("2" "3" "0" "o" "l")])
     (def! st 'next `(s handle-key ,key))
-    (same st '(next windows) '(s windows))
+    ;; The insert moves the point; the selected view stores it.
+    (same st '(next windows) (config (leaf 71 #:point '(0 1)) 71 80 24))
     (same st '(next text) (indexed (list (string-append key "a")) 0)))
   (for ([key '("x")])
     (def! st 'prefix '(s handle-key "ctrl-x"))

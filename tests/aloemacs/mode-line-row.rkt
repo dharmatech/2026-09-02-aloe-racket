@@ -28,7 +28,7 @@
   (check-equal? (payload 'AloemacsBuffer)
                 '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (payload 'AloemacsView)
-                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (locked Bool) (picture (Option AloemacsLeafPicture))))
+                '(fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)

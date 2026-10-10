@@ -51,7 +51,8 @@
      (if #t (Option None) (Option Some ""))
      (if #t (Option None) (Option Some (AloemacsCommand FindFile)))
      (AloemacsWindows new
-       (AloemacsWindowTree Leaf (AloemacsView new 0 0 0 0 #f (Option None)))
+       (AloemacsWindowTree Leaf
+         (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None)))
        0 0 0)))
 
 (define session-fields
@@ -117,6 +118,10 @@
   (for ([field (in-list '(id buffer-id scroll-row scroll-col))])
     (check-observation state
                        `(,tree case (Leaf (view) (view ,field)) (else -1))
+                       0))
+  (for ([field (in-list '(line column))])
+    (check-observation state
+                       `(,tree case (Leaf (view) ((view point) ,field)) (else -1))
                        0))
   (check-observation state `(,tree case (Leaf (view) (view locked)) (else #t)) #f))
 
