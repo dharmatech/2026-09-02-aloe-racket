@@ -77,9 +77,20 @@ test that proves one shared point across views of one buffer is
 rewritten to the per-view rule. The known proof is
 [`tests/aloemacs/windows-delete-and-other.rkt`](../../../../../tests/aloemacs/windows-delete-and-other.rkt),
 including the test "shared edits and undo use one point and
-history across origin handoffs". Fixtures in that file carry each
-view's own point. A fixture that leaves a view's point at
-`(0, 0)` while its editor point is somewhere else is wrong.
+history across origin handoffs". When the migration adds `point`
+to an existing fixture, every view stores its buffer's editor
+point. An entry then still installs that shared point, so a proof
+that the point survived entry keeps its meaning. The shared-edits
+proof named above is still rewritten. An expected view carries
+the point these rules give it. A split's fresh view holds the
+point from the moment of the split, as in the `find-view 8`
+expectation in
+[`tests/aloemacs/windows-split.rkt`](../../../../../tests/aloemacs/windows-split.rkt).
+The selected view's point equals its editor's point. New per-view
+tests choose unselected points on purpose. This applies to every
+migrated file, including `windows-delete-and-other.rkt`,
+`windows-lock.rkt`, `window-pictures.rkt`,
+`mode-line-split-views.rkt`, and `window-bars-split.rkt`.
 
 The constructor migration covers every `AloemacsView new` in
 `examples/` and `tests/`, including
@@ -166,11 +177,12 @@ The specification is wrong unless all of these are true:
    top of the file, with its cursor there. Three more `C-x o`
    presses return to the first column and show the end again.
 
-   Sticky line numbers. `C-x 2` makes a lower view of the same
-   buffer, with its cursor a few lines below the upper cursor.
-   A newline typed in the upper view, above that lower cursor,
-   leaves the lower view's stored line where it was. Entering
-   the lower view puts the cursor on the following line's text.
+   Sticky line numbers. On a buffer with at least three lines
+   below the cursor, `C-x 2`, then `C-x o`, Down three times, and
+   `C-x o` back. The lower cursor is three lines below the upper
+   one. Press Return in the upper view. The lower cursor's stored
+   line does not change, and its text moves down one row. `C-x o`
+   puts the cursor one line above the text it was on.
 
 ## 4. Locked decisions
 
@@ -323,16 +335,13 @@ adjustment rule. Direct editor `frame` stays the one-view frame.
 `C-x o` ignores is not a checkpoint. The manager writes 000
 only, then stops.
 
-000 is one checkpoint. The spec adds a later number only when
-that conversation would not fit, and only by moving work that
-can land after a working handoff. The handoff, the entry clamp,
-and the same-buffer search branch stay in the same checkpoint.
-A later number introduces no following cursor and no per-buffer
-memory on the view. Adding `point` to the selected-view write
-that already stores the origin also makes the selected view take
-the arrived editor's point on switch, find, and visit.
-`retarget-buffer` on kill belongs with that write. It is not a
-checkpoint by itself. The spec does not leave a handoff that
+000 is the whole series. If it would not fit one implementer
+conversation, the manager sends the spec back. The spec does not
+plan a second number. The handoff, the entry clamp, and the
+same-buffer search branch are one change. Adding `point` to the
+selected-view write that already stores the origin also gives
+switch, find, and visit their rule, and `retarget-buffer` on
+kill goes with that write. The spec does not leave a handoff that
 restores a cursor and then lets the old shared fit discard the
 origin, and it does not leave a handoff that can install an
 invalid point or move the search point.
@@ -433,8 +442,9 @@ authority for the checkpoint manager and the implementers.
   digits, start at 000, and are never renumbered. The slug is
   lowercase words separated by hyphens. The checkpoint manager
   writes one checkpoint, then stops.
-- Intended order: §4.9. 000 first. A later number exists only
-  for the size split §4.9 allows.
+- Intended order: §4.9. 000 is the whole series. The spec does
+  not plan a second number. If 000 would not fit one implementer
+  conversation, the manager sends the spec back.
 - Project root:
   `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Code stays in `examples/aloemacs/`. New tests stay in
