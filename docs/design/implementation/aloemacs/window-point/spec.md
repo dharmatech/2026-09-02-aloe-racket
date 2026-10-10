@@ -1,8 +1,10 @@
 # aloemacs window-point specification
 
-**Status: Draft for human review.** Written by the designer
-conversation from [`charter.md`](charter.md). After the human accepts
-it, this file is the complete design input for the
+**Status: Accepted for checkpoint planning.** Written by the designer
+conversation from [`charter.md`](charter.md). The charter writer
+reviewed it, one sentence of the kill rule was restored, a note on
+keeping `view with` updates was added, and the human accepted it.
+This file is the complete design input for the
 **aloemacs-window-point** checkpoint manager and implementer. They do
 not need the charter or the design conversation. This is application
 design; [`SPEC.md`](../../../../../SPEC.md) remains Aloe language law,
@@ -780,6 +782,7 @@ The series is accepted when all of these are true:
 10. The focused proof and the suites in §10 pass without a TTY, and
     both hand checks look as described.
 
-The manager writes **aloemacs-window-point 000 only**, then stops.
-000 is the whole series. If you have been told to read this file as
-the manager assignment, it is the whole assignment.
+This spec is accepted. The manager writes
+**aloemacs-window-point 000 only**, then stops. 000 is the whole
+series. If you have been told to read this file as the manager
+assignment, it is the whole assignment.
