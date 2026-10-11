@@ -323,7 +323,7 @@
                 (ev st '((marked editor) frame 12 1)))
   (check-equal? (ev st '(base frame 12 1))
                 "\u001b[?25l\u001b[2J\u001b[Hab\u001b[1;2H\u001b[?25h")
-  (check-true (regexp-match? #rx"untitled" (ev st '(marked frame 12 3))))
+  (check-true (regexp-match? #rx"untitl ↕ ↔ ×" (ev st '(marked frame 12 3))))
   (def! st 'named (session "ab" 0 1 #:echo "saved"
                            #:path '(Option Some (Path new "/cwd/a.txt"))))
   (key! st 'named-mark 'named "mark")

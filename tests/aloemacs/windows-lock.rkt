@@ -107,13 +107,16 @@
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
 ;; Independent name and text allocation from the supplied fixture and size.
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (substring (string-append name " ") 0
-                          (min width (add1 (string-length name)))))
-  (list->string
-    (for/list ([c (in-string (string-append label
-                              (make-string (- width (string-length label)) #\-)))])
-      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (define (name-row width)
+    (define label (substring (string-append name " ") 0
+                            (min width (add1 (string-length name)))))
+    (list->string
+      (for/list ([c (in-string (string-append label
+                                (make-string (- width (string-length label)) #\-)))])
+        (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
@@ -369,7 +372,7 @@
     (define failed (single '("abc" "def" "" "" "") 1 1 6 "failed: /" #:name "/cwd/a.txt" #:width 9))
     ;; Original view 0 stays selected with the LIGHT bar; new view 1 is DARK.
     (define split-frame (multi (if below?
-      (list "abc      " "def      " (light "/cwd/a.tx") "abc      " (dark "/cwd/a.tx"))
+      (list "abc      " "def      " (light "/cw ↕ ↔ ×") "abc      " (dark "/cw ↕ ↔ ×"))
       (list "abc |abc " "def |def " "    |    " "    |    "
             (string-append (light "/cwd") "|" (dark "/cwd")))) 1 1 6 ""))
     ;; Frames precede the corresponding key, so each refusal is visible next turn.

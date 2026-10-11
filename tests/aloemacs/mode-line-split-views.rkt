@@ -73,9 +73,12 @@
 (define (safe s)
   (list->string (for/list ([c (in-string s)])
     (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A mode row at least seven wide is the name row at w - 6, then the group.
 (define (mode name w)
-  (define label (clip (string-append name " ") w))
-  (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (define (name-row w)
+    (define label (clip (string-append name " ") w))
+    (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (if (>= w 7) (string-append (name-row (- w 6)) " ↕ ↔ ×") (name-row w)))
 ;; Name rows are bars: LIGHT on the selected view and the one-view frame,
 ;; DARK on every other split view. An empty row stays empty.
 (define LIGHT "\e[38;5;16;48;5;250m")
@@ -183,7 +186,7 @@
         [expected (list (list "---|---" "|||||||" (string-append (light "-|+") "|+++") "---|   "
                               (string-append (dark "-|+") "|" (dark "-|+")))
                         (list "---|---" "|||||||" (string-append (light "-|+") "|" (dark "-|+"))
-                              "---    " (dark "-|+ ---"))
+                              "---    " (dark "- ↕ ↔ ×"))
                         (list "---|---" "|||||||" (string-append (light "-|+") "|" (dark "-|+"))
                               "---|---" (string-append (dark "-|+") "|" (dark "-|+")))
                         (list "---|---" "|||||||" (string-append (light "-|+") "|" (dark "-|+"))
@@ -342,7 +345,7 @@
     #:buffers (zipper (list (buffer 41 (editor text 3 2 2 1 2) "/a")))
     #:windows (windows (below (leaf 7 41 2 1 #:point '(3 2)) (leaf 8 41 1 1 #:point '(3 2))) 7)))
   (paint st 'stacked 9 6
-    (multi (list "nopqr    " "tuvwx    " (light "/a ------") "hijkl    " (dark "/a ------"))
+    (multi (list "nopqr    " "tuvwx    " (light "/a  ↕ ↔ ×") "hijkl    " (dark "/a  ↕ ↔ ×"))
            2 2 9 6 "") calls)
   (def! st 'three '(raw ensure-visible 9 4))
   (same st '(three split-below) '(three with-echo "failed"))

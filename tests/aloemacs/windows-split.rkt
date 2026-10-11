@@ -107,13 +107,16 @@
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
 ;; Independent name and text allocation from the supplied fixture and size.
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (substring (string-append name " ") 0
-                          (min width (add1 (string-length name)))))
-  (list->string
-    (for/list ([c (in-string (string-append label
-                              (make-string (- width (string-length label)) #\-)))])
-      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (define (name-row width)
+    (define label (substring (string-append name " ") 0
+                            (min width (add1 (string-length name)))))
+    (list->string
+      (for/list ([c (in-string (string-append label
+                                (make-string (- width (string-length label)) #\-)))])
+        (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
@@ -373,7 +376,7 @@
   (def! st 'br '(b split-right))
   (same st '((br windows) tree) (below (right l m) n))
   (paint st 'br 7 6 (multi (list "a  |a  " "   |   " (string-append (light "unt") "|" (dark "unt"))
-                                 "a      " (dark "untitle")) 1 1 6 ""))
+                                 "a      " (dark "u ↕ ↔ ×")) 1 1 6 ""))
   ;; Arrange another selected leaf with raw constructors, never an entry API.
   (def! st 'other (rebuild 'rb #:windows (config (right (below l m) n) 8 7 6)))
   (def! st 'cross '(other split-below))
@@ -388,16 +391,16 @@
     `(Option Some ,(rect 8 0 7 5)))
   (paint st 'rr 15 6
     (multi (list "a  |a  |a      " "   |   |       " "   |   |       " "   |   |       "
-                 (string-append (light "unt") "|" (dark "unt") "|" (dark "untitle"))) 1 1 6 ""))
+                 (string-append (light "unt") "|" (dark "unt") "|" (dark "u ↕ ↔ ×"))) 1 1 6 ""))
   (def! st 'tall (rebuild 's #:windows (config l 7 7 16)))
   (def! st 'bb '((tall split-below) split-below))
   (same st '((bb windows) tree) (below (below l m) n))
   (same st `(((bb windows) tree) rect-for 8 ,(rect 0 0 7 15))
     `(Option Some ,(rect 0 8 7 7)))
   (paint st 'bb 7 16
-    (multi (list "a      " "       " "       " (light "untitle")
-                 "a      " "       " "       " (dark "untitle")
-                 "a      " "       " "       " "       " "       " "       " (dark "untitle"))
+    (multi (list "a      " "       " "       " (light "u ↕ ↔ ×")
+                 "a      " "       " "       " (dark "u ↕ ↔ ×")
+                 "a      " "       " "       " "       " "       " "       " (dark "u ↕ ↔ ×"))
            1 1 16 ""))
   (check-equal? (unbox calls) '()))
 
@@ -410,7 +413,7 @@
   (same-session st 'b (rebuild 's #:echo ""
     #:buffers (zipper (list (buffer 41 (editor text 3 2 2 1 2))))
     #:windows (config (below (leaf 7 41 2 1 #:point '(3 2)) (leaf 8 41 1 1 #:point '(3 2))) 7 7 6)))
-  (paint st 'b 7 6 (multi (list "jkl    " "nop    " (light "untitle") "fgh    " (dark "untitle"))
+  (paint st 'b 7 6 (multi (list "jkl    " "nop    " (light "u ↕ ↔ ×") "fgh    " (dark "u ↕ ↔ ×"))
                           2 2 6 ""))
   (def! st 'edited '(b insert "λ"))
   (define changed (indexed '("abcd" "efgh" "ijkl" "mnλop" "qrst" "uvwx" "yz01") 3))
@@ -419,11 +422,11 @@
   (same-session st 'edited (rebuild 'b #:buffers (zipper (list (buffer 41
     (editor changed 3 3 2 1 2 #:history undo-history))))
     #:windows (config (below (leaf 7 41 2 1 #:point '(3 3)) (leaf 8 41 1 1 #:point '(3 2))) 7 7 6)))
-  (paint st 'edited 7 6 (multi (list "jkl    " "nλop   " (light "untitle") "fgh    " (dark "untitle"))
+  (paint st 'edited 7 6 (multi (list "jkl    " "nλop   " (light "u ↕ ↔ ×") "fgh    " (dark "u ↕ ↔ ×"))
                                2 3 6 ""))
   (def! st 'undone '(edited undo))
   (same-session st 'undone 'b)
-  (paint st 'undone 7 6 (multi (list "jkl    " "nop    " (light "untitle") "fgh    " (dark "untitle"))
+  (paint st 'undone 7 6 (multi (list "jkl    " "nop    " (light "u ↕ ↔ ×") "fgh    " (dark "u ↕ ↔ ×"))
                                2 2 6 ""))
   (same st '((b page-down) point) '(Position new 4 2))
   (same st '((b page-up) point) '(Position new 2 2))
@@ -434,7 +437,7 @@
   (def! st 'overlap-base '(b ensure-visible 7 8))
   (def! st 'overlap '(((overlap-base move-up) ensure-visible 7 8) insert "λ"))
   (paint st 'overlap 7 8
-    (multi (list "jλkl   " "nop    " "rst    " (light "untitle") "fgh    " "jλkl   " (dark "untitle"))
+    (multi (list "jλkl   " "nop    " "rst    " (light "u ↕ ↔ ×") "fgh    " "jλkl   " (dark "u ↕ ↔ ×"))
            1 3 8 ""))
   (same st '(((overlap windows) tree) find-view 8)
         '(Option Some (AloemacsView new 8 41 1 1 (Position new 3 2) #f (Option None))))
@@ -456,13 +459,13 @@
   (same st '((short-fit windows) tree)
         (below (leaf 7 #:point '(0 0)) (leaf 8 41 1 1 #:point '(3 2))))
   (paint st 'short-fit 7 6
-    (multi (list "       " "       " (light "untitle") "       " (dark "untitle")) 1 1 6 ""))
+    (multi (list "       " "       " (light "u ↕ ↔ ×") "       " (dark "u ↕ ↔ ×")) 1 1 6 ""))
   (def! st 'visited '(b visited "x" (Path new "/short")))
   (same st '((visited windows) tree)
         (below (leaf 7 #:point '(0 0)) (leaf 8 41 1 1 #:point '(3 2))))
   (def! st 'vfit '(visited ensure-visible 7 6))
   (paint st 'vfit 7 6
-    (multi (list "x      " "       " (light "/short ") "       " (dark "/short ")) 1 1 6 ""))
+    (multi (list "x      " "       " (light "/ ↕ ↔ ×") "       " (dark "/ ↕ ↔ ×")) 1 1 6 ""))
   (check-equal? (unbox calls) '()))
 
 (test-case "existing buffer operations after real splits: selected retarget and all-view kill"
@@ -567,7 +570,7 @@
     (if success?
         (paint st 'r 9 6
           (multi (if vertical?
-                     (list "abc      " "def      " (light "untitled ") "abc      " (dark "untitled "))
+                     (list "abc      " "def      " (light "unt ↕ ↔ ×") "abc      " (dark "unt ↕ ↔ ×"))
                      (list "abc |abc " "def |def " "    |    " "    |    "
                            (string-append (light "unti") "|" (dark "unti"))))
                  crow ccol 6 shown))
@@ -595,7 +598,7 @@
       (def! st 'r actual)
       (paint st 'r 9 6 (multi
         (if vertical?
-            (list "abc      " "def      " (light "untitled ") "abc      " (dark "untitled "))
+            (list "abc      " "def      " (light "unt ↕ ↔ ×") "abc      " (dark "unt ↕ ↔ ×"))
             (list "abc |abc " "def |def " "    |    " "    |    "
                   (string-append (light "unti") "|" (dark "unti")))) 1 1)))
     (def! st 'prefixed (rebuild 's #:echo "" #:pending pending))
@@ -668,15 +671,15 @@
   (define sizes '((9 6) (9 6) (9 6) (9 6) (9 6) (1 2) (9 6) (9 6)))
   (define start (single '("abc" "def" "" "" "") 1 1 6 "" #:name "/cwd/a.txt" #:width 9))
   (define below-frame
-    (multi (list "abc      " "def      " (light "/cwd/a.tx") "abc      " (dark "/cwd/a.tx"))
+    (multi (list "abc      " "def      " (light "/cw ↕ ↔ ×") "abc      " (dark "/cw ↕ ↔ ×"))
            1 1 6 ""))
   (define mixed-frame
     (multi (list "abc |abc " "def |def " (string-append (light "/cwd") "|" (dark "/cwd"))
-                 "abc      " (dark "/cwd/a.tx"))
+                 "abc      " (dark "/cw ↕ ↔ ×"))
            1 1 6 ""))
   (define restored-rows
     (list "abc |xabc" "ef  |def " (string-append (light "/cwd") "|" (dark "/cwd"))
-          "xabc     " (dark "/cwd/a.tx")))
+          "xabc     " (dark "/cw ↕ ↔ ×")))
   (define frames
     (list start start below-frame below-frame mixed-frame
           (single '("a") 1 1 2 "/" #:name "/cwd/a.txt" #:width 1)

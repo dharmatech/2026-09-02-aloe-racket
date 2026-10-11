@@ -47,9 +47,12 @@
   (list->string (for/list ([c (in-string s)])
                  (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
 (define (clip s width) (substring s 0 (min width (string-length s))))
+;; A name row at least seven wide is today's row at width - 6, then the group.
 (define (name-row name width)
-  (define label (clip (string-append name " ") width))
-  (safe (string-append label (make-string (- width (string-length label)) #\-))))
+  (define (spelled width)
+    (define label (clip (string-append name " ") width))
+    (safe (string-append label (make-string (- width (string-length label)) #\-))))
+  (if (>= width 7) (string-append (spelled (- width 6)) " ↕ ↔ ×") (spelled width)))
 ;; One-view name rows are the LIGHT bar; an empty row stays empty.
 ;; Split bars are LIGHT on the selected view and DARK on every other view.
 (define LIGHT "\e[38;5;16;48;5;250m")
@@ -114,13 +117,16 @@
   (define name "a\e[31m\t\r\n\u0001\u007fZ")
   (def! st 's `(s with-current-path (Path new ,name)))
   (for ([width '(1 3 6 10 15)])
-    (define label (clip (string-append name " ") width))
+    ;; At 10 and 15 the raw row is the clip at width - 6, then the group.
+    (define name-width (if (>= width 7) (- width 6) width))
+    (define label (clip (string-append name " ") name-width))
     (check-equal? (ev st `((AloemacsModeLine new) row ,name ,width))
-                  (string-append label (make-string (- width (string-length label)) #\-)))
+                  (string-append label (make-string (- name-width (string-length label)) #\-)
+                                 (if (>= width 7) " ↕ ↔ ×" "")))
     (paint st 's width 3 (frame "" 1 1 width 3 name "") calls)
     (check-equal? (ev st '((s current-buffer) name)) name)
     (check-equal? (ev st '((s path) case (None () "") (Some (path) (path text)))) name))
-  (check-equal? (name-row name 15) "a [31m     Z --"))
+  (check-equal? (name-row name 15) "a [31m    ↕ ↔ ×"))
 
 (test-case "minimal fit, all preserved payloads, remembered heights and page distances"
   (define-values (st calls) (state))

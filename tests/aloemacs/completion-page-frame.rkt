@@ -97,9 +97,12 @@
 (define (safe s)
   (list->string (for/list ([c (in-string s)])
     (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A mode row at least seven wide is the name row at w - 6, then the group.
 (define (mode name w)
-  (define label (clip (string-append name " ") w))
-  (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (define (name-row w)
+    (define label (clip (string-append name " ") w))
+    (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (if (>= w 7) (string-append (name-row (- w 6)) " ↕ ↔ ×") (name-row w)))
 (define (count-rows lines h) (if (< h 2) 0 (min (length lines) (max 0 (- h 2)))))
 (define (root-height lines h) (if (< h 2) h (- h 1 (count-rows lines h))))
 (define (text-height h) (if (>= h 2) (sub1 h) h))
@@ -170,7 +173,7 @@
         (if (< h 2) 1 h) (if (< h 2) 1 (min w 4))) calls)))
   ;; Literal complete goldens guard the independent frame builder as well.
   (paint st 'middle 9 12
-    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled \e[0m\e[4;1Ha08\e[5;1Ha09\e[6;1Ha10\e[7;1Ha11\e[8;1Ha12\e[9;1Ha13\e[10;1Ha14\e[11;1H...(+11)\e[12;1HP:x\e[12;4H\e[?25h" calls)
+    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250munt ↕ ↔ ×\e[0m\e[4;1Ha08\e[5;1Ha09\e[6;1Ha10\e[7;1Ha11\e[8;1Ha12\e[9;1Ha13\e[10;1Ha14\e[11;1H...(+11)\e[12;1HP:x\e[12;4H\e[?25h" calls)
   (paint st 'tail 9 5
     "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h\e[?25l\e[2;1Ha15\e[3;1Ha16\e[4;1Ha17\e[5;1HP:x\e[5;4H\e[?25h" calls)
   (paint st 's 1 10

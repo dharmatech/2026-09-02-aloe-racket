@@ -97,13 +97,16 @@
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
 ;; Independent name and text allocation from the supplied fixture and size.
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (substring (string-append name " ") 0
-                          (min width (add1 (string-length name)))))
-  (list->string
-    (for/list ([c (in-string (string-append label
-                              (make-string (- width (string-length label)) #\-)))])
-      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (define (name-row width)
+    (define label (substring (string-append name " ") 0
+                            (min width (add1 (string-length name)))))
+    (list->string
+      (for/list ([c (in-string (string-append label
+                                (make-string (- width (string-length label)) #\-)))])
+        (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
@@ -278,8 +281,8 @@
                     (list "a  |a  " "   |   " (beside "   " (dark "unt")) "   |a  "
                           (beside (light "unt") (dark "unt")))
                     (list "a  |a  " "   |   " (beside (light "unt") (dark "unt")) "a      "
-                          (dark "untitle"))
-                    (list "a      " "       " (light "untitle") "a  |a  "
+                          (dark "u ↕ ↔ ×"))
+                    (list "a      " "       " (light "u ↕ ↔ ×") "a  |a  "
                           (beside (dark "unt") (dark "unt")))
                     (list "a  |a  " "   |   " (beside (light "unt") (dark "unt")) "a  |a  "
                           (beside (dark "unt") (dark "unt")))
@@ -380,8 +383,8 @@
   (same-session st 'grown (rebuild 'tiny #:buffers
     (zipper (list (buffer 41 (editor text 8 2 8 1 2) '(a path))) 0)
     #:windows (config tree 3 7 8)))
-  (paint st 'grown 7 8 (multi (list "bcdef2 " "bcdef3 " "bcdef4 " (dark "untitle")
-                                    "bcdef8 " "bcdef9 " (light "untitle"))
+  (paint st 'grown 7 8 (multi (list "bcdef2 " "bcdef3 " "bcdef4 " (dark "u ↕ ↔ ×")
+                                    "bcdef8 " "bcdef9 " (light "u ↕ ↔ ×"))
                               5 2 8 ""))
   (check-equal? (unbox calls) '()))
 

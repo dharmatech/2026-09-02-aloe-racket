@@ -95,9 +95,12 @@
   (define m (regexp-match #px"\e\\[([0-9]+);([0-9]+)H\e\\[\\?25h$" f))
   (and m (list (string->number (cadr m)) (string->number (caddr m)))))
 (define (pad s w) (string-append s (make-string (- w (string-length s)) #\space)))
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (string-append name " "))
-  (string-append label (make-string (- width (string-length label)) #\-)))
+  (define (name-row width)
+    (define label (string-append name " "))
+    (string-append label (make-string (- width (string-length label)) #\-)))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 ;; The one-view frame at 80 by 24: 22 text rows, the bar, then the echo row.
 (define (one-view lines top line column [name "/cwd/lines.txt"])
   (define at (cursor (+ 1 (- line top)) (+ 1 column)))

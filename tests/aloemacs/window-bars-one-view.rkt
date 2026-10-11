@@ -94,9 +94,12 @@
 (define (safe s)
   (list->string (for/list ([c (in-string s)])
                   (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A spelled row at least seven wide is the name row at w - 6, then the group.
 (define (spelled name w)
-  (define label (clip (string-append name " ") w))
-  (string-append label (make-string (max 0 (- w (string-length label))) #\-)))
+  (define (name-row w)
+    (define label (clip (string-append name " ") w))
+    (string-append label (make-string (max 0 (- w (string-length label))) #\-)))
+  (if (>= w 7) (string-append (name-row (- w 6)) " ↕ ↔ ×") (name-row w)))
 (define (mode name w) (safe (spelled name w)))
 (define (cursor row col) (format "\e[~a;~aH" row col))
 (define (direct body row col)
@@ -187,7 +190,13 @@
   (check-equal? (take (assq 'bar line-methods) 4) '(bar (row String) (selected? Bool) String))
   (check-equal? (take (assq 'row line-methods) 4) '(row (name String) (width Int) String))
   (check-equal? (take (assq 'fill line-methods) 3) '(fill (remaining Int) String))
-  (for ([m (in-list line-methods)] #:unless (memq (car m) '(row fill bar)))
+  (check-equal? (take (assq 'name-row line-methods) 4)
+                '(name-row (name String) (width Int) String))
+  (check-equal? (take (assq 'buttons? line-methods) 3) '(buttons? (width Int) Bool))
+  (check-equal? (take (assq 'label-at line-methods) 4)
+                '(label-at (width Int) (index Int) String))
+  (for ([m (in-list line-methods)]
+        #:unless (memq (car m) '(row fill bar name-row buttons? label-at)))
     (check-equal? (take m 3) (list (car m) '() 'String)))
   (define out (open-output-string))
   (define err (open-output-string))
@@ -225,13 +234,13 @@
   ;; Literal witnesses for the checkpoint's bar table.
   (for ([entry `(("/a" 4 #t "\e[38;5;16;48;5;250m/a -\e[0m")
                  ("/a" 4 #f "\e[38;5;252;48;5;239m/a -\e[0m")
-                 ("untitled" 12 #t "\e[38;5;16;48;5;250muntitled ---\e[0m")
-                 ("untitled" 12 #f "\e[38;5;252;48;5;239muntitled ---\e[0m")
+                 ("untitled" 12 #t "\e[38;5;16;48;5;250muntitl ↕ ↔ ×\e[0m")
+                 ("untitled" 12 #f "\e[38;5;252;48;5;239muntitl ↕ ↔ ×\e[0m")
                  ("untitled" 1 #t "\e[38;5;16;48;5;250mu\e[0m")
                  ("untitled" 1 #f "\e[38;5;252;48;5;239mu\e[0m")
                  ("untitled" 0 #t "") ("untitled" 0 #f "")
                  ("" 4 #t "\e[38;5;16;48;5;250m ---\e[0m")
-                 ("a\e[31m" 8 #t "\e[38;5;16;48;5;250ma [31m -\e[0m"))])
+                 ("a\e[31m" 8 #t "\e[38;5;16;48;5;250ma  ↕ ↔ ×\e[0m"))])
     (check-equal? (apply painted (take entry 3)) (cadddr entry) (format "~s" entry)))
   (define control "a\e[31m\t\r\n\u007fZ")
   (for* ([entry `(("/a" 4) ("untitled" 12) ("untitled" 1) ("untitled" 0) ("untitled" -3)
@@ -248,7 +257,7 @@
     (check-equal? (visible actual) shown)
     (check-equal? (string-length (visible actual)) (max 0 width))
     (check-equal? (safe (visible actual)) (visible actual)))
-  (check-equal? (mode control 15) "a [31m    Z ---")
+  (check-equal? (mode control 15) "a [31m    ↕ ↔ ×")
   ;; bar alone neither clips, pads nor applies safe cells.
   (for ([row (list control "\e[0m" "x" "a long row beyond any width")] [selected '(#t #f #t #f)])
     (check-equal? (ev st `((AloemacsModeLine new) bar ,row ,selected))
@@ -260,14 +269,14 @@
   (define-values (st calls) (state))
   ;; Byte-for-byte checkpoint examples.
   (paint st 's 12 4
-    "\e[?25l\e[2J\e[H\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled ---\e[0m\e[4;1H\e[1;1H\e[?25h"
+    "\e[?25l\e[2J\e[H\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitl ↕ ↔ ×\e[0m\e[4;1H\e[1;1H\e[?25h"
     calls)
   (paint st 's 1 4
     "\e[?25l\e[2J\e[H\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250mu\e[0m\e[4;1H\e[1;1H\e[?25h"
     calls)
   (def! st 'text `((s with-editor ,(editor "zero\none\ntwo\nthree" 3 0)) ensure-visible 12 4))
   (paint st 'text 12 4
-    "\e[?25l\e[2J\e[Htwo\r\nthree\e[2;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled ---\e[0m\e[4;1H\e[2;1H\e[?25h"
+    "\e[?25l\e[2J\e[Htwo\r\nthree\e[2;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitl ↕ ↔ ×\e[0m\e[4;1H\e[2;1H\e[?25h"
     calls)
   (for ([width '(1 4 12 40)])
     (paint-one st 's calls "\r\n" 1 1 width 4 "untitled" "")
@@ -311,7 +320,7 @@
     (paint-one st 'listed calls (clip "wo" width) 2 2 width 6 "/cwd/a" "Find: x"
                #:lines lines #:final (list 6 (min width 8))))
   (paint st 'listed 12 7
-    (string-append "\e[?25l\e[2J\e[Hwo\r\nhree\e[2;2H\e[?25h\e[?25l\e[3;1H" LIGHT "/cwd/a -----"
+    (string-append "\e[?25l\e[2J\e[Hwo\r\nhree\e[2;2H\e[?25h\e[?25l\e[3;1H" LIGHT "/cwd/a ↕ ↔ ×"
                    PLAIN "\e[4;1Halpha\e[5;1Hb c\e[6;1Hgamma\e[7;1HFind: x\e[7;8H\e[?25h")
     calls)
   (check-equal? (unbox calls) '()))
@@ -384,11 +393,11 @@
   (def! st 'grown '(tiny ensure-visible 9 6))
   ;; Growth: (0,0,4,3), (5,0,4,3) and (0,3,9,2); no rule row, one LIGHT bar.
   (define grown (list "stuv|HIJ " "yz01|MNO " (string-append LIGHT "/a -" PLAIN "|" DARK "/b -" PLAIN)
-                      "nopqr    " (string-append DARK "/a ------" PLAIN)))
+                      "nopqr    " (string-append DARK "/a  ↕ ↔ ×" PLAIN)))
   (define expected
     (string-append "\e[?25l\e[2J\e[H" (string-join grown "\r\n") "\e[6;1H\e[1;2H\e[?25h"))
   (paint st 'grown 9 6 expected calls)
-  (check-equal? (map visible grown) '("stuv|HIJ " "yz01|MNO " "/a -|/b -" "nopqr    " "/a ------"))
+  (check-equal? (map visible grown) '("stuv|HIJ " "yz01|MNO " "/a -|/b -" "nopqr    " "/a  ↕ ↔ ×"))
   (check-equal? (occurrences expected LIGHT) 1)
   (check-equal? (occurrences expected DARK) 2)
   (check-equal? (occurrences expected PLAIN) 3)
@@ -425,8 +434,8 @@
   (define side (list "abcd|ijkl" "ghij|opqr" "mnop|uvwx" "stuv|0123"
                      (string-append LIGHT "/a -" PLAIN "|" DARK "/a -" PLAIN)))
   (split (right (leaf 0 #:point '(0 0)) (leaf 1 41 1 2 #:point '(0 0))) side "" 1 1)
-  (define stacked (list "abcdef   " "ghijkl   " (string-append LIGHT "/a ------" PLAIN)
-                        "ijkl     " (string-append DARK "/a ------" PLAIN)))
+  (define stacked (list "abcdef   " "ghijkl   " (string-append LIGHT "/a  ↕ ↔ ×" PLAIN)
+                        "ijkl     " (string-append DARK "/a  ↕ ↔ ×" PLAIN)))
   (split (below (leaf 0 #:point '(0 0)) (leaf 1 41 1 2 #:point '(0 0))) stacked "" 1 1)
   (def! st 'p '(v with-active-prompt (AloemacsPrompt new "P:" "x" 1 "" (List empty) (List empty) 0)))
   (paint st 'p 9 6
@@ -471,7 +480,7 @@
           (one-view "one\r\ntwo" 1 1 12 4 "/cwd/a" "Find file: /cwd/" #:final '(4 12))
           (one-view "one\r\ntwo" 1 1 12 4 "/cwd/a" "")))
   (check-equal? (car frames)
-    (string-append "\e[?25l\e[2J\e[Hzero\r\none\e[1;1H\e[?25h\e[?25l\e[3;1H" LIGHT "/cwd/a -----"
+    (string-append "\e[?25l\e[2J\e[Hzero\r\none\e[1;1H\e[?25h\e[?25l\e[3;1H" LIGHT "/cwd/a ↕ ↔ ×"
                    PLAIN "\e[4;1H\e[1;1H\e[?25h"))
   (check-equal? (caddr frames)
     "\e[?25l\e[2J\e[Hone\e[1;1H\e[?25h\e[?25l\e[2;1Hsaved: /cwd/\e[1;1H\e[?25h")

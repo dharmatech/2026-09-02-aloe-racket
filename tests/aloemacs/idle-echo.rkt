@@ -39,9 +39,12 @@
 (define (safe text)
   (list->string (for/list ([c (in-string text)])
     (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode name width)
-  (define label (clip (string-append name " ") width))
-  (safe (string-append label (make-string (- width (string-length label)) #\-))))
+  (define (name-row width)
+    (define label (clip (string-append name " ") width))
+    (safe (string-append label (make-string (- width (string-length label)) #\-))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 ;; One-view name rows are the LIGHT bar; an empty row stays empty.
 (define LIGHT "\e[38;5;16;48;5;250m")
 (define PLAIN "\e[0m")

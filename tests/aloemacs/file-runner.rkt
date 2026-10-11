@@ -14,16 +14,16 @@
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 
 (define empty-frame
-  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250muntitled\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[H\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250mun ↕ ↔ ×\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
 
 (define loaded-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;1H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/c ↕ ↔ ×\u001b[0m\u001b[4;1H\u001b[1;1H\u001b[?25h")
 
 (define inserted-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/new\u001b[0m\u001b[4;1H\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/c ↕ ↔ ×\u001b[0m\u001b[4;1H\u001b[1;2H\u001b[?25h")
 
 (define saved-x-frame
-  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/cwd/new\u001b[0m\u001b[4;1Hsaved: /\u001b[1;2H\u001b[?25h")
+  "\u001b[?25l\u001b[2J\u001b[Hx\r\n\u001b[1;2H\u001b[?25h\u001b[?25l\u001b[3;1H\u001b[38;5;16;48;5;250m/c ↕ ↔ ×\u001b[0m\u001b[4;1Hsaved: /\u001b[1;2H\u001b[?25h")
 
 (struct scripted-term
   (receiver remaining-keys key-calls size-calls events)
@@ -127,7 +127,7 @@
   (run-aloemacs-with-hosts
    (scripted-term-receiver escape-term) escape-fs "new.txt")
   (check-term-observations escape-term 1 2
-                           (list (string-replace empty-frame "untitled" "/cwd/new")))
+                           (list (string-replace empty-frame "un ↕ ↔ ×" "/c ↕ ↔ ×")))
   (check-equal? (fs-send escape-fs 'kind "/cwd/new.txt") "missing")
   (check-equal? (fs-send escape-fs 'names "/cwd") '())
 
@@ -138,7 +138,7 @@
   (check-equal? (unbox (scripted-term-remaining-keys save-term)) '())
   (check-term-observations
    save-term 3 6
-   (list (string-replace empty-frame "untitled" "/cwd/new")
+   (list (string-replace empty-frame "un ↕ ↔ ×" "/c ↕ ↔ ×")
          inserted-x-frame saved-x-frame))
   (check-equal? (fs-send save-fs 'kind "/cwd/new.txt") "file")
   (check-equal? (fs-send save-fs 'read "/cwd/new.txt") "x")

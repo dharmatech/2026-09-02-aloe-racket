@@ -95,9 +95,12 @@
 (define (safe s)
   (list->string (for/list ([c (in-string s)])
     (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A mode row at least seven wide is the name row at w - 6, then the group.
 (define (mode name w)
-  (define label (clip (string-append name " ") w))
-  (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (define (name-row w)
+    (define label (clip (string-append name " ") w))
+    (safe (string-append label (make-string (- w (string-length label)) #\-))))
+  (if (>= w 7) (string-append (name-row (- w 6)) " ↕ ↔ ×") (name-row w)))
 (define (count-rows lines h) (if (< h 2) 0 (min (length lines) (max 0 (- h 2)))))
 (define (root-height lines h) (if (< h 2) h (- h 1 (count-rows lines h))))
 (define (text-height h) (if (>= h 2) (sub1 h) h))
@@ -272,7 +275,7 @@
   ;; Root h=3 gives a tall top leaf and a one-row bottom leaf with no bar.
   (def! st 's (session bs (below l r) 3))
   (paint st 's 9 6
-    (multi (list "abcdef   " (dark "/a ------") "tuvwx    ") 9 6 "P:x" shown-lines 6 4) calls)
+    (multi (list "abcdef   " (dark "/a  ↕ ↔ ×") "tuvwx    ") 9 6 "P:x" shown-lines 6 4) calls)
   (check-equal? (unbox calls) '()))
 
 (test-case "global fallback tests every leaf even when selected nominal rectangle is positive"
@@ -466,7 +469,7 @@
   (def! st 's (rebuild 's #:echo "" #:prompt no-prompt))
   (paint st 's 9 1 "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h" calls)
   (paint st 's 9 2 "\e[?25l\e[2J\e[Hbody\e[1;1H\e[?25h\e[?25l\e[2;1Huntitled\e[1;1H\e[?25h" calls)
-  (paint st 's 9 4 "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled \e[0m\e[4;1H\e[1;1H\e[?25h" calls)
+  (paint st 's 9 4 "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250munt ↕ ↔ ×\e[0m\e[4;1H\e[1;1H\e[?25h" calls)
   (for ([echo '("saved" "failed")])
     (def! st 'status `(s with-echo ,echo))
     (paint st 'status 9 4 (single "body\r\n" 1 1 9 4 "untitled"
@@ -477,7 +480,7 @@
     (paint st 'search 9 4 (single "body\r\n" 1 1 9 4 "untitled" shown '() 1 1) calls))
   (def! st 'noted (rebuild 's #:prompt (prepared '() "x" 1 "P:" " [No match]")))
   (paint st 'noted 9 4
-    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250muntitled \e[0m\e[4;1HP:x [No m\e[4;4H\e[?25h" calls)
+    "\e[?25l\e[2J\e[Hbody\r\n\e[1;1H\e[?25h\e[?25l\e[3;1H\e[38;5;16;48;5;250munt ↕ ↔ ×\e[0m\e[4;1HP:x [No m\e[4;4H\e[?25h" calls)
   (def! st 'split (rebuild 's #:windows (windows (right (leaf 7 #:point '(0 0))
                                                         (leaf 3 #:point '(0 0))) 7)))
   (paint st 'split 9 4 "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1H\e[1;1H\e[?25h" calls)

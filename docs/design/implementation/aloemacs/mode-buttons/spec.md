@@ -1,8 +1,15 @@
 # aloemacs mode-buttons specification
 
-**Status: Written, awaiting human review.** Written by the designer
-from [`charter.md`](charter.md). Not Aloe law. Not a checkpoint. Not
-an implementer assignment.
+**Status: Accepted for checkpoint planning.** Written by the designer
+from [`charter.md`](charter.md). The human authorized the manager to
+proceed if the spec was ready. The manager reviewed its code seams,
+its §6.2 examples, and its §6.3 inventory against the current tree
+and found it ready; the inventory is restated from a scratch run in
+[`checkpoints/000-paint.md`](checkpoints/000-paint.md). While writing
+[`checkpoints/001-press.md`](checkpoints/001-press.md) the manager
+corrected one row of the §5.4 table: at width 7 the labels are at
+indices 2, 4, 6, as the formula and the pinned row `u ↕ ↔ ×` already
+said. Not Aloe law. Not a checkpoint. Not an implementer assignment.
 
 This file is the complete design input for the checkpoint manager
 and the implementers. They do not need the charter or the design
@@ -381,8 +388,8 @@ contract.
 | 80 | 74, 76, 78 | `""` (the three spaces) |
 | 80 | 0, 10, 73 | `""` (name or fill) |
 | 80 | 80, -1 | `""` (outside the row) |
-| 7 | 1, 3, 5 | `↕`, `↔`, `×` |
-| 7 | 0, 2, 4, 6 | `""` |
+| 7 | 2, 4, 6 | `↕`, `↔`, `×` (the row is `u ↕ ↔ ×`) |
+| 7 | 0, 1, 3, 5 | `""` |
 | 6 | 1, 3, 5 | `""` (no labels below 7) |
 | 40 | 35, 37, 39 | `↕`, `↔`, `×` |
 | 39 | 34, 36, 38 | `↕`, `↔`, `×` |

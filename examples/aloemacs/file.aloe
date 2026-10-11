@@ -251,11 +251,38 @@
 (define-class AloemacsModeLine
   (fields)
   (methods
-    (row (name String) (width Int) String
+    ;; The six characters that end a mode line at least seven columns
+    ;; wide: a space, U+2195, a space, U+2194, a space, U+00D7. Spelled
+    ;; with escapes so this file stays ASCII bytes.
+    (buttons () String
+      " \u2195 \u2194 \u00d7")
+
+    (buttons? (width Int) Bool
+      (width >= 7))
+
+    ;; The name, a space when it fits, then dash fill, clipped to the width.
+    (name-row (name String) (width Int) String
       (if (width <= 0)
           ""
           (let ((clipped ((name append " ") take width)))
             (clipped append (self fill (width - (clipped len)))))))
+
+    (row (name String) (width Int) String
+      (if (self buttons? width)
+          ((self name-row name (width - 6)) append (self buttons))
+          (self name-row name width)))
+
+    ;; Which label a cell of the row names: the three glyph cells of the
+    ;; group, or "" for every other index. Pure; whether anything happens
+    ;; is the session's decision.
+    (label-at (width Int) (index Int) String
+      (if (self buttons? width)
+          (cond
+            ((index = (width - 5)) "\u2195")
+            ((index = (width - 3)) "\u2194")
+            ((index = (width - 1)) "\u00d7")
+            (else ""))
+          ""))
 
     (fill (remaining Int) String
       (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
@@ -2063,21 +2090,50 @@
                       (if (if ((rect rows) >= 2)
                               (row = (((rect y) + (rect rows)) - 1))
                               #f)
-                          (self unchanged)
+                          (self press-mode-line view rect (column - (rect x)))
                           (self place-in view
                             ((view scroll-row) + (row - (rect y)))
                             ((view scroll-col) + (column - (rect x))))))))))))))
 
-    ;; The selected leaf places directly. Another leaf takes the other-window
-    ;; handoff: store the departing view, enter the clicked one, then place.
-    (place-in (view AloemacsView) (line Int) (column Int) (AloemacsSession H)
+    ;; A label cell on a mode line selects that window, then runs the
+    ;; window command the label names. Every other mode-line cell leaves
+    ;; the session as it was.
+    (press-mode-line (view AloemacsView) (rect AloemacsWindowRect) (index Int)
+                     (AloemacsSession H)
+      (let ((label ((AloemacsModeLine new) label-at (rect columns) index)))
+        (if (label = "")
+            (self unchanged)
+            ((self select-view view) case
+              (None () (self unchanged))
+              (Some (selected) (selected button-send label))))))
+
+    ;; The selected view is already selected. Another view takes the
+    ;; other-window handoff: store the departing view, then enter the
+    ;; pressed one. A view the stored tree lacks is None.
+    (select-view (view AloemacsView) (Option (AloemacsSession H))
       (if ((view id) = ((self windows) selected))
-          (self place-at line column)
+          (Option Some self)
           (let ((stored ((self windows) with-buffer (self current-buffer))))
             (((stored tree) find-view (view id)) case
-              (None () self)
+              (None () (Option None))
               (Some (stored-view)
-                ((self enter-view (stored tree) stored-view) place-at line column))))))
+                (Option Some (self enter-view (stored tree) stored-view)))))))
+
+    ;; The window command a label names, on the session whose window is
+    ;; already selected.
+    (button-send (label String) (AloemacsSession H)
+      (cond
+        ((label = "\u2195") (self split-below))
+        ((label = "\u2194") (self split-right))
+        ((label = "\u00d7") (self delete-window))
+        (else (self unchanged))))
+
+    ;; The selected leaf places directly. Another leaf takes the same
+    ;; handoff a label press takes, through select-view, then places.
+    (place-in (view AloemacsView) (line Int) (column Int) (AloemacsSession H)
+      ((self select-view view) case
+        (None () self)
+        (Some (entered) (entered place-at line column))))
 
     ;; with-editor stores the placed point on the selected view. The origin
     ;; is not refitted here; the runner's next fit is the fit.

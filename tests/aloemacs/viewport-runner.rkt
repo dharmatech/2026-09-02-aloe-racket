@@ -12,13 +12,16 @@
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 
 ;; Independent name and text allocation from the supplied fixture and size.
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (substring (string-append name " ") 0
-                          (min width (add1 (string-length name)))))
-  (list->string
-    (for/list ([c (in-string (string-append label
-                              (make-string (- width (string-length label)) #\-)))])
-      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (define (name-row width)
+    (define label (substring (string-append name " ") 0
+                            (min width (add1 (string-length name)))))
+    (list->string
+      (for/list ([c (in-string (string-append label
+                                (make-string (- width (string-length label)) #\-)))])
+        (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
@@ -151,9 +154,9 @@
                            (file-double source) "a.txt")
   (check-script fixture sizes frames keys)
   (check-equal? (list-ref frames 3)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[5;1H\u001b[3;1H\u001b[?25h")
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[3;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/c ↕ ↔ ×\u001b[0m\u001b[5;1H\u001b[3;1H\u001b[?25h")
   (check-equal? (list-ref frames 4)
-                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/cwd/a.t\u001b[0m\u001b[5;1H\u001b[2;1H\u001b[?25h"))
+                "\u001b[?25l\u001b[2J\u001b[Hone\r\ntwo\r\nthree\u001b[2;1H\u001b[?25h\u001b[?25l\u001b[4;1H\u001b[38;5;16;48;5;250m/c ↕ ↔ ×\u001b[0m\u001b[5;1H\u001b[2;1H\u001b[?25h"))
 
 (test-case "vertical shrink shifts only on exit and growth holds the origin"
   (define keys '("down" "down" "down" "f1" "up" "f1" "escape"))

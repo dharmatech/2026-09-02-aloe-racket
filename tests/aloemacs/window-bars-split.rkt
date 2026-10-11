@@ -104,9 +104,12 @@
 (define (safe s)
   (list->string (for/list ([c (in-string s)])
                   (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+;; A mode row at least seven wide is the name row at w - 6, then the group.
 (define (mode name w)
-  (define label (clip (string-append name " ") w))
-  (safe (string-append label (make-string (max 0 (- w (string-length label))) #\-))))
+  (define (name-row w)
+    (define label (clip (string-append name " ") w))
+    (safe (string-append label (make-string (max 0 (- w (string-length label))) #\-))))
+  (if (>= w 7) (string-append (name-row (- w 6)) " ↕ ↔ ×") (name-row w)))
 (define (pad s w) (string-append s (make-string (max 0 (- w (string-length s))) #\space)))
 ;; A leaf: h - 1 text rows then its bar, or h text rows when h < 2.
 (define (cells lines w h top left name selected?)
@@ -447,7 +450,7 @@
   (def! st 'v (session (zipper '(a)) (below (leaf 0 0 0 0 #:point '(0 0))
                                             (leaf 1 0 2 0 #:point '(0 0))) 0 #:columns 8 #:rows 6))
   (define stacked
-    "\e[?25l\e[2J\e[Hone     \r\ntwo     \r\n\e[38;5;16;48;5;250m/a -----\e[0m\r\nthree   \r\n\e[38;5;252;48;5;239m/a -----\e[0m\e[6;1H\e[1;1H\e[?25h")
+    "\e[?25l\e[2J\e[Hone     \r\ntwo     \r\n\e[38;5;16;48;5;250m/a ↕ ↔ ×\e[0m\r\nthree   \r\n\e[38;5;252;48;5;239m/a ↕ ↔ ×\e[0m\e[6;1H\e[1;1H\e[?25h")
   (define stacked-rows (append (cells lines 8 3 0 0 "/a" #t) (cells lines 8 2 2 0 "/a" #f)))
   (check-equal? (multi stacked-rows 1 1 8 6 "") stacked)
   (paint st 'v 8 6 stacked calls)
@@ -503,7 +506,7 @@
                          (cells b-lines 9 2 1 2 "/b" #f)))
   (check-equal? t-rows
     (list "abcd|tuvw" "ghij|z012" (string-append DARK "/a -" PLAIN "|" LIGHT "/a -" PLAIN)
-          "HIJ      " (string-append DARK "/b ------" PLAIN)))
+          "HIJ      " (string-append DARK "/b  ↕ ↔ ×" PLAIN)))
   (paint st 'v 9 6 (multi t-rows 1 7 9 6 "") calls)
   (rows! st 'v 9 5 t-rows)
   (check-rows t-rows 9 5 #:light 1 #:dark 2 #:dividers '((4 0 2)))
@@ -733,20 +736,20 @@
   (define (bars a b) (string-append (painted "/cwd" a) "|" (painted "/cwd" b)))
   (define initial
     (string-append "\e[?25l\e[2J\e[Hzero\r\none\r\ntwo\r\nthree\e[1;1H\e[?25h\e[?25l\e[5;1H"
-                   LIGHT "/cwd/a --" PLAIN "\e[6;1H\e[1;1H\e[?25h"))
-  (define stacked (list "zero     " "one      " (painted "/cwd/a --" #t) "zero     "
-                        (painted "/cwd/a --" #f)))
+                   LIGHT "/cw ↕ ↔ ×" PLAIN "\e[6;1H\e[1;1H\e[?25h"))
+  (define stacked (list "zero     " "one      " (painted "/cw ↕ ↔ ×" #t) "zero     "
+                        (painted "/cw ↕ ↔ ×" #f)))
   ;; Below(Right(view 0, view 2), view 1): (0,0,4,3), (5,0,4,3), (0,3,9,2).
   (define (mixed line0 left?)
     (define cell (pad (clip line0 4) 4))
     (list (string-append cell "|" cell) "one |one " (bars left? (not left?))
-          (pad line0 9) (painted "/cwd/a --" #f)))
+          (pad line0 9) (painted "/cw ↕ ↔ ×" #f)))
   (define mixed-0 (mixed "zero" #t))
   (define mixed-2 (mixed "zero" #f))
   (define edited (mixed "Xzero" #f))
   (define short-rows (list "Xzer|Xzer" (bars #f #t) "Xzero    "))
-  (define deleted (list "Xzero    " "one      " (painted "/cwd/a --" #t) "Xzero    "
-                        (painted "/cwd/a --" #f)))
+  (define deleted (list "Xzero    " "one      " (painted "/cw ↕ ↔ ×" #t) "Xzero    "
+                        (painted "/cw ↕ ↔ ×" #f)))
   (check-equal? (list-ref mixed-0 3) "zero     ")
   (check-equal? (list-ref edited 3) "Xzero    ")
   (define frames

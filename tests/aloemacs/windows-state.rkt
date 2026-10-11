@@ -616,7 +616,7 @@
   (define snapshot (ev st 'one))
   (check-equal? (ev st '(one frame 8 3))
     (string-append "\e[?25l\e[2J\e[Hrd-long\e[1;2H\e[?25h"
-                   "\e[?25l\e[2;1H\e[38;5;16;48;5;250m/cwd/b.t\e[0m\e[3;1Hdraft: i\e[3;8H\e[?25h"))
+                   "\e[?25l\e[2;1H\e[38;5;16;48;5;250m/c ↕ ↔ ×\e[0m\e[3;1Hdraft: i\e[3;8H\e[?25h"))
   (check-equal? (ev st 'one) snapshot)
   (assert-effects calls '()))
 

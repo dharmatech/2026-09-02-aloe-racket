@@ -107,13 +107,16 @@
                  (if echo-row (string-append (cursor echo-row 1) echo) "")
                  (cursor row col) "\e[?25h"))
 ;; Independent name and text allocation from the supplied fixture and size.
+;; A mode row at least seven wide is the name row at width - 6, then the group.
 (define (mode-row name width)
-  (define label (substring (string-append name " ") 0
-                          (min width (add1 (string-length name)))))
-  (list->string
-    (for/list ([c (in-string (string-append label
-                              (make-string (- width (string-length label)) #\-)))])
-      (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (define (name-row width)
+    (define label (substring (string-append name " ") 0
+                            (min width (add1 (string-length name)))))
+    (list->string
+      (for/list ([c (in-string (string-append label
+                                (make-string (- width (string-length label)) #\-)))])
+        (if (or (< (char->integer c) 32) (= (char->integer c) 127)) #\space c))))
+  (if (>= width 7) (string-append (name-row (- width 6)) " ↕ ↔ ×") (name-row width)))
 (define (text-body body rows)
   (define lines (string-split body "\r\n" #:trim? #f))
   (string-join (take lines (min (length lines) (if (>= rows 3) (- rows 2) 1))) "\r\n"))
@@ -516,12 +519,12 @@
     (define (bars selected name) (list ((if (= selected 0) light dark) name)
                                        ((if (= selected 1) light dark) name)))
     (define (split-rows selected) (if below?
-      (let ([bar (bars selected "/cwd/a.tx")])
+      (let ([bar (bars selected "/cw ↕ ↔ ×")])
         (list "abc      " "def      " (car bar) "abc      " (cadr bar)))
       (list "abc |abc " "def |def " "    |    " "    |    "
             (string-join (bars selected "/cwd") "|"))))
     (define edited-rows (if below?
-      (let ([bar (bars 1 "/cwd/a.tx")])
+      (let ([bar (bars 1 "/cw ↕ ↔ ×")])
         (list "xabc     " "def      " (car bar) "xabc     " (cadr bar)))
       (list "xabc|xabc" "def |def " "    |    " "    |    " (string-join (bars 1 "/cwd") "|"))))
     (define frames

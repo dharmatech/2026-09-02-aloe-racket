@@ -83,7 +83,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 21 | Window bars | [`window-bars/`](window-bars/) | **Implemented.** aloemacs-window-bars 000–001. Final human review remains. | 17, 18 (windows, mode line) |
 | 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
 | 23 | Mouse | [`mouse/`](mouse/) | **Implemented and accepted.** aloemacs-mouse 000, the whole series. Do not issue 001. | 2, 17, 22 (Term, windows, window point) |
-| 24 | Mode buttons | [`mode-buttons/`](mode-buttons/) | **Charter.** Designer writes `spec.md`. | 17, 18, 23 (windows, mode line, mouse) |
+| 24 | Mode buttons | [`mode-buttons/`](mode-buttons/) | **Implemented and accepted.** aloemacs-mode-buttons 000–001, the whole series. Do not issue 002. | 17, 18, 23 (windows, mode line, mouse) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -139,10 +139,11 @@ aloemacs-mouse 000. A press and a release reach Aloe on the read the
 editor already blocks on. A left press in a window's text selects
 that window and places its point. Do not issue 001. Paste, the host
 clipboard, PTY, and daemon stay outside this series. **Mode buttons**
-is chartered at [`mode-buttons/`](mode-buttons/). A mode line at
+is implemented and accepted at [`mode-buttons/`](mode-buttons/),
+aloemacs-mode-buttons 000–001. A mode line at
 least seven columns wide ends with ↕, ↔, and ×. A left press on
 one selects that window and sends the split or delete that window
-already has. The designer writes `spec.md`. Ranked later
+already has. The hand check passed. Do not issue 002. Ranked later
 work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
