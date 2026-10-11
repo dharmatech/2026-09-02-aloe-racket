@@ -86,22 +86,24 @@
       (run-aloemacs-with-hosts term fs-host path)
       (run-aloemacs-with-hosts term fs-host)))
 
-;; Button presses and releases only (1000) in SGR form (1006), enabled after
-;; with-term owns the output port and disabled before it tears the port down,
-;; on normal return and when an exception leaves the editor.
+;; The alternate screen (1049) first, then button presses and releases only
+;; (1000) in SGR form (1006): enabled after with-term owns the output port,
+;; disabled in reverse order before it tears the port down, on normal return
+;; and when an exception leaves the editor. Terminal setup written by hand,
+;; not frame bytes; the first frame clears the alternate screen.
 (define (run-aloemacs [path #f])
   (call-with-tty-term-receiver
    (lambda (term)
      (dynamic-wind
       (lambda ()
-        (write-string "\e[?1000h\e[?1006h" (current-output-port))
+        (write-string "\e[?1049h\e[?1000h\e[?1006h" (current-output-port))
         (flush-output (current-output-port)))
       (lambda ()
         (if path
             (run-aloemacs-with-term term path)
             (run-aloemacs-with-term term)))
       (lambda ()
-        (write-string "\e[?1000l\e[?1006l" (current-output-port))
+        (write-string "\e[?1000l\e[?1006l\e[?1049l" (current-output-port))
         (flush-output (current-output-port)))))))
 
 (module+ main
