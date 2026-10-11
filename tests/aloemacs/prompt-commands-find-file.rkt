@@ -162,7 +162,7 @@
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (check-equal? (caddr (declaration '(AloemacsSession H)))
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
        (query String) (origin Position) (wrapped Bool) (failing Bool)
@@ -601,7 +601,7 @@
     (make-host-receiver
       (make-host-interface 'Term
         (list
-          (make-host-method 'read-key '() 'String (lambda (state)
+          (make-host-method 'read-event '() 'String (lambda (state)
             (when (null? remaining) (error 'scripted-run "exhausted"))
             (define key (car remaining))
             (set! remaining (cdr remaining))

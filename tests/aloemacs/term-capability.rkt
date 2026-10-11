@@ -44,13 +44,13 @@
   (check-eq? (host-interface-name term-interface) 'Term)
   (check-equal?
    (map host-method-selector methods)
-   '(read-key write-line write columns rows))
+   '(read-key write-line write columns rows read-event))
   (check-equal?
    (map host-method-parameter-types methods)
-   '(() (String) (String) () ()))
+   '(() (String) (String) () () ()))
   (check-equal?
    (map host-method-return-type methods)
-   '(String String String Int Int)))
+   '(String String String Int Int String)))
 
 (test-case "Term injection supplies checker types but remains optional"
   (define default-state (make-driver))

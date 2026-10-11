@@ -139,7 +139,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsBuffer))
     '(fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
   (check-equal? (caddr (decl 'AloemacsBuffers))

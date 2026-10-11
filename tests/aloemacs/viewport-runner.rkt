@@ -107,7 +107,7 @@
                           "aloemacs-editor ensure-visible"
                           "aloemacs-editor record-pictures"
                           "aloemacs-editor frame"
-                          "(term write" "(term read-key)"))])
+                          "(term write" "(term read-event)"))])
     (check-equal? (length (positions phrase)) 1 phrase))
   (define (start phrase) (caar (positions phrase)))
   (check-true (< (start "(term columns)")
@@ -116,7 +116,7 @@
                  (start "aloemacs-editor record-pictures")
                  (start "(term write")
                  (start "aloemacs-editor frame")
-                 (start "(term read-key)"))))
+                 (start "(term read-event)"))))
 
 (test-case "pathless and visited first frames precede the first key"
   (define sizes '((8 4)))

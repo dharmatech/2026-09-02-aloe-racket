@@ -189,7 +189,7 @@
             "aloemacs-editor fs"
             "aloemacs-editor visit"
             "aloemacs-editor frame"
-            "aloemacs-editor handle-key"
+            "aloemacs-editor handle-event"
             "aloemacs-editor quit"))])
     (check-regexp-match (regexp (regexp-quote required)) source))
   (check-equal?

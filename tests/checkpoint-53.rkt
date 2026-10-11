@@ -32,7 +32,7 @@
   (check-equal?
    (map host-method-selector
         (host-interface-methods (host-receiver-interface term)))
-   '(read-key write-line write columns rows)))
+   '(read-key write-line write columns rows read-event)))
 
 (test-case "the default evaluator does not bind term"
   (check-exn #rx"unbound symbol: term"

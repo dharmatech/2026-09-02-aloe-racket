@@ -199,7 +199,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (check-equal? (caddr (decl 'AloemacsModeLine)) '(fields))
   (check-equal? (caddr (decl 'AloemacsWindowRect)) '(fields (x Int) (y Int) (columns Int) (rows Int)))

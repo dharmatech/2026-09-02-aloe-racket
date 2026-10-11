@@ -182,7 +182,7 @@
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (check-equal? (caddr (declaration '(AloemacsSession H)))
     '(fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String) (searching Bool)
        (query String) (origin Position) (wrapped Bool) (failing Bool)
@@ -823,8 +823,8 @@
             (make-host-method 'rows '() 'Int (lambda (_) (record 'rows) 3))
             (make-host-method 'write '(String) 'String (lambda (_ text)
               (record 'write) (set-box! frames (append (unbox frames) (list text))) text))
-            (make-host-method 'read-key '() 'String (lambda (_)
-              (record 'read-key)
+            (make-host-method 'read-event '() 'String (lambda (_)
+              (record 'read-event)
               (set-box! snapshots (append (unbox snapshots) (list (reverse (unbox calls)))))
               (define key (car (unbox keys))) (set-box! keys (cdr (unbox keys))) key)))) #f))
   (run-aloemacs-with-hosts term host)
@@ -851,7 +851,7 @@
     (list blank (gold "a" 1 2 "" #f) blank (gold "b" 1 2 "" #f)
           blank (gold "c" 1 2 "" #f) body body started typed grown listed-grown
           narrowed unique sole sole-left sole opened opened restarted listed-restarted opened))
-  (check-equal? (unbox events) (apply append (make-list 22 '(columns rows write read-key))))
+  (check-equal? (unbox events) (apply append (make-list 22 '(columns rows write read-event))))
   (check-equal? (effects calls 'current) '((current)))
   (check-equal? (effects calls 'parent) '((parent "/cwd/alpha.txt")))
   (check-equal? (effects calls 'names) (make-list 5 '(names "/cwd")))

@@ -162,7 +162,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
-      AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsCommand))
     `(constructors ,@(map (lambda (c) `(,c (fields))) commands)))
   (check-equal? (map (lambda (m) (drop-right m 1)) (cdr (cadddr (decl 'AloemacsCommand))))

@@ -19,7 +19,7 @@ implemented (aloemacs-windows 000–006) at [`windows/`](windows/).
 Final human review of that series remains. The mode-line series is
 implemented (aloemacs-mode-line 000–001) at
 [`mode-line/`](mode-line/). Final human review of that series
-remains. The idle-echo follow-on is ready to implement at
+remains. The idle-echo follow-on is implemented at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. The multi-window frame repair is implemented at
 [`window-pictures/`](window-pictures/), aloemacs-window-pictures 000.
 Path completion is back with the designer at
@@ -34,7 +34,10 @@ edge, with a lighter bar on the selected window. Window point is
 implemented and accepted at [`window-point/`](window-point/),
 aloemacs-window-point 000. Each window showing a buffer keeps its
 own cursor, and `C-x o` restores it before the fit. Do not issue
-001.
+001. Mouse is implemented and accepted at [`mouse/`](mouse/). A
+left press in a window's text selects that window and places its
+point. Do not issue 001. Paste, the host clipboard, PTY, and daemon
+stay later.
 
 Spoken **aloe macs**. Aim: a **solid, idiomatic, scalable core**
 so later features are programs on that core, not more branches in
@@ -184,7 +187,7 @@ editing `editor.aloe` for each new one, Band 2 is unfinished.
 |---|---|---|
 | 18 | **LSP inside aloemacs** | Needs a process/network capability, overlays, and a minibuffer for UI. VS Code LSP in `docs/editor/` already edits Aloe *from the outside*; that map stays separate until this editor hosts a client |
 | 19 | **Live eval / running image** | Hallmark of Emacs. Reopens the **static first** lock (no Mirror, no live `eval` in the editor). Park until the core and modes are boring. Then a dedicated charter |
-| 20 | **Host clipboard, mouse, PTY, daemon** | Extra capabilities. Kill-ring does not require them |
+| 20 | **Host clipboard, PTY, daemon** | Extra capabilities. Kill-ring does not require them. Mouse has left this row for [`mouse/`](mouse/) |
 
 ---
 
@@ -225,7 +228,7 @@ Leave these until a slice is blocked by them.
    name. The echo row stays the message row. Final human review
    remains. The idle name leaves that row in the standalone
    checkpoint [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000,
-   which is ready to implement. **Window bars** is chartered at
+   which is implemented. **Window bars** is chartered at
    [`window-bars/`](window-bars/). The designer writes `spec.md`.
 7. **Path completion** — back with the designer at
    [`completion/`](completion/). Tab completes find-file and
@@ -242,7 +245,9 @@ implemented. Windows is implemented (aloemacs-windows 000–006);
 final human review remains. Mode line is implemented
 (aloemacs-mode-line 000–001) at [`mode-line/`](mode-line/);
 final human review remains. aloemacs-idle-echo 000 at
-[`idle-echo/`](idle-echo/) stays ready to implement. Path
+[`idle-echo/`](idle-echo/) is implemented. Path
 completion is back with the designer at
 [`completion/`](completion/). Paging the painted list is chartered at
-[`completion-page/`](completion-page/). Faces stay after that revision. Modes, org, dired, and `M-x` stay later.
+[`completion-page/`](completion-page/). Mouse is implemented and
+accepted at [`mouse/`](mouse/). Do not issue 001. Faces stay after
+that revision. Modes, org, dired, and `M-x` stay later.

@@ -55,11 +55,11 @@
       state
       `(term write
          (aloemacs-editor frame ,columns ,rows)))))
-  (define handle-key
+  (define handle-event
     (driver-prepare!
      state
      '(define aloemacs-editor
-        (aloemacs-editor handle-key (term read-key)))))
+        (aloemacs-editor handle-event (term read-event)))))
   (define quit? (driver-prepare! state '(aloemacs-editor quit)))
   (let loop ([previous-columns #f]
              [previous-rows #f]
@@ -76,7 +76,7 @@
     (fit)
     (record)
     (frame)
-    (handle-key)
+    (handle-event)
     (unless (quit?)
       (loop columns rows fit record frame))))
 
@@ -86,12 +86,23 @@
       (run-aloemacs-with-hosts term fs-host path)
       (run-aloemacs-with-hosts term fs-host)))
 
+;; Button presses and releases only (1000) in SGR form (1006), enabled after
+;; with-term owns the output port and disabled before it tears the port down,
+;; on normal return and when an exception leaves the editor.
 (define (run-aloemacs [path #f])
   (call-with-tty-term-receiver
    (lambda (term)
-     (if path
-         (run-aloemacs-with-term term path)
-         (run-aloemacs-with-term term)))))
+     (dynamic-wind
+      (lambda ()
+        (write-string "\e[?1000h\e[?1006h" (current-output-port))
+        (flush-output (current-output-port)))
+      (lambda ()
+        (if path
+            (run-aloemacs-with-term term path)
+            (run-aloemacs-with-term term)))
+      (lambda ()
+        (write-string "\e[?1000l\e[?1006l" (current-output-port))
+        (flush-output (current-output-port)))))))
 
 (module+ main
   (define arguments (vector->list (current-command-line-arguments)))

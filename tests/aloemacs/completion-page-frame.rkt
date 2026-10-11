@@ -308,8 +308,8 @@
                                                     (cadr (list-ref steps i))))
         (make-host-method 'write '(String) 'String (lambda (_ text)
           (record 'write) (set! frames (append frames (list text))) text))
-        (make-host-method 'read-key '() 'String (lambda (_)
-          (record 'read-key) (set! snapshots (append snapshots (list (unbox calls))))
+        (make-host-method 'read-event '() 'String (lambda (_)
+          (record 'read-event) (set! snapshots (append snapshots (list (unbox calls))))
           ;; Mutate after initial Tab; pages/resize still use all 18 cached names.
           (when (= i 5) (set-box! names '("pi" "pa" "pt" "ph" "pg" "pu" "pf" "pv" "pe")))
           (define key (car (list-ref steps i))) (set! i (add1 i)) key)))) #f))
@@ -343,7 +343,7 @@
     (check-equal? actual gold (format "drawn frame ~a" j)))
   (check-equal? i (length steps))
   (check-equal? events
-    (append-map (lambda (s) (list 'columns (list 'rows (cadr s)) 'write 'read-key)) steps))
+    (append-map (lambda (s) (list 'columns (list 'rows (cadr s)) 'write 'read-event)) steps))
   (check-equal? (effects calls 'names) (make-list 3 '(names "/cwd")))
   (check-equal? (effects calls 'read) '((read "/cwd/start")))
   (check-equal? (effects calls 'write) '())

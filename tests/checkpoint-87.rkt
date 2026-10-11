@@ -61,9 +61,10 @@
       ("write-line" ("String") "String")
       ("write" ("String") "String")
       ("columns" () "Int")
-      ("rows" () "Int")))
-  (check-equal? (driver-eval! state '((term-mirror messages) len)) 5)
-  (check-equal? (driver-eval! state '(term-rows len)) 5)
+      ("rows" () "Int")
+      ("read-event" () "String")))
+  (check-equal? (driver-eval! state '((term-mirror messages) len)) 6)
+  (check-equal? (driver-eval! state '(term-rows len)) 6)
   (for ([expected (in-list expected-rows)]
         [index (in-naturals)])
     (define message-expression

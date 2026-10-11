@@ -1,6 +1,6 @@
 # aloemacs idle echo
 
-**Status: Ready to implement.** Standalone checkpoint. **No charter.
+**Status: Implemented.** Standalone checkpoint. **No charter.
 No spec.md. No checkpoint manager.**
 
 Not Aloe law. Not Gel. Not a global checkpoint. Not a mode-line
@@ -9,7 +9,7 @@ checkpoint. Product root:
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-blank-beside-mode-line.md`](checkpoints/000-blank-beside-mode-line.md) | The implementer's whole assignment |
+| [`checkpoints/000-blank-beside-mode-line.md`](checkpoints/000-blank-beside-mode-line.md) | **Implemented.** Blank idle echo beside a mode line |
 
 Parent map: [`../README.md`](../README.md).
 

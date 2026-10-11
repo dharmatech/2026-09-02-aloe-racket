@@ -188,8 +188,10 @@ work.
 - Term is the first optional typed capability. One ordered descriptor defines,
   in order, `read-key : () -> String`, `write-line : (String) -> String`,
   `write : (String) -> String`, `columns : () -> Int`, and
-  `rows : () -> Int` for the evaluator, checker, and reflection. Gel still
-  sends only `read-key` and `write-line`.
+  `rows : () -> Int` for the evaluator, checker, and reflection.
+  `read-event : () -> String` is the sixth row; it returns the next key
+  string or the next mouse string. Gel still sends only `read-key` and
+  `write-line`.
 - `host/racket/term-run.rkt` and `host/racket/gel-run.rkt` each create one
   checked driver, explicitly inject Term, and use that driver for loading and
   evaluation.

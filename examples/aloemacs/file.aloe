@@ -564,6 +564,15 @@
               (if ((self columns) = (other columns))
                   ((self rows) = (other rows)) #f) #f) #f))
 
+    (contains? (column Int) (row Int) Bool
+      (if ((self x) <= column)
+          (if (column < ((self x) + (self columns)))
+              (if ((self y) <= row)
+                  (row < ((self y) + (self rows)))
+                  #f)
+              #f)
+          #f))
+
     (divider (extent Int) Int
       (1 min extent))
 
@@ -626,6 +635,21 @@
           ((left rect-for id (rect left)) case
             (Some (found) (Option Some found))
             (None () (right rect-for id (rect right)))))))
+
+    ;; The leaf whose rectangle holds the cell, walking the same children
+    ;; rect-for walks. The reserved column of a Right split is in neither.
+    (view-at (column Int) (row Int) (rect AloemacsWindowRect) (Option AloemacsView)
+      (self case
+        (Leaf (view)
+          (if (rect contains? column row) (Option Some view) (Option None)))
+        (Below (top bottom)
+          ((top view-at column row (rect top)) case
+            (Some (found) (Option Some found))
+            (None () (bottom view-at column row (rect bottom)))))
+        (Right (left right)
+          ((left view-at column row (rect left)) case
+            (Some (found) (Option Some found))
+            (None () (right view-at column row (rect right)))))))
 
     (positive-layout? (rect AloemacsWindowRect) Bool
       (self case
@@ -930,6 +954,105 @@
                   (self lines (focused focus-down)
                     (remaining - 1) query)
                   (Option None))))))))
+
+;; The mouse string the host reads: `mouse <down|up> <left|middle|right>
+;; <column> <row>`, one space between fields, canonical decimals, nothing
+;; else. `event?` accepts exactly that grammar; the other reads are defined
+;; when it is true.
+(define-class AloemacsMouse
+  (fields
+    (event String))
+  (methods
+    (event? () Bool
+      (if ((self event) starts-with? "mouse ")
+          (if ((self action-length) > 0)
+              (if ((self button-length) > 0)
+                  (if (self decimal? (self column-text))
+                      (self decimal? (self row-text))
+                      #f)
+                  #f)
+              #f)
+          #f))
+
+    (down? () Bool
+      ((self after-mouse) starts-with? "down "))
+
+    (left? () Bool
+      ((self after-action) starts-with? "left "))
+
+    (column () Int
+      (self decimal-value (self column-text) 0))
+
+    (row () Int
+      (self decimal-value (self row-text) 0))
+
+    ;; The rest of the string after each field, from the left.
+    (after-mouse () String
+      ((self event) drop 6))
+
+    (action-length () Int
+      (cond
+        (((self after-mouse) starts-with? "down ") 5)
+        (((self after-mouse) starts-with? "up ") 3)
+        (else 0)))
+
+    (after-action () String
+      ((self after-mouse) drop (self action-length)))
+
+    (button-length () Int
+      (cond
+        (((self after-action) starts-with? "left ") 5)
+        (((self after-action) starts-with? "middle ") 7)
+        (((self after-action) starts-with? "right ") 6)
+        (else 0)))
+
+    (coordinates () String
+      ((self after-action) drop (self button-length)))
+
+    (column-text () String
+      (((self coordinates) find " " 0) case
+        (None () "")
+        (Some (space) ((self coordinates) take space))))
+
+    (row-text () String
+      (((self coordinates) find " " 0) case
+        (None () "")
+        (Some (space) ((self coordinates) drop (space + 1)))))
+
+    ;; A digit is one character found in the digit string; its index is its
+    ;; value. The length check guards find of "", which succeeds at 0.
+    (digit? (text String) Bool
+      (if ((text len) = 1)
+          (("0123456789" find text 0) present?)
+          #f))
+
+    (digits? (text String) Bool
+      (if ((text len) = 0)
+          #t
+          (if (self digit? (text take 1))
+              (self digits? (text drop 1))
+              #f)))
+
+    ;; A canonical decimal is 0, or a non-zero digit followed by digits.
+    (decimal? (text String) Bool
+      (if ((text len) = 0)
+          #f
+          (if ((text len) = 1)
+              (self digit? text)
+              (if ((text take 1) = "0")
+                  #f
+                  (self digits? text)))))
+
+    (digit-value (text String) Int
+      (("0123456789" find text 0) case
+        (None () 0)
+        (Some (value) value)))
+
+    (decimal-value (text String) (total Int) Int
+      (if ((text len) = 0)
+          total
+          (self decimal-value (text drop 1)
+            ((total * 10) + (self digit-value (text take 1))))))))
 
 (define-class (AloemacsSession H)
   (fields
@@ -1894,7 +2017,72 @@
         ((self quit) (self unchanged))
         ((self searching) (self search-key key))
         (((self prompt) present?) (self prompt-key key))
-        (else (self idle-key key))))))
+        (else (self idle-key key))))
+
+    ;; The runner sends every read here. A mouse string takes the mouse path;
+    ;; any other string is a key and takes handle-key as before.
+    (handle-event (event String) (AloemacsSession H)
+      (cond
+        ((self quit) (self unchanged))
+        (((AloemacsMouse new event) event?) (self handle-mouse event))
+        (else (self handle-key event))))
+
+    ;; A search, a prompt, or a pending prefix refuses every mouse string.
+    ;; Otherwise only a left press reaches the cell.
+    (handle-mouse (event String) (AloemacsSession H)
+      (cond
+        ((self searching) (self unchanged))
+        (((self prompt) present?) (self unchanged))
+        (((self pending) present?) (self unchanged))
+        (else
+          (let ((mouse (AloemacsMouse new event)))
+            (if (mouse down?)
+                (if (mouse left?)
+                    (self press-at (mouse column) (mouse row))
+                    (self unchanged))
+                (self unchanged))))))
+
+    ;; Classify the cell with the geometry the last fit stored, in order:
+    ;; echo row, completion row, mode line, text, or no leaf at all.
+    (press-at (column Int) (row Int) (AloemacsSession H)
+      (let ((windows (self windows)))
+        (let ((rows (windows rows))
+              (root (self root-rect (windows columns) (windows rows)))
+              (count (self completion-row-count (windows rows))))
+          (cond
+            ((if (rows >= 2) (row = (rows - 1)) #f) (self unchanged))
+            ((if (row >= (root rows)) (row < ((root rows) + count)) #f)
+             (self unchanged))
+            (else
+              (((windows tree) view-at column row root) case
+                (None () (self unchanged))
+                (Some (view)
+                  (((windows tree) rect-for (view id) root) case
+                    (None () (self unchanged))
+                    (Some (rect)
+                      (if (if ((rect rows) >= 2)
+                              (row = (((rect y) + (rect rows)) - 1))
+                              #f)
+                          (self unchanged)
+                          (self place-in view
+                            ((view scroll-row) + (row - (rect y)))
+                            ((view scroll-col) + (column - (rect x))))))))))))))
+
+    ;; The selected leaf places directly. Another leaf takes the other-window
+    ;; handoff: store the departing view, enter the clicked one, then place.
+    (place-in (view AloemacsView) (line Int) (column Int) (AloemacsSession H)
+      (if ((view id) = ((self windows) selected))
+          (self place-at line column)
+          (let ((stored ((self windows) with-buffer (self current-buffer))))
+            (((stored tree) find-view (view id)) case
+              (None () self)
+              (Some (stored-view)
+                ((self enter-view (stored tree) stored-view) place-at line column))))))
+
+    ;; with-editor stores the placed point on the selected view. The origin
+    ;; is not refitted here; the runner's next fit is the fit.
+    (place-at (line Int) (column Int) (AloemacsSession H)
+      ((self with-editor ((self editor) place line column)) with-echo ""))))
 
 (define aloemacs-self-insert-command (AloemacsCommand SelfInsert))
 (define aloemacs-save-command (AloemacsCommand Save))

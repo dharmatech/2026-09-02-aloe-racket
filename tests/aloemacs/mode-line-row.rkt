@@ -22,7 +22,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (define (payload name) (caddr (findf (lambda (d) (equal? (cadr d) name)) classes)))
   (check-equal? (payload 'AloemacsModeLine) '(fields))
   (check-equal? (payload 'AloemacsBuffer)

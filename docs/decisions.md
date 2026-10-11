@@ -53,7 +53,9 @@ Racket `display`, writes `"\r\n"`, flushes, and returns the string.
 newline or delimiter, flushes, and returns the string. `(term columns)` and
 `(term rows)` return positive `Int` dimensions from a fresh whole-pair query;
 invalid results or ordinary discovery failures replace the whole pair with
-the 80-column by 24-row fallback.
+the 80-column by 24-row fallback. `(term read-event) : () -> String` is the
+sixth method; it returns the next key string or the next mouse string, which
+`read-key` skips.
 
 Both terminal runners create a checked driver and explicitly inject the
 production Term receiver into its runtime and checker environments before

@@ -194,7 +194,7 @@
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine
       AloemacsLeafPicture AloemacsView AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (check-equal? (caddr (decl 'AloemacsPrompt))
     '(fields (label String) (text String) (column Int) (completion-note String)
        (completion-lines (List String)) (completion-matches (List String)) (completion-start Int)))

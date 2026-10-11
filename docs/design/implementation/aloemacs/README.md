@@ -80,6 +80,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 20 | Completion page | [`completion-page/`](completion-page/) | **Charter.** Designer writes `spec.md`. | 19 (painted completion list) |
 | 21 | Window bars | [`window-bars/`](window-bars/) | **Charter.** Designer writes `spec.md`. | 17, 18 (windows, mode line) |
 | 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
+| 23 | Mouse | [`mouse/`](mouse/) | **Implemented and accepted.** aloemacs-mouse 000, the whole series. Do not issue 001. | 2, 17, 22 (Term, windows, window point) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -104,7 +105,7 @@ remains. **Mode line** is implemented at [`mode-line/`](mode-line/),
 aloemacs-mode-line 000–001. A tall window's last row shows that
 window's buffer name. The echo row stays the message row. A leaf
 shorter than two rows keeps today's text frame. Final human review
-remains. **Idle echo** is ready to implement at
+remains. **Idle echo** is implemented at
 [`idle-echo/`](idle-echo/), aloemacs-idle-echo 000. When the
 selected window paints a mode line, an idle echo row is blank. A
 selected window with no mode line still shows the name there.
@@ -129,7 +130,12 @@ window showing a buffer keeps its own cursor. `C-x o` restores that
 cursor and that window's origin before the fit. An edit leaves the
 other windows on their stored line and column. A window that leaves a
 buffer and returns takes the buffer's current cursor. Do not issue
-001. Ranked later work lives in
+001. **Mouse** is implemented and accepted at [`mouse/`](mouse/),
+aloemacs-mouse 000. A press and a release reach Aloe on the read the
+editor already blocks on. A left press in a window's text selects
+that window and places its point. Do not issue 001. Paste, the host
+clipboard, PTY, and daemon stay outside this series. Ranked later
+work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
 `examples/aloemacs/` plus `host/racket/aloemacs-run.rkt`.
@@ -165,7 +171,7 @@ Locked display change. A standalone checkpoint, not a new layer.
 
 | Identity | Path | This conversation |
 |---|---|---|
-| idle-echo | [`idle-echo/`](idle-echo/) | **Ready to implement.** aloemacs-idle-echo 000 |
+| idle-echo | [`idle-echo/`](idle-echo/) | **Implemented.** aloemacs-idle-echo 000 |
 
 ## Performance
 
@@ -180,7 +186,7 @@ Locked frame-cost repair. A standalone checkpoint, not a new layer.
 Easy to smuggle in. They are not.
 
 - A buffer menu and modes
-- Mouse, paste, PTY, VT emulator, daemon, multi-head
+- Paste, PTY, VT emulator, daemon, multi-head
 - Unicode clusters, `wcwidth`, grapheme width
 - `M-x` eval, Gel's `Mirror`, hot reload
 - A Chez Emacs or Legmacs source port
@@ -212,6 +218,7 @@ Easy to smuggle in. They are not.
 | Window pictures | No-TTY: four columns of one buffer paint the same bytes after their leaf rows are recorded. A later Down still paints those bytes. The recorded paint stays under the key-repeat interval at the first screen and deep in the file |
 | Window bars | No-TTY: a tall one-view frame paints the lighter bar on the name row and leaves the echo row outside it. Two tall views stacked have no dash-rule row between them. The selected bar is lighter and the other is darker. A right split still has its vertical bar |
 | Window point | No-TTY: four views of one long buffer. End of buffer in the first, then other-window: the next view stays at its former place and its cursor is the cursor it stored. The first view still has the end. An insertion above another view leaves that view's line and column unchanged |
+| Mouse | No-TTY: a left press in another window's text selects that window and places its point. The window left behind keeps its point. A press on the mode line, the echo row, or a vertical bar leaves the point. A release leaves the point |
 | Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
 
 If a proposed slice has no consumer besides "the editor will need

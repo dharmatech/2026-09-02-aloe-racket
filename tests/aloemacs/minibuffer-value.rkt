@@ -168,7 +168,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand
-      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      (AloemacsKeymap B) AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (define prompt (findf (lambda (d) (eq? (cadr d) 'AloemacsPrompt)) classes))
   (check-not-false prompt)
   (check-equal? (caddr prompt) '(fields (label String) (text String) (column Int)

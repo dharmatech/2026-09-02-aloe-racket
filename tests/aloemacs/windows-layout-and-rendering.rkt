@@ -466,7 +466,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
-      AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
                 (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
                 (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))

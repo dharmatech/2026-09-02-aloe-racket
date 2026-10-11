@@ -349,6 +349,13 @@
       (let ((last (self focus-end ((self text) indexed-value))))
         (self at-focused last (last line-length))))
 
+    ;; A click lands here. The column clamps to the line; a line past the end
+    ;; becomes the end of the last line. The characters stay.
+    (place (line Int) (column Int) AloemacsEditor
+      (((self text) focus-at line) case
+        (Some (focused) (self at-focused focused column))
+        (None () (self buffer-end))))
+
     (request-quit () AloemacsEditor
       (self with (quit #t)))
 

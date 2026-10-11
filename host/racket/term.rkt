@@ -7,9 +7,11 @@
 ;; normal return, errors, and breaks, which restores cooked mode.
 
 (require tui/term
+         (only-in tui/term/geometry tpoint? tpoint-x tpoint-y)
          "../../aloe/host.rkt")
 
 (provide tkeymsg->aloe-key
+         tmousemsg->aloe-mouse
          term-interface
          make-term-receiver
          call-with-tty-term-receiver)
@@ -130,6 +132,35 @@
     [else
      (error 'term "unsupported key: ~s" key)]))
 
+;; The mouse string: `mouse <down|up> <left|middle|right> <column> <row>`.
+;; One space between fields, canonical decimals, and nothing else.
+(define mouse-event-pattern
+  #rx"^mouse (down|up) (left|middle|right) (0|[1-9][0-9]*) (0|[1-9][0-9]*)$")
+
+(define (mouse-event-string? value)
+  (and (string? value) (regexp-match? mouse-event-pattern value)))
+
+;; A button press or release with a left, middle, or right button at a
+;; non-negative position formats as the mouse string. Anything else is #f.
+;; tui-term already made the coordinates 0-based; do not subtract again.
+(define (tmousemsg->aloe-mouse message)
+  (and (tmousemsg? message)
+       (memq (tmousemsg-kind message) '(button-down button-up))
+       (memq (tmousemsg-button message) '(left middle right))
+       (let ([position (tmousemsg-pos message)])
+         (and (tpoint? position)
+              (exact-nonnegative-integer? (tpoint-x position))
+              (exact-nonnegative-integer? (tpoint-y position))
+              (string-append
+               "mouse "
+               (if (eq? (tmousemsg-kind message) 'button-down) "down" "up")
+               " "
+               (symbol->string (tmousemsg-button message))
+               " "
+               (number->string (tpoint-x position))
+               " "
+               (number->string (tpoint-y position)))))))
+
 (define (read-next-key)
   (let loop ()
     (define event (read))
@@ -138,7 +169,10 @@
        (error 'term "terminal input closed while reading a key")]
       [(tkeymsg? event)
        (tkeymsg->aloe-key event)]
-      [(or (tmousemsg? event) (tsizemsg? event))
+      [(tmousemsg? event)
+       (let ([mouse (tmousemsg->aloe-mouse event)])
+         (if mouse mouse (loop)))]
+      [(tsizemsg? event)
        (loop)]
       [else
        (loop)])))
@@ -151,8 +185,18 @@
 
 (struct term-state (output reader size-reader))
 
-(define (term-read-key state)
+;; read-event returns whatever the reader yields: a key string or a mouse string.
+(define (term-read-event state)
   ((term-state-reader state)))
+
+;; read-key skips mouse strings. A non-string result is returned as it is, so
+;; the host boundary still reports it.
+(define (term-read-key state)
+  (let loop ()
+    (define result ((term-state-reader state)))
+    (if (mouse-event-string? result)
+        (loop)
+        result)))
 
 (define (term-write-line state value)
   (define output (term-state-output state))
@@ -198,7 +242,8 @@
      'write-line '(String) 'String term-write-line)
     (make-host-method 'write '(String) 'String term-write)
     (make-host-method 'columns '() 'Int term-columns)
-    (make-host-method 'rows '() 'Int term-rows))))
+    (make-host-method 'rows '() 'Int term-rows)
+    (make-host-method 'read-event '() 'String term-read-event))))
 
 (define (make-term-receiver [output (current-output-port)]
                             [reader read-next-key]

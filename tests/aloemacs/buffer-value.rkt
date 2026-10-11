@@ -179,7 +179,7 @@
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)
-      AloemacsBinding AloemacsSearchScan (AloemacsSession H)))
+      AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (define (class name) (findf (lambda (d) (equal? (cadr d) name)) classes))
   (define buffer (class 'AloemacsBuffer))
   (define buffers (class 'AloemacsBuffers))

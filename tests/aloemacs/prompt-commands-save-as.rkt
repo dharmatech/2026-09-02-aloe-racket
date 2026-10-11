@@ -567,7 +567,7 @@
     (make-host-receiver
       (make-host-interface 'Term
         (list
-          (make-host-method 'read-key '() 'String (lambda (state)
+          (make-host-method 'read-event '() 'String (lambda (state)
             (when (null? remaining) (error 'scripted-run "exhausted"))
             (define key (car remaining))
             (set! remaining (cdr remaining))
