@@ -1,8 +1,8 @@
 # aloemacs window bars
 
-**Status.** Specification accepted. **aloemacs-window-bars 000** is
-implemented in the working tree. **001**, the final checkpoint, is
-issued and awaits human review before implementation. Not Aloe law.
+**Status: Implemented.** aloemacs-window-bars 000–001, the whole
+series, landed in commit 70156e7 on 2026-10-08. Final human review
+remains. There is no next checkpoint in this scope. Not Aloe law.
 Not Gel. Not a global checkpoint. Not a faces series. Product root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -11,7 +11,7 @@ Not Gel. Not a global checkpoint. Not a faces series. Product root:
 | [`charter.md`](charter.md) | Design assignment. The spec writer reads this |
 | [`spec.md`](spec.md) | Accepted design authority for the manager and implementers |
 | [`checkpoints/000-one-view-bar.md`](checkpoints/000-one-view-bar.md) | Implemented: the `bar` send and the lighter one-view and fallback bar, with one-view golden migration |
-| [`checkpoints/001-split-bars.md`](checkpoints/001-split-bars.md) | Issued, final: Below division with no rule row, the four-row below minimum, and LIGHT/DARK split bars, with split golden migration |
+| [`checkpoints/001-split-bars.md`](checkpoints/001-split-bars.md) | Implemented, final: Below division with no rule row, the four-row below minimum, and LIGHT/DARK split bars, with split golden migration |
 
 Parent map: [`../README.md`](../README.md).
 
@@ -31,6 +31,9 @@ background distinct from the buffer. The selected window's bar is
 lighter. The other mode lines are darker. The vertical divider
 stays `|`.
 
-Managers read `spec.md` after the human accepts it. Implementers
-read the one approved checkpoint and its named authority. This
-charter is the spec writer's assignment.
+Series stop: both checkpoints in the accepted specification are
+implemented. `tests/aloemacs/window-bars-one-view.rkt`,
+`tests/aloemacs/window-bars-split.rkt`, and the aloemacs suite pass.
+The §8 hand check in `spec.md` is the human's. The mode-buttons
+series reads this composer as its starting point and does not edit
+it.

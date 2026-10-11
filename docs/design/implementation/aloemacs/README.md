@@ -48,6 +48,8 @@ design or implement a later layer in an earlier layer's conversation.
   config-as-running-image.
 - ASCII, one cell per character, until a later layer says otherwise.
   Safe cells keeps this lock: a control paints as one space.
+  Mode buttons is that later layer for three code points, each one
+  cell: ↕, ↔, and ×.
 - Host stays a typed injected capability. ANSI sequences are Aloe
   strings, not new Term methods, unless a slice proves otherwise.
 - Do not mix these checkpoints into `CHECKPOINTS.md` unless the
@@ -78,9 +80,10 @@ design or implement a later layer in an earlier layer's conversation.
 | 18 | Mode line | [`mode-line/`](mode-line/) | **Implemented.** aloemacs-mode-line 000–001. Final human review remains. | 8, 14, 17 (echo, buffer name, windows) |
 | 19 | Completion | [`completion/`](completion/) | **Spec accepted.** aloemacs-completion 000 is ready to implement; 001 waits for review of 000. | 16–18 (prompt commands, windows, mode line) |
 | 20 | Completion page | [`completion-page/`](completion-page/) | **Charter.** Designer writes `spec.md`. | 19 (painted completion list) |
-| 21 | Window bars | [`window-bars/`](window-bars/) | **Charter.** Designer writes `spec.md`. | 17, 18 (windows, mode line) |
+| 21 | Window bars | [`window-bars/`](window-bars/) | **Implemented.** aloemacs-window-bars 000–001. Final human review remains. | 17, 18 (windows, mode line) |
 | 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
 | 23 | Mouse | [`mouse/`](mouse/) | **Implemented and accepted.** aloemacs-mouse 000, the whole series. Do not issue 001. | 2, 17, 22 (Term, windows, window point) |
+| 24 | Mode buttons | [`mode-buttons/`](mode-buttons/) | **Charter.** Designer writes `spec.md`. | 17, 18, 23 (windows, mode line, mouse) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -120,11 +123,12 @@ aloemacs-completion 000 is ready to implement. Prepared-list painting
 waits for 001, after human review of 000. This series does not replace
 idle-echo. **Completion page** is chartered at
 [`completion-page/`](completion-page/). It pages the list completion
-paints. The designer writes `spec.md`. **Window bars** is chartered at
-[`window-bars/`](window-bars/). The mode line is the horizontal edge
-of a window. A Below split spends no dash-rule row. The selected
-mode line is a lighter bar and the others are darker. The designer
-writes `spec.md`. **Window point** is implemented and accepted at
+paints. The designer writes `spec.md`. **Window bars** is implemented at
+[`window-bars/`](window-bars/), aloemacs-window-bars 000–001. The
+mode line is the horizontal edge of a window. A Below split spends no
+dash-rule row. The selected mode line is a lighter bar and the others
+are darker. Final human review remains. **Window point** is
+implemented and accepted at
 [`window-point/`](window-point/), aloemacs-window-point 000. Each
 window showing a buffer keeps its own cursor. `C-x o` restores that
 cursor and that window's origin before the fit. An edit leaves the
@@ -134,7 +138,11 @@ buffer and returns takes the buffer's current cursor. Do not issue
 aloemacs-mouse 000. A press and a release reach Aloe on the read the
 editor already blocks on. A left press in a window's text selects
 that window and places its point. Do not issue 001. Paste, the host
-clipboard, PTY, and daemon stay outside this series. Ranked later
+clipboard, PTY, and daemon stay outside this series. **Mode buttons**
+is chartered at [`mode-buttons/`](mode-buttons/). A mode line at
+least seven columns wide ends with ↕, ↔, and ×. A left press on
+one selects that window and sends the split or delete that window
+already has. The designer writes `spec.md`. Ranked later
 work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
@@ -219,6 +227,7 @@ Easy to smuggle in. They are not.
 | Window bars | No-TTY: a tall one-view frame paints the lighter bar on the name row and leaves the echo row outside it. Two tall views stacked have no dash-rule row between them. The selected bar is lighter and the other is darker. A right split still has its vertical bar |
 | Window point | No-TTY: four views of one long buffer. End of buffer in the first, then other-window: the next view stays at its former place and its cursor is the cursor it stored. The first view still has the end. An insertion above another view leaves that view's line and column unchanged |
 | Mouse | No-TTY: a left press in another window's text selects that window and places its point. The window left behind keeps its point. A press on the mode line, the echo row, or a vertical bar leaves the point. A release leaves the point |
+| Mode buttons | No-TTY: a mode line at least 7 columns wide ends with ` ↕ ↔ ×`, and the name stops before that group. A left press on ↕, ↔, or × matches selecting that window and then `C-x 2`, `C-x 3`, or `C-x 0`. A press on the name, and a release on a button, leave the session as it was |
 | Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
 
 If a proposed slice has no consumer besides "the editor will need
