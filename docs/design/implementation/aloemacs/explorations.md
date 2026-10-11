@@ -36,10 +36,10 @@ aloemacs-window-point 000. Each window showing a buffer keeps its
 own cursor, and `C-x o` restores it before the fit. Do not issue
 001. Mouse is implemented and accepted at [`mouse/`](mouse/). A
 left press in a window's text selects that window and places its
-point. Do not issue 001. The alternate-screen follow-on is a standalone
-checkpoint at [`alternate-screen/`](alternate-screen/),
-aloemacs-alternate-screen 000, ready to implement. The runner enters
-the alternate screen before the first frame and leaves it at exit.
+point. Do not issue 001. The alternate-screen follow-on is implemented
+at [`alternate-screen/`](alternate-screen/), standalone
+aloemacs-alternate-screen 000. The runner enters the alternate screen
+before the first frame and leaves it at exit. The hand check passed.
 Do not issue 001. Paste, the host clipboard, PTY, and daemon
 stay later.
 
@@ -77,7 +77,7 @@ cleanups on Text and Int. Scale charter withdrawn.
 | Idiom | safe-cell-controls ([`safe-cell-controls/`](safe-cell-controls/)) | Implemented. Standalone 000 |
 | Idiom | runner-check ([`runner-check/`](runner-check/)) | Implemented. Standalone 000 |
 | Display | safe cells (text rows and echo label) | Implemented |
-| Display | alternate screen ([`alternate-screen/`](alternate-screen/)) | Ready to implement. Standalone 000 |
+| Display | alternate screen ([`alternate-screen/`](alternate-screen/)) | Implemented. Standalone 000 |
 | Search | Ctrl-F, query on the echo row ([`search/`](search/)) | Implemented. aloemacs-search 000–001 |
 | Kill | Mark, kill, kill-line, yank ([`kill/`](kill/)) | Implemented. aloemacs-kill 000–002 |
 

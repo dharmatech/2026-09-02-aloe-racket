@@ -54,7 +54,8 @@ here. Do not issue 001. Paste, the host clipboard, PTY, and daemon
 stay later.
 The standalone checkpoint aloemacs-alternate-screen 000 at
 [`alternate-screen/checkpoints/000-enter-and-leave.md`](alternate-screen/checkpoints/000-enter-and-leave.md)
-is ready to implement. Do not write a charter for it. Do not issue 001.
+is implemented and the hand check passed. Do not write a charter for
+it. Do not issue 001.
 Do not reopen other product behavior in the implemented series.
 
 ## How this conversation works
@@ -96,7 +97,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Window pictures | **Implemented.** Standalone aloemacs-window-pictures 000 at [`window-pictures/`](window-pictures/). Do not issue 001 |
 | Window point | **Implemented and accepted.** aloemacs-window-point 000 at [`window-point/`](window-point/). Do not issue 001 |
 | Mouse | **Implemented and accepted.** aloemacs-mouse 000 at [`mouse/`](mouse/), the whole series. Do not issue 001. Do not revise `spec.md` here |
-| Alternate screen | **Ready to implement.** Standalone aloemacs-alternate-screen 000 at [`alternate-screen/`](alternate-screen/). Do not issue 001 |
+| Alternate screen | **Implemented.** Standalone aloemacs-alternate-screen 000 at [`alternate-screen/`](alternate-screen/). Do not issue 001 |
 | Ranked later work | [`explorations.md`](explorations.md) |
 | Scale | Withdrawn |
 | Branch | `experiment/2026-09-19-aloemacs` |

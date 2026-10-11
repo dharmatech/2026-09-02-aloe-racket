@@ -1,7 +1,11 @@
 # aloemacs alternate screen
 
-**Status: Ready to implement.** Standalone checkpoint. **No charter.
-No spec.md. No checkpoint manager.**
+**Status: Implemented.** Standalone checkpoint. **No charter.
+No spec.md. No checkpoint manager.** aloemacs-alternate-screen 000 is
+implemented with `tests/aloemacs/alternate-screen.rkt` and the
+aloemacs suite green. The human ran the checkpoint's hand check in
+Ptyxis on 2026-10-11 and every step behaved as written. Do not issue
+001.
 
 Not Aloe law. Not Gel. Not a global checkpoint. Not a mouse or loop
 checkpoint. Product root:
@@ -9,7 +13,7 @@ checkpoint. Product root:
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-enter-and-leave.md`](checkpoints/000-enter-and-leave.md) | **Ready to implement.** Enter the alternate screen before the first frame; leave it at exit |
+| [`checkpoints/000-enter-and-leave.md`](checkpoints/000-enter-and-leave.md) | **Implemented.** Enter the alternate screen before the first frame; leave it at exit |
 
 Parent map: [`../README.md`](../README.md).
 
@@ -28,5 +32,4 @@ quit, and the editor's frames stay out of the shell's history. The
 frame string, the Term receiver, tui-term, and every scripted run are
 unchanged.
 
-If the implementer proves the slice is too big, stop and promote
-it to a charter.
+The slice fit one implementer conversation; no charter was needed.

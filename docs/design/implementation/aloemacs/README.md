@@ -143,12 +143,12 @@ is implemented and accepted at [`mode-buttons/`](mode-buttons/),
 aloemacs-mode-buttons 000–001. A mode line at
 least seven columns wide ends with ↕, ↔, and ×. A left press on
 one selects that window and sends the split or delete that window
-already has. The hand check passed. Do not issue 002. **Alternate screen** is a
-standalone checkpoint at [`alternate-screen/`](alternate-screen/),
-aloemacs-alternate-screen 000, ready to implement. The runner enters
-the terminal's alternate screen before the first frame and leaves it
-at exit, so a VTE scrollbar stays hidden and the shell comes back
-unchanged. Do not issue 001. Ranked later
+already has. The hand check passed. Do not issue 002. **Alternate screen** is
+implemented at [`alternate-screen/`](alternate-screen/), standalone
+aloemacs-alternate-screen 000. The runner enters the terminal's
+alternate screen before the first frame and leaves it at exit, so a
+VTE scrollbar stays hidden and the shell comes back unchanged. The
+hand check passed. Do not issue 001. Ranked later
 work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
@@ -186,7 +186,7 @@ Locked display change. A standalone checkpoint, not a new layer.
 | Identity | Path | This conversation |
 |---|---|---|
 | idle-echo | [`idle-echo/`](idle-echo/) | **Implemented.** aloemacs-idle-echo 000 |
-| alternate-screen | [`alternate-screen/`](alternate-screen/) | **Ready to implement.** aloemacs-alternate-screen 000 |
+| alternate-screen | [`alternate-screen/`](alternate-screen/) | **Implemented.** aloemacs-alternate-screen 000 |
 
 ## Performance
 
