@@ -109,7 +109,7 @@
   (define marker (make-string 109 #\P))
   (define (planted scroll-row)
     `(((top-recorded windows) tree) case
-       (Right (left right)
+       (Right (left right earlier later)
          (right case
            (Leaf (view)
              ((view picture) case
@@ -125,7 +125,7 @@
                                  (Option Some
                                    (picture with
                                      (scroll-row ,scroll-row)
-                                     (lines (List of ,@(make-list 53 marker))))))))))))))
+                                     (lines (List of ,@(make-list 53 marker)))))))) earlier later))))))
                (None () top-recorded)))
            (else top-recorded)))
        (else top-recorded)))

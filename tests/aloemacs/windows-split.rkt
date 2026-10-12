@@ -70,8 +70,8 @@
 (define (leaf id [bid 41] [row 0] [col 0] [lock #f] #:point point)
   `(AloemacsWindowTree Leaf
      (AloemacsView new ,id ,bid ,row ,col (Position new ,@point) ,lock (Option None))))
-(define (below a b) `(AloemacsWindowTree Below ,a ,b))
-(define (right a b) `(AloemacsWindowTree Right ,a ,b))
+(define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
+(define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (config tree selected [columns 9] [rows 6])
   `(AloemacsWindows new ,tree ,selected ,columns ,rows))
 (define (rect x y columns rows) `(AloemacsWindowRect new ,x ,y ,columns ,rows))

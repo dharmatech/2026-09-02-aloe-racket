@@ -61,8 +61,8 @@
 (define (tree vs)
   `(AloemacsWindowTree Below
      (AloemacsWindowTree Right ,(leaf (list-ref vs 0))
-       (AloemacsWindowTree Below ,(leaf (list-ref vs 1)) ,(leaf (list-ref vs 2))))
-     (AloemacsWindowTree Right ,(leaf (list-ref vs 3)) ,(leaf (list-ref vs 4)))))
+       (AloemacsWindowTree Below ,(leaf (list-ref vs 1)) ,(leaf (list-ref vs 2)) 1 1) 1 1)
+     (AloemacsWindowTree Right ,(leaf (list-ref vs 3)) ,(leaf (list-ref vs 4)) 1 1) 1 1))
 (define (config [vs views] [selected 55] [columns 80] [rows 24])
   `(AloemacsWindows new ,(tree vs) ,selected ,columns ,rows))
 (define (selected-views vs selected id row col point)
@@ -632,8 +632,8 @@
   (for ([entry
          '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
            (AloemacsWindowTree (constructors (Leaf (fields (view AloemacsView)))
-             (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
-             (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree)))))
+             (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree) (earlier Int) (later Int)))
+             (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree) (earlier Int) (later Int)))))
            (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
            (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
            (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))

@@ -594,7 +594,7 @@
            (AloemacsWindowTree Leaf
              (AloemacsView new 9 1 0 1 (Position new 2 4) #f (Option None)))
            (AloemacsWindowTree Leaf
-             (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None)))))
+             (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None))) 1 1) 1 1)
        7 43 13)))
   (define original (ev st 'source))
   (def! st 'started '(source start-command-prompt (AloemacsCommand SaveAs) "Find file: "))
@@ -731,7 +731,7 @@
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None)))
          (AloemacsWindowTree Leaf
-           (AloemacsView new 1 0 0 0 (Position new 0 0) #t (Option None)))) 0 9 4)))
+           (AloemacsView new 1 0 0 0 (Position new 0 0) #t (Option None))) 1 1) 0 9 4)))
   (def! st 'split `(split with-active-prompt ,(p "x" 0 " [No match]")))
   (check-equal? (ev st '(split frame 9 4))
     "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1HFind file\e[4;9H\e[?25h")

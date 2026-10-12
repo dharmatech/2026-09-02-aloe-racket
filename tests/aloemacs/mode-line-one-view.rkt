@@ -210,15 +210,15 @@
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 0 0 0 (Position new 3 2) #t (Option None)))
          (AloemacsWindowTree Leaf
-           (AloemacsView new 1 0 99 3 (Position new 3 2) #t (Option None)))) 0 12 4)))
+           (AloemacsView new 1 0 99 3 (Position new 3 2) #t (Option None))) 1 1) 0 12 4)))
   (def! st 'small '(s ensure-visible 2 4))
   (check-equal? (ev st '((small editor) text-rows)) 2)
   (check-equal? (ev st '((small editor) scroll-row)) 2)
   (check-equal? (ev st '((small editor) scroll-col)) 1)
   (paint st 'small 2 4 (frame "wo\r\nhr" 2 2 2 4 "untitled" "") calls)
-  (define inactive '(((s windows) tree) case (Right (a b) b) (else ((s windows) tree))))
+  (define inactive '(((s windows) tree) case (Right (a b e l) b) (else ((s windows) tree))))
   ;; Compare whole inactive leaf, including its lock and shared-buffer identity.
-  (check-equal? (ev st '(((small windows) tree) case (Right (a b) b) (else ((small windows) tree))))
+  (check-equal? (ev st '(((small windows) tree) case (Right (a b e l) b) (else ((small windows) tree))))
                 (ev st inactive))
   (def! st 'grown '(small ensure-visible 9 4))
   ;; Completed 001: each tall leaf reserves its final row for its name.
@@ -227,7 +227,7 @@
     (string-append "\e[?25l\e[2J\e[Hwo  |    \r\nhree|    \r\n"
                    LIGHT "unti" PLAIN "|" DARK "unti" PLAIN
                    "\e[4;1H\e[2;2H\e[?25h") calls)
-  (check-equal? (ev st '(((grown windows) tree) case (Right (a b) b) (else ((grown windows) tree))))
+  (check-equal? (ev st '(((grown windows) tree) case (Right (a b e l) b) (else ((grown windows) tree))))
                 (ev st inactive)))
 
 (test-case "next frames derive operation names without further Fs effects"

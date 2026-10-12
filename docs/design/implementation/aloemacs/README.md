@@ -84,6 +84,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
 | 23 | Mouse | [`mouse/`](mouse/) | **Implemented and accepted.** aloemacs-mouse 000, the whole series. Do not issue 001. | 2, 17, 22 (Term, windows, window point) |
 | 24 | Mode buttons | [`mode-buttons/`](mode-buttons/) | **Implemented and accepted.** aloemacs-mode-buttons 000–001, the whole series. Do not issue 002. | 17, 18, 23 (windows, mode line, mouse) |
+| 25 | Split drag | [`split-drag/`](split-drag/) | **In progress.** Spec accepted for checkpoint planning. aloemacs-split-drag 000 of four is implemented in the working tree, uncommitted, and awaits human review; 001–003 follow one at a time. | 17, 21, 23, 24 (windows, window bars, mouse, mode buttons) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -148,7 +149,15 @@ implemented at [`alternate-screen/`](alternate-screen/), standalone
 aloemacs-alternate-screen 000. The runner enters the terminal's
 alternate screen before the first frame and leaves it at exit, so a
 VTE scrollbar stays hidden and the shell comes back unchanged. The
-hand check passed. Do not issue 001. Ranked later
+hand check passed. Do not issue 001. **Split drag** is in progress at
+[`split-drag/`](split-drag/). A split remembers two weights. A left
+drag on a vertical bar, or on the mode line between an upper and a
+lower window, rewrites them. A fresh split stays today's even cut. A
+terminal resize keeps the weights. The TTY entry asks for motion
+while a button is held. The spec is accepted for checkpoint planning.
+aloemacs-split-drag 000, the weights and the division, is implemented
+in the working tree and awaits human review; 001 through 003 follow
+one at a time. Ranked later
 work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains
@@ -235,6 +244,7 @@ Easy to smuggle in. They are not.
 | Window point | No-TTY: four views of one long buffer. End of buffer in the first, then other-window: the next view stays at its former place and its cursor is the cursor it stored. The first view still has the end. An insertion above another view leaves that view's line and column unchanged |
 | Mouse | No-TTY: a left press in another window's text selects that window and places its point. The window left behind keeps its point. A press on the mode line, the echo row, or a vertical bar leaves the point. A release leaves the point |
 | Mode buttons | No-TTY: a mode line at least 7 columns wide ends with ` ↕ ↔ ×`, and the name stops before that group. A left press on ↕, ↔, or × matches selecting that window and then `C-x 2`, `C-x 3`, or `C-x 0`. A press on the name, and a release on a button, leave the session as it was |
+| Split drag | No-TTY: `C-x 3`, press the bar, move, release: both rectangles read the new cut and the weights read the cell counts, and a later `ensure-visible` at another width scales them. The same tree built with weights `1 1` has today's rectangles. A press on a handle beside a locked window, and a move with nothing armed, leave the session as it was |
 | Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
 
 If a proposed slice has no consumer besides "the editor will need

@@ -50,8 +50,8 @@
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
   `(AloemacsWindowTree Leaf
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
-(define (right a b) `(AloemacsWindowTree Right ,a ,b))
-(define (below a b) `(AloemacsWindowTree Below ,a ,b))
+(define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
+(define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
 (define (config tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
 (define (session bs tree [selected 7] #:columns [w 9] #:rows [h 6] #:echo [echo ""]
@@ -245,8 +245,8 @@
     (check-equal? (+ top bottom) n)
     (same st `(,stacked rect-for 0 ,(rect 2 3 7 n)) `(Option Some ,(rect 2 3 7 top)))
     (same st `(,stacked rect-for 1 ,(rect 2 3 7 n)) `(Option Some ,(rect 2 (+ 3 top) 7 bottom)))
-    (same st `(,(rect 2 3 7 n) top) (rect 2 3 7 top))
-    (same st `(,(rect 2 3 7 n) bottom) (rect 2 (+ 3 top) 7 bottom))
+    (same st `(,(rect 2 3 7 n) top 1 1) (rect 2 3 7 top))
+    (same st `(,(rect 2 3 7 n) bottom 1 1) (rect 2 (+ 3 top) 7 bottom))
     (check-equal? (ev st `(,stacked positive-layout? ,(rect 2 3 7 n))) (>= n 2))
     (check-false (ev st `(,stacked positive-layout? ,(rect 2 3 0 n)))))
   (for ([n (in-range 10)]
@@ -255,8 +255,8 @@
         [offset '(0 1 2 2 3 3 4 4 5 5)])
     (same st `(,beside rect-for 0 ,(rect 2 3 n 4)) `(Option Some ,(rect 2 3 left 4)))
     (same st `(,beside rect-for 1 ,(rect 2 3 n 4)) `(Option Some ,(rect (+ 2 offset) 3 later 4)))
-    (same st `(,(rect 2 3 n 4) left) (rect 2 3 left 4))
-    (same st `(,(rect 2 3 n 4) right) (rect (+ 2 offset) 3 later 4))
+    (same st `(,(rect 2 3 n 4) left 1 1) (rect 2 3 left 4))
+    (same st `(,(rect 2 3 n 4) right 1 1) (rect (+ 2 offset) 3 later 4))
     (check-equal? (ev st `(,beside positive-layout? ,(rect 2 3 n 4))) (>= n 3)))
   ;; Nested: the old rule row now belongs to a child, and text-rows is unchanged.
   (define nested (right (below (leaf 0 #:point '(0 0)) (leaf 1 #:point '(0 0)))

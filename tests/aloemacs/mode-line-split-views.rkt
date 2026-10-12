@@ -28,8 +28,8 @@
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
   `(AloemacsWindowTree Leaf
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
-(define (right a b) `(AloemacsWindowTree Right ,a ,b))
-(define (below a b) `(AloemacsWindowTree Below ,a ,b))
+(define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
+(define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
 (define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
 (define (session bs tree [selected 7])
   `(AloemacsSession new ,bs (s fs) "" #f "query" (Position new 1 2) #t #t

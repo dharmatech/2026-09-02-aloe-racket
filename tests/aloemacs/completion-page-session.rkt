@@ -432,7 +432,7 @@
            (AloemacsWindowTree Leaf
              (AloemacsView new 9 1 0 1 (Position new 2 4) #f (Option None)))
            (AloemacsWindowTree Leaf
-             (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None))))) 7 43 13)))
+             (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None))) 1 1) 1 1) 7 43 13)))
   (define original (ev st 's))
   (def! st 'middle '(s handle-key "page-down"))
   (expect-page st 'middle 's 7 middle-page)

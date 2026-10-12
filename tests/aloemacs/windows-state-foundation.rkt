@@ -140,8 +140,8 @@
          '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
            (AloemacsWindowTree (constructors
              (Leaf (fields (view AloemacsView)))
-             (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree)))
-             (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree)))))
+             (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree) (earlier Int) (later Int)))
+             (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree) (earlier Int) (later Int)))))
            (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
            (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
            (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
@@ -172,8 +172,8 @@
   (for ([name '(v31 v4 v19 v2)] [id '(31 4 19 2)])
     (def! st name `(AloemacsView new ,id 9 3 5 (Position new 0 0) #t (Option None))))
   (def! st 'tree '(AloemacsWindowTree Below
-    (AloemacsWindowTree Right (AloemacsWindowTree Leaf v31) (AloemacsWindowTree Leaf v4))
-    (AloemacsWindowTree Below (AloemacsWindowTree Leaf v19) (AloemacsWindowTree Leaf v2))))
+    (AloemacsWindowTree Right (AloemacsWindowTree Leaf v31) (AloemacsWindowTree Leaf v4) 1 1)
+    (AloemacsWindowTree Below (AloemacsWindowTree Leaf v19) (AloemacsWindowTree Leaf v2) 1 1) 1 1))
   (define original (ev st 'tree))
   (same st '(tree leaves) '(List of v31 v4 v19 v2))
   (same st '((AloemacsWindowTree Leaf v4) leaves) '(List of v4))

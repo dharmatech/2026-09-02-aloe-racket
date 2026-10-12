@@ -33,8 +33,8 @@
 (define (leaf id [bid 41] [top 0] [left 0] [lock #f] #:point point)
   `(AloemacsWindowTree Leaf
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
-(define (right a b) `(AloemacsWindowTree Right ,a ,b))
-(define (below a b) `(AloemacsWindowTree Below ,a ,b))
+(define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
+(define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
 (define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h))
 (define (prepared lines [text "x"] [col 1] [label "P:"] [note ""] [matches '()])
   `(Option Some (AloemacsPrompt new ,label ,text ,col ,note (List of ,@lines) (List of ,@matches) 0)))

@@ -62,8 +62,8 @@
 (define (leaf id [buffer-id 41] [row 0] [left 0] [lock #f] #:point point)
   `(AloemacsWindowTree Leaf
      (AloemacsView new ,id ,buffer-id ,row ,left (Position new ,@point) ,lock (Option None))))
-(define (below a b) `(AloemacsWindowTree Below ,a ,b))
-(define (right a b) `(AloemacsWindowTree Right ,a ,b))
+(define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
+(define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
 (define (config tree selected [columns 0] [rows 0])
   `(AloemacsWindows new ,tree ,selected ,columns ,rows))
@@ -150,11 +150,11 @@
         [offset '(0 1 2 2 3 3 4 4 5 5)]
         [top '(0 1 1 2 2 3 3 4 4 5)]
         [bottom '(0 0 1 1 2 2 3 3 4 4)])
-    (def! st 't '(AloemacsWindowTree Right a b))
+    (def! st 't '(AloemacsWindowTree Right a b 1 1))
     (same st `(t rect-for 71 ,(rect 2 4 extent 5)) `(Option Some ,(rect 2 4 earlier 5)))
     (same st `(t rect-for 3 ,(rect 2 4 extent 5)) `(Option Some ,(rect (+ 2 offset) 4 later 5)))
     (check-equal? (ev st `(t positive-layout? ,(rect 2 4 extent 5))) (>= extent 3))
-    (def! st 't '(AloemacsWindowTree Below a b))
+    (def! st 't '(AloemacsWindowTree Below a b 1 1))
     (same st `(t rect-for 71 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 4 5 top)))
     (same st `(t rect-for 3 ,(rect 2 4 5 extent)) `(Option Some ,(rect 2 (+ 4 top) 5 bottom)))
     (check-equal? (ev st `(t positive-layout? ,(rect 2 4 5 extent))) (>= extent 2)))
