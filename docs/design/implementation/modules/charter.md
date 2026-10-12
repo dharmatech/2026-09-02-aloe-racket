@@ -378,6 +378,17 @@ such as `(Option Position)` carries the path of each class
 in it, including the type arguments. The §7 amendment says
 where each path is printed.
 
+`type->datum` keeps today's shape. Hover's type line is
+`(format "~s" datum)` over the datum the observation stores,
+and that observation is built from `type->datum`. Mismatch
+text calls `type->datum` in the `expected ~a, got ~a`
+sentences. The path is a second rendering. The spec chooses
+whether the observation carries a path-bearing datum beside
+the plain one, or hover and mismatch messages format from
+the type record. Either way the plain datum stays what the
+`type->datum` tests see, and those calls are not rewritten
+to carry a path.
+
 The printed form is the path relative to the repository
 root, with `/` separators, when the file is inside that
 root. Otherwise it is the resolved path. The repository root
@@ -531,7 +542,16 @@ reuse.
    `sym.aloe` is JSON null.
 4. **Defining path.** §4.7. The spec may join this to layer 3
    when the combination fits one implementer conversation. It
-   does not move before layer 3 or after adoption.
+   does not move before layer 3 or after adoption. The spec
+   lists every test whose exact hover text or mismatch text
+   changes, and stores no count in prose. Known hover
+   goldens include `tests/editor/lsp/000-hover.rkt`,
+   `003-buffer-snapshots.rkt`, `004-hover-results.rkt`,
+   `005-framing.rkt`, `006-json-rpc.rkt`,
+   `007-lifecycle.rkt`, `008-adapter-failures.rkt`,
+   `009-launch.rkt`, and
+   `tests/editor/completion/003-lsp-completion.rkt`. This
+   charter does not freeze that list.
 5. **Adoption.** §4.11. Last. The spec writer may split it by
    editor area.
 
