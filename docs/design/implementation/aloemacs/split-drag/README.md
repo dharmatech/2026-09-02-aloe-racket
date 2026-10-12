@@ -1,13 +1,12 @@
 # aloemacs split drag
 
-**Status: aloemacs-split-drag 001 implemented, awaiting human
-review.** The designer wrote [`spec.md`](spec.md) from
-[`charter.md`](charter.md) on 2026-10-11. 000 is implemented,
-manager-reviewed, and committed as bf1d1e8. 001 is implemented in the
-working tree, uncommitted, with `tests/aloemacs/split-drag-motion.rkt`
-and the aloemacs suite green; the manager reviewed the diff against
-[`checkpoints/001-motion.md`](checkpoints/001-motion.md) and found it
-conforming. After the human reviews it, the manager writes 002.
+**Status: aloemacs-split-drag 002 issued.** The designer wrote
+[`spec.md`](spec.md) from [`charter.md`](charter.md) on 2026-10-11.
+000 and 001 are implemented, manager-reviewed, and committed as
+bf1d1e8 and ad62bf5. The manager then wrote
+[`checkpoints/002-bar.md`](checkpoints/002-bar.md). Human review of
+that checkpoint precedes its implementation. 003 is written after 002
+is implemented and reviewed.
 Not Aloe law. Not Gel. Not a global checkpoint. Product root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -16,8 +15,9 @@ Not Aloe law. Not Gel. Not a global checkpoint. Product root:
 | [`charter.md`](charter.md) | Design assignment. The spec writer reads this |
 | [`spec.md`](spec.md) | Accepted for checkpoint planning. Design authority for the manager and the implementers |
 | [`checkpoints/000-weights.md`](checkpoints/000-weights.md) | Implemented 2026-10-11, manager-reviewed, committed as bf1d1e8: the weights, the division, the walks, and the migration of eighteen test files. No press arms |
-| [`checkpoints/001-motion.md`](checkpoints/001-motion.md) | Implemented 2026-10-11, manager-reviewed, awaiting human review: the `drag` field, `armed` and `disarmed`, the move string and `move?`, the session's `disarmed` and event handlers, mode `1002` in the runner, and the migration of forty-one test files. A move is inert |
-| `checkpoints/002-bar.md`, `003-mode-line.md` | Not yet written. One at a time, after the previous one is implemented and reviewed |
+| [`checkpoints/001-motion.md`](checkpoints/001-motion.md) | Implemented 2026-10-11, manager-reviewed, committed as ad62bf5: the `drag` field, `armed` and `disarmed`, the move string and `move?`, the session's `disarmed` and event handlers, mode `1002` in the runner, and the migration of forty-one test files. A move is inert |
+| [`checkpoints/002-bar.md`](checkpoints/002-bar.md) | Issued 2026-10-11, awaiting human review: `first-id`, `handle-id`, `min-columns`, `handle-at`, and `with-cut-at` on the `Right` axis, `press-handle` and `drag-to`, the bar press that arms, the move that drags, the lock refusal, and three test edits. The mode line stays inert |
+| `checkpoints/003-mode-line.md` | Not yet written. After 002 is implemented and reviewed |
 
 Parent map: [`../README.md`](../README.md). This folder does not edit
 the parent map, `explorations.md`, or `discussion.md`.

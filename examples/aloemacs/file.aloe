@@ -698,6 +698,98 @@
           (if (left positive-layout? (rect left earlier later))
               (right positive-layout? (rect right earlier later)) #f))))
 
+    ;; The id of the first leaf, in layout order.
+    (first-id () Int
+      (self case
+        (Leaf (view) (view id))
+        (Below (top bottom earlier later) (top first-id))
+        (Right (left right earlier later) (left first-id))))
+
+    ;; The id that names this split: the first leaf of its later child. On
+    ;; a leaf, the leaf's own id; a leaf is never a handle.
+    (handle-id () Int
+      (self case
+        (Leaf (view) (view id))
+        (Below (top bottom earlier later) (bottom first-id))
+        (Right (left right earlier later) (right first-id))))
+
+    ;; The smallest columns at or above the start whose cut, by this Right's
+    ;; own weights, gives the left at least left-least and the right at
+    ;; least right-least.
+    (columns-from (columns Int) (left-least Int) (right-least Int) (earlier Int) (later Int) Int
+      (let ((probe (AloemacsWindowRect new 0 0 columns 0)))
+        (let ((cut (probe column-cut earlier later))
+              (extent (columns - (probe divider columns))))
+          (if (if (cut >= left-least) ((extent - cut) >= right-least) #f)
+              columns
+              (self columns-from (columns + 1) left-least right-least earlier later)))))
+
+    ;; The narrowest width at which every leaf keeps one column, each child
+    ;; divided by its own weights. Each child's minimum is computed once.
+    (min-columns () Int
+      (self case
+        (Leaf (view) 1)
+        (Below (top bottom earlier later) ((top min-columns) max (bottom min-columns)))
+        (Right (left right earlier later)
+          (let ((left-least (left min-columns)) (right-least (right min-columns)))
+            (self columns-from ((left-least + right-least) + 1)
+              left-least right-least earlier later)))))
+
+    ;; The split whose handle holds the cell: a Right's bar column. A Below
+    ;; only descends here; its boundary row is 003's. None for a leaf or a
+    ;; cell outside.
+    (handle-at (column Int) (row Int) (rect AloemacsWindowRect) (Option AloemacsWindowTree)
+      (self case
+        (Leaf (view) (Option None))
+        (Below (top bottom earlier later)
+          (if (rect contains? column row)
+              ((top handle-at column row (rect top earlier later)) case
+                (Some (found) (Option Some found))
+                (None () (bottom handle-at column row (rect bottom earlier later))))
+              (Option None)))
+        (Right (left right earlier later)
+          (if (rect contains? column row)
+              (if (column = ((rect x) + (rect column-cut earlier later)))
+                  (Option Some self)
+                  ((left handle-at column row (rect left earlier later)) case
+                    (Some (found) (Option Some found))
+                    (None () (right handle-at column row (rect right earlier later)))))
+              (Option None)))))
+
+    ;; Rewrite the weights of the split that id names, from a pointer cell,
+    ;; in the rectangle the split has under rect. The tree is unchanged when
+    ;; no split has that id or the interval is empty. A Below only descends
+    ;; here; its own rewrite is 003's.
+    (with-cut-at (id Int) (column Int) (row Int) (rect AloemacsWindowRect) AloemacsWindowTree
+      (self case
+        (Leaf (view) self)
+        (Below (top bottom earlier later)
+          (cond
+            (((top find-view id) present?)
+              (AloemacsWindowTree Below
+                (top with-cut-at id column row (rect top earlier later)) bottom earlier later))
+            (((bottom find-view id) present?)
+              (AloemacsWindowTree Below
+                top (bottom with-cut-at id column row (rect bottom earlier later)) earlier later))
+            (else self)))
+        (Right (left right earlier later)
+          (cond
+            (((right first-id) = id)
+              (let ((extent ((rect columns) - (rect divider (rect columns))))
+                    (lo (left min-columns)))
+                (let ((hi (extent - (right min-columns))))
+                  (if (lo > hi)
+                      self
+                      (let ((cut (lo max ((column - (rect x)) min hi))))
+                        (AloemacsWindowTree Right left right cut (extent - cut)))))))
+            (((left find-view id) present?)
+              (AloemacsWindowTree Right
+                (left with-cut-at id column row (rect left earlier later)) right earlier later))
+            (((right find-view id) present?)
+              (AloemacsWindowTree Right
+                left (right with-cut-at id column row (rect right earlier later)) earlier later))
+            (else self)))))
+
     ;; Right reserves one column and paints its divider on every row.
     (right-rows (left-rows (List String)) (right-rows (List String)) (List String)
       (if (left-rows empty?)
@@ -2098,12 +2190,40 @@
         (else
           (let ((mouse (AloemacsMouse new event)))
             (cond
-              ((mouse move?) (self unchanged))
+              ((mouse move?) (self drag-to (mouse column) (mouse row)))
               ((mouse down?)
                 (if (mouse left?)
                     ((self disarmed) press-at (mouse column) (mouse row))
                     (self disarmed)))
               (else (self disarmed)))))))
+
+    ;; Arm the split whose handle holds the cell, unless a leaf in either
+    ;; child is locked or the tree does not fit.
+    (press-handle (column Int) (row Int) (AloemacsSession H)
+      (let ((windows (self windows)))
+        (let ((root (self root-rect (windows columns) (windows rows))))
+          (if ((windows tree) positive-layout? root)
+              (((windows tree) handle-at column row root) case
+                (None () (self unchanged))
+                (Some (split)
+                  (if (split any-locked?)
+                      (self unchanged)
+                      (self with (windows (windows armed (split handle-id)))))))
+              (self unchanged)))))
+
+    ;; Rewrite the armed split's weights from the pointer. Nothing armed, or
+    ;; a tree that does not fit, leaves the session.
+    (drag-to (column Int) (row Int) (AloemacsSession H)
+      (let ((windows (self windows)))
+        ((windows drag) case
+          (None () (self unchanged))
+          (Some (id)
+            (let ((root (self root-rect (windows columns) (windows rows))))
+              (if ((windows tree) positive-layout? root)
+                  (self with
+                    (windows
+                      (windows with (tree ((windows tree) with-cut-at id column row root)))))
+                  (self unchanged)))))))
 
     ;; Classify the cell with the geometry the last fit stored, in order:
     ;; echo row, completion row, mode line, text, or no leaf at all.
@@ -2118,7 +2238,7 @@
              (self unchanged))
             (else
               (((windows tree) view-at column row root) case
-                (None () (self unchanged))
+                (None () (self press-handle column row))
                 (Some (view)
                   (((windows tree) rect-for (view id) root) case
                     (None () (self unchanged))
