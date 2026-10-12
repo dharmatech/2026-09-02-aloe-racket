@@ -72,7 +72,8 @@ tool, or a reload design is a defect in this document.
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
 | [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. Those loads stay. After `Option` is installed they are hits of the one base class |
-| [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | The program that uses `define-protocol` |
+| [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | Defines `Math`, loads `sym.aloe`, `sum.aloe`, `num.aloe`, `prod.aloe`, and `pow.aloe`, then adds the protocol methods with `define-methods`. Each class file names `Math` and does not load `core.aloe`. `pow.aloe` also sends `Num new`. A load from a class file back to `core.aloe` is a cycle |
+| `aloe/driver.rkt` `driver-prepare!` | Typechecks a datum and returns a thunk. `host/racket/aloemacs-run.rkt` runs that thunk later. The first run reads a loaded file again |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
 `gel/main.aloe` uses `GelStack`. The explicit-load census
@@ -91,7 +92,10 @@ The specification is wrong unless all of these are true:
 1. In one base, the same bytes of `Box`, of `(Option Int)`, and
    of the keymap-order shape keep one class across a second
    load. Changed bytes are a type error and install nothing.
-   Two bases do not share a class. The `option.aloe` diamond,
+   The list, string, and int installs are completed cache
+   entries, so a later load of one of those files does not
+   run `define-methods` again. Two bases do not share a class.
+   The `option.aloe` diamond,
    cycle errors, and missing-file errors stay. modules 000
    leaves the suite green and does not change which names a
    load introduces. The `text.aloe` / `fs.aloe` loads of
@@ -102,11 +106,20 @@ The specification is wrong unless all of these are true:
    base class from `lib/option.aloe`. A load of that file
    is that same class, not a second one. `main.aloe`
    and `editor.aloe` name the files that define the names
-   they use. A method in `text.aloe` that mentions `Option`
+   they use. A base name is already present. `main.aloe`
+   does not load `lib/option.aloe` for `Option`. A method
+   in `text.aloe` that mentions `Option`
    still typechecks. Two files may define `View`. A third
    file that loads both is a check-time error naming both
-   paths. A checked send does not depend on two classes
-   sharing a short name.
+   paths. An overloaded checked send does not depend on two
+   classes sharing a short name, or on two protocols sharing
+   one. Overload selection uses the class record for a class
+   parameter and the protocol record for a protocol
+   parameter, in the checker and the evaluator. Two protocol
+   records with the same short name are not one type. A sole
+   method, `Mirror invoke`, and `Signature accepts?` keep
+   today's short-name comparison. A sole method is safe
+   because the checker has already rejected the other class.
 3. `gel-run` still uses a name from each of its two roots.
    `GelStack`'s `matching-picks`, added in `gel/loop.aloe`,
    runs where `GelPicks` and `GelPick` are bound. A second
@@ -129,13 +142,20 @@ The specification is wrong unless all of these are true:
    have no path. A compound type carries the path of each
    class in it, including its type arguments. §7 of that
    spec shows where each path is printed. Hover inside
-   `lib/option.aloe` resolves.
+   `lib/option.aloe` resolves from the buffer's bytes,
+   including when the buffer is dirty and the query path is
+   the temporary sibling. Hover inside `sym.aloe` is still
+   JSON null.
 6. `define-methods` still mutates the one class record. A
    method body, and the annotations in its signature, are
    checked in the file that wrote it. The body is evaluated
    there too. A protocol signature uses the file that wrote
-   the protocol. A class in a file the root did not load
-   directly is still checked for conformance. An injected
+   the protocol. Each root, and each hover query, conforms
+   every class in the checker's cache and every class bound
+   in the interactive environment, after that check's forms
+   have run. That includes a class the root did not load
+   directly and a class whose protocol methods arrived
+   through a later `define-methods`. An injected
    `term` and `fold` still work. `String find` returns the
    base `Option`. The spelling is still `(load "path.aloe")`.
 7. The closing layer removes the `Aloemacs` prefixes, moves
@@ -164,7 +184,12 @@ The cache belongs to the driver base, keyed by the resolved
 path. Two relative spellings of one file are one key. A
 process-wide table is the wrong lifetime. A new driver, and
 each hover query's fresh type environment, starts with an
-empty cache.
+empty cache. The list, string, and int installs then record
+`lib/list.aloe`, `lib/string.aloe`, and `lib/int.aloe` as
+completed entries in both caches. The install stays the
+expression lists it is today. A later load of one of those
+paths is a hit and does not run `define-methods` again.
+`lib/option.aloe` is not one of these entries.
 
 The checker owns the changed-bytes rule. A second load of
 different bytes is a type error before any new definition
@@ -175,9 +200,15 @@ reload it. The spec writes the sentence.
 
 The evaluator's cache is keyed by resolved path only. It
 reuses a completed path and does not compare bytes. The
-driver checks a whole file before evaluating any of it, so
-the checker sees a changed file first. The checker and the
-evaluator each keep their cache on their own base.
+checker and the evaluator each keep their cache on their
+own base. `driver-load-port!` and `driver-eval!` check a
+whole file before evaluating any of it, so the checker sees
+a changed file first.
+
+`driver-prepare!` typechecks a datum and returns a thunk.
+The thunk's first run reads a loaded file again. A change
+between that check and that run stays outside this series.
+The evaluator does not compare bytes to close the gap.
 
 A path still on the cycle stack is a cycle error. A missing
 file is still an error. Path resolution is unchanged.
@@ -229,19 +260,30 @@ same interactive environment.
 `gel/main.aloe` uses `GelStack`, so the explicit-load census
 makes it load `stack.aloe`. That file's table includes
 `gel-empty-stack`. The spec writes that dependency.
+`pow.aloe` sends `Num new`, and `Num` is defined in
+`num.aloe`, so the census makes `pow.aloe` load `num.aloe`.
+
+A name used in a loaded file and defined in the file that
+loads it cannot be repaired by a load of that loader. The
+explicit-load layer moves that definition into a new file
+both sides load. `Math` leaves `examples/mpl/core.aloe`.
+The class files load that new file. A cycle stays an error.
+This layer does not split `file.aloe`.
 
 The visibility layer adds a load of the defining file to a
 test entry point only when the loaded root's table lacks a
 name the test uses. After the explicit-load layer,
-`main.aloe` loads `editor.aloe` and `lib/text.aloe`
-directly, because it uses `AloemacsEditor`, `Text`, and
-`Position`. Those export tables include `UndoFrame`, `Span`,
-and `EditResult`, so a driver that loaded only `main.aloe`
-still sees them, and this layer may find no entry point to
-edit. Adoption lists the entry points that break when a
-split stops a loaded file from exporting a name the root
-does not use. The spec finds them. This charter does not
-freeze the list.
+`main.aloe` loads `editor.aloe`, `lib/text.aloe`, and
+`lib/fs.aloe` directly, because it uses `AloemacsEditor`,
+`Text`, `Position`, `Path`, and `Fs`. It does not load
+`lib/option.aloe` for `Option`. `Option` is the base class
+from the visibility layer. Those export tables include
+`UndoFrame`, `Span`, and `EditResult`, so a driver that
+loaded only `main.aloe` still sees them, and this layer may
+find no entry point to edit. Adoption lists the entry points
+that break when a split stops a loaded file from exporting
+a name the root does not use. The spec finds them. This
+charter does not freeze the list.
 
 The visibility checkpoint's `SPEC.md` sentence and its
 `docs/decisions.md` entry state both meanings with one
@@ -276,10 +318,19 @@ module at the document's path, in a fresh base. Nested loads
 in that buffer use the file rule. The buffer's own
 definitions live in that file environment. The names hover
 resolves are the names a load of that file would resolve.
-A buffer whose resolved path is an installed base library
+A buffer whose document path is an installed base library
 is checked as that library's definition, not as a second
-copy, so hover inside `lib/option.aloe` resolves. The spec
-chooses the mechanism.
+copy. The query's base installs that library from the
+buffer's bytes, so an edit is what hover sees. Those bytes
+are the cache entry for the document path. They are not a
+changed-bytes error against the file on disk. The
+resolution path may be the temporary sibling from
+[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5.
+Hover inside `lib/option.aloe` resolves. The same rule
+covers `lib/list.aloe`, `lib/string.aloe`, and
+`lib/int.aloe`. The spec chooses whether the query takes an
+identity path beside the resolution path, or the snapshot
+carries the original name. Either choice meets this rule.
 
 A file parented at a fresh kernel environment would see
 neither `term` nor the libraries. A file parented at the
@@ -336,7 +387,8 @@ sibling
 writes for a dirty buffer. A nested load still reports the
 path of the file on disk. The spec chooses whether the query
 takes an identity path beside the resolution path, or the
-snapshot carries the original name.
+snapshot carries the original name. Either choice meets the
+cache rule in §4.5.
 
 This lands with or after the visibility layer, not in
 modules 000. It amends §7 of that spec. The series does not
@@ -377,16 +429,33 @@ A `define-protocol` records the writing file's environment.
 Its signatures resolve there. When a class is checked
 against a protocol, the protocol's annotations use the
 protocol's file and the class's annotations use the class's
-file. Conformance runs when each file module finishes, for
-the classes that file defines, and again for the classes
-bound in the interactive environment. A class in a file the
-root did not load directly is still checked.
+file. Conformance runs when the outermost check finishes,
+for each root and each hover query, after that check's
+forms have run. The walk is every class in the checker's
+cache and every class bound in the interactive environment.
+Each annotation is resolved in its recorded environment. A
+`define-methods` in the root that adds the protocol methods
+is part of those forms, so a class the root did not load
+directly is still checked. Conformance does not run at the
+end of the class's file, before the loader's
+`define-methods`.
 
-Runtime overload matching compares an annotation symbol to
-the class's short name. Two classes may share a short name
-in one process. A checked send is safe because the checker
-has already fixed the identity. The spec says it relies on
-that. This series does not change the runtime comparison.
+Hover inside `sym.aloe` is still JSON null.
+[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7
+turns a failed check into null. The query fails at
+conformance: `Math` is bound through the new file, and
+`core.aloe` does not run, so the protocol methods are
+absent. Today the same hover fails earlier, on `Math`
+being unbound.
+
+Overload selection uses the class record for a class
+parameter and the protocol record for a protocol parameter.
+The checker and the evaluator both do. Two protocol records
+with the same short name do not unify. A sole method,
+`Mirror invoke`, and `Signature accepts?` keep today's
+comparison of an annotation symbol to the short name. A sole
+method is safe because the checker has already rejected the
+other class. This series does not change those three.
 
 This lands in the visibility layer. The reproduction is
 `matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
@@ -417,28 +486,35 @@ today's `load`, a second load of a file that has already
 built values creates a new class. Run-once makes that line a
 reuse.
 
-1. **modules 000 — run-once.** §4.2 only. The spec names any
+1. **modules 000 — run-once.** §4.2 only, including the
+   list, string, and int cache seeds. The spec names any
    current test that loads one path twice into one driver.
 2. **Explicit loads, while file-to-file load still includes.**
    The census is the `.aloe` files. A string evaluated in the
-   interactive environment is not a census entry. `main.aloe`
-   and `editor.aloe` are the known file cases. The spec lists
-   every test that pins `file.aloe`'s leading load datums,
-   and updates those pins. It stores no count in prose. This
-   layer does not split `file.aloe` and does not drop
-   prefixes. Its acceptance is the census and a green suite.
-   There is no second checker that walks identifiers. The
-   visibility layer going green is the proof the census was
-   complete. The spec writer may split this layer by tree.
+   interactive environment is not a census entry. `main.aloe`,
+   `editor.aloe`, and the MPL class files are the known file
+   cases. The layer moves `Math` out of `core.aloe` into a
+   new file the class files load, as §4.4 says. The spec
+   lists every test that pins `file.aloe`'s leading load
+   datums, and updates those pins. It stores no count in
+   prose. This layer does not split `file.aloe` and does not
+   drop prefixes. Its acceptance is the census and a green
+   suite. There is no second checker that walks identifiers.
+   The visibility layer going green is the proof the census
+   was complete. The spec writer may split this layer by tree.
 3. **Visibility.** §4.4, §4.5, §4.6, and §4.8. This layer
    updates a test entry point only when §4.4 says the root's
    table lacks the name, and it may find none. The spec's
    own tests show a load of `editor.aloe` does not bind
    `Span`, `String find` returns the base `Option`, a third
-   file that loads two `View`s errors with both paths, Gel's
-   two roots still work,
-   `matching-picks` resolves `GelPicks`, and a second
-   driver does not see the first driver's classes.
+   file that loads two `View`s errors with both paths, an
+   overloaded send whose static type is a protocol does not
+   run the method written for a different class of the same
+   short name, two protocols of one short name do not unify,
+   Gel's two roots still work, `matching-picks` resolves
+   `GelPicks`, and a second driver does not see the first
+   driver's classes. MPL still conforms. Hover inside
+   `sym.aloe` is JSON null.
 4. **Defining path.** §4.7. The spec may join this to layer 3
    when the combination fits one implementer conversation. It
    does not move before layer 3 or after adoption.
@@ -551,10 +627,11 @@ authority for the checkpoint manager and the implementers.
 This charter is the designer's assignment.
 
 Intended order: run-once in the shared environment; explicit
-loads while file-to-file inclusion remains; per-file
-environments and non-re-export, with the interactive
-environment still receiving each root's local table;
-defining paths in mismatches and hover; adoption of
-Aloemacs, last.
+loads while file-to-file inclusion remains, including the
+move of `Math` to its own file; per-file environments,
+non-re-export, root-end conformance, and overload identity,
+with the interactive environment still receiving each
+root's local table; defining paths in mismatches and hover;
+adoption of Aloemacs, last.
 
 If you have been told to read this file, this is the whole assignment.
