@@ -20,7 +20,7 @@ Process: [`docs/workflow.md`](../../../workflow.md).
 
 The discussion record is [`archive/design-sketches/2026-10-09-module-design-discussion/summary.md`](../../../../archive/design-sketches/2026-10-09-module-design-discussion/summary.md). The code sketch beside it is not a spelling to adopt. This charter closes the questions that record left open.
 
-A `load` inside a file copies only that file's own definitions. The interactive environment receives each loaded root's local table, and a second root unions there. A method body and its signature use the file that wrote them. `Option` from `lib/option.aloe` is on the base. Hover reports the queried document's path for a class that buffer defines, not the temporary sibling written for a dirty buffer.
+A `load` inside a file copies only that file's own definitions. The interactive environment receives each loaded root's local table, and a second root unions there. A method body and its signature use the file that wrote them. A protocol does the same, and each file is checked for conformance when it finishes. `Option` from `lib/option.aloe` is installed once on the base, and every load of that file is that same class. Hover reports the queried document's path for a class that buffer defines, not the temporary sibling written for a dirty buffer. Hover inside a base library resolves.
 
 Code and tests live in the project root. Tests for this series live under `tests/modules/`.
 

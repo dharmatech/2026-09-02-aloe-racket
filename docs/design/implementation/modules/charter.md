@@ -57,6 +57,10 @@ tool, or a reload design is a defect in this document.
 | `aloe/type.rkt` `typecheck-load!`, `aloe/eval.rkt` `eval-load!` | Each load reads the file into the caller's environment. The only memory is a path stack for cycles. A second `define-class` is a new class record. Unify compares class records with `eq?` |
 | `aloe/eval.rkt` `apply-method`, `define-methods` | A user-class body runs in `class-value-environment`, the file that defined the class. `define-methods` on a user class only appends methods. On `List`, `Int`, and `String` it overwrites the class object's one environment field |
 | `aloe/type.rkt` `match-sole-method`, `try-method-match`, `infer-instance-send`, `check-method-body!` | Parameter annotations, return annotations, and field annotations are turned into types in the caller's environment. A generic class with an implicit constructor re-checks the method body there too. `AloemacsSession` is one |
+| `aloe/type.rkt` `infer-case`, `infer-with`, `infer-construction`, `infer-field-type!` | Construction, `with`, `case` payload binders, and field-type checks read the receiver class's field declarations in the caller's environment |
+| `aloe/type.rkt` `infer-defined-list-method`, `infer-defined-int-method`, `infer-defined-string-method` | Methods added to `List`, `Int`, and `String` have their annotations resolved in the caller's environment |
+| `aloe/type.rkt` `infer-protocol-send`, `method-signature-conforms?`, `check-protocol-conformance!` | A protocol send resolves signatures in the caller's environment. Conformance runs once, when the outermost program finishes, and walks that environment's parent chain. Both the protocol's annotations and the class's use that environment |
+| `aloe/type.rkt` `check-class-definition!`, `check-method-types!` | These already receive the environment of the form being defined. The spec does not retarget them |
 | `aloe/type.rkt` `String find`, `aloe/eval.rkt` `String find` | The checker builds `(Option Int)` with `type-from-sexpr` in the caller's environment. The evaluator looks up the name `Option` there. `editor.aloe` and `file.aloe` both send `find` |
 | `aloe/eval.rkt` `runtime-named-type-matches?` | An annotation symbol is compared to the class's short name, not to class identity |
 | `aloe/env.rkt`, `aloe/type.rkt` | Both environment structs have a parent. The kernel bindings are `dummy`, `List`, `Int`, `String`, `Symbol`, and `Mirror`. `Bool` and `Float` are not bindings |
@@ -67,7 +71,8 @@ tool, or a reload design is a defect in this document.
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
-| [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. The text/fs pair is the modules 000 diamond. The visibility layer removes all three loads |
+| [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. Those loads stay. After `Option` is installed they are hits of the one base class |
+| [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | The program that uses `define-protocol` |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
 `gel/main.aloe` uses `GelStack`. The explicit-load census
@@ -89,13 +94,13 @@ The specification is wrong unless all of these are true:
    Two bases do not share a class. The `option.aloe` diamond,
    cycle errors, and missing-file errors stay. modules 000
    leaves the suite green and does not change which names a
-   load introduces. `tests/modules` keeps an explicit
-   double-load fixture after the visibility layer removes
-   the three `option.aloe` loads.
+   load introduces. The `text.aloe` / `fs.aloe` loads of
+   `option.aloe` stay, and after the visibility layer they
+   are one cached class.
 2. After the visibility layer, a file that loads
    `editor.aloe` does not receive `Span`. `Option` is the
-   base class from `lib/option.aloe`, and `text.aloe`,
-   `fs.aloe`, and `disk.aloe` do not load it. `main.aloe`
+   base class from `lib/option.aloe`. A load of that file
+   is that same class, not a second one. `main.aloe`
    and `editor.aloe` name the files that define the names
    they use. A method in `text.aloe` that mentions `Option`
    still typechecks. Two files may define `View`. A third
@@ -123,13 +128,16 @@ The specification is wrong unless all of these are true:
    Kernel classes, prompt classes, and unkeyed-port classes
    have no path. A compound type carries the path of each
    class in it, including its type arguments. §7 of that
-   spec shows where each path is printed.
+   spec shows where each path is printed. Hover inside
+   `lib/option.aloe` resolves.
 6. `define-methods` still mutates the one class record. A
    method body, and the annotations in its signature, are
    checked in the file that wrote it. The body is evaluated
-   there too. An injected `term` and `fold` still work.
-   `String find` returns the base `Option`. The spelling is
-   still `(load "path.aloe")`.
+   there too. A protocol signature uses the file that wrote
+   the protocol. A class in a file the root did not load
+   directly is still checked for conformance. An injected
+   `term` and `fold` still work. `String find` returns the
+   base `Option`. The spelling is still `(load "path.aloe")`.
 7. The closing layer removes the `Aloemacs` prefixes, moves
    classes toward one class per file where §4.11 allows it,
    and leaves the tests passing. `GelText` stays. No `prefix`
@@ -181,8 +189,10 @@ cache. A port that carries a path, including `term-run`, is
 a keyed root.
 
 After the visibility layer, every file environment of a
-driver shares that base's cache. `text.aloe` and `fs.aloe`
-loading `option.aloe` is one evaluation and one class.
+driver shares that base's cache. `editor.aloe` and
+`file.aloe` both loading `lib/text.aloe` is one evaluation
+and one class. The `option.aloe` loads are that same kind
+of hit once `Option` is installed.
 
 modules 000 does not add file environments, does not change
 the interactive environment, and does not print paths.
@@ -248,21 +258,28 @@ the kernel bindings. User definitions do not live there.
 method on the shared `List` object. The spec names the
 bindings from the code.
 
-The visibility layer also installs `lib/option.aloe` on that
-base, and no other library. `String find` returns that
+The visibility layer also installs `lib/option.aloe`
+through [`aloe/library.rkt`](../../../../aloe/library.rkt),
+beside list, string, and int, so both constructions get it.
+No other library is added. The install is a cache entry
+under that file's resolved path. `String find` returns that
 `Option`, in the checker and the evaluator. It does not
 resolve whichever `Option` the caller has bound. `Option`
-still has a defining path, `lib/option.aloe`. A file that
-defines `Option` collides with that file. The same layer
-removes `(load "option.aloe")` from `text.aloe`, `fs.aloe`,
-and `disk.aloe`. modules 000 does not install it, so the
-text/fs diamond is still there for run-once.
+still has a defining path, `lib/option.aloe`. A different
+file that defines `Option` collides with that file. An
+existing `(load "option.aloe")`, and any load the census
+adds, is a hit of that one class. Nothing is removed.
+modules 000 does not install it.
 
 Hover and completion check the queried buffer as a file
 module at the document's path, in a fresh base. Nested loads
 in that buffer use the file rule. The buffer's own
 definitions live in that file environment. The names hover
 resolves are the names a load of that file would resolve.
+A buffer whose resolved path is an installed base library
+is checked as that library's definition, not as a second
+copy, so hover inside `lib/option.aloe` resolves. The spec
+chooses the mechanism.
 
 A file parented at a fresh kernel environment would see
 neither `term` nor the libraries. A file parented at the
@@ -284,7 +301,10 @@ a name twice, the prompt, and `driver-eval!`. Rebuilding a
 class by hand at the prompt is that person's own act.
 
 A file that defines a name already bound on the base is the
-same check-time error. The sentence says the language base.
+same check-time error. When that binding has a defining
+file, the error names the file, so `Option` names
+`lib/option.aloe`. A base name with no file says the
+language base.
 
 This error is the only collision tool in this series. Two
 files that define `View` and never meet are legal. If
@@ -342,12 +362,25 @@ environment of the methods already there.
 
 The checker uses that same record for parameter
 annotations, return annotations, field annotations, and the
-deferred generic body check. Argument expressions still
-infer in the caller's environment. A generic class with an
-implicit constructor, including `AloemacsSession`,
-re-checks the body in the writing file's environment, with
-the call's substitution. The names in the signature mean
-what they meant in the file that wrote them.
+deferred generic body check. Field annotations include
+construction, `with`, `case` payload binders, and field
+access. The sites are the ones named in §2. Argument
+expressions still infer in the caller's environment. A
+generic class with an implicit constructor, including
+`AloemacsSession`, re-checks the body in the writing file's
+environment, with the call's substitution. The names in the
+signature mean what they meant in the file that wrote them.
+`check-class-definition!` and `check-method-types!` already
+run in that file. The spec does not retarget them.
+
+A `define-protocol` records the writing file's environment.
+Its signatures resolve there. When a class is checked
+against a protocol, the protocol's annotations use the
+protocol's file and the class's annotations use the class's
+file. Conformance runs when each file module finishes, for
+the classes that file defines, and again for the classes
+bound in the interactive environment. A class in a file the
+root did not load directly is still checked.
 
 Runtime overload matching compares an annotation symbol to
 the class's short name. Two classes may share a short name
