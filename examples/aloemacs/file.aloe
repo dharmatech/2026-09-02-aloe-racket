@@ -735,17 +735,38 @@
             (self columns-from ((left-least + right-least) + 1)
               left-least right-least earlier later)))))
 
-    ;; The split whose handle holds the cell: a Right's bar column. A Below
-    ;; only descends here; its boundary row is 003's. None for a leaf or a
-    ;; cell outside.
+    ;; The smallest rows at or above the start whose cut, by this Below's own
+    ;; weights, gives the top at least top-least and the bottom at least
+    ;; bottom-least.
+    (rows-from (rows Int) (top-least Int) (bottom-least Int) (earlier Int) (later Int) Int
+      (let ((cut ((AloemacsWindowRect new 0 0 0 rows) row-cut earlier later)))
+        (if (if (cut >= top-least) ((rows - cut) >= bottom-least) #f)
+            rows
+            (self rows-from (rows + 1) top-least bottom-least earlier later))))
+
+    ;; The shortest height at which every leaf keeps two rows, each child
+    ;; divided by its own weights. Each child's minimum is computed once.
+    (min-rows () Int
+      (self case
+        (Leaf (view) 2)
+        (Right (left right earlier later) ((left min-rows) max (right min-rows)))
+        (Below (top bottom earlier later)
+          (let ((top-least (top min-rows)) (bottom-least (bottom min-rows)))
+            (self rows-from (top-least + bottom-least)
+              top-least bottom-least earlier later)))))
+
+    ;; The split whose handle holds the cell: a Right's bar column, or the
+    ;; last row of a Below's top child. None for a leaf or a cell outside.
     (handle-at (column Int) (row Int) (rect AloemacsWindowRect) (Option AloemacsWindowTree)
       (self case
         (Leaf (view) (Option None))
         (Below (top bottom earlier later)
           (if (rect contains? column row)
-              ((top handle-at column row (rect top earlier later)) case
-                (Some (found) (Option Some found))
-                (None () (bottom handle-at column row (rect bottom earlier later))))
+              (if (row = (((rect y) + (rect row-cut earlier later)) - 1))
+                  (Option Some self)
+                  ((top handle-at column row (rect top earlier later)) case
+                    (Some (found) (Option Some found))
+                    (None () (bottom handle-at column row (rect bottom earlier later)))))
               (Option None)))
         (Right (left right earlier later)
           (if (rect contains? column row)
@@ -758,13 +779,18 @@
 
     ;; Rewrite the weights of the split that id names, from a pointer cell,
     ;; in the rectangle the split has under rect. The tree is unchanged when
-    ;; no split has that id or the interval is empty. A Below only descends
-    ;; here; its own rewrite is 003's.
+    ;; no split has that id or the interval is empty.
     (with-cut-at (id Int) (column Int) (row Int) (rect AloemacsWindowRect) AloemacsWindowTree
       (self case
         (Leaf (view) self)
         (Below (top bottom earlier later)
           (cond
+            (((bottom first-id) = id)
+              (let ((lo (top min-rows)) (hi ((rect rows) - (bottom min-rows))))
+                (if (lo > hi)
+                    self
+                    (let ((cut (lo max (((row - (rect y)) + 1) min hi))))
+                      (AloemacsWindowTree Below top bottom cut ((rect rows) - cut))))))
             (((top find-view id) present?)
               (AloemacsWindowTree Below
                 (top with-cut-at id column row (rect top earlier later)) bottom earlier later))
@@ -2252,13 +2278,14 @@
                             ((view scroll-col) + (column - (rect x))))))))))))))
 
     ;; A label cell on a mode line selects that window, then runs the
-    ;; window command the label names. Every other mode-line cell leaves
-    ;; the session as it was.
+    ;; window command the label names. Every other mode-line cell is a
+    ;; handle press: the split whose boundary row holds it arms, or
+    ;; nothing does.
     (press-mode-line (view AloemacsView) (rect AloemacsWindowRect) (index Int)
                      (AloemacsSession H)
       (let ((label ((AloemacsModeLine new) label-at (rect columns) index)))
         (if (label = "")
-            (self unchanged)
+            (self press-handle ((rect x) + index) (((rect y) + (rect rows)) - 1))
             ((self select-view view) case
               (None () (self unchanged))
               (Some (selected) (selected button-send label))))))

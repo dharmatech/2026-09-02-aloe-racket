@@ -344,7 +344,3 @@
   (def! 'rec2 '(rec1 record-pictures 80 24))
   (check-equal? (ev '(rec2 frame 80 24)) f1)
   (weights! '((rec2 windows) tree) '(30 49)))
-
-;; 10. A mode-line press does not arm yet. 003 replaces this item.
-(test-case "a non-label mode-line press returns the receiver"
-  (same '(sb handle-event "mouse down left 0 11") 'sb))

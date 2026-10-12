@@ -331,7 +331,7 @@
   (check-equal? (echo-of 'e13) "saved"))
 
 ;; 14. Chrome.
-(test-case "a left press on a mode line or the echo row changes nothing; the bar arms"
+(test-case "a left press on the bottom mode line or the echo row changes nothing; the bar and the boundary row arm"
   (def! 'e14 '(s0 with-echo "saved"))
   (unchanged! 'e14 "mouse down left 0 22")
   (unchanged! 'e14 "mouse down left 0 23")
@@ -339,7 +339,8 @@
   (same '(e14r handle-event "mouse down left 40 0") '(e14r with (windows ((e14r windows) armed 1))))
   (same '(((e14r handle-event "mouse down left 40 0") windows) drag) '(Option Some 1))
   (def! 'e14b '((s0 with-echo "saved") split-below))
-  (unchanged! 'e14b "mouse down left 0 11"))
+  (same '(e14b handle-event "mouse down left 0 11") '(e14b with (windows ((e14b windows) armed 1))))
+  (same '(((e14b handle-event "mouse down left 0 11") windows) drag) '(Option Some 1)))
 
 ;; 15. One row.
 (test-case "one row: no echo row and no mode line"

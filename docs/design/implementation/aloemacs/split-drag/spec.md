@@ -1,7 +1,9 @@
 # aloemacs split-drag specification
 
-**Status: Accepted for checkpoint planning.** Written by the designer
-from [`charter.md`](charter.md). The human authorized the manager to
+**Status: Accepted and implemented.** aloemacs-split-drag 000–003,
+the whole series, is implemented, and the human's §10 hand check
+passed on 2026-10-11. Written by the designer from
+[`charter.md`](charter.md). The human authorized the manager to
 proceed if the spec was ready. On 2026-10-11 the manager checked its
 §5.1–§5.2 counts, its §6.2 examples, and its §6.3 inventory against
 the tree and a scratch run, found it ready, and wrote

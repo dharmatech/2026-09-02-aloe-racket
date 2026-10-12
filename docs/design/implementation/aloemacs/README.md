@@ -84,7 +84,7 @@ design or implement a later layer in an earlier layer's conversation.
 | 22 | Window point | [`window-point/`](window-point/) | **Implemented and accepted.** aloemacs-window-point 000. | 17 (windows), window-pictures 000 |
 | 23 | Mouse | [`mouse/`](mouse/) | **Implemented and accepted.** aloemacs-mouse 000, the whole series. Do not issue 001. | 2, 17, 22 (Term, windows, window point) |
 | 24 | Mode buttons | [`mode-buttons/`](mode-buttons/) | **Implemented and accepted.** aloemacs-mode-buttons 000–001, the whole series. Do not issue 002. | 17, 18, 23 (windows, mode line, mouse) |
-| 25 | Split drag | [`split-drag/`](split-drag/) | **In progress.** Spec accepted for checkpoint planning. aloemacs-split-drag 000, 001, and 002 of four are committed (bf1d1e8, ad62bf5, 80e0fd2); 003 is next. | 17, 21, 23, 24 (windows, window bars, mouse, mode buttons) |
+| 25 | Split drag | [`split-drag/`](split-drag/) | **Implemented and accepted.** aloemacs-split-drag 000–003, the whole series. Do not issue 004. | 17, 21, 23, 24 (windows, window bars, mouse, mode buttons) |
 
 The first-product ladder is Text through File. Index, Viewport,
 and Undo are follow-ons. Echo is implemented. Faster
@@ -149,15 +149,13 @@ implemented at [`alternate-screen/`](alternate-screen/), standalone
 aloemacs-alternate-screen 000. The runner enters the terminal's
 alternate screen before the first frame and leaves it at exit, so a
 VTE scrollbar stays hidden and the shell comes back unchanged. The
-hand check passed. Do not issue 001. **Split drag** is in progress at
-[`split-drag/`](split-drag/). A split remembers two weights. A left
-drag on a vertical bar, or on the mode line between an upper and a
-lower window, rewrites them. A fresh split stays today's even cut. A
-terminal resize keeps the weights. The TTY entry asks for motion
-while a button is held. The spec is accepted for checkpoint planning.
-aloemacs-split-drag 000, the weights and the division, 001, the
-motion and the field, and 002, the bar, are committed; 003, the mode
-line, is next. Ranked later
+hand check passed. Do not issue 001. **Split drag** is implemented at
+[`split-drag/`](split-drag/), aloemacs-split-drag 000–003, the whole
+series. A split remembers two weights. A left drag on a vertical bar,
+or on the mode line between an upper and a lower window, rewrites
+them. A fresh split stays today's even cut. A terminal resize keeps
+the weights. The TTY entry asks for motion while a button is held.
+The hand check passed on 2026-10-11. Do not issue 004. Ranked later
 work lives in
 [`explorations.md`](explorations.md).
 The Scale charter stays withdrawn. The running program remains

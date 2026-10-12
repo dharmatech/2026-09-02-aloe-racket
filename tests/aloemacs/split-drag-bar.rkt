@@ -183,7 +183,7 @@
   (check-equal? (ev `(,leaf columns-from 3 1 1 1 1)) 3))
 
 ;; 4. The walk.
-(test-case "the walk: a Right's bar column, the ancestor first; a Below only descends"
+(test-case "the walk: a Right's bar column, the ancestor first"
   (def! 'tr '((sr windows) tree))
   (same '(tr handle-at 40 5 root) '(Option Some tr))
   (for ([cell '((39 5) (41 5) (40 23))])
@@ -193,7 +193,7 @@
   (same '(trr handle-at 40 0 root) '(Option Some trr))
   (def! 'tbr '((sbr windows) tree))
   (same '(tbr handle-at 40 3 root) (some (first-child 'tbr)))
-  (check-false (ev '((tbr handle-at 0 11 root) present?))))
+  (same '(tbr handle-at 0 11 root) '(Option Some tbr)))
 
 ;; 5. The event table, by whole-session equality.
 (test-case "a left press on the bar arms it and changes nothing else"
