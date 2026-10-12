@@ -20,7 +20,7 @@ Process: [`docs/workflow.md`](../../../workflow.md).
 
 The discussion record is [`archive/design-sketches/2026-10-09-module-design-discussion/summary.md`](../../../../archive/design-sketches/2026-10-09-module-design-discussion/summary.md). The code sketch beside it is not a spelling to adopt. This charter closes the questions that record left open.
 
-A `load` inside a file copies only that file's own definitions. The interactive environment receives each loaded root's local table, and a second root unions there.
+A `load` inside a file copies only that file's own definitions. The interactive environment receives each loaded root's local table, and a second root unions there. Hover reports the queried document's path for a class that buffer defines, not the temporary sibling written for a dirty buffer.
 
 Code and tests live in the project root. Tests for this series live under `tests/modules/`.
 

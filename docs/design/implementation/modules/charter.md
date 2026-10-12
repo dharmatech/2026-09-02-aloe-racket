@@ -61,17 +61,20 @@ tool, or a reload design is a defect in this document.
 | `aloe/driver.rkt` `driver-load-port!` | A port may have no source path. String loads in the tests use that shape. `host/racket/term-run.rkt` passes a path |
 | `host/racket/gel-run.rkt` | Loads `gel/main.aloe`, then `examples/point.aloe`, then evaluates an expression that uses a name from each. Checkpoints 65 and 86 do the same |
 | `aloe/expression-query.rkt` | Each query builds a fresh type environment. A nested load is read from disk. A dirty buffer of another file is not overlaid |
+| [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
 | [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe) | Both load `lib/option.aloe`. That diamond stays one `Option` |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
-`UndoFrame` is defined in `editor.aloe`. `Span` and `EditResult`
-are defined in `lib/text.aloe`. `AloemacsWindowRect` and
-`AloemacsKeymap` are defined in `file.aloe`. Tests reach them
-today by loading `main.aloe` or `file.aloe` into one shared
-environment. Concurrency, a second application, and Gel loading
-`lib/` are not predecessors.
+`gel/main.aloe` uses `GelStack`. The explicit-load census
+makes it load `stack.aloe`, whose table includes
+`gel-empty-stack`, so `gel-run` needs no edit. The spec writes
+that dependency. `AloemacsWindowRect` is defined in `file.aloe`,
+`UndoFrame` in `editor.aloe`, and `Span` in `lib/text.aloe`.
+Tests reach them today through one shared environment.
+Concurrency, a second application, and Gel loading `lib/` are
+not predecessors.
 
 ## 3. Bar (acceptance)
 
@@ -93,15 +96,21 @@ The specification is wrong unless all of these are true:
 3. `gel-run` still uses a name from each of its two roots.
    A second `define` or `define-class` at the prompt, and
    through `driver-eval!`, still replaces.
-4. A driver that loaded only `main.aloe` still sees a class
-   `file.aloe` defines. It does not see `UndoFrame`, `Span`,
-   or `EditResult` until the test loads the defining file.
-   The visibility layer makes that edit. Adoption edits the
-   set again when classes move.
+4. A driver that loaded only `main.aloe` sees the export
+   tables of the files `main.aloe` loads directly, including
+   files the explicit-load layer added. The visibility layer
+   adds a load to a test entry point only when that root's
+   table lacks a name the test uses, and it may find none.
+   Adoption lists the entry points that break when a split
+   stops a loaded file from exporting a name `main.aloe`
+   does not use.
 5. A mismatch and a hover print the repository-relative path
-   of every class that has one. Kernel classes have none.
-   [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7
-   shows the new hover value.
+   of every class that has one. A class the queried buffer
+   defines reports that document's path, not the temporary
+   sibling from
+   [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5.
+   Kernel classes, prompt classes, and unkeyed-port classes
+   have no path. §7 of that spec shows the new hover value.
 6. `define-methods` still mutates the one class record. An
    injected `term` and `fold` still work. The spelling is
    still `(load "path.aloe")`.
@@ -190,13 +199,28 @@ directly loads. They do not copy names those files only
 received from their own loads. A second root copies into the
 same interactive environment.
 
-That is why a driver that loaded only `main.aloe` sees
-`AloemacsWindowRect` and does not see `UndoFrame`. The
-visibility layer adds a load of the defining file to each
-test entry point that names a binding absent from the loaded
-root's table. Adoption lists those entry points again when
-classes move. The spec finds the entry points. This charter
-does not freeze the list.
+`gel/main.aloe` uses `GelStack`, so the explicit-load census
+makes it load `stack.aloe`. That file's table includes
+`gel-empty-stack`. The spec writes that dependency.
+
+The visibility layer adds a load of the defining file to a
+test entry point only when the loaded root's table lacks a
+name the test uses. After the explicit-load layer,
+`main.aloe` loads `editor.aloe` and `lib/text.aloe`
+directly, because it uses `AloemacsEditor`, `Text`, and
+`Position`. Those export tables include `UndoFrame`, `Span`,
+and `EditResult`, so a driver that loaded only `main.aloe`
+still sees them, and this layer may find no entry point to
+edit. Adoption lists the entry points that break when a
+split stops a loaded file from exporting a name the root
+does not use. The spec finds them. This charter does not
+freeze the list.
+
+The visibility checkpoint's `SPEC.md` sentence and its
+`docs/decisions.md` entry state both meanings with one
+example: a file that loads `text.aloe` does not receive
+`Option`, and the same form at the prompt receives
+`text.aloe`'s local table.
 
 ### 4.5 The base
 
@@ -206,6 +230,12 @@ the kernel bindings. User definitions do not live there.
 `driver-inject-host!` writes the driver base. `fold` is a
 method on the shared `List` object. The spec names the
 bindings from the code and adds none.
+
+Hover and completion check the queried buffer as a file
+module at the document's path, in a fresh base. Nested loads
+in that buffer use the file rule. The buffer's own
+definitions live in that file environment. The names hover
+resolves are the names a load of that file would resolve.
 
 A file parented at a fresh kernel environment would see
 neither `term` nor the libraries. A file parented at the
@@ -237,21 +267,31 @@ writer stops and reports it.
 ### 4.7 Defining path
 
 Every class a file defines records that file's resolved
-path. Kernel classes record none. A mismatch and a hover
-print it for every class that has one, whether or not
-another class shares the short name.
+path. Kernel classes record none. A class defined at the
+prompt or in an unkeyed port records none. A mismatch and a
+hover print the path for every class that has one, whether
+or not another class shares the short name.
 
 The printed form is the path relative to the repository
 root, with `/` separators, when the file is inside that
-root. Otherwise it is the resolved path. The spec says how
-the root is recognized. The cache key stays the resolved
-path.
+root. Otherwise it is the resolved path. The repository root
+is the parent of the `aloe/` directory, the directory
+[`aloe/library.rkt`](../../../../aloe/library.rkt) reaches
+with `../lib/`. The cache key stays the resolved path.
+
+A class defined by the queried buffer reports that
+document's real path. It does not report the temporary
+sibling
+[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5
+writes for a dirty buffer. A nested load still reports the
+path of the file on disk. The spec chooses whether the query
+takes an identity path beside the resolution path, or the
+snapshot carries the original name.
 
 This lands with or after the visibility layer, not in
-modules 000. It amends
-[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7.
-The series does not overlay a dirty buffer onto a nested
-load.
+modules 000. It amends §7 of that spec. The series does not
+overlay a dirty buffer of one file onto a nested load of
+another.
 
 ### 4.8 Methods
 
@@ -285,9 +325,9 @@ reuse.
 1. **modules 000 — run-once.** §4.2 only. The spec names any
    current test that loads one path twice into one driver.
 2. **Explicit loads, while file-to-file load still includes.**
-   The census is the `.aloe` files, plus the program text in
-   tests that is checked as a file. `main.aloe` and
-   `editor.aloe` are the known file cases. The spec lists
+   The census is the `.aloe` files. A string evaluated in the
+   interactive environment is not a census entry. `main.aloe`
+   and `editor.aloe` are the known file cases. The spec lists
    every test that pins `file.aloe`'s leading load datums,
    and updates those pins. It stores no count in prose. This
    layer does not split `file.aloe` and does not drop
@@ -296,7 +336,8 @@ reuse.
    visibility layer going green is the proof the census was
    complete. The spec writer may split this layer by tree.
 3. **Visibility.** §4.4, §4.5, §4.6, and §4.8. This layer
-   also updates the test entry points in §4.4. The spec's
+   updates a test entry point only when §4.4 says the root's
+   table lacks the name, and it may find none. The spec's
    own tests show a load of `text.aloe` does not bind
    `Option`, a third file that loads two `View`s errors with
    both paths, Gel's two roots still work, and a second
@@ -386,8 +427,10 @@ feature series. The spec still specifies the layer.
   stable identity for its definitions. This series does not
   edit that file.
 - [`docs/workflow.md`](../../../workflow.md) is the process.
-- [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7
-  is the hover text this series amends.
+- [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5
+  is the synchronized-buffer snapshot, and §7 is the hover
+  text this series amends. A class path in that text uses the
+  document path, not the temporary sibling.
 - The code in §2 is the mechanism the spec builds on.
 
 The spec writer who finds a lock that cannot be sliced
