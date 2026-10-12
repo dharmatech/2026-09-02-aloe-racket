@@ -56,6 +56,9 @@ tool, or a reload design is a defect in this document.
 | `SPEC.md` §11 | `load` reads, typechecks, and evaluates another file in the same environment. The path is the one `load-expr-resolved-path` already resolves. This series adds no search list |
 | `aloe/type.rkt` `typecheck-load!`, `aloe/eval.rkt` `eval-load!` | Each load reads the file into the caller's environment. The only memory is a path stack for cycles. A second `define-class` is a new class record. Unify compares class records with `eq?` |
 | `aloe/eval.rkt` `apply-method`, `define-methods` | A user-class body runs in `class-value-environment`, the file that defined the class. `define-methods` on a user class only appends methods. On `List`, `Int`, and `String` it overwrites the class object's one environment field |
+| `aloe/type.rkt` `match-sole-method`, `try-method-match`, `infer-instance-send`, `check-method-body!` | Parameter annotations, return annotations, and field annotations are turned into types in the caller's environment. A generic class with an implicit constructor re-checks the method body there too. `AloemacsSession` is one |
+| `aloe/type.rkt` `String find`, `aloe/eval.rkt` `String find` | The checker builds `(Option Int)` with `type-from-sexpr` in the caller's environment. The evaluator looks up the name `Option` there. `editor.aloe` and `file.aloe` both send `find` |
+| `aloe/eval.rkt` `runtime-named-type-matches?` | An annotation symbol is compared to the class's short name, not to class identity |
 | `aloe/env.rkt`, `aloe/type.rkt` | Both environment structs have a parent. The kernel bindings are `dummy`, `List`, `Int`, `String`, `Symbol`, and `Mirror`. `Bool` and `Float` are not bindings |
 | `aloe/driver.rkt` `make-driver` and `aloe/main.rkt` | Both build a base and install the list, string, and int libraries. Hover, completion, and the direct tests use `aloe/main.rkt`. `driver-inject-host!` binds a host on the driver base and refuses a name already bound there. Runners inject, then load |
 | `aloe/driver.rkt` `driver-load-port!` | A port may have no source path. String loads in the tests use that shape. `host/racket/term-run.rkt` passes a path |
@@ -64,7 +67,7 @@ tool, or a reload design is a defect in this document.
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
-| [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe) | Both load `lib/option.aloe`. That diamond stays one `Option` |
+| [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. The text/fs pair is the modules 000 diamond. The visibility layer removes all three loads |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
 `gel/main.aloe` uses `GelStack`. The explicit-load census
@@ -86,13 +89,19 @@ The specification is wrong unless all of these are true:
    Two bases do not share a class. The `option.aloe` diamond,
    cycle errors, and missing-file errors stay. modules 000
    leaves the suite green and does not change which names a
-   load introduces.
-2. After the visibility layer, a file that loads `text.aloe`
-   does not receive `Option`. `main.aloe` and `editor.aloe`
-   name the files that define the names they use. A method in
-   `text.aloe` that mentions `Option` still typechecks. Two
-   files may define `View`. A third file that loads both is a
-   check-time error naming both paths.
+   load introduces. `tests/modules` keeps an explicit
+   double-load fixture after the visibility layer removes
+   the three `option.aloe` loads.
+2. After the visibility layer, a file that loads
+   `editor.aloe` does not receive `Span`. `Option` is the
+   base class from `lib/option.aloe`, and `text.aloe`,
+   `fs.aloe`, and `disk.aloe` do not load it. `main.aloe`
+   and `editor.aloe` name the files that define the names
+   they use. A method in `text.aloe` that mentions `Option`
+   still typechecks. Two files may define `View`. A third
+   file that loads both is a check-time error naming both
+   paths. A checked send does not depend on two classes
+   sharing a short name.
 3. `gel-run` still uses a name from each of its two roots.
    `GelStack`'s `matching-picks`, added in `gel/loop.aloe`,
    runs where `GelPicks` and `GelPick` are bound. A second
@@ -116,9 +125,11 @@ The specification is wrong unless all of these are true:
    class in it, including its type arguments. §7 of that
    spec shows where each path is printed.
 6. `define-methods` still mutates the one class record. A
-   method body is checked and evaluated in the file that
-   wrote it. An injected `term` and `fold` still work. The
-   spelling is still `(load "path.aloe")`.
+   method body, and the annotations in its signature, are
+   checked in the file that wrote it. The body is evaluated
+   there too. An injected `term` and `fold` still work.
+   `String find` returns the base `Option`. The spelling is
+   still `(load "path.aloe")`.
 7. The closing layer removes the `Aloemacs` prefixes, moves
    classes toward one class per file where §4.11 allows it,
    and leaves the tests passing. `GelText` stays. No `prefix`
@@ -224,9 +235,9 @@ freeze the list.
 
 The visibility checkpoint's `SPEC.md` sentence and its
 `docs/decisions.md` entry state both meanings with one
-example: a file that loads `text.aloe` does not receive
-`Option`, and the same form at the prompt receives
-`text.aloe`'s local table.
+example: a file that loads `editor.aloe` does not receive
+`Span`, and the same form at the prompt receives
+`editor.aloe`'s local table, which includes `Span`.
 
 ### 4.5 The base
 
@@ -235,7 +246,17 @@ builds. Both install the list, string, and int libraries on
 the kernel bindings. User definitions do not live there.
 `driver-inject-host!` writes the driver base. `fold` is a
 method on the shared `List` object. The spec names the
-bindings from the code and adds none.
+bindings from the code.
+
+The visibility layer also installs `lib/option.aloe` on that
+base, and no other library. `String find` returns that
+`Option`, in the checker and the evaluator. It does not
+resolve whichever `Option` the caller has bound. `Option`
+still has a defining path, `lib/option.aloe`. A file that
+defines `Option` collides with that file. The same layer
+removes `(load "option.aloe")` from `text.aloe`, `fs.aloe`,
+and `disk.aloe`. modules 000 does not install it, so the
+text/fs diamond is still there for run-once.
 
 Hover and completion check the queried buffer as a file
 module at the document's path, in a fresh base. Nested loads
@@ -311,17 +332,36 @@ environment, because that is the same file. A later file can
 add methods when the class name is in its environment.
 
 Each method, or each `define-methods` group, records the
-writing file's environment. The spec chooses which of those
-two storages. The evaluator uses that record for the body.
-`List`, `Int`, and `String` get the same per-group record. A
-later `define-methods` does not overwrite the environment of
-the methods already there.
+writing file's environment. The class form carries the
+defining file's type environment. Each `define-methods`
+group carries its own. The spec chooses per-method or
+per-group storage. The evaluator uses that record for the
+body. `List`, `Int`, and `String` get the same per-group
+record. A later `define-methods` does not overwrite the
+environment of the methods already there.
+
+The checker uses that same record for parameter
+annotations, return annotations, field annotations, and the
+deferred generic body check. Argument expressions still
+infer in the caller's environment. A generic class with an
+implicit constructor, including `AloemacsSession`,
+re-checks the body in the writing file's environment, with
+the call's substitution. The names in the signature mean
+what they meant in the file that wrote them.
+
+Runtime overload matching compares an annotation symbol to
+the class's short name. Two classes may share a short name
+in one process. A checked send is safe because the checker
+has already fixed the identity. The spec says it relies on
+that. This series does not change the runtime comparison.
 
 This lands in the visibility layer. The reproduction is
 `matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
 the body names `GelPicks` and `GelPick`, which that file
-defines. This series does not give each importer a private
-method table and does not scope selectors.
+defines. A send of an `AloemacsSession` method from a file
+that has not loaded `AloemacsBuffers` still typechecks.
+This series does not give each importer a private method
+table and does not scope selectors.
 
 ### 4.9 Reload
 
@@ -360,9 +400,10 @@ reuse.
 3. **Visibility.** §4.4, §4.5, §4.6, and §4.8. This layer
    updates a test entry point only when §4.4 says the root's
    table lacks the name, and it may find none. The spec's
-   own tests show a load of `text.aloe` does not bind
-   `Option`, a third file that loads two `View`s errors with
-   both paths, Gel's two roots still work,
+   own tests show a load of `editor.aloe` does not bind
+   `Span`, `String find` returns the base `Option`, a third
+   file that loads two `View`s errors with both paths, Gel's
+   two roots still work,
    `matching-picks` resolves `GelPicks`, and a second
    driver does not see the first driver's classes.
 4. **Defining path.** §4.7. The spec may join this to layer 3
