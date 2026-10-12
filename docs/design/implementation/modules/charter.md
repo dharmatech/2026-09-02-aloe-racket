@@ -55,7 +55,7 @@ tool, or a reload design is a defect in this document.
 |---|---|
 | `SPEC.md` §11 | `load` reads, typechecks, and evaluates another file in the same environment. The path is the one `load-expr-resolved-path` already resolves. This series adds no search list |
 | `aloe/type.rkt` `typecheck-load!`, `aloe/eval.rkt` `eval-load!` | Each load reads the file into the caller's environment. The only memory is a path stack for cycles. A second `define-class` is a new class record. Unify compares class records with `eq?` |
-| `aloe/eval.rkt` `class-value` | The class record already stores the environment in which the class was defined. Method bodies close over that environment. The spec uses this field |
+| `aloe/eval.rkt` `apply-method`, `define-methods` | A user-class body runs in `class-value-environment`, the file that defined the class. `define-methods` on a user class only appends methods. On `List`, `Int`, and `String` it overwrites the class object's one environment field |
 | `aloe/env.rkt`, `aloe/type.rkt` | Both environment structs have a parent. The kernel bindings are `dummy`, `List`, `Int`, `String`, `Symbol`, and `Mirror`. `Bool` and `Float` are not bindings |
 | `aloe/driver.rkt` `make-driver` and `aloe/main.rkt` | Both build a base and install the list, string, and int libraries. Hover, completion, and the direct tests use `aloe/main.rkt`. `driver-inject-host!` binds a host on the driver base and refuses a name already bound there. Runners inject, then load |
 | `aloe/driver.rkt` `driver-load-port!` | A port may have no source path. String loads in the tests use that shape. `host/racket/term-run.rkt` passes a path |
@@ -94,8 +94,10 @@ The specification is wrong unless all of these are true:
    files may define `View`. A third file that loads both is a
    check-time error naming both paths.
 3. `gel-run` still uses a name from each of its two roots.
-   A second `define` or `define-class` at the prompt, and
-   through `driver-eval!`, still replaces.
+   `GelStack`'s `matching-picks`, added in `gel/loop.aloe`,
+   runs where `GelPicks` and `GelPick` are bound. A second
+   `define` or `define-class` at the prompt, and through
+   `driver-eval!`, still replaces.
 4. A driver that loaded only `main.aloe` sees the export
    tables of the files `main.aloe` loads directly, including
    files the explicit-load layer added. The visibility layer
@@ -110,10 +112,13 @@ The specification is wrong unless all of these are true:
    sibling from
    [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5.
    Kernel classes, prompt classes, and unkeyed-port classes
-   have no path. §7 of that spec shows the new hover value.
-6. `define-methods` still mutates the one class record. An
-   injected `term` and `fold` still work. The spelling is
-   still `(load "path.aloe")`.
+   have no path. A compound type carries the path of each
+   class in it, including its type arguments. §7 of that
+   spec shows where each path is printed.
+6. `define-methods` still mutates the one class record. A
+   method body is checked and evaluated in the file that
+   wrote it. An injected `term` and `fold` still work. The
+   spelling is still `(load "path.aloe")`.
 7. The closing layer removes the `Aloemacs` prefixes, moves
    classes toward one class per file where §4.11 allows it,
    and leaves the tests passing. `GelText` stays. No `prefix`
@@ -187,8 +192,9 @@ a file copies that file's own `define`, `define-class`, and
 `define-protocol` bindings into the loader, and nothing it
 only received from its own loads. `define-methods` binds no
 name. The loaded file keeps those received names, so its
-methods can see them. `class-value` already stores that
-environment. The spec does not add a second closure.
+methods can see them. A method body runs in the writing
+file's environment, as §4.8 locks. The environment stored
+on the class is not the one used for a method added later.
 
 The interactive environment is not a file. Its parent is the
 base. The REPL, `driver-eval!`, and an unkeyed
@@ -270,7 +276,10 @@ Every class a file defines records that file's resolved
 path. Kernel classes record none. A class defined at the
 prompt or in an unkeyed port records none. A mismatch and a
 hover print the path for every class that has one, whether
-or not another class shares the short name.
+or not another class shares the short name. A compound type
+such as `(Option Position)` carries the path of each class
+in it, including the type arguments. The §7 amendment says
+where each path is printed.
 
 The printed form is the path relative to the repository
 root, with `/` separators, when the file is inside that
@@ -296,10 +305,23 @@ another.
 ### 4.8 Methods
 
 `define-methods` appends to the shared class record. A method
-body is checked in the file that wrote it. A later file can
-add methods when the class name is in its environment. This
-series does not give methods a per-file table and does not
-scope selectors.
+body is checked and evaluated in the file that wrote it.
+Methods written inside the class form keep the class's
+environment, because that is the same file. A later file can
+add methods when the class name is in its environment.
+
+Each method, or each `define-methods` group, records the
+writing file's environment. The spec chooses which of those
+two storages. The evaluator uses that record for the body.
+`List`, `Int`, and `String` get the same per-group record. A
+later `define-methods` does not overwrite the environment of
+the methods already there.
+
+This lands in the visibility layer. The reproduction is
+`matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
+the body names `GelPicks` and `GelPick`, which that file
+defines. This series does not give each importer a private
+method table and does not scope selectors.
 
 ### 4.9 Reload
 
@@ -340,7 +362,8 @@ reuse.
    table lacks the name, and it may find none. The spec's
    own tests show a load of `text.aloe` does not bind
    `Option`, a third file that loads two `View`s errors with
-   both paths, Gel's two roots still work, and a second
+   both paths, Gel's two roots still work,
+   `matching-picks` resolves `GelPicks`, and a second
    driver does not see the first driver's classes.
 4. **Defining path.** §4.7. The spec may join this to layer 3
    when the combination fits one implementer conversation. It
@@ -372,9 +395,10 @@ moves it drops its prefix.
 A set of classes that form a cycle through field types stays
 in one file. The spec lists that set from the field graph.
 A one-way reference is a load. `define-methods` in a later
-file, after a load of the class, may stay when that is the
-shape already used for the window tree and the window
-rectangle.
+file, after a load of the class, may stay. The body runs in
+the writing file, per §4.8. That is the shape the window
+tree and the window rectangle may keep when their classes
+are split.
 
 The spec lists every test that pins `file.aloe`'s ordered
 `define-class` names, and every test entry point whose
