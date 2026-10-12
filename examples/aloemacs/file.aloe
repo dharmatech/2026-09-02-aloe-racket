@@ -805,7 +805,8 @@
     (tree AloemacsWindowTree)
     (selected Int)
     (columns Int)
-    (rows Int))
+    (rows Int)
+    (drag (Option Int)))
   (methods
     (text-rect (columns Int) (rows Int) AloemacsWindowRect
       (AloemacsWindowRect new 0 0 columns (if (rows >= 2) (rows - 1) rows)))
@@ -874,7 +875,15 @@
                 (columns columns)
                 (rows rows))
               self)
-          self))))
+          self))
+
+    ;; drag is the id of the armed split while a drag is armed and None
+    ;; otherwise. It is not painted. Nothing arms in 001.
+    (armed (id Int) AloemacsWindows
+      (self with (drag (Option Some id))))
+
+    (disarmed () AloemacsWindows
+      (self with (drag (Option None))))))
 
 (define-class AloemacsCommand
   (constructors
@@ -1003,13 +1012,17 @@
     (event? () Bool
       (if ((self event) starts-with? "mouse ")
           (if ((self action-length) > 0)
-              (if ((self button-length) > 0)
+              (if (if (self move?) #t ((self button-length) > 0))
                   (if (self decimal? (self column-text))
                       (self decimal? (self row-text))
                       #f)
                   #f)
               #f)
           #f))
+
+    ;; A move carries no button; its coordinates follow the action.
+    (move? () Bool
+      ((self after-mouse) starts-with? "move "))
 
     (down? () Bool
       ((self after-mouse) starts-with? "down "))
@@ -1031,17 +1044,20 @@
       (cond
         (((self after-mouse) starts-with? "down ") 5)
         (((self after-mouse) starts-with? "up ") 3)
+        (((self after-mouse) starts-with? "move ") 5)
         (else 0)))
 
     (after-action () String
       ((self after-mouse) drop (self action-length)))
 
     (button-length () Int
-      (cond
-        (((self after-action) starts-with? "left ") 5)
-        (((self after-action) starts-with? "middle ") 7)
-        (((self after-action) starts-with? "right ") 6)
-        (else 0)))
+      (if (self move?)
+          0
+          (cond
+            (((self after-action) starts-with? "left ") 5)
+            (((self after-action) starts-with? "middle ") 7)
+            (((self after-action) starts-with? "right ") 6)
+            (else 0))))
 
     (coordinates () String
       ((self after-action) drop (self button-length)))
@@ -2056,16 +2072,24 @@
         (((self prompt) present?) (self prompt-key key))
         (else (self idle-key key))))
 
+    ;; Nothing armed: the receiver itself. Otherwise the configuration
+    ;; with drag cleared.
+    (disarmed () (AloemacsSession H)
+      (if (((self windows) drag) present?)
+          (self with (windows ((self windows) disarmed)))
+          self))
+
     ;; The runner sends every read here. A mouse string takes the mouse path;
-    ;; any other string is a key and takes handle-key as before.
+    ;; any other string is a key, which disarms and then takes handle-key.
     (handle-event (event String) (AloemacsSession H)
       (cond
         ((self quit) (self unchanged))
         (((AloemacsMouse new event) event?) (self handle-mouse event))
-        (else (self handle-key event))))
+        (else ((self disarmed) handle-key event))))
 
     ;; A search, a prompt, or a pending prefix refuses every mouse string.
-    ;; Otherwise only a left press reaches the cell.
+    ;; A move is inert until 002. A left press disarms and then reaches
+    ;; the cell; a release and every other button disarm.
     (handle-mouse (event String) (AloemacsSession H)
       (cond
         ((self searching) (self unchanged))
@@ -2073,11 +2097,13 @@
         (((self pending) present?) (self unchanged))
         (else
           (let ((mouse (AloemacsMouse new event)))
-            (if (mouse down?)
+            (cond
+              ((mouse move?) (self unchanged))
+              ((mouse down?)
                 (if (mouse left?)
-                    (self press-at (mouse column) (mouse row))
-                    (self unchanged))
-                (self unchanged))))))
+                    ((self disarmed) press-at (mouse column) (mouse row))
+                    (self disarmed)))
+              (else (self disarmed)))))))
 
     ;; Classify the cell with the geometry the last fit stored, in order:
     ;; echo row, completion row, mode line, text, or no leaf at all.

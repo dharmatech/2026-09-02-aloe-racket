@@ -61,7 +61,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
@@ -131,7 +131,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((aloemacs-editor windows) columns) ((aloemacs-editor windows) rows)))))))
+         0 ((aloemacs-editor windows) columns) ((aloemacs-editor windows) rows) (Option None)))))))
   (def! st 'base (session "ab\ncd" 0 0))
   (key! st 'marked 'base "mark")
   (check-equal? (mark-position st 'marked) "0:0")

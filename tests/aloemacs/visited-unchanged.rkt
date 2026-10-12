@@ -68,7 +68,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0)))))
+         0 0 0 (Option None))))))
 
   (check-not-exn
    (lambda () (driver-eval! state '(check (editor unchanged) editor))))
@@ -134,7 +134,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0)))))
+         0 0 0 (Option None))))))
   (driver-eval!
    state
    '(define visited

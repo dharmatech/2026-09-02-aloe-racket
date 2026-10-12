@@ -96,7 +96,7 @@
   (check-equal? (caddr (decl 'AloemacsWindowRect))
     '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (caddr (decl 'AloemacsWindows))
-    '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+    '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)

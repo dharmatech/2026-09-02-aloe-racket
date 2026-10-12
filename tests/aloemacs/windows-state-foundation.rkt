@@ -65,7 +65,7 @@
   `(AloemacsWindows new
      (AloemacsWindowTree Leaf
        (AloemacsView new ,view ,id ,row ,col ,point ,locked (Option None)))
-     ,view ,columns ,rows))
+     ,view ,columns ,rows (Option None)))
 ;; Independent raw constructors: these expectations never call a window helper
 ;; or the session transition being tested.
 (define (for-buffers buffers [columns 80] [rows 24])
@@ -143,7 +143,7 @@
              (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree) (earlier Int) (later Int)))
              (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree) (earlier Int) (later Int)))))
            (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
-           (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+           (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
            (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
            (AloemacsBuffers (fields (before (List AloemacsBuffer)) (current-buffer AloemacsBuffer)
                                    (after (List AloemacsBuffer)))))])
@@ -185,8 +185,8 @@
                 ((tree find-view 4) (Option AloemacsView)) ((v4 id) Int)
                 ((v4 buffer-id) Int) ((v4 scroll-row) Int) ((v4 scroll-col) Int)
                 ((v4 locked) Bool) ((AloemacsWindowRect new 1 2 3 4) AloemacsWindowRect)
-                (((AloemacsWindows new tree 19 80 24) tree) AloemacsWindowTree)
-                (((AloemacsWindows new tree 19 80 24) selected) Int))])
+                (((AloemacsWindows new tree 19 80 24 (Option None)) tree) AloemacsWindowTree)
+                (((AloemacsWindows new tree 19 80 24 (Option None)) selected) Int))])
     (check-equal? (type st (car entry)) (cadr entry)))
   (for ([bad '((AloemacsView new 0 0 0 0) (AloemacsView new 0 0 0 0 #f (Option None))
                (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None) 0)

@@ -61,7 +61,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))))
+         0 0 0 (Option None)))))))
 
 (define (step! state name expression)
   (driver-eval! state `(define ,name ,expression)))

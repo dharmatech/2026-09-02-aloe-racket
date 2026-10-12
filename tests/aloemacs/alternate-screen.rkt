@@ -1,8 +1,8 @@
 #lang racket/base
 
 ;; aloemacs-alternate-screen 000: the runner enters the alternate screen
-;; before it turns button tracking on and leaves it after it turns button
-;; tracking off. The bytes are terminal setup in the runner only. No TTY is
+;; before it turns motion reporting on and leaves it after it turns motion
+;; reporting off. The bytes are terminal setup in the runner only. No TTY is
 ;; opened here; the proofs read source files.
 
 (require racket/runtime-path racket/file rackunit)
@@ -28,8 +28,8 @@
 
 (define enter "[?1049h")
 (define leave "[?1049l")
-(define buttons-on "[?1000h")
-(define buttons-off "[?1000l")
+(define motion-on "[?1002h")
+(define motion-off "[?1002l")
 
 ;; 1. Once each.
 (test-case "the runner enters the alternate screen once and leaves it once"
@@ -37,12 +37,12 @@
   (check-equal? (count runner leave) 1 leave))
 
 ;; 2. The before thunk's order.
-(test-case "the alternate screen is entered before button tracking is enabled"
-  (check-true (before? runner enter buttons-on)))
+(test-case "the alternate screen is entered before motion reporting is enabled"
+  (check-true (before? runner enter motion-on)))
 
 ;; 3. The after thunk's order.
-(test-case "the alternate screen is left after button tracking is disabled"
-  (check-true (before? runner buttons-off leave)))
+(test-case "the alternate screen is left after motion reporting is disabled"
+  (check-true (before? runner motion-off leave)))
 
 ;; 4. Enter, then leave.
 (test-case "the enable comes before the disable"

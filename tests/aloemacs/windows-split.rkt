@@ -73,7 +73,7 @@
 (define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (config tree selected [columns 9] [rows 6])
-  `(AloemacsWindows new ,tree ,selected ,columns ,rows))
+  `(AloemacsWindows new ,tree ,selected ,columns ,rows (Option None)))
 (define (rect x y columns rows) `(AloemacsWindowRect new ,x ,y ,columns ,rows))
 (define active-prompt '(Option Some (AloemacsPrompt new "P\t" "x\ry" 2 "" (List empty) (List empty) 0)))
 (define waiting '(Option Some (AloemacsCommand SaveAs)))

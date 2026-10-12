@@ -316,7 +316,7 @@
 (define (session bs tree selected w h)
   `(AloemacsSession new ,bs (s fs) "" #f "" (Position new 0 0) #f #f (s kill-ring)
      (s pending) (s prompt) (s last-submission) (s waiting-command)
-     (AloemacsWindows new ,tree ,selected ,w ,h)))
+     (AloemacsWindows new ,tree ,selected ,w ,h (Option None))))
 (define (multi rows h cursor)
   (string-append "\e[?25l\e[2J\e[H" (string-join rows "\r\n") (format "\e[~a;1H" h) cursor "\e[?25h"))
 (define (rows! st s w h expected)

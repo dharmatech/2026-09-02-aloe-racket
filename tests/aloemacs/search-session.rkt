@@ -57,7 +57,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (define (define! state name expression)
   (driver-eval! state `(define ,name ,expression)))
@@ -306,7 +306,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((base windows) columns) ((base windows) rows)))))
+         0 ((base windows) columns) ((base windows) rows) (Option None)))))
   (check-equal? (value state '(sanitized frame 12 3))
                 (frame "ababa\r\naba" 1 1 3 "search: a " #:name "untitled" #:width 12))
   (step! state 'exit 'failed "return")

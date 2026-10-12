@@ -178,7 +178,7 @@
     (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
     (Option Some "prior") (Option Some (AloemacsCommand FindFile))
     (AloemacsWindows new
-      (AloemacsWindowTree Leaf (AloemacsView new 7 0 0 0 (ed point) #t (Option None))) 7 80 24)))
+      (AloemacsWindowTree Leaf (AloemacsView new 7 0 0 0 (ed point) #t (Option None))) 7 80 24 (Option None))))
   (define before (ev st 'rich))
   (def! st 'fit '(rich ensure-visible 3 4))
   (check-not-exn (lambda () (ev st '(check fit
@@ -191,7 +191,7 @@
       (Option Some aloemacs-ctrl-x-keymap) (Option Some (AloemacsPrompt new "A:" "abc" 1 "" (List empty) (List empty) 0))
       (Option Some "prior") (Option Some (AloemacsCommand FindFile))
       (AloemacsWindows new
-        (AloemacsWindowTree Leaf (AloemacsView new 7 0 2 4 (ed point) #t (Option None))) 7 3 4))))))
+        (AloemacsWindowTree Leaf (AloemacsView new 7 0 2 4 (ed point) #t (Option None))) 7 3 4 (Option None)))))))
   (check-equal? (ev st 'rich) before)
   (paint st 'fit 3 4 (frame "\r\nd-l" 2 3 3 4 "/cwd/a" "A:abc" 4 3) calls)
   (define fitted (ev st 'fit))
@@ -210,7 +210,7 @@
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 0 0 0 (Position new 3 2) #t (Option None)))
          (AloemacsWindowTree Leaf
-           (AloemacsView new 1 0 99 3 (Position new 3 2) #t (Option None))) 1 1) 0 12 4)))
+           (AloemacsView new 1 0 99 3 (Position new 3 2) #t (Option None))) 1 1) 0 12 4 (Option None))))
   (def! st 'small '(s ensure-visible 2 4))
   (check-equal? (ev st '((small editor) text-rows)) 2)
   (check-equal? (ev st '((small editor) scroll-row)) 2)

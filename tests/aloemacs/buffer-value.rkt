@@ -48,7 +48,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 ;; Independent full-value reconstruction; no production rebuild/dispatcher is
 ;; used to construct expectations. Every session fixture is a singleton.
@@ -70,7 +70,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows))))
+         0 ,columns ,rows (Option None)))))
 (define (same-session st actual expected)
   (def! st 'comparison-actual actual)
   (def! st 'comparison-expected expected)
@@ -142,7 +142,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0)))))
+         0 0 0 (Option None))))))
 
 (test-case "session comparison evaluates each side once and preserves fixture bindings"
   (define-values (st calls) (state))

@@ -53,7 +53,7 @@
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
-(define (config tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
+(define (config tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h (Option None)))
 (define (session bs tree [selected 7] #:columns [w 9] #:rows [h 6] #:echo [echo ""]
                  #:searching [searching #f] #:prompt [prompt no-prompt] #:pending [prefix no-pending])
   `(AloemacsSession new ,bs (s fs) ,echo ,searching "q" (Position new 0 0) #f #f
@@ -207,7 +207,7 @@
   (check-equal? (caddr (decl 'AloemacsModeLine)) '(fields))
   (check-equal? (caddr (decl 'AloemacsWindowRect)) '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (caddr (decl 'AloemacsWindows))
-                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
   (check-equal? (length (cdr (caddr (decl '(AloemacsSession H))))) 14)
   (define tree-methods
     (append (methods-of (decl 'AloemacsWindowTree))

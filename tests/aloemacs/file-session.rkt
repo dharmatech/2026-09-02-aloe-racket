@@ -116,7 +116,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (define (define-session! state name source line column quit [path #f])
   (driver-eval!
@@ -471,7 +471,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((source windows) columns) ((source windows) rows))))))
+         0 ((source windows) columns) ((source windows) rows) (Option None))))))
 
   (for ([key (in-list '("return"
                         "backspace"
@@ -516,7 +516,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((source windows) columns) ((source windows) rows))))))
+         0 ((source windows) columns) ((source windows) rows) (Option None))))))
 
   (driver-eval! state '(define inserted-s (source handle-key "s")))
   (driver-eval! state '(define inserted-q (source handle-key "q")))

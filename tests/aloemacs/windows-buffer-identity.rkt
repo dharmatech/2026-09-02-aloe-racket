@@ -81,7 +81,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
@@ -99,7 +99,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows))))
+         0 ,columns ,rows (Option None)))))
 (define (replace s ed [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,ed ,path ((,s current-buffer) id)) ((,s buffers) after)))
@@ -451,7 +451,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
   (check-equal? (ev main '((aloemacs-editor current-buffer) id)) 0)
   (check-false (env-bound? (driver-runtime-environment main) 'term))
   (check-equal? (unbox calls) '()))

@@ -172,28 +172,29 @@
                 "mouse down right 4 2")
   (check-equal? (tmousemsg->aloe-mouse (make-tmousemsg 'button-down (tpoint 1 2) #t #f #f 'left))
                 "mouse down left 1 2")
-  (check-false (tmousemsg->aloe-mouse (make-tmousemsg 'move (tpoint 4 2) #f #f #f 'left)))
+  (check-equal? (tmousemsg->aloe-mouse (make-tmousemsg 'move (tpoint 4 2) #f #f #f 'left))
+                "mouse move 4 2")
   (check-false (tmousemsg->aloe-mouse (make-tmousemsg 'wheel-up (tpoint 4 2) #f #f #f 'left)))
   (check-false (tmousemsg->aloe-mouse (make-tmousemsg 'button-down (tpoint 4 2) #f #f #f #f)))
   (check-false (tmousemsg->aloe-mouse (make-tmousemsg 'button-down (tpoint -1 2) #t #f #f 'left))))
 
 ;; 6. Sources.
-(test-case "runner enables and disables buttons only; term and Gel stay clear"
+(test-case "runner enables and disables motion only; term and Gel stay clear"
   (define runner (file->string runner-path))
   (define term (file->string term-path))
   (define (has? source phrase) (regexp-match? (regexp (regexp-quote phrase)) source))
   (define (count source phrase)
     (length (regexp-match* (regexp (regexp-quote phrase)) source)))
-  (for ([phrase '("[?1000h" "[?1006h" "[?1000l" "[?1006l" "aloemacs-editor handle-event")])
+  (for ([phrase '("[?1002h" "[?1006h" "[?1002l" "[?1006l" "aloemacs-editor handle-event")])
     (check-true (has? runner phrase) phrase))
   (check-equal? (count runner "(term read-event)") 1)
-  (for ([phrase '("1003" "term-enable-mouse" "(term read-key)")])
+  (for ([phrase '("1000" "1003" "term-enable-mouse" "(term read-key)")])
     (check-false (has? runner phrase) phrase))
-  (for ([phrase '("1000" "1003" "term-enable-mouse")])
+  (for ([phrase '("1000" "1002" "1003" "term-enable-mouse")])
     (check-false (has? term phrase) phrase))
   (for ([path (list gel-run-path term-run-path)])
     (define source (file->string path))
-    (for ([phrase '("read-event" "1000" "term-enable-mouse")])
+    (for ([phrase '("read-event" "1000" "1002" "term-enable-mouse")])
       (check-false (has? source phrase) (format "~a in ~a" phrase path)))))
 
 ;; 7. Runner: the scripted-term shape from viewport-runner.rkt.
@@ -309,7 +310,7 @@
        (AloemacsWindows new
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 0 10 3 (Position new 0 0) #f (Option None)))
-         0 80 24)))
+         0 80 24 (Option None))))
   (def! 'e11 '(raw handle-event "mouse down left 0 5"))
   (at! 'e11 '(0 2))
   (check-equal? (origin-of 'e11) '(10 3))

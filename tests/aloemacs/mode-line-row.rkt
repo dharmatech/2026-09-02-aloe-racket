@@ -32,7 +32,7 @@
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)
-                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
   (check-equal? (map car (cdr (payload '(AloemacsSession H))))
                 '(buffers fs echo searching query origin wrapped failing kill-ring pending
                           prompt last-submission waiting-command windows))

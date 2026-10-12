@@ -6,9 +6,10 @@ proceed if the spec was ready. On 2026-10-11 the manager checked its
 §5.1–§5.2 counts, its §6.2 examples, and its §6.3 inventory against
 the tree and a scratch run, found it ready, and wrote
 [`checkpoints/000-weights.md`](checkpoints/000-weights.md). After 000
-was implemented, the manager corrected the class-list pin count in §4
-and §6.3 from fifteen to seventeen; no class is added, so nothing
-else changes. Not Aloe law. Not a checkpoint. Not an implementer
+and 001 were implemented, the manager removed the class-list pin
+count from §4 and §6.3: each focused file in this series adds a pin
+(seventeen before 000, nineteen after 001), and no class is added, so
+nothing else changes. Not Aloe law. Not a checkpoint. Not an implementer
 assignment.
 
 This file is the complete design input for the checkpoint manager
@@ -184,7 +185,7 @@ Leave these alone:
 
 - `host/racket/gel-run.rkt`, `host/racket/term-run.rkt`, and `tui-term`
 - `examples/aloemacs/editor.aloe` and `lib/`
-- `AloemacsView`, `AloemacsLeafPicture`, `AloemacsModeLine`, `AloemacsSession`'s fields, and the ordered `define-class` list, which seventeen tests pin
+- `AloemacsView`, `AloemacsLeafPicture`, `AloemacsModeLine`, `AloemacsSession`'s fields, and the ordered `define-class` list, which the tests pin as data
 - `split-below`, `split-right`, `delete-window`, `other-window`, `toggle-window-lock`, `select-view`, `button-send`, `place-in`, `place-at`, and `enter-view`
 - The accepted Term, windows, window-bars, mode-line, mode-buttons, and mouse specs, and the parent map
 
@@ -1075,7 +1076,7 @@ spelling only. Keep every whole-frame assertion; do not replace one
 with a substring check. `tests/aloemacs/mouse.rkt`,
 `tests/aloemacs/mode-buttons-press.rkt`, and
 `tests/parenthetical-construction/session.rkt` construct no split
-and need no edit in 000. The seventeen files that pin the ordered
+and need no edit in 000. The files that pin the ordered
 `define-class` list stay green: no class is added.
 
 ### 6.4 Focused proof

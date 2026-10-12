@@ -103,7 +103,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 ;; Only constructors and reads appear in expected reconstructions.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
@@ -122,7 +122,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows)))))
+         0 ,columns ,rows (Option None))))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,new-editor ,path ((,s current-buffer) id)) ((,s buffers) after)))
@@ -595,7 +595,7 @@
              (AloemacsView new 9 1 0 1 (Position new 2 4) #f (Option None)))
            (AloemacsWindowTree Leaf
              (AloemacsView new 11 0 1 0 (Position new 0 0) #t (Option None))) 1 1) 1 1)
-       7 43 13)))
+       7 43 13 (Option None))))
   (define original (ev st 'source))
   (def! st 'started '(source start-command-prompt (AloemacsCommand SaveAs) "Find file: "))
   (same st 'started (rebuild 'source #:windows '(source windows)
@@ -690,7 +690,7 @@
          ,(if (>= leaf-height 2) (sub1 leaf-height) leaf-height)))
     (rebuild source #:buffers (replace-current source ed)
       #:windows `(AloemacsWindows new ((,source windows) tree)
-                    ((,source windows) selected) ,width ,height)))
+                    ((,source windows) selected) ,width ,height (Option None))))
   (define (listed-gold width height lines shown prompt-column split?)
     (define k (if (< height 2) 0 (min (length lines) (- height 2))))
     (define root (if (< height 2) height (- height 1 k)))
@@ -731,7 +731,7 @@
          (AloemacsWindowTree Leaf
            (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None)))
          (AloemacsWindowTree Leaf
-           (AloemacsView new 1 0 0 0 (Position new 0 0) #t (Option None))) 1 1) 0 9 4)))
+           (AloemacsView new 1 0 0 0 (Position new 0 0) #t (Option None))) 1 1) 0 9 4 (Option None))))
   (def! st 'split `(split with-active-prompt ,(p "x" 0 " [No match]")))
   (check-equal? (ev st '(split frame 9 4))
     "\e[?25l\e[2J\e[Hbody|body\r\n    |    \r\n\e[38;5;16;48;5;250munti\e[0m|\e[38;5;252;48;5;239munti\e[0m\e[4;1HFind file\e[4;9H\e[?25h")

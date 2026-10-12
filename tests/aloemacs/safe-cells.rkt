@@ -95,7 +95,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (test-case "direct checked safe-cells send covers every control and keeps length"
   (define state (make-state))

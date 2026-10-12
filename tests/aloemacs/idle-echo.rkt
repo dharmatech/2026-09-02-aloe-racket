@@ -137,7 +137,7 @@
        (s fs) "" #f "" (s origin) #f #f (s kill-ring) (s pending)
        (s prompt) (s last-submission) (s waiting-command)
        (AloemacsWindows new (AloemacsWindowTree Below ,(leaf 7 41 0 1) ,(leaf 3 9 0 1) 1 1)
-         ,selected 80 24))))
+         ,selected 80 24 (Option None)))))
 
 (test-case "uneven split uses the selected leaf height and its buffer name"
   (define-values (st calls) (state))
@@ -166,6 +166,6 @@
        (s origin) (s wrapped) (s failing) (s kill-ring) (s pending) (s prompt)
        (s last-submission) (s waiting-command)
        (AloemacsWindows new (AloemacsWindowTree Right ,(leaf 7 0 0 1) ,(leaf 3 0 0 1) 1 1)
-         7 80 24)))
+         7 80 24 (Option None))))
   (paint st 'fallback 2 4 (single "ab\r\nde" 2 4 "untitled" "") calls)
   (paint st 'fallback 2 2 (single "ab" 2 2 "untitled" "un") calls))

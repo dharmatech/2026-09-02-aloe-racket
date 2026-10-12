@@ -132,34 +132,41 @@
     [else
      (error 'term "unsupported key: ~s" key)]))
 
-;; The mouse string: `mouse <down|up> <left|middle|right> <column> <row>`.
-;; One space between fields, canonical decimals, and nothing else.
+;; The mouse strings: `mouse <down|up> <left|middle|right> <column> <row>`
+;; and `mouse move <column> <row>`. One space between fields, canonical
+;; decimals, and nothing else.
 (define mouse-event-pattern
-  #rx"^mouse (down|up) (left|middle|right) (0|[1-9][0-9]*) (0|[1-9][0-9]*)$")
+  #rx"^mouse ((down|up) (left|middle|right)|move) (0|[1-9][0-9]*) (0|[1-9][0-9]*)$")
 
 (define (mouse-event-string? value)
   (and (string? value) (regexp-match? mouse-event-pattern value)))
 
 ;; A button press or release with a left, middle, or right button at a
-;; non-negative position formats as the mouse string. Anything else is #f.
-;; tui-term already made the coordinates 0-based; do not subtract again.
+;; non-negative position formats as the press string. Motion with a button
+;; held, kind move, formats as the move string; its held flags and its
+;; button field are not read. Anything else is #f. tui-term already made
+;; the coordinates 0-based; do not subtract again.
 (define (tmousemsg->aloe-mouse message)
   (and (tmousemsg? message)
-       (memq (tmousemsg-kind message) '(button-down button-up))
-       (memq (tmousemsg-button message) '(left middle right))
        (let ([position (tmousemsg-pos message)])
          (and (tpoint? position)
               (exact-nonnegative-integer? (tpoint-x position))
               (exact-nonnegative-integer? (tpoint-y position))
-              (string-append
-               "mouse "
-               (if (eq? (tmousemsg-kind message) 'button-down) "down" "up")
-               " "
-               (symbol->string (tmousemsg-button message))
-               " "
-               (number->string (tpoint-x position))
-               " "
-               (number->string (tpoint-y position)))))))
+              (let ([coordinates (string-append (number->string (tpoint-x position))
+                                                " "
+                                                (number->string (tpoint-y position)))])
+                (case (tmousemsg-kind message)
+                  [(move) (string-append "mouse move " coordinates)]
+                  [(button-down button-up)
+                   (and (memq (tmousemsg-button message) '(left middle right))
+                        (string-append
+                         "mouse "
+                         (if (eq? (tmousemsg-kind message) 'button-down) "down" "up")
+                         " "
+                         (symbol->string (tmousemsg-button message))
+                         " "
+                         coordinates))]
+                  [else #f]))))))
 
 (define (read-next-key)
   (let loop ()

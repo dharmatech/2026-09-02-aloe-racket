@@ -146,7 +146,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 ;; Build expected echo results without using the new with-echo helper.
 (define (token s echo)
@@ -180,7 +180,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((,s windows) columns) ((,s windows) rows)))))
+         0 ((,s windows) columns) ((,s windows) rows) (Option None)))))
 
 ;; Independent expected-value construction for prefix installation/clearing.
 (define (prefix-state s pending [echo `(,s echo)])
@@ -214,7 +214,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((,s windows) columns) ((,s windows) rows)))))
+         0 ((,s windows) columns) ((,s windows) rows) (Option None)))))
 
 (define (expected s row)
   (define selector (fourth row))
@@ -464,7 +464,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((,s windows) columns) ((,s windows) rows))))))
+         0 ((,s windows) columns) ((,s windows) rows) (Option None))))))
     (check-equal? (type st `(,s with-echo "failed")) `(AloemacsSession ,h))
     (check-equal? (type st `(,s pending)) '(Option (AloemacsKeymap AloemacsBinding)))
     (check-equal? (type st `(,s with-prefix aloemacs-ctrl-x-keymap))
@@ -818,7 +818,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((armed windows) columns) ((armed windows) rows)))))
+         0 ((armed windows) columns) ((armed windows) rows) (Option None)))))
     (check-false (ev st '((result pending) present?))))
   (check-false (ev st '((armed visit (Path new "dir")) present?)))
   (same-session st '((armed visit (Path new "dir")) case

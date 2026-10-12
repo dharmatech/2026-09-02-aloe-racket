@@ -42,7 +42,8 @@
                 (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None))))
             (selected 0)
             (columns  0)
-            (rows     0))))
+            (rows     0)
+            (drag     (Option None)))))
 
     (let ((initial-buffers
             (AloemacsBuffers new*

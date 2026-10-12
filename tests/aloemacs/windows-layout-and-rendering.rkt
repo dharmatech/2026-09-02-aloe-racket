@@ -66,7 +66,7 @@
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (rect x y w h) `(AloemacsWindowRect new ,x ,y ,w ,h))
 (define (config tree selected [columns 0] [rows 0])
-  `(AloemacsWindows new ,tree ,selected ,columns ,rows))
+  `(AloemacsWindows new ,tree ,selected ,columns ,rows (Option None)))
 (define (session buffers tree selected #:columns [columns 80] #:rows [rows 24]
                  #:echo [echo "saved"] #:searching [searching #f] #:query [query "old"]
                  #:wrapped [wrapped #t] #:failing [failing #t]
@@ -472,7 +472,7 @@
       AloemacsBinding AloemacsSearchScan AloemacsMouse (AloemacsSession H)))
   (for ([entry '((AloemacsView (fields (id Int) (buffer-id Int) (scroll-row Int) (scroll-col Int) (point Position) (locked Bool) (picture (Option AloemacsLeafPicture))))
                 (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
-                (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+                (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
                 (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
                 ((AloemacsSession H) (fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String)
                   (searching Bool) (query String) (origin Position) (wrapped Bool) (failing Bool)

@@ -64,7 +64,7 @@
        (AloemacsWindowTree Below ,(leaf (list-ref vs 1)) ,(leaf (list-ref vs 2)) 1 1) 1 1)
      (AloemacsWindowTree Right ,(leaf (list-ref vs 3)) ,(leaf (list-ref vs 4)) 1 1) 1 1))
 (define (config [vs views] [selected 55] [columns 80] [rows 24])
-  `(AloemacsWindows new ,(tree vs) ,selected ,columns ,rows))
+  `(AloemacsWindows new ,(tree vs) ,selected ,columns ,rows (Option None)))
 (define (selected-views vs selected id row col point)
   (for/list ([v vs])
     (if (= (car v) selected) (list selected id row col point (list-ref v 5)) v)))
@@ -611,7 +611,7 @@
       (same st `(((s ,@send) windows) rows) (cadr size))))
   ;; Retain the complete one-view golden and its purity proof. Multi-view
   ;; geometry/composition is owned by windows-layout-and-rendering.rkt.
-  (define single `(AloemacsWindows new ,(leaf '(55 9 2 3 (2 4) #t)) 55 0 0))
+  (define single `(AloemacsWindows new ,(leaf '(55 9 2 3 (2 4) #t)) 55 0 0 (Option None)))
   (def! st 'one (rebuild 'source #:windows single))
   (define snapshot (ev st 'one))
   (check-equal? (ev st '(one frame 8 3))
@@ -635,7 +635,7 @@
              (Below (fields (top AloemacsWindowTree) (bottom AloemacsWindowTree) (earlier Int) (later Int)))
              (Right (fields (left AloemacsWindowTree) (right AloemacsWindowTree) (earlier Int) (later Int)))))
            (AloemacsWindowRect (fields (x Int) (y Int) (columns Int) (rows Int)))
-           (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+           (AloemacsWindows (fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
            (AloemacsBuffer (fields (editor AloemacsEditor) (path (Option Path)) (id Int)))
            ((AloemacsSession H) (fields (buffers AloemacsBuffers) (fs (Fs H)) (echo String)
              (searching Bool) (query String) (origin Position) (wrapped Bool) (failing Bool)

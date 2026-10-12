@@ -73,7 +73,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 ;; Expectations only construct and read values; they do not invoke lookup,
 ;; selected-buffers, or select-buffer-submitted to obtain an expected focus.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -93,7 +93,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows))))
+         0 ,columns ,rows (Option None)))))
 (define (replace-current s new-editor)
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,new-editor (,s path) ((,s current-buffer) id)) ((,s buffers) after)))

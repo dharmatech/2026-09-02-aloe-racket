@@ -30,7 +30,7 @@
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
-(define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
+(define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h (Option None)))
 (define (session bs tree [selected 7])
   `(AloemacsSession new ,bs (s fs) "" #f "query" (Position new 1 2) #t #t
      (List of "ring" "older") (s pending) (s prompt) (Option Some "prior")

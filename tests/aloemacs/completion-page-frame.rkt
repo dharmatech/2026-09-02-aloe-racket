@@ -35,7 +35,7 @@
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
-(define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h))
+(define (windows tree selected [w 9] [h 8]) `(AloemacsWindows new ,tree ,selected ,w ,h (Option None)))
 (define (prepared lines [text "x"] [col 1] [label "P:"] [note ""]
                   [matches display-names] [start 0])
   `(Option Some (AloemacsPrompt new ,label ,text ,col ,note

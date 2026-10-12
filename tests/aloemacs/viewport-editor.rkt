@@ -101,7 +101,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (define (define-from-option! state name expression fallback)
   (driver-eval!
@@ -180,7 +180,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0)))
+         0 0 0 (Option None))))
             (AloemacsSession new
               (AloemacsBuffers new
                 (List empty)
@@ -211,7 +211,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0)))))])
+         0 0 0 (Option None))))))])
     (check-exn exn:fail:aloe-type?
                (lambda () (driver-eval! state datum)))))
 

@@ -127,7 +127,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
   (step! st 'fit '(base ensure-visible 80 1))
   (step! st 'paged '(fit handle-key "page-down"))
   (check-equal? (driver-eval! st '(paged echo)) "")

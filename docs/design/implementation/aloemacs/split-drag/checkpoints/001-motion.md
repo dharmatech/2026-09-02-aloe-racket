@@ -170,6 +170,22 @@ move on an armed session, and the three-frame runner script. All
 hold. If you cannot finish in this conversation, stop and report
 which files remain. Do not split the slice or write 002.
 
+The implementation on 2026-10-11 followed this checkpoint as
+written, after committing 000 as bf1d1e8. The manager reviewed the
+diff against this checkpoint and found it conforming: the product
+diff is the field, `armed`, `disarmed`, `move?`, the three
+`AloemacsMouse` changes, the session's `disarmed`, the two handler
+bodies, the `main.aloe` label, the regexp and the formatter with
+their comments, and the runner's two strings and comment, and
+nothing else; the forty-one test files change only in the places
+named, with `alternate-screen.rkt` taking the allowed renames; the
+focused file covers the nine items; the two focused files pass 20
+tests, the wider suite 667, and `git diff --check` is clean. The
+implementer found one defect in this document: it said seventeen
+tests pin the ordered class list, but 000's focused file had made
+it eighteen, and this checkpoint's makes it nineteen. The wording
+above is now count-free.
+
 ## Exact file scope
 
 ### May create or edit
@@ -206,8 +222,10 @@ which files remain. Do not split the slice or write 002.
   `first-id`, `handle-id`, `min-rows`, `min-columns`, `handle-at`,
   or `with-cut-at`. The session gains no `press-handle` or
   `drag-to`. Do not change the order of declarations. The ordered
-  `define-class` list is unchanged, so the seventeen tests that pin
-  it need no edit for that reason. `file.aloe` stays ASCII bytes.
+  `define-class` list is unchanged, so the tests that pin it as data
+  need no edit for that reason; there were eighteen at issuance, and
+  each focused file in this series adds one. `file.aloe` stays ASCII
+  bytes.
 - `examples/aloemacs/editor.aloe`, `host/racket/gel-run.rkt`,
   `host/racket/term-run.rkt`, `host/racket/fs.rkt`, `lib/`, `aloe/`,
   `bin/`, `gel/`, `archive/`, `SPEC.md`, `CHECKPOINTS.md`, and
@@ -709,9 +727,9 @@ forms are all still rejected; those lines do not change.
   say motion instead of button tracking. The order assertions do
   not change.
 
-No other file changes. The seventeen class-list pins stay green: no
-class is added. If any file outside the forty-one fails, the
-product is wrong; fix the product.
+No other file changes. The class-list pins stay green: no class is
+added. If any file outside the forty-one fails, the product is
+wrong; fix the product.
 
 ## Verification and completion
 

@@ -71,7 +71,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 ;; Expectations use only constructors and reads, never the transition under test.
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
@@ -91,7 +91,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows))))
+         0 ,columns ,rows (Option None)))))
 (define (replace-current s new-editor [path `(,s path)])
   `(AloemacsBuffers new ((,s buffers) before)
      (AloemacsBuffer new ,new-editor ,path ((,s current-buffer) id)) ((,s buffers) after)))

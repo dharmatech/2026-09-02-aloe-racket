@@ -53,7 +53,7 @@
      (AloemacsWindows new
        (AloemacsWindowTree Leaf
          (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None)))
-       0 0 0)))
+       0 0 0 (Option None))))
 
 (define session-fields
   '(buffers fs echo searching query origin wrapped failing kill-ring pending

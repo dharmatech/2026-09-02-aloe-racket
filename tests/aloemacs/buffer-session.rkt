@@ -72,7 +72,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 ;; Expectations explicitly rebuild all fields. They never invoke the selection
 ;; methods, collection transitions, or execute-command being tested.
@@ -88,7 +88,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((,s windows) columns) ((,s windows) rows)))))
+         0 ((,s windows) columns) ((,s windows) rows) (Option None)))))
 (define (rebuild s #:buffers [buffers `(,s buffers)] #:echo [echo `(,s echo)]
                  #:searching [searching `(,s searching)] #:query [query `(,s query)]
                  #:origin [origin `(,s origin)] #:wrapped [wrapped `(,s wrapped)]
@@ -107,7 +107,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ,columns ,rows))))
+         0 ,columns ,rows (Option None)))))
 (define (with-editor s editor #:columns [columns `((,s windows) columns)]
                      #:rows [rows `((,s windows) rows)])
   (rebuild s #:columns columns #:rows rows #:buffers

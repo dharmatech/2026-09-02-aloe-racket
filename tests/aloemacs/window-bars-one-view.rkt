@@ -47,7 +47,7 @@
      (AloemacsView new ,id ,bid ,top ,left (Position new ,@point) ,lock (Option None))))
 (define (right a b) `(AloemacsWindowTree Right ,a ,b 1 1))
 (define (below a b) `(AloemacsWindowTree Below ,a ,b 1 1))
-(define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h))
+(define (windows tree selected [w 9] [h 6]) `(AloemacsWindows new ,tree ,selected ,w ,h (Option None)))
 (define (session bs tree selected)
   `(AloemacsSession new ,bs (s fs) "" #f "" (Position new 0 0) #f #f (s kill-ring)
      (s pending) (s prompt) (s last-submission) (s waiting-command)
@@ -168,7 +168,7 @@
   (check-equal? (payload 'AloemacsWindowRect)
                 '(fields (x Int) (y Int) (columns Int) (rows Int)))
   (check-equal? (payload 'AloemacsWindows)
-                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int)))
+                '(fields (tree AloemacsWindowTree) (selected Int) (columns Int) (rows Int) (drag (Option Int))))
   (check-equal? (map car (cdr (payload '(AloemacsSession H))))
                 '(buffers fs echo searching query origin wrapped failing kill-ring pending
                           prompt last-submission waiting-command windows))

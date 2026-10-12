@@ -64,7 +64,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((,s windows) columns) ((,s windows) rows)))))
+         0 ((,s windows) columns) ((,s windows) rows) (Option None)))))
 
 (define (fixture [path '(Option Some (Path new "/cwd/a.txt"))] [echo "saved"])
   `(AloemacsSession new
@@ -103,7 +103,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
 
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
@@ -265,7 +265,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
   (def! st 'result '((base handle-key "ctrl-x") handle-key "save"))
   (check-equal? (writes calls) '((write "/cwd/a.txt" "\uFEFFλ\r\nb\n")))
   (same-session st 'result (rebuild 'base no-pending "saved"))
@@ -296,7 +296,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 ((base windows) columns) ((base windows) rows))))))
+         0 ((base windows) columns) ((base windows) rows) (Option None))))))
   (check-equal? (reverse (unbox calls)) '((root? "/cwd/a.txt") (parent "/cwd/a.txt"))))
 
 (test-case "every unbound second key is consumed once; the following key dispatches globally"
@@ -428,7 +428,7 @@
            (AloemacsView new 0 (buffer id)
              ((buffer editor) scroll-row) ((buffer editor) scroll-col) ((buffer editor) point)
              #f (Option None)))
-         0 0 0))))
+         0 0 0 (Option None)))))
   (def! st 'armed '((base handle-key "ctrl-x") ensure-visible 20 4))
   (check-equal? (ev st '(armed frame 20 4))
                 (frame "a b\r\nsecond\r\n" 1 3 4 "" #:name "/cwd/a.txt" #:width 20))
