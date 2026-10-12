@@ -62,9 +62,9 @@ tool, or a reload design is a defect in this document.
 | `aloe/type.rkt` `infer-protocol-send`, `method-signature-conforms?`, `check-protocol-conformance!` | A protocol send resolves signatures in the caller's environment. Conformance runs once, when the outermost program finishes, and walks that environment's parent chain. Both the protocol's annotations and the class's use that environment |
 | `aloe/type.rkt` `check-class-definition!`, `check-method-types!` | These already receive the environment of the form being defined. The spec does not retarget them |
 | `aloe/type.rkt` `String find`, `aloe/eval.rkt` `String find` | The checker builds `(Option Int)` with `type-from-sexpr` in the caller's environment. The evaluator looks up the name `Option` there. `editor.aloe` and `file.aloe` both send `find` |
-| `aloe/eval.rkt` `runtime-named-type-matches?` | An annotation symbol is compared to the class's short name, not to class identity |
+| `aloe/eval.rkt` `runtime-named-type-matches?` | An annotation symbol is compared to the class's short name, not to class identity. `define-protocol` evaluates to void. A class record's protocol field holds the symbol from the parse. `Mirror invoke` and `Signature accepts?` use that short-name comparison |
 | `aloe/env.rkt`, `aloe/type.rkt` | Both environment structs have a parent. The kernel bindings are `dummy`, `List`, `Int`, `String`, `Symbol`, and `Mirror`. `Bool` and `Float` are not bindings |
-| `aloe/driver.rkt` `make-driver` and `aloe/main.rkt` | Both build a base and install the list, string, and int libraries. Hover, completion, and the direct tests use `aloe/main.rkt`. `driver-inject-host!` binds a host on the driver base and refuses a name already bound there. Runners inject, then load |
+| `aloe/driver.rkt` `make-driver` and `aloe/main.rkt` | Both build a base and install the list, string, and int libraries. [`aloe/library.rkt`](../../../../aloe/library.rkt) reads each of those files once per process through a promise. That promise is parsed expressions, not a load-cache entry. A query whose document is one of those libraries reads the buffer's bytes instead of forcing the promise. Hover, completion, and the direct tests use `aloe/main.rkt`. `driver-inject-host!` binds a host on the driver base and refuses a name already bound there. Runners inject, then load |
 | `aloe/driver.rkt` `driver-load-port!` | A port may have no source path. String loads in the tests use that shape. `host/racket/term-run.rkt` passes a path |
 | `host/racket/gel-run.rkt` | Loads `gel/main.aloe`, then `examples/point.aloe`, then evaluates an expression that uses a name from each. Checkpoints 65 and 86 do the same |
 | `aloe/expression-query.rkt` | Each query builds a fresh type environment. A nested load is read from disk. A dirty buffer of another file is not overlaid |
@@ -72,7 +72,7 @@ tool, or a reload design is a defect in this document.
 | [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
 | [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. Those loads stay. After `Option` is installed they are hits of the one base class |
-| [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | Defines `Math`, loads `sym.aloe`, `sum.aloe`, `num.aloe`, `prod.aloe`, and `pow.aloe`, then adds the protocol methods with `define-methods`. Each class file names `Math` and does not load `core.aloe`. `pow.aloe` also sends `Num new`. A load from a class file back to `core.aloe` is a cycle |
+| [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | Defines `Math`, loads `sym.aloe`, `sum.aloe`, `num.aloe`, `prod.aloe`, and `pow.aloe`, then adds the protocol methods with `define-methods`. Each class file names `Math` and does not load `core.aloe`. `prod.aloe` and `pow.aloe` each send `Num new`. The leaves do not load one another. A load from a class file back to `core.aloe` is a cycle |
 | `aloe/driver.rkt` `driver-prepare!` | Typechecks a datum and returns a thunk. `host/racket/aloemacs-run.rkt` runs that thunk later. The first run reads a loaded file again |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
@@ -260,8 +260,11 @@ same interactive environment.
 `gel/main.aloe` uses `GelStack`, so the explicit-load census
 makes it load `stack.aloe`. That file's table includes
 `gel-empty-stack`. The spec writes that dependency.
-`pow.aloe` sends `Num new`, and `Num` is defined in
-`num.aloe`, so the census makes `pow.aloe` load `num.aloe`.
+`prod.aloe` and `pow.aloe` each send `Num new`, and `Num`
+is defined in `num.aloe`, so the census makes each of them
+load `num.aloe`. The census does not add a load of
+`lib/option.aloe` for `Option`. That name is the base class
+from the visibility layer.
 
 A name used in a loaded file and defined in the file that
 loads it cannot be repaired by a load of that loader. The
@@ -304,8 +307,10 @@ The visibility layer also installs `lib/option.aloe`
 through [`aloe/library.rkt`](../../../../aloe/library.rkt),
 beside list, string, and int, so both constructions get it.
 No other library is added. The install is a cache entry
-under that file's resolved path. `String find` returns that
-`Option`, in the checker and the evaluator. It does not
+under that file's resolved path. It uses the same read-once
+promise as the other three libraries, and a query of that
+file bypasses the promise the same way. `String find` returns
+that `Option`, in the checker and the evaluator. It does not
 resolve whichever `Option` the caller has bound. `Option`
 still has a defining path, `lib/option.aloe`. A different
 file that defines `Option` collides with that file. An
@@ -451,11 +456,19 @@ being unbound.
 Overload selection uses the class record for a class
 parameter and the protocol record for a protocol parameter.
 The checker and the evaluator both do. Two protocol records
-with the same short name do not unify. A sole method,
-`Mirror invoke`, and `Signature accepts?` keep today's
-comparison of an annotation symbol to the short name. A sole
-method is safe because the checker has already rejected the
-other class. This series does not change those three.
+with the same short name do not unify. Today
+`define-protocol` evaluates to void, and the class record
+stores the protocol's symbol. This series binds a runtime
+protocol record in the writing file's environment, and the
+class record references that record. For a class parameter,
+the evaluator looks the annotation up in the method's
+environment and compares class records with `eq?`. Classes
+are already bound there, so that lookup adds no new
+binding. A sole method, `Mirror invoke`, and `Signature
+accepts?` keep today's comparison of an annotation symbol
+to the short name. A sole method is safe because the
+checker has already rejected the other class. This series
+does not change those three.
 
 This lands in the visibility layer. The reproduction is
 `matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
@@ -494,7 +507,8 @@ reuse.
    interactive environment is not a census entry. `main.aloe`,
    `editor.aloe`, and the MPL class files are the known file
    cases. The layer moves `Math` out of `core.aloe` into a
-   new file the class files load, as §4.4 says. The spec
+   new file the class files load, as §4.4 says. The census
+   skips `Option`, as §4.4 says. The spec
    lists every test that pins `file.aloe`'s leading load
    datums, and updates those pins. It stores no count in
    prose. This layer does not split `file.aloe` and does not
