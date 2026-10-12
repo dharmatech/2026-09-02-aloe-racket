@@ -1,12 +1,10 @@
 # aloemacs split drag
 
-**Status: aloemacs-split-drag 002 issued.** The designer wrote
+**Status: aloemacs-split-drag 002 implemented.** The designer wrote
 [`spec.md`](spec.md) from [`charter.md`](charter.md) on 2026-10-11.
 000 and 001 are implemented, manager-reviewed, and committed as
-bf1d1e8 and ad62bf5. The manager then wrote
-[`checkpoints/002-bar.md`](checkpoints/002-bar.md). Human review of
-that checkpoint precedes its implementation. 003 is written after 002
-is implemented and reviewed.
+bf1d1e8 and ad62bf5. 002 is implemented and committed as 80e0fd2.
+The manager writes `checkpoints/003-mode-line.md` next.
 Not Aloe law. Not Gel. Not a global checkpoint. Product root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -16,8 +14,8 @@ Not Aloe law. Not Gel. Not a global checkpoint. Product root:
 | [`spec.md`](spec.md) | Accepted for checkpoint planning. Design authority for the manager and the implementers |
 | [`checkpoints/000-weights.md`](checkpoints/000-weights.md) | Implemented 2026-10-11, manager-reviewed, committed as bf1d1e8: the weights, the division, the walks, and the migration of eighteen test files. No press arms |
 | [`checkpoints/001-motion.md`](checkpoints/001-motion.md) | Implemented 2026-10-11, manager-reviewed, committed as ad62bf5: the `drag` field, `armed` and `disarmed`, the move string and `move?`, the session's `disarmed` and event handlers, mode `1002` in the runner, and the migration of forty-one test files. A move is inert |
-| [`checkpoints/002-bar.md`](checkpoints/002-bar.md) | Issued 2026-10-11, awaiting human review: `first-id`, `handle-id`, `min-columns`, `handle-at`, and `with-cut-at` on the `Right` axis, `press-handle` and `drag-to`, the bar press that arms, the move that drags, the lock refusal, and three test edits. The mode line stays inert |
-| `checkpoints/003-mode-line.md` | Not yet written. After 002 is implemented and reviewed |
+| [`checkpoints/002-bar.md`](checkpoints/002-bar.md) | Implemented 2026-10-11, committed as 80e0fd2: `first-id`, `handle-id`, `min-columns`, `handle-at`, and `with-cut-at` on the `Right` axis, `press-handle` and `drag-to`, the bar press that arms, the move that drags, the lock refusal, and three test edits. The mode line stays inert. `min-columns` binds each child's minimum once in a `let` instead of sending it twice as the checkpoint text did: the values are the same, and the cost no longer doubles per level of nested `Right`s. `min-rows` in 003 has the same shape |
+| `checkpoints/003-mode-line.md` | Not yet written. Next |
 
 Parent map: [`../README.md`](../README.md). This folder does not edit
 the parent map, `explorations.md`, or `discussion.md`.
