@@ -146,10 +146,14 @@ The specification is wrong unless all of these are true:
    `main.aloe` defines. A test entry point that uses a name
    the loaded root does not define loads the file that
    defines it. The visibility layer lists those entry
-   points. `UndoFrame`, `Span`, and `EditResult` are that
-   shape. This charter does not freeze the list. Adoption's
-   entry points are read from the tree on the day the human
-   asks, as §4.11 says.
+   points. The known groups are the MPL checkpoint setup
+   strings that load `core.aloe` and then name `Sym`, and
+   the editor tests that load `main.aloe` and then name a
+   class defined in `file.aloe`, `editor.aloe`, or
+   `lib/text.aloe`. `UndoFrame`, `Span`, and `EditResult`
+   are the same shape. This charter does not freeze the
+   list. Adoption's entry points are read from the tree on
+   the day the human asks, as §4.11 says.
 5. A mismatch and a hover print the repository-relative path
    of every class that has one. A class the queried buffer
    defines reports that document's path, not the temporary
@@ -346,8 +350,12 @@ name the test uses. After the explicit-load layer,
 from the visibility layer. A driver that loaded only
 `main.aloe` does not see `UndoFrame`, `Span`, or
 `EditResult`. A test that uses one of those names loads the
-file that defines it. The spec lists those entry points.
-This charter does not freeze the list.
+file that defines it. The known groups are the MPL
+checkpoint setup strings that load `core.aloe` and then
+name `Sym`, and the editor tests that load `main.aloe` and
+then name a class defined in `file.aloe`, `editor.aloe`, or
+`lib/text.aloe`. The spec lists those entry points. This
+charter does not freeze the list.
 
 The file-environment checkpoint's `SPEC.md` sentence and its
 `docs/decisions.md` entry state the rule with one example:
