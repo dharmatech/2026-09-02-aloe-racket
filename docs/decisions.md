@@ -291,3 +291,9 @@ Decided: `lib/option.aloe` is installed beside the other libraries;
 base library installs it from the buffer. Rejected: resolving `find`'s
 `Option` by name, and a second `Option`. Supersedes the 2026-09-08 "Option
 library" sentence that `make-driver` does not bootstrap it.
+
+## Overload identity by record (2026-10-13)
+
+Decided: class and protocol parameters select by record in both halves;
+`define-protocol` binds a runtime record. Rejected: changing
+`Mirror invoke`, `Signature accepts?`, or sole-method dispatch.

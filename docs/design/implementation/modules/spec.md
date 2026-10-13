@@ -1,16 +1,19 @@
 # Modules specification
 
-**Status: Accepted for checkpoint planning.** The human authorized
-the manager to proceed if the spec was ready. On 2026-10-13 the
-manager checked §4 against the tree and probes of today's behavior,
-found it ready, corrected the §4.1 rule 9 aside (hover inside
-`lib/list.aloe` raises `ambiguous message: fold` today; it did not
-"keep working"), and wrote
+**Status: Accepted for checkpoint planning.** The human authorized the
+manager to proceed if the spec was ready. On 2026-10-13 the manager
+checked §4 against the tree and probes of today's behavior, found it
+ready, corrected the §4.1 rule 9 aside (hover inside `lib/list.aloe`
+raises `ambiguous message: fold` today; it did not "keep working"),
+and wrote
 [`checkpoints/000-run-once.md`](checkpoints/000-run-once.md). This
 file is the complete design input for the checkpoint manager and the
-implementers. Neither reads the charter or the discussion
-record. [`SPEC.md`](../../../../SPEC.md) remains language law; this
-series amends it only in the checkpoints §12 names.
+implementers. Neither reads the charter or the discussion record.
+While issuing modules 003 the manager corrected the §6.2 `check` error
+text to the one the checker raises (`check` infers its right operand
+against the left's type, so the mismatch surfaces as `type mismatch:
+expected P, got P`). [`SPEC.md`](../../../../SPEC.md) remains language
+law; this series amends it only in the checkpoints §12 names.
 [`docs/workflow.md`](../../../workflow.md) is the process.
 
 This series makes `load` the module system. The spelling stays
@@ -714,7 +717,7 @@ short name are no longer one list element type.
 environment, define protocol `P`, class `A P`, a `Box` with
 `(wrap (x P) P x)`, a value `v` of static type `P`; define `P` again
 and class `B P`; then `(check v ((Box new) wrap (B new)))` is the
-type error "check operands must have the same type" (today it
+type error `typecheck: type mismatch: expected P, got P` (today it
 typechecks and fails at run time); a class defined after the second
 `P` with overloads `(m (x P) ...)` and `(m (x Int) ...)` rejects
 `(c m v)` as an unknown message; in a raw evaluator environment

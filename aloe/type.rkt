@@ -469,8 +469,7 @@
      TYPE-DATA]
     [(and (protocol-type? resolved-left)
           (protocol-type? resolved-right)
-          (eq? (protocol-type-name resolved-left)
-               (protocol-type-name resolved-right)))
+          (eq? resolved-left resolved-right))
      resolved-left]
     [(and (instance-type? resolved-left)
           (protocol-type? resolved-right)

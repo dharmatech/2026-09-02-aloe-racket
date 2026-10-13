@@ -42,6 +42,9 @@
 (struct runtime-list-type (element-type) #:transparent)
 (struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
+;; A protocol's runtime record. Identity is the record; the name serves the
+;; comparisons that still match short names.
+(struct protocol-value (name))
 ;; A base's evaluator load cache maps a resolved path to its entry. The state
 ;; is running or completed; exports stay empty until file environments exist.
 (struct evaluator-load-entry (state exports) #:transparent)
@@ -146,8 +149,11 @@
     [(define-expr name value-expression _)
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
-    [(define-protocol-expr _ _ _) (void)]
+    [(define-protocol-expr name _ _)
+     (env-define! environment name (protocol-value name))]
     [(define-class-expr name type-parameters protocol fields constructors methods _)
+     (define class-protocol
+       (and protocol (lookup-protocol environment protocol)))
      (define class-fields (or fields '()))
      (define class-constructors
        (or constructors
@@ -157,7 +163,7 @@
                   (class-value
                    name
                    type-parameters
-                   protocol
+                   class-protocol
                    class-fields
                    class-constructors
                    (and constructors #t)
@@ -203,6 +209,17 @@
        (for/list ([argument-expression (in-list argument-expressions)])
          (eval-expr argument-expression environment)))
      (lookup-message receiver selector arguments environment)]))
+
+(define (lookup-protocol environment name)
+  (define protocol (env-lookup environment name))
+  (unless (protocol-value? protocol)
+    (error 'eval-aloe "~a is not a protocol" name))
+  protocol)
+
+;; The short name of a class's protocol, or #f for a class without one.
+(define (class-value-protocol-name class)
+  (define protocol (class-value-protocol class))
+  (and protocol (protocol-value-name protocol)))
 
 (define (eval-case scrutinee-expression clauses else-body environment)
   (define scrutinee (eval-expr scrutinee-expression environment))
@@ -262,11 +279,11 @@
     [(class-value? receiver)
      (construct-instance receiver selector arguments)]
     [(instance-value? receiver)
-     (send-to-instance receiver selector arguments)]
+     (send-to-instance receiver selector arguments environment)]
     [(function-value? receiver)
      (send-to-function receiver selector arguments)]
     [(list-value? receiver)
-     (send-to-list receiver selector arguments)]
+     (send-to-list receiver selector arguments environment)]
     [(host-receiver? receiver)
      (host-result->aloe-value
       (host-receiver-send
@@ -580,7 +597,7 @@
     [(runtime-class-type? actual)
      (define class (runtime-class-type-class actual))
      (or (eq? expected (class-value-name class))
-         (eq? expected (class-value-protocol class)))]
+         (eq? expected (class-value-protocol-name class)))]
     [else #f]))
 
 (define (runtime-type-matches-datum?
@@ -831,7 +848,7 @@
             (andmap (lambda (protocol)
                       (eq? protocol (car protocols)))
                     (cdr protocols))
-            (car protocols))]))
+            (protocol-value-name (car protocols)))]))
   (when (and (pair? elements) (not element-type))
     (error 'eval-aloe "List of elements must have one type"))
   (list-value class element-type (apply vector-immutable elements)))
@@ -1031,7 +1048,7 @@
     [(or (runtime-list-type? left) (runtime-list-type? right)) #f]
     [else (eq? left right)]))
 
-(define (send-to-instance instance selector arguments)
+(define (send-to-instance instance selector arguments [environment #f])
   (define class (instance-value-class instance))
   (define fields (class-value-fields class))
   (define field-index
@@ -1051,14 +1068,16 @@
         selector
         arguments
         (class-value-name class)
-        (lambda (method)
+        (lambda (method resolve-environment)
           (instance-method-specificity
-           instance class method arguments))))
+           instance class method arguments resolve-environment))
+        environment))
      (apply-method
       instance class (runtime-method-match-method selected) arguments)]))
 
 (define (select-runtime-method
-         methods selector arguments target method-specificity)
+         methods selector arguments target method-specificity
+         [environment #f])
   (define selector-methods
     (filter
      (lambda (method)
@@ -1075,11 +1094,15 @@
     (error 'eval-aloe
            "arity error for ~a method ~a: no overload accepts ~a argument(s)"
            target selector (length arguments)))
+  ;; A single candidate compares short names. With more than one, parameter
+  ;; annotations resolve in the environment of the send, when there is one.
+  (define resolve-environment
+    (and (pair? (cdr arity-methods)) environment))
   (define matches
     (filter
      values
      (for/list ([method (in-list arity-methods)])
-       (define specificity (method-specificity method))
+       (define specificity (method-specificity method resolve-environment))
        (and specificity
             (runtime-method-match method specificity)))))
   (unless (pair? matches) (unknown-message selector))
@@ -1095,15 +1118,22 @@
     (error 'eval-aloe "ambiguous message: ~a" selector))
   (car best-matches))
 
-(define (instance-method-specificity receiver class method arguments)
+(define (instance-method-specificity
+         receiver class method arguments environment)
   (define type-bindings
     (make-hasheq
      (map cons
           (class-value-type-parameters class)
           (vector->list (instance-value-type-arguments receiver)))))
-  (method-arguments-specificity method arguments type-bindings))
+  (method-arguments-specificity method arguments type-bindings environment))
 
-(define (method-arguments-specificity method arguments bindings)
+(define (method-arguments-specificity method arguments bindings environment)
+  (define type-specificity
+    (if environment
+        (lambda (declared actual bindings method-type-parameters)
+          (resolved-type-specificity
+           declared actual bindings method-type-parameters environment))
+        runtime-type-specificity))
   (let loop ([parameters (method-declaration-parameters method)]
              [remaining-arguments arguments]
              [specificity 0])
@@ -1111,7 +1141,7 @@
       [(null? parameters) specificity]
       [else
        (define next-specificity
-         (runtime-type-specificity
+         (type-specificity
           (parameter-declaration-type (car parameters))
           (runtime-type-of (car remaining-arguments))
           bindings
@@ -1146,7 +1176,7 @@
         (define actual-class (runtime-class-type-class actual))
         (cond
           [(eq? declared (class-value-name actual-class)) 2]
-          [(eq? declared (class-value-protocol actual-class)) 1]
+          [(eq? declared (class-value-protocol-name actual-class)) 1]
           [else #f])]
        [(eq? declared actual) 2]
        [else #f])]
@@ -1167,26 +1197,66 @@
              2)]
        [(runtime-class-type? actual)
         (define actual-class (runtime-class-type-class actual))
-        (define actual-arguments
-          (runtime-class-type-type-arguments actual))
         (and (eq? name (class-value-name actual-class))
-             (or
-              ;; Preserve the accepted checkpoint 3–4 spelling (Point Int)
-              ;; for the original non-generic Point class.
-              (zero? (vector-length actual-arguments))
-              (and
-               (= (length (cdr declared))
-                  (vector-length actual-arguments))
-               (for/and ([nested-declared (in-list (cdr declared))]
-                         [nested-actual (in-vector actual-arguments)])
-                 (runtime-type-specificity
-                  nested-declared
-                  nested-actual
-                  bindings
-                  method-type-parameters))))
+             (runtime-type-arguments-match?
+              (cdr declared) actual bindings method-type-parameters)
              2)]
        [else #f])]
     [else #f]))
+
+(define (runtime-type-arguments-match?
+         declared-arguments actual bindings method-type-parameters)
+  (define actual-arguments (runtime-class-type-type-arguments actual))
+  (or
+   ;; Preserve the accepted checkpoint 3–4 spelling (Point Int)
+   ;; for the original non-generic Point class.
+   (zero? (vector-length actual-arguments))
+   (and
+    (= (length declared-arguments)
+       (vector-length actual-arguments))
+    (for/and ([nested-declared (in-list declared-arguments)]
+              [nested-actual (in-vector actual-arguments)])
+      (runtime-type-specificity
+       nested-declared
+       nested-actual
+       bindings
+       method-type-parameters)))))
+
+;; An annotation that names a class or a protocol in the environment matches
+;; by record: the class itself (2), or a class that opted into the protocol
+;; (1). Type parameters and every other annotation compare as above.
+(define (resolved-type-specificity
+         declared actual bindings method-type-parameters environment)
+  (define (named-record name)
+    (and (not (memq name method-type-parameters))
+         (not (hash-has-key? bindings name))
+         (env-bound? environment name)
+         (let ([value (env-lookup environment name)])
+           (and (or (class-value? value) (protocol-value? value))
+                value))))
+  (define record
+    (cond
+      [(symbol? declared) (named-record declared)]
+      [(and (list? declared) (pair? declared) (symbol? (car declared)))
+       (define head (named-record (car declared)))
+       (and (class-value? head) head)]
+      [else #f]))
+  (define actual-class
+    (and (runtime-class-type? actual) (runtime-class-type-class actual)))
+  (cond
+    [(not record)
+     (runtime-type-specificity
+      declared actual bindings method-type-parameters)]
+    [(not actual-class) #f]
+    [(protocol-value? record)
+     (and (eq? (class-value-protocol actual-class) record) 1)]
+    [(symbol? declared)
+     (and (eq? actual-class record) 2)]
+    [else
+     (and (eq? actual-class record)
+          (runtime-type-arguments-match?
+           (cdr declared) actual bindings method-type-parameters)
+          2)]))
 
 (define (apply-method receiver class method arguments)
   (define parameters (method-declaration-parameters method))
@@ -1277,7 +1347,7 @@
   (eval-expr (function-value-body function)
              (make-local-env (function-value-environment function) bindings)))
 
-(define (send-to-list list-object selector arguments)
+(define (send-to-list list-object selector arguments [environment #f])
   (define elements (list-value-elements list-object))
   (case selector
     [(empty?)
@@ -1310,9 +1380,9 @@
        (arity-error "List len" 0 (length arguments)))
      (vector-length elements)]
     [else
-     (send-to-list-method list-object selector arguments)]))
+     (send-to-list-method list-object selector arguments environment)]))
 
-(define (send-to-list-method receiver selector arguments)
+(define (send-to-list-method receiver selector arguments environment)
   (define class (list-value-class receiver))
   (define type-bindings
     (make-hasheq
@@ -1323,9 +1393,10 @@
      selector
      arguments
      'List
-     (lambda (method)
+     (lambda (method resolve-environment)
        (method-arguments-specificity
-        method arguments (hash-copy type-bindings)))))
+        method arguments (hash-copy type-bindings) resolve-environment))
+     environment))
   (define method (runtime-method-match-method selected))
   (apply-list-method receiver method arguments))
 
@@ -1382,8 +1453,10 @@
      selector
      arguments
      'Int
-     (lambda (method)
-       (method-arguments-specificity method arguments (make-hasheq)))))
+     (lambda (method resolve-environment)
+       (method-arguments-specificity
+        method arguments (make-hasheq) resolve-environment))
+     environment))
   (apply-int-method
    receiver class (runtime-method-match-method selected) arguments))
 
@@ -1569,8 +1642,10 @@
      selector
      arguments
      'String
-     (lambda (method)
-       (method-arguments-specificity method arguments (make-hasheq)))))
+     (lambda (method resolve-environment)
+       (method-arguments-specificity
+        method arguments (make-hasheq) resolve-environment))
+     environment))
   (apply-string-method
    receiver class (runtime-method-match-method selected) arguments))
 

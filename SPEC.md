@@ -218,7 +218,7 @@ Lookup is:
 Rules:
 
 - Arity must match.
-- Each argument type must match the parameter type exactly (same class, or a protocol the argument class opted into when the parameter is typed as that protocol). No implicit `Int` to `Math` lift.
+- Each argument type must match the parameter type exactly (same class, or a protocol the argument class opted into when the parameter is typed as that protocol). No implicit `Int` to `Math` lift. Identity is the class record or the protocol record, not the name: two classes, or two protocols, that share a short name are different types.
 - If exactly one method matches, use it.
 - If none match: type error in the checker; unknown message at runtime.
 - If more than one matches: most specific wins (exact class beats protocol). If still tied: ambiguity error.
@@ -325,6 +325,8 @@ A body is a single expression. Nested `let` is how locals are introduced. No `be
 ```
 
 See section 3.3. Top-level only. Not a send.
+`define-protocol` binds the protocol as a value under its name and
+evaluates to void.
 
 ### 4.9 `check`
 
