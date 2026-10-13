@@ -488,6 +488,17 @@ body. `List`, `Int`, and `String` get the same per-group
 record. A later `define-methods` does not overwrite the
 environment of the methods already there.
 
+The method-record slice in §4.10 lands while there is still
+one shared environment. The record stores that environment,
+which is the environment every method site already uses, so
+the suite stays green. A protocol record and the runtime
+binding from `define-protocol` do the same. The root-end
+conformance walk lands after that slice and before file
+environments. Until file environments exist, the checker's
+cache and the environment chain hold the same classes, so
+the new walk accepts the programs the parent-chain walk
+accepts.
+
 The checker uses that same record for parameter
 annotations, return annotations, field annotations, and the
 deferred generic body check. Field annotations include
@@ -542,12 +553,16 @@ binding. That method environment does not exist during the
 overload slice in §4.10. That slice resolves the annotation
 in the one shared environment, in the checker and the
 evaluator, and compares records with `eq?`. It does not
-read the class's stored environment. The file-environment
-checkpoint retargets the lookup to the method record. A
-protocol parameter follows the same split: the overload
-slice finds the protocol record in the shared environment,
-and the file-environment checkpoint finds it through the
-method record. A sole method, `Mirror invoke`, and
+read the class's stored environment. The method-record
+slice retargets the lookup to the method record. The
+recorded environment is still the shared one, so the suite
+stays green. A protocol parameter follows the same split:
+the overload slice finds the protocol record in the shared
+environment, and the method-record slice finds it through
+the method record. The file-environment checkpoint does not
+move the lookup again. Once a file has its own environment,
+the record made by this rule is that file's environment.
+A sole method, `Mirror invoke`, and
 `Signature accepts?` keep today's comparison of an
 annotation symbol to the short name. A sole method is safe
 because the checker has already rejected the other class.
@@ -608,21 +623,27 @@ reuse.
    layer going green is the proof the census was complete.
    The spec writer may split this layer by tree.
 3. **Visibility.** §4.4, §4.5, §4.6, and §4.8. The spec
-   splits this layer. Installing `Option`, and overload
-   identity, are earlier slices. Each may be its own
-   checkpoint, or they may share one, and both finish before
-   file environments. The overload slice resolves annotations
-   in the shared environment, as §4.8 says. File
-   environments, the two copy rules, collisions, method and
-   protocol records, and root-end conformance are one
-   checkpoint, so the suite stays green. That checkpoint is
-   not split further. The spec stages the work inside it, in
-   this order, so one implementer can pace it without opening
-   another number: file environments and the two copy rules,
-   then collisions, then method and protocol records, then
-   root-end conformance. The checkpoint is complete when the
-   suite is green. If the implementer proves the checkpoint
-   too big, the implementer stops and sends it back.
+   splits this layer. These slices finish before file
+   environments, and each leaves the suite green. Installing
+   `Option`. Overload identity, resolving annotations in the
+   shared environment, as §4.8 says. Method and protocol
+   records, which record that same environment and retarget
+   the overload lookup to the method record. The root-end
+   conformance walk. Each may be its own checkpoint.
+   `Option` and overload identity may share one. Method
+   records come after overload identity, because that is
+   when the lookup moves. Conformance comes after method
+   records, so the walk uses the recorded environments. The
+   spec does not fold method records or the conformance walk
+   into the file-environment checkpoint. The checkpoint that
+   is not split further is file environments and the two
+   copy rules. Collisions follow that checkpoint as their own
+   slice. A load that replaces a name is today's behavior, so
+   the file-environment checkpoint stays green without the
+   collision error, and the collision slice stays green when
+   it adds the error. If the implementer proves the
+   file-environment checkpoint too big, the implementer stops
+   and sends it back.
    This layer updates a test entry point only when §4.4 says
    the root's table lacks the name, and it may find none.
    The spec's own tests show a load of `editor.aloe` does not
@@ -759,10 +780,12 @@ This charter is the designer's assignment.
 Intended order: run-once in the shared environment; explicit
 loads while file-to-file inclusion remains, including the
 loads §4.4 names and the move of `Math` to its own file;
-within visibility, `Option` on the base and overload
-identity, resolving annotations in the shared environment,
-before file environments, non-re-export, method records,
-and root-end conformance, with the interactive environment
+within visibility, `Option` on the base, overload identity
+resolving annotations in the shared environment, method and
+protocol records, and the root-end conformance walk, each
+green before file environments; then file environments and
+the two copy rules, the checkpoint that is not split
+further; then collisions; with the interactive environment
 still receiving each root's local table;
 defining paths in mismatches and hover, as their own layer;
 adoption of Aloemacs, last, issued only when the human asks.
