@@ -637,13 +637,18 @@ reuse.
    spec does not fold method records or the conformance walk
    into the file-environment checkpoint. The checkpoint that
    is not split further is file environments and the two
-   copy rules. Collisions follow that checkpoint as their own
-   slice. A load that replaces a name is today's behavior, so
-   the file-environment checkpoint stays green without the
-   collision error, and the collision slice stays green when
-   it adds the error. If the implementer proves the
-   file-environment checkpoint too big, the implementer stops
-   and sends it back.
+   copy rules. If the implementer proves that checkpoint too
+   big, the implementer stops and sends it back. Collisions
+   follow it as their own slice. A load that replaces a name
+   is today's behavior, so the file-environment checkpoint
+   stays green without the collision error, and the collision
+   slice stays green when it adds the error. A query of
+   `lib/option.aloe`, `lib/list.aloe`, `lib/string.aloe`, or
+   `lib/int.aloe` installs that library from the buffer's
+   bytes and checks it as that one definition, as §4.5 says.
+   That rule lands with the `Option` install or in the
+   collision slice. It does not land after the collision
+   slice, and it does not wait for defining paths.
    This layer updates a test entry point only when §4.4 says
    the root's table lacks the name, and it may find none.
    The spec's own tests show a load of `editor.aloe` does not
@@ -785,7 +790,8 @@ resolving annotations in the shared environment, method and
 protocol records, and the root-end conformance walk, each
 green before file environments; then file environments and
 the two copy rules, the checkpoint that is not split
-further; then collisions; with the interactive environment
+further; then collisions, by which the §4.5 base-library
+query rule has landed; with the interactive environment
 still receiving each root's local table;
 defining paths in mismatches and hover, as their own layer;
 adoption of Aloemacs, last, issued only when the human asks.
