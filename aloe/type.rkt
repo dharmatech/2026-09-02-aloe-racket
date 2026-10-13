@@ -45,13 +45,21 @@
 (struct mirror-type () #:transparent)
 (struct signature-type () #:transparent)
 (struct type-data-type () #:transparent)
-(struct protocol-type (name signatures) #:transparent)
+;; A protocol records the environment its define-protocol is checked in; its
+;; signatures resolve there.
+(struct protocol-type (name signatures environment) #:transparent)
 (struct instance-type (class arguments) #:transparent)
 (struct list-type (element) #:transparent)
 (struct class-type (class) #:transparent)
-(struct list-class-type (element-parameter [methods #:mutable]) #:transparent)
-(struct int-class-type ([methods #:mutable]) #:transparent)
-(struct string-class-type ([methods #:mutable]) #:transparent)
+;; Each class record maps each of its method declarations, by eq?, to the
+;; environment that wrote it. A base owns its records and their tables.
+(struct list-class-type
+  (element-parameter [methods #:mutable] method-environments)
+  #:transparent)
+(struct int-class-type ([methods #:mutable] method-environments)
+  #:transparent)
+(struct string-class-type ([methods #:mutable] method-environments)
+  #:transparent)
 (struct symbol-class-type () #:transparent)
 (struct mirror-class-type () #:transparent)
 (struct function-type (parameters result) #:transparent)
@@ -65,10 +73,14 @@
 (struct method-match (method substitution specificity) #:transparent)
 (struct construction-obligation (parameter class type) #:transparent)
 
+;; A class records the environment its define-class form is checked in, where
+;; its field annotations resolve, beside its method table.
 (struct class-info
   (name type-parameters parameter-types protocol fields constructors
         explicit-constructors?
-        [methods #:mutable])
+        [methods #:mutable]
+        environment
+        method-environments)
   #:transparent)
 (struct type-environment
   (bindings parent int-class string-class option-class load-cache)
@@ -105,13 +117,13 @@
 (define (make-type-environment)
   (define list-element-parameter
     (parameter-type (gensym 'T) 'T))
-  (define string-class (string-class-type '()))
-  (define int-class (int-class-type '()))
+  (define string-class (string-class-type '() (make-hasheq)))
+  (define int-class (int-class-type '() (make-hasheq)))
   (type-environment
    (make-hasheq
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
-                (list-class-type list-element-parameter '()))
+                (list-class-type list-element-parameter '() (make-hasheq)))
           (cons 'Int int-class)
           (cons 'String string-class)
           (cons 'Symbol (symbol-class-type))
@@ -701,7 +713,7 @@
        (type-environment-set! environment name value-type)
        VOID]
       [(define-protocol-expr name signatures _)
-       (define protocol (protocol-type name signatures))
+       (define protocol (protocol-type name signatures environment))
        (type-environment-set! environment name protocol)
        (for ([signature (in-list signatures)])
          (check-method-types! signature environment (make-hasheq)))
@@ -833,7 +845,7 @@
           ([field (in-list (constructor-declaration-fields constructor))])
         (type-from-sexpr
          (field-declaration-type field)
-         environment
+         (class-info-environment class)
          substitution)))
     (define clause-environment
       (make-local-type-environment
@@ -848,6 +860,30 @@
       (infer-expression else-body environment result-type))
     (unify-types! else-type result-type "case branch type mismatch"))
   result-type)
+
+;; Library declarations are parsed once and shared by every base, so a method's
+;; environment is recorded in its base's class record, never process-wide.
+(define (record-method-environments! method-environments methods environment)
+  (for ([method (in-list methods)])
+    (hash-set! method-environments method environment)))
+
+;; A method without a record is an internal error. It is not a type error,
+;; which overload matching would read as a candidate that does not apply.
+(define (recorded-method-environment method-environments method)
+  (hash-ref method-environments
+            method
+            (lambda ()
+              (error 'typecheck
+                     "internal error: no recorded environment for method ~a"
+                     (method-declaration-selector method)))))
+
+;; Overload selection asks each candidate for its environment through this.
+(define (recorded-method-environments method-environments)
+  (lambda (method)
+    (recorded-method-environment method-environments method)))
+
+(define (class-method-environment class method)
+  (recorded-method-environment (class-info-method-environments class) method))
 
 (define (check-class-definition!
          name
@@ -891,7 +927,11 @@
      normalized-fields
      normalized-constructors
      (and constructors #t)
-     methods))
+     methods
+     environment
+     (make-hasheq)))
+  (record-method-environments!
+   (class-info-method-environments class) methods environment)
   (type-environment-set! environment name (class-type class))
   (check-constructor-method-collisions! class methods)
   (define substitution
@@ -971,6 +1011,8 @@
      (set-list-class-type-methods!
       target-type
       (append existing-methods methods))
+     (record-method-environments!
+      (list-class-type-method-environments target-type) methods environment)
      (define list-substitution
        (make-hasheq
         (list
@@ -991,6 +1033,8 @@
      (set-string-class-type-methods!
       target-type
       (append existing-methods methods))
+     (record-method-environments!
+      (string-class-type-method-environments target-type) methods environment)
      (for ([method (in-list methods)])
        (define method-substitution
          (extend-method-substitution (make-hasheq) method #t))
@@ -1001,6 +1045,8 @@
      (set-int-class-type-methods!
       target-type
       (append (int-class-type-methods target-type) methods))
+     (record-method-environments!
+      (int-class-type-method-environments target-type) methods environment)
      (for ([method (in-list methods)])
        (define method-substitution
          (extend-method-substitution (make-hasheq) method #t))
@@ -1012,6 +1058,8 @@
      (define existing-methods (class-info-methods class))
      (check-constructor-method-collisions! class methods)
      (set-class-info-methods! class (append existing-methods methods))
+     (record-method-environments!
+      (class-info-method-environments class) methods environment)
      (define substitution
        (make-hasheq
         (map cons
@@ -1047,7 +1095,7 @@
                 (unless
                     (for/or ([method (in-list (class-info-methods class))])
                       (method-signature-conforms?
-                       class method signature environment))
+                       class method protocol signature))
                   (raise-type-error
                    "class ~a does not implement protocol ~a method ~a"
                    (class-info-name class)
@@ -1055,8 +1103,12 @@
                    (method-declaration-selector signature))))))))
       (loop (type-environment-parent current)))))
 
+;; The protocol's annotations resolve in the protocol's environment, the
+;; method's in the method's.
 (define (method-signature-conforms?
-         class method signature environment)
+         class method protocol signature)
+  (define protocol-environment (protocol-type-environment protocol))
+  (define method-environment (class-method-environment class method))
   (and
    (eq? (method-declaration-selector method)
         (method-declaration-selector signature))
@@ -1078,21 +1130,21 @@
        (unify-types!
         (type-from-sexpr
          (parameter-declaration-type required-parameter)
-         environment
+         protocol-environment
          (make-hasheq))
         (type-from-sexpr
          (parameter-declaration-type implementation-parameter)
-         environment
+         method-environment
          method-substitution)))
      ;; Concrete class results may satisfy a protocol result covariantly.
      (unify-types!
       (type-from-sexpr
        (method-declaration-return-type method)
-       environment
+       method-environment
        method-substitution)
       (type-from-sexpr
        (method-declaration-return-type signature)
-       environment
+       protocol-environment
        (make-hasheq)))
      #t)))
 
@@ -1316,9 +1368,11 @@
   (host-crossing-type->type (host-method-return-type method)))
 
 (define (infer-protocol-send protocol selector arguments environment)
+  (define protocol-environment (protocol-type-environment protocol))
   (define selected
     (select-method-overload
      (protocol-type-signatures protocol)
+     (lambda (_signature) protocol-environment)
      selector
      arguments
      environment
@@ -1326,7 +1380,7 @@
      (protocol-type-name protocol)))
   (type-from-sexpr
    (method-declaration-return-type (method-match-method selected))
-   environment
+   protocol-environment
    (method-match-substitution selected)))
 
 (define (infer-new-star receiver-expression bindings environment expected)
@@ -1397,7 +1451,10 @@
       (infer-expression
        (hash-ref expressions name)
        environment
-       (type-from-sexpr (field-declaration-type field) environment substitution)
+       (type-from-sexpr
+        (field-declaration-type field)
+        (class-info-environment class)
+        substitution)
        (format "with field ~a" name))))
   receiver-type)
 
@@ -1442,7 +1499,7 @@
                  expected-instance)
              (type-from-sexpr
               (field-declaration-type field)
-              environment
+              (class-info-environment class)
               inferred)))
       (infer-expression argument environment expected-field-type)))
   (for ([field (in-list fields)]
@@ -1451,7 +1508,6 @@
      class
      (field-declaration-type field)
      argument-type
-     environment
      inferred))
   (define type-arguments
     (for/list ([parameter (in-list (class-info-type-parameters class))])
@@ -1473,8 +1529,9 @@
       resolved-inferred))
   (instance-type class type-arguments))
 
-(define (infer-field-type!
-         class declared-type actual-type environment inferred)
+;; Field annotations resolve in the class form's environment.
+(define (infer-field-type! class declared-type actual-type inferred)
+  (define environment (class-info-environment class))
   (cond
     [(and (symbol? declared-type)
           (hash-has-key? inferred declared-type))
@@ -1496,7 +1553,6 @@
       class
       (cadr declared-type)
       (list-type-element resolved-actual)
-      environment
       inferred)]
     [(and (list? declared-type)
           (pair? declared-type)
@@ -1513,8 +1569,7 @@
                (list (function-type-result resolved-actual))))
      (for ([nested-declared (in-list (cdr declared-type))]
            [nested-actual (in-list actual-parts)])
-       (infer-field-type!
-        class nested-declared nested-actual environment inferred))]
+       (infer-field-type! class nested-declared nested-actual inferred))]
     [(and (list? declared-type)
           (pair? declared-type)
           (symbol? (car declared-type)))
@@ -1534,8 +1589,7 @@
        (for ([nested-declared (in-list (cdr declared-type))]
              [nested-actual
               (in-list (instance-type-arguments resolved-actual))])
-         (infer-field-type!
-          class nested-declared nested-actual environment inferred)))]
+         (infer-field-type! class nested-declared nested-actual inferred)))]
     [else
      (define expected
        (type-from-sexpr declared-type environment (make-hasheq)))
@@ -1557,12 +1611,13 @@
         (length arguments)))
      (type-from-sexpr
       (field-declaration-type field)
-      environment
+      (class-info-environment class)
       (instance-substitution instance))]
     [else
      (define selected
        (select-method-overload
         (class-info-methods class)
+        (recorded-method-environments (class-info-method-environments class))
         selector
         arguments
         environment
@@ -1570,21 +1625,25 @@
         (class-info-name class)))
      (define method (method-match-method selected))
      (define substitution (method-match-substitution selected))
+     (define method-environment (class-method-environment class method))
      (define return-type
        (type-from-sexpr
         (method-declaration-return-type method)
-        environment
+        method-environment
         substitution))
      (when (and (pair? (class-info-type-parameters class))
                 (not (class-info-explicit-constructors? class)))
        (parameterize
            ([current-legacy-deferred-generic-instantiation? #t])
          (check-method-body!
-          instance method environment substitution)))
+          instance method method-environment substitution)))
      return-type]))
 
+;; Each candidate's annotations resolve in the environment
+;; method-environment-of gives it; arguments infer where the send is.
 (define (select-method-overload
-         methods selector arguments environment base-substitution target)
+         methods method-environment-of selector arguments environment
+         base-substitution target)
   (define selector-methods
     (filter
      (lambda (method)
@@ -1605,6 +1664,7 @@
     [(null? (cdr arity-methods))
      (match-sole-method
       (car arity-methods)
+      (method-environment-of (car arity-methods))
       arguments
       environment
       base-substitution
@@ -1618,7 +1678,10 @@
         values
         (for/list ([method (in-list arity-methods)])
           (try-method-match
-           method argument-types environment base-substitution))))
+           method
+           (method-environment-of method)
+           argument-types
+           base-substitution))))
      (unless (pair? matches) (unknown-message selector))
      (define best-specificity
        (apply max (map method-match-specificity matches)))
@@ -1632,7 +1695,8 @@
      (car best-matches)]))
 
 (define (match-sole-method
-         method arguments environment base-substitution target)
+         method method-environment arguments environment base-substitution
+         target)
   (define substitution
     (extend-method-substitution base-substitution method #f))
   (define specificity
@@ -1642,7 +1706,7 @@
       (define expected
         (type-from-sexpr
          (parameter-declaration-type parameter)
-         environment
+         method-environment
          substitution))
       (define actual
         (infer-expression
@@ -1660,7 +1724,7 @@
   (method-match method substitution specificity))
 
 (define (try-method-match
-         method argument-types environment base-substitution)
+         method method-environment argument-types base-substitution)
   (with-handlers ([exn:fail:aloe-type? (lambda (_) #f)])
     (define substitution
       (extend-method-substitution base-substitution method #f))
@@ -1671,7 +1735,7 @@
         (define expected
           (type-from-sexpr
            (parameter-declaration-type parameter)
-           environment
+           method-environment
            substitution))
         (define score (parameter-specificity actual expected))
         (unify-types! actual expected)
@@ -1781,6 +1845,8 @@
   (define selected
     (select-method-overload
      (list-class-type-methods list-class)
+     (recorded-method-environments
+      (list-class-type-method-environments list-class))
      selector
      arguments
      environment
@@ -1790,7 +1856,8 @@
   (define substitution (method-match-substitution selected))
   (type-from-sexpr
    (method-declaration-return-type method)
-   environment
+   (recorded-method-environment
+    (list-class-type-method-environments list-class) method)
    substitution))
 
 (define (infer-function-call function selector arguments environment)
@@ -1854,6 +1921,8 @@
   (define selected
     (select-method-overload
      (int-class-type-methods int-class)
+     (recorded-method-environments
+      (int-class-type-method-environments int-class))
      selector
      arguments
      environment
@@ -1862,7 +1931,8 @@
   (define method (method-match-method selected))
   (type-from-sexpr
    (method-declaration-return-type method)
-   environment
+   (recorded-method-environment
+    (int-class-type-method-environments int-class) method)
    (method-match-substitution selected)))
 
 (define (infer-bool-send selector arguments environment expected)
@@ -1952,6 +2022,8 @@
   (define selected
     (select-method-overload
      (string-class-type-methods string-class)
+     (recorded-method-environments
+      (string-class-type-method-environments string-class))
      selector
      arguments
      environment
@@ -1960,7 +2032,8 @@
   (define method (method-match-method selected))
   (type-from-sexpr
    (method-declaration-return-type method)
-   environment
+   (recorded-method-environment
+    (string-class-type-method-environments string-class) method)
    (method-match-substitution selected)))
 
 (define (infer-symbol-class-send selector arguments environment)
@@ -2115,3 +2188,47 @@
 (module* completion-query-observation #f
   (provide (struct-out selector-receiver-observation)
            typecheck-program/observe-selector-receiver))
+
+;; Tests read the environment each method, class, and protocol recorded through
+;; this hook; nothing else does.
+(module* method-records #f
+  (provide checker-method-records
+           checker-class-environment
+           checker-protocol-environment)
+
+  ;; For the class, or the List, Int, or String class, bound to name: each
+  ;; method's selector and recorded environment, in method order.
+  (define (checker-method-records environment name)
+    (define class (type-environment-ref environment name))
+    (define-values (methods method-environments)
+      (cond
+        [(class-type? class)
+         (define info (class-type-class class))
+         (values (class-info-methods info)
+                 (class-info-method-environments info))]
+        [(list-class-type? class)
+         (values (list-class-type-methods class)
+                 (list-class-type-method-environments class))]
+        [(int-class-type? class)
+         (values (int-class-type-methods class)
+                 (int-class-type-method-environments class))]
+        [(string-class-type? class)
+         (values (string-class-type-methods class)
+                 (string-class-type-method-environments class))]
+        [else
+         (error 'checker-method-records "~a is not a class" name)]))
+    (for/list ([method (in-list methods)])
+      (cons (method-declaration-selector method)
+            (recorded-method-environment method-environments method))))
+
+  (define (checker-class-environment environment name)
+    (define class (type-environment-ref environment name))
+    (unless (class-type? class)
+      (error 'checker-class-environment "~a is not a class" name))
+    (class-info-environment (class-type-class class)))
+
+  (define (checker-protocol-environment environment name)
+    (define protocol (type-environment-ref environment name))
+    (unless (protocol-type? protocol)
+      (error 'checker-protocol-environment "~a is not a protocol" name))
+    (protocol-type-environment protocol)))

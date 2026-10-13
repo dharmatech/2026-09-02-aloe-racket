@@ -21,14 +21,16 @@
 (struct top-level-env
   (bindings parent int-class string-class option-class load-cache))
 (struct dummy-object ())
-(struct list-class-object ([methods #:mutable] [environment #:mutable]))
-(struct int-class-object ([methods #:mutable] [environment #:mutable]))
-(struct string-class-object ([methods #:mutable] [environment #:mutable]))
+;; Each primitive class object maps each of its method declarations, by eq?,
+;; to the environment that wrote it. A base owns its objects and their tables.
+(struct list-class-object ([methods #:mutable] method-environments))
+(struct int-class-object ([methods #:mutable] method-environments))
+(struct string-class-object ([methods #:mutable] method-environments))
 
 (define (make-top-level-env)
-  (define list-class (list-class-object '() #f))
-  (define int-class (int-class-object '() #f))
-  (define string-class (string-class-object '() #f))
+  (define list-class (list-class-object '() (make-hasheq)))
+  (define int-class (int-class-object '() (make-hasheq)))
+  (define string-class (string-class-object '() (make-hasheq)))
   (top-level-env
    (make-hasheq (list (cons 'dummy (dummy-object))
                       (cons 'List list-class)

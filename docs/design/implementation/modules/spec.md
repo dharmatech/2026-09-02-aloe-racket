@@ -12,8 +12,11 @@ implementers. Neither reads the charter or the discussion record.
 While issuing modules 003 the manager corrected the §6.2 `check` error
 text to the one the checker raises (`check` infers its right operand
 against the left's type, so the mismatch surfaces as `type mismatch:
-expected P, got P`). [`SPEC.md`](../../../../SPEC.md) remains language
-law; this series amends it only in the checkpoints §12 names.
+expected P, got P`). While issuing modules 004 the manager corrected
+§6.3's "nothing a program sees changes": a caller's local names stop
+leaking into method annotations and the deferred generic re-check.
+[`SPEC.md`](../../../../SPEC.md) remains language law; this series
+amends it only in the checkpoints §12 names.
 [`docs/workflow.md`](../../../workflow.md) is the process.
 
 This series makes `load` the module system. The spelling stays
@@ -749,8 +752,10 @@ primitive class objects is replaced by the table; `define-methods` on
 A `protocol-type` (checker) and the runtime protocol record from 3b
 each record the environment that wrote the protocol.
 
-In this slice every recorded environment is the shared one, so
-nothing a program sees changes. The suite is the proof.
+In this slice every recorded environment is the shared one, so a
+program sees one change only: a caller's local names (a `let` or `fn`
+parameter) no longer leak into a method's annotations or into the
+deferred re-check of its body. The suite is the proof.
 
 **Evaluator.** A method body runs in a local environment whose parent
 is the method's recorded environment: `apply-method`,

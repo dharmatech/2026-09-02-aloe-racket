@@ -32,7 +32,8 @@
 (struct class-value
   (name type-parameters protocol fields constructors explicit-constructors?
         [methods #:mutable]
-        environment)
+        environment
+        method-environments)
   #:transparent)
 (struct instance-value (class type-arguments constructor field-values)
   #:transparent)
@@ -43,8 +44,9 @@
 (struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
 ;; A protocol's runtime record. Identity is the record; the name serves the
-;; comparisons that still match short names.
-(struct protocol-value (name))
+;; comparisons that still match short names. It records the environment that
+;; wrote it.
+(struct protocol-value (name environment))
 ;; A base's evaluator load cache maps a resolved path to its entry. The state
 ;; is running or completed; exports stay empty until file environments exist.
 (struct evaluator-load-entry (state exports) #:transparent)
@@ -150,7 +152,7 @@
      (define value (eval-expr value-expression environment))
      (env-define! environment name value)]
     [(define-protocol-expr name _ _)
-     (env-define! environment name (protocol-value name))]
+     (env-define! environment name (protocol-value name environment))]
     [(define-class-expr name type-parameters protocol fields constructors methods _)
      (define class-protocol
        (and protocol (lookup-protocol environment protocol)))
@@ -158,6 +160,8 @@
      (define class-constructors
        (or constructors
            (list (constructor-declaration 'new class-fields))))
+     (define method-environments (make-hasheq))
+     (record-method-environments! method-environments methods environment)
      (env-define! environment
                   name
                   (class-value
@@ -168,33 +172,39 @@
                    class-constructors
                    (and constructors #t)
                    methods
-                   environment))]
+                   environment
+                   method-environments))]
     [(define-methods-expr target methods _)
      (define target-class (env-lookup environment target))
-     (cond
-       [(list-class-object? target-class)
-        (set-list-class-object-methods!
-         target-class
-         (append (list-class-object-methods target-class) methods))
-        (set-list-class-object-environment! target-class environment)]
-       [(string-class-object? target-class)
-       (set-string-class-object-methods!
-         target-class
-         (append (string-class-object-methods target-class) methods))
-        (set-string-class-object-environment! target-class environment)]
-       [(int-class-object? target-class)
-        (set-int-class-object-methods!
-         target-class
-         (append (int-class-object-methods target-class) methods))
-        (set-int-class-object-environment! target-class environment)]
-       [(class-value? target-class)
-        (set-class-value-methods!
-         target-class
-         (append (class-value-methods target-class) methods))]
-       [else
-        (error 'eval-aloe
-               "define-methods target is not a class: ~a"
-               target)])]
+     (define method-environments
+       (cond
+         [(list-class-object? target-class)
+          (set-list-class-object-methods!
+           target-class
+           (append (list-class-object-methods target-class) methods))
+          (list-class-object-method-environments target-class)]
+         [(string-class-object? target-class)
+          (set-string-class-object-methods!
+           target-class
+           (append (string-class-object-methods target-class) methods))
+          (string-class-object-method-environments target-class)]
+         [(int-class-object? target-class)
+          (set-int-class-object-methods!
+           target-class
+           (append (int-class-object-methods target-class) methods))
+          (int-class-object-method-environments target-class)]
+         [(class-value? target-class)
+          (set-class-value-methods!
+           target-class
+           (append (class-value-methods target-class) methods))
+          (class-value-method-environments target-class)]
+         [else
+          (error 'eval-aloe
+                 "define-methods target is not a class: ~a"
+                 target)]))
+     ;; The appended methods run where this form is evaluated; earlier
+     ;; methods keep the environment that wrote them.
+     (record-method-environments! method-environments methods environment)]
     [(fn-expr parameters body _)
      (function-value parameters body environment)]
     [(case-expr scrutinee clauses else-body _)
@@ -215,6 +225,21 @@
   (unless (protocol-value? protocol)
     (error 'eval-aloe "~a is not a protocol" name))
   protocol)
+
+;; A class record's table maps each method declaration, by eq?, to the
+;; environment that wrote it. Library declarations are parsed once and shared
+;; by every base, so the table lives on each base's record.
+(define (record-method-environments! method-environments methods environment)
+  (for ([method (in-list methods)])
+    (hash-set! method-environments method environment)))
+
+(define (recorded-method-environment method-environments method)
+  (hash-ref method-environments
+            method
+            (lambda ()
+              (error 'eval-aloe
+                     "internal error: no recorded environment for method ~a"
+                     (method-declaration-selector method)))))
 
 ;; The short name of a class's protocol, or #f for a class without one.
 (define (class-value-protocol-name class)
@@ -279,11 +304,11 @@
     [(class-value? receiver)
      (construct-instance receiver selector arguments)]
     [(instance-value? receiver)
-     (send-to-instance receiver selector arguments environment)]
+     (send-to-instance receiver selector arguments)]
     [(function-value? receiver)
      (send-to-function receiver selector arguments)]
     [(list-value? receiver)
-     (send-to-list receiver selector arguments environment)]
+     (send-to-list receiver selector arguments)]
     [(host-receiver? receiver)
      (host-result->aloe-value
       (host-receiver-send
@@ -1048,7 +1073,7 @@
     [(or (runtime-list-type? left) (runtime-list-type? right)) #f]
     [else (eq? left right)]))
 
-(define (send-to-instance instance selector arguments [environment #f])
+(define (send-to-instance instance selector arguments)
   (define class (instance-value-class instance))
   (define fields (class-value-fields class))
   (define field-index
@@ -1071,13 +1096,13 @@
         (lambda (method resolve-environment)
           (instance-method-specificity
            instance class method arguments resolve-environment))
-        environment))
+        (class-value-method-environments class)))
      (apply-method
       instance class (runtime-method-match-method selected) arguments)]))
 
 (define (select-runtime-method
          methods selector arguments target method-specificity
-         [environment #f])
+         method-environments)
   (define selector-methods
     (filter
      (lambda (method)
@@ -1094,14 +1119,16 @@
     (error 'eval-aloe
            "arity error for ~a method ~a: no overload accepts ~a argument(s)"
            target selector (length arguments)))
-  ;; A single candidate compares short names. With more than one, parameter
-  ;; annotations resolve in the environment of the send, when there is one.
-  (define resolve-environment
-    (and (pair? (cdr arity-methods)) environment))
+  ;; A single candidate compares short names. With more than one, each
+  ;; candidate's parameter annotations resolve in its recorded environment.
+  (define several? (pair? (cdr arity-methods)))
   (define matches
     (filter
      values
      (for/list ([method (in-list arity-methods)])
+       (define resolve-environment
+         (and several?
+              (recorded-method-environment method-environments method)))
        (define specificity (method-specificity method resolve-environment))
        (and specificity
             (runtime-method-match method specificity)))))
@@ -1272,7 +1299,10 @@
                      [argument (in-list arguments)])
             (cons (parameter-declaration-name parameter) argument))))
   (eval-expr (method-declaration-body method)
-             (make-local-env (class-value-environment class) bindings)))
+             (make-local-env
+              (recorded-method-environment
+               (class-value-method-environments class) method)
+              bindings)))
 
 (define (check-generic-method-arguments receiver class method arguments)
   (unless (null? (class-value-type-parameters class))
@@ -1347,7 +1377,7 @@
   (eval-expr (function-value-body function)
              (make-local-env (function-value-environment function) bindings)))
 
-(define (send-to-list list-object selector arguments [environment #f])
+(define (send-to-list list-object selector arguments)
   (define elements (list-value-elements list-object))
   (case selector
     [(empty?)
@@ -1380,9 +1410,9 @@
        (arity-error "List len" 0 (length arguments)))
      (vector-length elements)]
     [else
-     (send-to-list-method list-object selector arguments environment)]))
+     (send-to-list-method list-object selector arguments)]))
 
-(define (send-to-list-method receiver selector arguments environment)
+(define (send-to-list-method receiver selector arguments)
   (define class (list-value-class receiver))
   (define type-bindings
     (make-hasheq
@@ -1396,7 +1426,7 @@
      (lambda (method resolve-environment)
        (method-arguments-specificity
         method arguments (hash-copy type-bindings) resolve-environment))
-     environment))
+     (list-class-object-method-environments class)))
   (define method (runtime-method-match-method selected))
   (apply-list-method receiver method arguments))
 
@@ -1415,7 +1445,10 @@
             (cons (parameter-declaration-name parameter) argument))))
   (eval-expr
    (method-declaration-body method)
-   (make-local-env (list-class-object-environment class) bindings)))
+   (make-local-env
+    (recorded-method-environment
+     (list-class-object-method-environments class) method)
+    bindings)))
 
 (define (send-to-int receiver selector arguments [environment #f])
   (cond
@@ -1456,7 +1489,7 @@
      (lambda (method resolve-environment)
        (method-arguments-specificity
         method arguments (make-hasheq) resolve-environment))
-     environment))
+     (int-class-object-method-environments class)))
   (apply-int-method
    receiver class (runtime-method-match-method selected) arguments))
 
@@ -1474,7 +1507,10 @@
             (cons (parameter-declaration-name parameter) argument))))
   (eval-expr
    (method-declaration-body method)
-   (make-local-env (int-class-object-environment class) bindings)))
+   (make-local-env
+    (recorded-method-environment
+     (int-class-object-method-environments class) method)
+    bindings)))
 
 (define (send-to-float receiver selector arguments)
   (define operation
@@ -1645,7 +1681,7 @@
      (lambda (method resolve-environment)
        (method-arguments-specificity
         method arguments (make-hasheq) resolve-environment))
-     environment))
+     (string-class-object-method-environments class)))
   (apply-string-method
    receiver class (runtime-method-match-method selected) arguments))
 
@@ -1663,7 +1699,10 @@
             (cons (parameter-declaration-name parameter) argument))))
   (eval-expr
    (method-declaration-body method)
-   (make-local-env (string-class-object-environment class) bindings)))
+   (make-local-env
+    (recorded-method-environment
+     (string-class-object-method-environments class) method)
+    bindings)))
 
 (define (number-argument kind selector arguments expected-kind?)
   (unless (= (length arguments) 1)
@@ -1797,3 +1836,36 @@
      (eq? left right)]
     [(and (void? left) (void? right)) #t]
     [else (eq? left right)]))
+
+;; Tests read the environment each method and protocol recorded through this
+;; hook; nothing else does.
+(module* method-records #f
+  (provide evaluator-method-records
+           evaluator-protocol-environment)
+
+  ;; For the class, or the List, Int, or String class object, bound to name:
+  ;; each method's selector and recorded environment, in method order.
+  (define (evaluator-method-records environment name)
+    (define class (env-lookup environment name))
+    (define-values (methods method-environments)
+      (cond
+        [(class-value? class)
+         (values (class-value-methods class)
+                 (class-value-method-environments class))]
+        [(list-class-object? class)
+         (values (list-class-object-methods class)
+                 (list-class-object-method-environments class))]
+        [(int-class-object? class)
+         (values (int-class-object-methods class)
+                 (int-class-object-method-environments class))]
+        [(string-class-object? class)
+         (values (string-class-object-methods class)
+                 (string-class-object-method-environments class))]
+        [else
+         (error 'evaluator-method-records "~a is not a class" name)]))
+    (for/list ([method (in-list methods)])
+      (cons (method-declaration-selector method)
+            (recorded-method-environment method-environments method))))
+
+  (define (evaluator-protocol-environment environment name)
+    (protocol-value-environment (lookup-protocol environment name))))
