@@ -175,7 +175,10 @@
           (define datum (read in))
           (if (eof-object? datum) (reverse result) (loop (cons datum result)))))))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-  (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
+  (check-equal? (take datums 3)
+                '((load "editor.aloe")
+                  (load "../../lib/text.aloe")
+                  (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)

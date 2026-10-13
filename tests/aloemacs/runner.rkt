@@ -21,6 +21,9 @@
 
 (define expected-main-datums
   '((load "file.aloe")
+    (load "editor.aloe")
+    (load "../../lib/text.aloe")
+    (load "../../lib/fs.aloe")
     (define aloemacs-editor
       (let ((initial-buffer
               (AloemacsBuffer new*
@@ -168,7 +171,7 @@
    size-calls
    events))
 
-(test-case "main has exactly the source-relative load and empty starting state"
+(test-case "main has exactly the source-relative loads and empty starting state"
   (check-equal? (source-datums main-path) expected-main-datums))
 
 (test-case "main loads an exact checked starting state into only one driver"

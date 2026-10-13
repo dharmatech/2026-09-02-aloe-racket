@@ -181,7 +181,10 @@
 (test-case "exact fourteen fields, helper signatures, command and production map inventories"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (define (declaration name) (findf (lambda (d) (equal? (cadr d) name)) datums))
-  (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
+  (check-equal? (take datums 3)
+                '((load "editor.aloe")
+                  (load "../../lib/text.aloe")
+                  (load "../../lib/fs.aloe")))
   (check-equal? (map cadr (filter (lambda (d) (eq? (car d) 'define-class)) datums))
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand

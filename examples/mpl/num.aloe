@@ -1,3 +1,5 @@
+(load "math.aloe")
+
 (define-class Num Math
   (fields
     (value Int))

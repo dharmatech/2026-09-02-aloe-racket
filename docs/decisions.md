@@ -276,3 +276,9 @@ the evaluator; the checker compares bytes and rejects a changed file; the
 evaluator reuses by path. Rejected: a process-wide cache, a
 modification-time criterion, a byte comparison in the evaluator, and any
 reload of an edited file.
+
+## Explicit loads (2026-10-13)
+
+Decided: every census file loads each file whose names it uses;
+`Math` lives in `examples/mpl/math.aloe`. Rejected: a barrel file and a
+checker that walks identifiers.

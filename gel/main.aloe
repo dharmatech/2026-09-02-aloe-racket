@@ -1,6 +1,7 @@
 ;; Gel's interactive loop. The host only injects `term` and starts this call.
 
 (load "loop.aloe")
+(load "stack.aloe")
 
 (define-class GelMain
   (fields)

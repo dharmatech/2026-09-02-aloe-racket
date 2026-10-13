@@ -1,6 +1,6 @@
 # modules
 
-**Status: Spec accepted 2026-10-13. modules 000 implemented, manager-reviewed, and accepted 2026-10-13.**
+**Status: Spec accepted 2026-10-13. modules 000 implemented and accepted (5d435a5). modules 001 implemented, manager-reviewed, and accepted 2026-10-13.**
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -12,7 +12,8 @@ Language change. `load` becomes the module system. Not an aloemacs feature layer
 |---|---|
 | [`charter.md`](charter.md) | Whole assignment for the designer |
 | [`spec.md`](spec.md) | Written 2026-10-12, accepted for checkpoint planning 2026-10-13. Design authority for the manager and the implementers |
-| [`checkpoints/000-run-once.md`](checkpoints/000-run-once.md) | Implemented 2026-10-13, manager-reviewed, accepted, and committed: the per-base load cache in the checker and the evaluator, the changed-bytes error, keyed roots, and the list, string, and int seeds. The shared environment stays. `tests/modules/000-run-once.rkt` 13/13; the whole suite green at 220 files, 2872 tests |
+| [`checkpoints/000-run-once.md`](checkpoints/000-run-once.md) | Implemented 2026-10-13, manager-reviewed, accepted, committed as 5d435a5: the per-base load cache in the checker and the evaluator, the changed-bytes error, keyed roots, and the list, string, and int seeds. The shared environment stays. `tests/modules/000-run-once.rkt` 13/13; the whole suite green at 220 files, 2872 tests |
+| [`checkpoints/001-explicit-loads.md`](checkpoints/001-explicit-loads.md) | Implemented 2026-10-13, manager-reviewed, accepted, and committed: the explicit-load layer, not split by tree. Every census file loads each file whose names it uses; `Math` moves to `examples/mpl/math.aloe`; the census test `tests/modules/001-census.rkt`; 17 pins. Inventory from a scratch census and a scratch suite run. Census 44/44; the whole suite green at 221 files, 2916 tests |
 
 Series identity is `modules`. Checkpoint 000 is spoken **modules 000** and will be filed as `checkpoints/000-run-once.md`. Numbers are three digits, start at 000, and are never renumbered. The checkpoint manager writes one checkpoint, then stops.
 
@@ -24,10 +25,10 @@ A load copies the names the loaded file defines, in a file and at the prompt. A 
 
 Code and tests live in the project root. Tests for this series live under `tests/modules/`.
 
-Next step: a checkpoint-manager conversation writes `checkpoints/001-…` for the explicit-load layer (spec §5) and stops.
+Next step: a checkpoint-manager conversation writes `checkpoints/002-…` for slice 3a (`Option` on the base, and the base-library query; spec §6.1) and stops.
 
 ```text
 Read docs/workflow.md. You are the checkpoint manager. Your assignment is
-docs/design/implementation/modules/spec.md. modules 000 is implemented and
-accepted. Write the next checkpoint and stop.
+docs/design/implementation/modules/spec.md. modules 000 and 001 are
+implemented and accepted. Write the next checkpoint and stop.
 ```

@@ -1,3 +1,5 @@
+(load "math.aloe")
+
 (define-class Sym Math
   (fields
     (name String))

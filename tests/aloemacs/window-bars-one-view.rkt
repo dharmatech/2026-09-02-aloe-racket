@@ -154,7 +154,10 @@
 (test-case "bar types, rejections, shapes and a capability-free checked load"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-  (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
+  (check-equal? (take datums 3)
+                '((load "editor.aloe")
+                  (load "../../lib/text.aloe")
+                  (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView
       AloemacsWindowTree AloemacsWindowRect AloemacsWindows AloemacsCommand

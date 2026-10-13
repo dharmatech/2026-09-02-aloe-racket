@@ -1,4 +1,5 @@
 (load "core.aloe")
+(load "sym.aloe")
 
 (define x (Sym new "x"))
 (define y (Sym new "y"))

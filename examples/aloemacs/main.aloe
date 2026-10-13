@@ -1,4 +1,7 @@
 (load "file.aloe")
+(load "editor.aloe")
+(load "../../lib/text.aloe")
+(load "../../lib/fs.aloe")
 
 (define aloemacs-editor
   (let ((initial-buffer

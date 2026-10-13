@@ -1,3 +1,6 @@
+(load "math.aloe")
+(load "num.aloe")
+
 (define-class Prod Math
   (fields
     (coeff Int)

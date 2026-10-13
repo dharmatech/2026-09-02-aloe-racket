@@ -1,0 +1,12 @@
+(define-protocol Math
+  (show () String)
+  (math-name () String)
+  (same-term? (other Math) Bool)
+  (coeff-plus (other Math) Math)
+  (factor-base () Math)
+  (factor-exp () Int)
+  (^ (n Int) Math)
+  (* (other Math) Math)
+  (* (n Int) Math)
+  (+ (n Int) Math)
+  (+ (other Math) Math))

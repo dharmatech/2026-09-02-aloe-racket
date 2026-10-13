@@ -1,4 +1,5 @@
 (load "command.aloe")
+(load "keymap.aloe")
 
 (define-class Runner
   (fields)

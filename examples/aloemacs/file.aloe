@@ -1,4 +1,5 @@
 (load "editor.aloe")
+(load "../../lib/text.aloe")
 (load "../../lib/fs.aloe")
 
 (define-class AloemacsPrompt

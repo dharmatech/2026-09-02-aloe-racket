@@ -131,7 +131,10 @@
 (test-case "types, arities, declared shapes, an ASCII source and a capability-free load"
   (define datums (call-with-input-file file-path (lambda (in) (port->list read in))))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) datums))
-  (check-equal? (take datums 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
+  (check-equal? (take datums 3)
+                '((load "editor.aloe")
+                  (load "../../lib/text.aloe")
+                  (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes) class-list)
   (define line (findf (lambda (d) (eq? (cadr d) 'AloemacsModeLine)) classes))
   (check-equal? (caddr line) '(fields))

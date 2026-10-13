@@ -465,7 +465,10 @@
   (define source (datums file-path))
   (define classes (filter (lambda (d) (eq? (car d) 'define-class)) source))
   (define (decl name) (findf (lambda (d) (equal? (cadr d) name)) classes))
-  (check-equal? (take source 2) '((load "editor.aloe") (load "../../lib/fs.aloe")))
+  (check-equal? (take source 3)
+                '((load "editor.aloe")
+                  (load "../../lib/text.aloe")
+                  (load "../../lib/fs.aloe")))
   (check-equal? (map cadr classes)
     '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsModeLine AloemacsLeafPicture AloemacsView AloemacsWindowTree
       AloemacsWindowRect AloemacsWindows AloemacsCommand (AloemacsKeymap B)

@@ -1,6 +1,7 @@
 ;; Gel's pure key step. Terminal input is a skin that supplies a String.
 
 (load "stack.aloe")
+(load "menu.aloe")
 
 (define-class GelStep
   (fields

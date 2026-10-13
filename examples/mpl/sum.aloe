@@ -1,3 +1,5 @@
+(load "math.aloe")
+
 (define-class Sum Math
   (fields
     (terms (List Math))
