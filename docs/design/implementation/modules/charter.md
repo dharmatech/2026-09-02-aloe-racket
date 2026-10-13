@@ -203,7 +203,10 @@ field of the type environment and a field of the runtime
 environment. `make-driver` has one of each.
 `make-type-environment` and `make-top-level-env` in
 `aloe/main.rkt` are bases and carry the same fields. A cache
-stored only on the driver struct misses the suite. A new
+stored only on the driver struct misses the suite. A child
+environment has no cache of its own. File environments and
+local environments defer to the root base's cache. A
+per-file cache is the wrong lifetime. A new
 driver, and each hover query's fresh type environment,
 starts with an empty cache. The list, string, and int
 installs then record `lib/list.aloe`, `lib/string.aloe`, and
@@ -285,7 +288,9 @@ a `load` evaluated there, copy the loaded file's local
 table: its own definitions and the exports of the files it
 directly loads. They do not copy names those files only
 received from their own loads. A second root copies into the
-same interactive environment.
+same interactive environment. A cache hit of one of these
+loads still copies that local table and does not evaluate
+the file again.
 
 `eval-source` and `typecheck-source` follow this split. A
 call with `#:source-path` checks and evaluates that program
@@ -293,8 +298,9 @@ as a file module, the same as `driver-load-file!` and a
 `driver-load-port!` that carries a path. A call with no
 source path evaluates in the interactive environment, the
 same as an unkeyed port. When the caller is the interactive
-environment, the root file's own definitions are copied
-there, so a later form in that environment sees them.
+environment, the root file's local table is copied there,
+the same table `driver-load-file!` copies, so a later form
+in that environment sees it.
 `tests/checkpoint-18.rkt` evaluates `boids.aloe` with its
 source path and then evaluates `(demo step)`.
 `tests/checkpoint-52.rkt` evaluates `identities.aloe` with
@@ -532,11 +538,20 @@ class record references that record. For a class parameter,
 the evaluator looks the annotation up in the method's
 environment and compares class records with `eq?`. Classes
 are already bound there, so that lookup adds no new
-binding. A sole method, `Mirror invoke`, and `Signature
-accepts?` keep today's comparison of an annotation symbol
-to the short name. A sole method is safe because the
-checker has already rejected the other class. This series
-does not change those three.
+binding. That method environment does not exist during the
+overload slice in §4.10. That slice resolves the annotation
+in the one shared environment, in the checker and the
+evaluator, and compares records with `eq?`. It does not
+read the class's stored environment. The file-environment
+checkpoint retargets the lookup to the method record. A
+protocol parameter follows the same split: the overload
+slice finds the protocol record in the shared environment,
+and the file-environment checkpoint finds it through the
+method record. A sole method, `Mirror invoke`, and
+`Signature accepts?` keep today's comparison of an
+annotation symbol to the short name. A sole method is safe
+because the checker has already rejected the other class.
+This series does not change those three.
 
 This lands in the visibility layer. The reproduction is
 `matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
@@ -596,10 +611,18 @@ reuse.
    splits this layer. Installing `Option`, and overload
    identity, are earlier slices. Each may be its own
    checkpoint, or they may share one, and both finish before
-   file environments. File environments, the two copy rules,
-   collisions, method and protocol records, and root-end
-   conformance are one checkpoint, so the suite stays green.
-That checkpoint is not split further.
+   file environments. The overload slice resolves annotations
+   in the shared environment, as §4.8 says. File
+   environments, the two copy rules, collisions, method and
+   protocol records, and root-end conformance are one
+   checkpoint, so the suite stays green. That checkpoint is
+   not split further. The spec stages the work inside it, in
+   this order, so one implementer can pace it without opening
+   another number: file environments and the two copy rules,
+   then collisions, then method and protocol records, then
+   root-end conformance. The checkpoint is complete when the
+   suite is green. If the implementer proves the checkpoint
+   too big, the implementer stops and sends it back.
    This layer updates a test entry point only when §4.4 says
    the root's table lacks the name, and it may find none.
    The spec's own tests show a load of `editor.aloe` does not
@@ -737,9 +760,10 @@ Intended order: run-once in the shared environment; explicit
 loads while file-to-file inclusion remains, including the
 loads §4.4 names and the move of `Math` to its own file;
 within visibility, `Option` on the base and overload
-identity before file environments, non-re-export, method
-records, and root-end conformance, with the interactive
-environment still receiving each root's local table;
+identity, resolving annotations in the shared environment,
+before file environments, non-re-export, method records,
+and root-end conformance, with the interactive environment
+still receiving each root's local table;
 defining paths in mismatches and hover, as their own layer;
 adoption of Aloemacs, last, issued only when the human asks.
 
