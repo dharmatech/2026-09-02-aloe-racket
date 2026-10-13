@@ -10,10 +10,9 @@ assignment. Specification will live beside this file as
 
 **Your job.** Write the specification for **modules**. `load`
 stays the only spelling. A path runs once per driver base.
-Inside a file, the names that come back are the names that
-file itself defines. The interactive environment instead
-receives each loaded root's local table, and a second root
-unions there. A program with a source path is a file module.
+A load copies the names the loaded file defines, in a file
+and at the prompt. A second root unions into the interactive
+environment. A program with a source path is a file module.
 The resolved path is the module. Then **stop**.
 Do not write checkpoints. Do not implement.
 
@@ -79,14 +78,15 @@ tool, or a reload design is a defect in this document.
 | `aloe/driver.rkt` `driver-prepare!` | Typechecks a datum and returns a thunk. `host/racket/aloemacs-run.rkt` runs that thunk later. The first run reads a loaded file again |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
-`gel/main.aloe` uses `GelStack`, and `gel-run` uses
-`gel-empty-stack`. The explicit-load census makes
-`gel/main.aloe` load `stack.aloe`. `gel/loop.aloe` uses
-`GelRow` and `gel-rows`, so the census makes it load
-`menu.aloe`. `file.aloe` uses `Text` and `Position`, so the
-census makes it load `lib/text.aloe`. `core.aloe` and the
-MPL class files load the new Math file. `identities.aloe`
-loads `sym.aloe`. The spec writes those dependencies.
+`gel/main.aloe` uses `GelStack`, so the census makes it
+load `stack.aloe`. `gel-run`, checkpoint 65, and checkpoint
+86 use `gel-empty-stack`, so each loads `stack.aloe` too.
+`gel/loop.aloe` uses `GelRow` and `gel-rows`, so the census
+makes it load `menu.aloe`. `file.aloe` uses `Text` and
+`Position`, so the census makes it load `lib/text.aloe`.
+`core.aloe` and the MPL class files load the new Math file.
+`identities.aloe` loads `sym.aloe`. The spec writes those
+dependencies.
 `AloemacsWindowRect` is defined in `file.aloe`,
 `UndoFrame` in `editor.aloe`, and `Span` in `lib/text.aloe`.
 Tests reach them today through one shared environment.
@@ -111,12 +111,12 @@ The specification is wrong unless all of these are true:
    load introduces. The `text.aloe` / `fs.aloe` loads of
    `option.aloe` stay, and after the visibility layer they
    are one cached class.
-2. After the visibility layer, a file that loads
-   `editor.aloe` does not receive `Span`. `Option` is the
-   base class from `lib/option.aloe`. A load of that file
-   is that same class, not a second one. `main.aloe`
-   and `editor.aloe` name the files that define the names
-   they use, as do `file.aloe`, `gel/loop.aloe`,
+2. After the visibility layer, a load of `editor.aloe`
+   does not bind `Span`, in a file or at the prompt.
+   `Option` is the base class from `lib/option.aloe`. A load
+   of that file is that same class, not a second one.
+   `main.aloe` and `editor.aloe` name the files that define
+   the names they use, as do `file.aloe`, `gel/loop.aloe`,
    `identities.aloe`, and the MPL files in §4.4. A base name
    is already present. `main.aloe`
    does not load `lib/option.aloe` for `Option`. A method
@@ -132,21 +132,24 @@ The specification is wrong unless all of these are true:
    method, `Mirror invoke`, and `Signature accepts?` keep
    today's short-name comparison. A sole method is safe
    because the checker has already rejected the other class.
-3. `gel-run` still uses a name from each of its two roots.
-   `GelStack`'s `matching-picks`, added in `gel/loop.aloe`,
-   runs where `GelPicks` and `GelPick` are bound. `GelRow`
-   and `gel-rows` resolve because that file loads
-   `menu.aloe`. A second
-   `define` or `define-class` at the prompt, and through
-   `driver-eval!`, still replaces.
-4. A driver that loaded only `main.aloe` sees the export
-   tables of the files `main.aloe` loads directly, including
-   files the explicit-load layer added. The visibility layer
-   adds a load to a test entry point only when that root's
-   table lacks a name the test uses, and it may find none.
-   Adoption lists the entry points that break when a split
-   stops a loaded file from exporting a name `main.aloe`
-   does not use.
+3. `gel-run` loads each file that defines a name its
+   expression uses. `gel-main` comes from `gel/main.aloe`,
+   `Point` from `examples/point.aloe`, and `gel-empty-stack`
+   from `stack.aloe`. Checkpoints 65 and 86 load `stack.aloe`
+   for the same name. `GelStack`'s `matching-picks`, added
+   in `gel/loop.aloe`, runs where `GelPicks` and `GelPick`
+   are bound. `GelRow` and `gel-rows` resolve because that
+   file loads `menu.aloe`. A second `define` or
+   `define-class` at the prompt, and through `driver-eval!`,
+   still replaces.
+4. A driver that loaded only `main.aloe` sees the names
+   `main.aloe` defines. A test entry point that uses a name
+   the loaded root does not define loads the file that
+   defines it. The visibility layer lists those entry
+   points. `UndoFrame`, `Span`, and `EditResult` are that
+   shape. This charter does not freeze the list. Adoption's
+   entry points are read from the tree on the day the human
+   asks, as §4.11 says.
 5. A mismatch and a hover print the repository-relative path
    of every class that has one. A class the queried buffer
    defines reports that document's path, not the temporary
@@ -191,8 +194,8 @@ and no prefix clause. The sketch at
 rejected spelling.
 
 Run-once lands first, while a load still writes nested names
-into the caller's environment. The file-to-file rule in §4.4
-lands after every current file use has an explicit load.
+into the caller's environment. The copy rule in §4.4 lands
+after every current file use has an explicit load.
 
 ### 4.2 Once per driver base
 
@@ -264,55 +267,57 @@ the resolved path. A barrel file is out of scope.
 
 ### 4.4 What a load returns
 
-This split lands at the visibility layer. modules 000 still
+This rule lands at the visibility layer. modules 000 still
 includes.
 
 A file module has its own environment in the checker and the
-evaluator. The parent is the base in §4.5. A `(load)` inside
-a file copies that file's own `define`, `define-class`, and
+evaluator. The parent is the base in §4.5. A load copies
+that file's own `define`, `define-class`, and
 `define-protocol` bindings into the loader, and nothing it
-only received from its own loads. `define-methods` binds no
-name. The loaded file keeps those received names, so its
-methods can see them. A method body runs in the writing
-file's environment, as §4.8 locks. The environment stored
-on the class is not the one used for a method added later.
-A cache hit still copies the loaded file's own definitions
-into the loader. It does not evaluate the file again.
-Copying the same cached definition again is not the
-collision in §4.6.
+only received from its own loads. The prompt, a file,
+`driver-load-file!`, a keyed port, and `eval-source` or
+`typecheck-source` follow that rule. `define-methods` binds
+no name. The loaded file keeps the names it received from
+its own loads, so its methods can see them. A method body
+runs in the writing file's environment, as §4.8 locks. The
+environment stored on the class is not the one used for a
+method added later. A cache hit still copies the loaded
+file's own definitions into the loader. It does not
+evaluate the file again. Copying the same cached definition
+again is not the collision in §4.6.
 
 The interactive environment is not a file. Its parent is the
 base. The REPL, `driver-eval!`, and an unkeyed
-`driver-load-port!` evaluate there. `driver-load-file!`, and
-a `load` evaluated there, copy the loaded file's local
-table: its own definitions and the exports of the files it
-directly loads. They do not copy names those files only
-received from their own loads. A second root copies into the
-same interactive environment. A cache hit of one of these
-loads still copies that local table and does not evaluate
-the file again.
+`driver-load-port!` evaluate there. A load evaluated there
+copies the loaded file's own definitions, the same copy a
+file receives. A second root copies into the same
+interactive environment. A cache hit still copies those
+definitions and does not evaluate the file again.
 
-`eval-source` and `typecheck-source` follow this split. A
+`eval-source` and `typecheck-source` follow this rule. A
 call with `#:source-path` checks and evaluates that program
 as a file module, the same as `driver-load-file!` and a
 `driver-load-port!` that carries a path. A call with no
 source path evaluates in the interactive environment, the
 same as an unkeyed port. When the caller is the interactive
-environment, the root file's local table is copied there,
-the same table `driver-load-file!` copies, so a later form
-in that environment sees it.
+environment, the root file's own definitions are copied
+there, the same names `driver-load-file!` copies, so a later
+form in that environment sees them.
 `tests/checkpoint-18.rkt` evaluates `boids.aloe` with its
-source path and then evaluates `(demo step)`.
-`tests/checkpoint-52.rkt` evaluates `identities.aloe` with
-its source path and then uses `x`.
-`tests/checkpoint-81.rkt` evaluates a `load` of
-`gel/loop.aloe` with no source path and then sends
-`gel-rows`.
+source path and then evaluates `(demo step)`. `demo` is
+defined in that file. `tests/checkpoint-52.rkt` evaluates
+`identities.aloe` with its source path and then uses `x`.
+`x` is defined in that file. `tests/checkpoint-81.rkt`
+evaluates a `load` of `gel/loop.aloe` with no source path
+and then sends `gel-rows` and uses `gel-empty-stack`. The
+visibility layer makes that test load `menu.aloe` for
+`gel-rows` and `stack.aloe` for `gel-empty-stack`.
 
 The explicit-load census makes these loads. `gel/main.aloe`
-uses `GelStack`, so it loads `stack.aloe`. That file's
-table includes `gel-empty-stack`. `gel/loop.aloe` uses
-`GelRow` and `gel-rows`, which `menu.aloe` defines, so
+uses `GelStack`, so it loads `stack.aloe`. `gel-empty-stack`
+is defined in `stack.aloe`. `gel-run`, checkpoint 65, and
+checkpoint 86 load that file to use the name. `gel/loop.aloe`
+uses `GelRow` and `gel-rows`, which `menu.aloe` defines, so
 `loop.aloe` loads `menu.aloe`. `GelPicks` and `GelPick` are
 defined in `loop.aloe`. `file.aloe` uses `Text` and
 `Position`, so it loads `lib/text.aloe`. It already loads
@@ -332,25 +337,23 @@ stays an error. This layer does not split `file.aloe`.
 Adding the `lib/text.aloe` load is not that split.
 
 The visibility layer adds a load of the defining file to a
-test entry point only when the loaded root's table lacks a
+test entry point when the loaded root does not define a
 name the test uses. After the explicit-load layer,
 `main.aloe` loads `editor.aloe`, `lib/text.aloe`, and
 `lib/fs.aloe` directly, because it uses `AloemacsEditor`,
 `Text`, `Position`, `Path`, and `Fs`. It does not load
 `lib/option.aloe` for `Option`. `Option` is the base class
-from the visibility layer. Those export tables include
-`UndoFrame`, `Span`, and `EditResult`, so a driver that
-loaded only `main.aloe` still sees them, and this layer may
-find no entry point to edit. Adoption lists the entry points
-that break when a split stops a loaded file from exporting
-a name the root does not use. The spec finds them. This
-charter does not freeze the list.
+from the visibility layer. A driver that loaded only
+`main.aloe` does not see `UndoFrame`, `Span`, or
+`EditResult`. A test that uses one of those names loads the
+file that defines it. The spec lists those entry points.
+This charter does not freeze the list.
 
 The file-environment checkpoint's `SPEC.md` sentence and its
-`docs/decisions.md` entry state both meanings with one
-example: a file that loads `editor.aloe` does not receive
-`Span`, and the same form at the prompt receives
-`editor.aloe`'s local table, which includes `Span`.
+`docs/decisions.md` entry state the rule with one example:
+a load of `editor.aloe` binds the names `editor.aloe`
+defines, in a file and at the prompt. `Span` is bound by a
+load of `lib/text.aloe`.
 
 ### 4.5 The base
 
@@ -566,7 +569,8 @@ A sole method, `Mirror invoke`, and
 `Signature accepts?` keep today's comparison of an
 annotation symbol to the short name. A sole method is safe
 because the checker has already rejected the other class.
-This series does not change those three.
+This series does not change those three. §4.12 records
+that comparison as later work.
 
 This lands in the visibility layer. The reproduction is
 `matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
@@ -618,10 +622,13 @@ reuse.
    that pins `file.aloe`'s leading load datums, and updates
    those pins. It stores no count in prose. This layer does
    not split `file.aloe` and does not drop prefixes. Its
-   acceptance is the census and a green suite. There is no
-   second checker that walks identifiers. The visibility
-   layer going green is the proof the census was complete.
-   The spec writer may split this layer by tree.
+   acceptance is the census and a green suite. The language
+   gains no checker that walks identifiers. This layer may
+   include a Racket test that checks each census file's free
+   names against the base, that file's own definitions, and
+   its direct loads. The visibility layer going green remains
+   the proof that file environments accept the suite. The
+   spec writer may split this layer by tree.
 3. **Visibility.** §4.4, §4.5, §4.6, and §4.8. The spec
    splits this layer. These slices finish before file
    environments, and each leaves the suite green. Installing
@@ -636,8 +643,8 @@ reuse.
    records, so the walk uses the recorded environments. The
    spec does not fold method records or the conformance walk
    into the file-environment checkpoint. The checkpoint that
-   is not split further is file environments and the two
-   copy rules. If the implementer proves that checkpoint too
+   is not split further is file environments and the copy
+   rule. If the implementer proves that checkpoint too
    big, the implementer stops and sends it back. Collisions
    follow it as their own slice. A load that replaces a name
    is today's behavior, so the file-environment checkpoint
@@ -649,18 +656,21 @@ reuse.
    That rule lands with the `Option` install or in the
    collision slice. It does not land after the collision
    slice, and it does not wait for defining paths.
-   This layer updates a test entry point only when §4.4 says
-   the root's table lacks the name, and it may find none.
-   The spec's own tests show a load of `editor.aloe` does not
-   bind `Span`, `String find` returns the base `Option`, a
-   third file that loads two `View`s errors with both paths,
-   an overloaded send whose static type is a protocol does
-   not run the method written for a different class of the
-   same short name, two protocols of one short name do not
-   unify, Gel's two roots still work, `matching-picks`
-   resolves `GelPicks` and `GelRow`, and a second driver does
-   not see the first driver's classes. MPL still conforms.
-   Hover inside `sym.aloe` is JSON null.
+   This layer adds a load to a test entry point when §4.4
+   says the loaded root does not define a name the test
+   uses. The spec's own tests show a load of `editor.aloe`
+   does not bind `Span`, in a file or at the prompt,
+   `String find` returns the base `Option`, a third file
+   that loads two `View`s errors with both paths, an
+   overloaded send whose static type is a protocol does not
+   run the method written for a different class of the same
+   short name, two protocols of one short name do not
+   unify, `gel-run` and checkpoints 65 and 86 load
+   `stack.aloe` for `gel-empty-stack` and still use
+   `gel-main` and `Point`, `matching-picks` resolves
+   `GelPicks` and `GelRow`, and a second driver does not see
+   the first driver's classes. MPL still conforms. Hover
+   inside `sym.aloe` is JSON null.
 4. **Defining path.** §4.7. This stays its own layer. It does
    not join the visibility layer, and it does not move before
    layer 3 or after adoption. The spec
@@ -683,8 +693,8 @@ fold it into visibility.
 `SPEC.md` changes in the checkpoint that makes the sentence
 true. modules 000 changes the once-only behavior and leaves
 "same environment" true for file-to-file load. The
-file-environment checkpoint changes what a file-to-file load
-introduces and amends §8's "modules beyond `load`". The
+file-environment checkpoint changes what a load introduces
+and amends §8's "modules beyond `load`". The
 spec includes the `docs/decisions.md` paragraph for each
 observable change and assigns it to that checkpoint. This
 series does not edit `docs/philosophy.md`.
@@ -697,20 +707,23 @@ in the same move. A class is moved once. The checkpoint that
 moves it drops its prefix.
 
 A set of classes that form a cycle through field types stays
-in one file. The spec lists that set from the field graph.
-A one-way reference is a load. `define-methods` in a later
-file, after a load of the class, may stay. The body runs in
-the writing file, per §4.8. That is the shape the window
-tree and the window rectangle may keep when their classes
-are split.
+in one file. The spec states that rule. The checkpoint the
+human asks for lists the set from the field graph of the
+tree on that day. A one-way reference is a load.
+`define-methods` in a later file, after a load of the class,
+may stay. The body runs in the writing file, per §4.8. That
+is the shape the window tree and the window rectangle may
+keep when their classes are split.
 
-The spec lists every test that pins `file.aloe`'s ordered
-`define-class` names, and every test entry point whose
-loaded root no longer sees a name the test uses. `main.aloe`
-loads each file whose name it uses. This series adds no
-barrel. `UndoFrame` and `safe-cell-controls` stay unprefixed
-unless a collision in §4.6 appears. New names in the moved
-files are bare.
+The spec states the duty and does not freeze the lists. The
+checkpoint the human asks for lists every test that pins
+`file.aloe`'s ordered `define-class` names, and every test
+entry point whose loaded root no longer defines a name the
+test uses, from the tree on that day. `main.aloe` loads
+each file whose name it uses. This series adds no barrel.
+`UndoFrame` and `safe-cell-controls` stay unprefixed unless
+a collision in §4.6 appears. New names in the moved files
+are bare.
 
 `file.aloe` stays one file until this layer. Gel keeps
 `GelText` and the rest of its prefixes. A program that loads
@@ -734,6 +747,10 @@ The checkpoint manager does not read this charter.
 - A process-wide load cache, and a byte comparison in the
   evaluator
 - Per-file method tables, scoped selectors
+- Changing `Mirror invoke`, `Signature accepts?`, or
+  sole-method dispatch off short-name comparison.
+  `Signature` reifies types as symbols. Two classes that
+  share a short name can still pass `accepts?`
 - Macros
 - Concurrency, threads, and several interactive programs in
   one process
@@ -789,11 +806,11 @@ within visibility, `Option` on the base, overload identity
 resolving annotations in the shared environment, method and
 protocol records, and the root-end conformance walk, each
 green before file environments; then file environments and
-the two copy rules, the checkpoint that is not split
-further; then collisions, by which the §4.5 base-library
-query rule has landed; with the interactive environment
-still receiving each root's local table;
-defining paths in mismatches and hover, as their own layer;
+the copy rule, the checkpoint that is not split further;
+then collisions, by which the §4.5 base-library query rule
+has landed; the interactive environment receives each
+root's own definitions; defining paths in mismatches and
+hover, as their own layer;
 adoption of Aloemacs, last, issued only when the human asks.
 
 If you have been told to read this file, this is the whole assignment.
