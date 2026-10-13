@@ -1,0 +1,10 @@
+(load "command.aloe")
+
+(define-class Runner
+  (fields)
+  (methods
+    (run (c Command) String
+      (c label))))
+
+(define first-label
+  ((Runner new) run (commands first)))

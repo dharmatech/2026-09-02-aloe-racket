@@ -783,7 +783,11 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 
 - `load` reads, typechecks, and evaluates another Aloe file in the same
   environment, resolving relative paths from the loading file before the
-  current directory and project root.
+  current directory and project root. A resolved path runs once per base: a
+  later `load` of the same path with the same bytes runs nothing, and a later
+  `load` of the same path with different bytes is a type error. The list,
+  string, and int libraries installed in a default environment count as
+  already loaded.
 - `cond` is syntax sugar for nested `if` forms; its final `else` clause is
   required.
 - `define-protocol` declares a protocol type and may declare required method

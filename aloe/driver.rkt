@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require (only-in "env.rkt"
+(require (only-in racket/port port->bytes)
+         (only-in "env.rkt"
                   [make-top-level-env make-runtime-environment]
                   env-bound?
                   env-define!)
@@ -10,7 +11,10 @@
          "parse.rkt"
          "type.rkt"
          (only-in (submod "type.rkt" driver-host-injection)
-                  type-environment-inject-host!))
+                  type-environment-inject-host!)
+         (only-in (submod "type.rkt" load-cache)
+                  typecheck-keyed-root
+                  record-checked-libraries!))
 
 (provide (struct-out driver)
          make-driver
@@ -36,6 +40,8 @@
   (eval-exprs (list-library-expressions) runtime-environment)
   (eval-exprs (string-library-expressions) runtime-environment)
   (eval-exprs (int-library-expressions) runtime-environment)
+  (record-checked-libraries! type-environment)
+  (record-evaluated-libraries! runtime-environment)
   (driver runtime-environment type-environment))
 
 (define (driver-inject-host! state name receiver)
@@ -100,10 +106,29 @@
                            input
                            [output (current-output-port)]
                            #:source-path [source-path #f])
-  (define expressions
-    (read-program input #:source-path source-path))
-  ;; Check the complete file before evaluating its first expression.
-  (typecheck-program expressions (driver-type-environment state))
+  (cond
+    [source-path
+     ;; A program with a source path runs once per driver; a hit returns '()
+     ;; and writes nothing.
+     (define source-bytes (port->bytes input))
+     (define-values (_result expressions)
+       (typecheck-keyed-root (driver-type-environment state)
+                             source-path
+                             source-bytes))
+     (eval-keyed-root (driver-runtime-environment state)
+                      source-path
+                      source-bytes
+                      expressions
+                      (lambda (expressions)
+                        (eval-and-write state expressions output))
+                      '())]
+    [else
+     (define expressions (read-program input))
+     ;; Check the complete file before evaluating its first expression.
+     (typecheck-program expressions (driver-type-environment state))
+     (eval-and-write state expressions output)]))
+
+(define (eval-and-write state expressions output)
   (reverse
    (for/fold ([results '()])
              ([expression (in-list expressions)])

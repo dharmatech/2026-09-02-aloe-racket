@@ -1,0 +1,6 @@
+(define-class Command
+  (fields
+    (name String))
+  (methods
+    (label () String
+      (self name))))

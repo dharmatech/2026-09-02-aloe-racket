@@ -1,8 +1,14 @@
 # Modules specification
 
-**Status: Written. Awaiting human review.** After the human accepts
-this file it is the complete design input for the checkpoint manager
-and the implementers. Neither reads the charter or the discussion
+**Status: Accepted for checkpoint planning.** The human authorized
+the manager to proceed if the spec was ready. On 2026-10-13 the
+manager checked §4 against the tree and probes of today's behavior,
+found it ready, corrected the §4.1 rule 9 aside (hover inside
+`lib/list.aloe` raises `ambiguous message: fold` today; it did not
+"keep working"), and wrote
+[`checkpoints/000-run-once.md`](checkpoints/000-run-once.md). This
+file is the complete design input for the checkpoint manager and the
+implementers. Neither reads the charter or the discussion
 record. [`SPEC.md`](../../../../SPEC.md) remains language law; this
 series amends it only in the checkpoints §12 names.
 [`docs/workflow.md`](../../../workflow.md) is the process.
@@ -272,8 +278,9 @@ edited.
    completion still typecheck the queried file's expressions into
    the query's fresh environment exactly as today. Loads nested in
    that file use the cache. (A query of `lib/list.aloe` therefore
-   keeps working: the root check appends the list methods again, as
-   it does today.)
+   behaves as today: the root check appends the list methods a
+   second time, which raises `ambiguous message: fold`. Slice 3a
+   makes that query resolve.)
 
 ### 4.2 Error text
 

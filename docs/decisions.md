@@ -268,3 +268,11 @@ are checked in declaration order and evaluated in written order against the
 original receiver. Rejected for this slice: `with*`, a prefix `with`, a flat
 tail, instance `new*` as a partial update, punning, nested field paths,
 generated per-field methods, constructor-class updates, and a Mirror row.
+
+## Run-once load (2026-10-13)
+
+Decided: a load cache per base, keyed by resolved path, in the checker and
+the evaluator; the checker compares bytes and rejects a changed file; the
+evaluator reuses by path. Rejected: a process-wide cache, a
+modification-time criterion, a byte comparison in the evaluator, and any
+reload of an edited file.

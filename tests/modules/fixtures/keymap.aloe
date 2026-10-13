@@ -1,0 +1,4 @@
+(load "command.aloe")
+
+(define commands
+  (List of (Command new "save") (Command new "quit")))

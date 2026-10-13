@@ -2,7 +2,9 @@
 
 (require racket/list
          racket/match
+         (only-in racket/port port->bytes)
          "host.rkt"
+         "library.rkt"
          "parse.rkt"
          "private/checker-observation.rkt"
          "signature-catalog.rkt")
@@ -68,7 +70,11 @@
         explicit-constructors?
         [methods #:mutable])
   #:transparent)
-(struct type-environment (bindings parent int-class string-class) #:transparent)
+(struct type-environment (bindings parent int-class string-class load-cache)
+  #:transparent)
+;; A base's checker load cache maps a resolved path to its entry. The state is
+;; running or completed; exports stay empty until file environments exist.
+(struct checker-load-entry (state source-bytes exports) #:transparent)
 
 (define INT (int-type))
 (define FLOAT (float-type))
@@ -111,14 +117,16 @@
           (cons 'Mirror (mirror-class-type))))
    #f
    int-class
-   string-class))
+   string-class
+   (make-hash)))
 
 (define (make-local-type-environment parent bindings)
   (type-environment
    (make-hasheq bindings)
    parent
    (type-environment-int-class parent)
-   (type-environment-string-class parent)))
+   (type-environment-string-class parent)
+   (type-environment-load-cache parent)))
 
 (define (type-environment-bound? environment name)
   (cond
@@ -564,17 +572,77 @@
   (define path (load-expr-resolved-path expression))
   (unless (file-exists? path)
     (raise-type-error "load file not found: ~a" path))
-  (when (member path (current-typecheck-load-paths) equal?)
-    (raise-type-error "load cycle: ~a" path))
-  (define expressions
-    (call-with-input-file path
-      (lambda (input)
-        (read-program input #:source-path path))))
-  (parameterize
-      ([current-typecheck-load-paths
-        (cons path (current-typecheck-load-paths))])
-    (typecheck-program expressions environment))
+  (typecheck-once!
+   environment
+   path
+   (lambda () (call-with-input-file path port->bytes))
+   (lambda (source-bytes)
+     (define expressions
+       (read-program (open-input-bytes source-bytes) #:source-path path))
+     (parameterize
+         ([current-typecheck-load-paths
+           (cons path (current-typecheck-load-paths))])
+       (typecheck-program expressions environment))))
   VOID)
+
+;; A program given with a source path is checked once per base, under the
+;; same rule as a nested load. A hit returns Void and no expressions.
+(define (typecheck-keyed-root environment source-path source-bytes)
+  (define expressions #f)
+  (define result
+    (typecheck-once!
+     environment
+     (resolved-source-path source-path)
+     (lambda () source-bytes)
+     (lambda (source-bytes)
+       (set! expressions
+             (read-program (open-input-bytes source-bytes)
+                           #:source-path source-path))
+       (typecheck-program expressions environment))))
+  (values result expressions))
+
+;; One rule for a load and a keyed root: a resolved path is checked once per
+;; base; the same bytes again are a hit, and different bytes are an error that
+;; parses nothing. A check that does not complete leaves no entry.
+(define (typecheck-once! environment path read-source-bytes check-source)
+  (define cache (type-environment-load-cache environment))
+  (define entry (hash-ref cache path #f))
+  (when (or (and entry (eq? (checker-load-entry-state entry) 'running))
+            (member path (current-typecheck-load-paths) equal?))
+    (raise-type-error "load cycle: ~a" path))
+  (define source-bytes (read-source-bytes))
+  (cond
+    [(not entry)
+     (hash-set! cache path (checker-load-entry 'running source-bytes '()))
+     (define completed? #f)
+     (dynamic-wind
+      void
+      (lambda ()
+        (begin0
+          (check-source source-bytes)
+          (hash-set! cache
+                     path
+                     (checker-load-entry 'completed source-bytes '()))
+          (set! completed? #t)))
+      (lambda ()
+        (unless completed?
+          (hash-remove! cache path))))]
+    [(equal? (checker-load-entry-source-bytes entry) source-bytes) VOID]
+    [else
+     (raise-type-error
+      "load file changed: ~a; this version does not reload a changed file"
+      (displayed-path path))]))
+
+;; A base records the libraries it installed as completed loads.
+(define (record-checked-libraries! environment)
+  (define cache (type-environment-load-cache environment))
+  (for ([path (in-list (list list-library-resolved-path
+                             string-library-resolved-path
+                             int-library-resolved-path))]
+        [source-bytes (in-list (list (list-library-bytes)
+                                     (string-library-bytes)
+                                     (int-library-bytes)))])
+    (hash-set! cache path (checker-load-entry 'completed source-bytes '()))))
 
 (define (infer-expression expression environment expected
                           [mismatch-context #f])
@@ -1994,6 +2062,12 @@
 ;; normal part of the checker's public API.
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
+
+;; Bases record their installed libraries, and keyed roots share the load
+;; cache, through these hooks for the driver and aloe/main.rkt.
+(module* load-cache #f
+  (provide typecheck-keyed-root
+           record-checked-libraries!))
 
 ;; Editor expression queries observe the real checker pass through this
 ;; deliberately narrow internal bridge.

@@ -13,9 +13,10 @@
          env-lookup
          env-int-class
          env-string-class
+         env-load-cache
          env-define!)
 
-(struct top-level-env (bindings parent int-class string-class))
+(struct top-level-env (bindings parent int-class string-class load-cache))
 (struct dummy-object ())
 (struct list-class-object ([methods #:mutable] [environment #:mutable]))
 (struct int-class-object ([methods #:mutable] [environment #:mutable]))
@@ -34,20 +35,25 @@
                       (cons 'Mirror (mirror-class-object list-class))))
    #f
    int-class
-   string-class))
+   string-class
+   (make-hash)))
 
 (define (make-local-env parent bindings)
   (top-level-env
    (make-hasheq bindings)
    parent
    (top-level-env-int-class parent)
-   (top-level-env-string-class parent)))
+   (top-level-env-string-class parent)
+   (top-level-env-load-cache parent)))
 
 (define (env-int-class environment)
   (top-level-env-int-class environment))
 
 (define (env-string-class environment)
   (top-level-env-string-class environment))
+
+(define (env-load-cache environment)
+  (top-level-env-load-cache environment))
 
 (define (env-bound? environment name)
   (cond

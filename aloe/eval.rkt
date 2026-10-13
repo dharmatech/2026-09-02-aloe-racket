@@ -7,6 +7,11 @@
          "host.rkt"
          (only-in (submod "host.rkt" evaluator-exact-host-method)
                   host-receiver-invoke-method)
+         (only-in "library.rkt"
+                  list-library-resolved-path
+                  string-library-resolved-path
+                  int-library-resolved-path
+                  resolved-source-path)
          "mirror.rkt"
          "parse.rkt"
          "signature-catalog.rkt"
@@ -15,6 +20,8 @@
 
 (provide eval-expr
          eval-exprs
+         eval-keyed-root
+         record-evaluated-libraries!
          aloe-value->string
          aloe-value->display-string
          instance-value?
@@ -33,6 +40,9 @@
 (struct runtime-list-type (element-type) #:transparent)
 (struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
+;; A base's evaluator load cache maps a resolved path to its entry. The state
+;; is running or completed; exports stay empty until file environments exist.
+(struct evaluator-load-entry (state exports) #:transparent)
 
 (define current-eval-load-paths (make-parameter '()))
 
@@ -40,17 +50,69 @@
   (define path (load-expr-resolved-path expression))
   (unless (file-exists? path)
     (error 'eval-aloe "load file not found: ~a" path))
-  (when (member path (current-eval-load-paths) equal?)
-    (error 'eval-aloe "load cycle: ~a" path))
-  (define expressions
-    (call-with-input-file path
-      (lambda (input)
-        (read-program input #:source-path path))))
-  (parameterize
-      ([current-eval-load-paths
-        (cons path (current-eval-load-paths))])
-    (eval-exprs expressions environment))
+  (eval-once!
+   environment
+   path
+   (lambda ()
+     (define expressions
+       (call-with-input-file path
+         (lambda (input)
+           (read-program input #:source-path path))))
+     (parameterize
+         ([current-eval-load-paths
+           (cons path (current-eval-load-paths))])
+       (eval-exprs expressions environment))))
   (void))
+
+;; A program given with a source path runs once per base. On a checker miss
+;; the checker's expressions run; after a checker hit the bytes are parsed.
+(define (eval-keyed-root environment
+                         source-path
+                         source-bytes
+                         expressions
+                         run
+                         [hit-result (void)])
+  (eval-once!
+   environment
+   (resolved-source-path source-path)
+   (lambda ()
+     (run (or expressions
+              (read-program (open-input-bytes source-bytes)
+                            #:source-path source-path))))
+   hit-result))
+
+;; One rule for a load and a keyed root. The checker has already compared
+;; bytes, so a completed entry is a hit by path alone. A run that does not
+;; complete leaves no entry; the definitions it made stay.
+(define (eval-once! environment path run [hit-result (void)])
+  (define cache (env-load-cache environment))
+  (define entry (hash-ref cache path #f))
+  (cond
+    [(or (and entry (eq? (evaluator-load-entry-state entry) 'running))
+         (member path (current-eval-load-paths) equal?))
+     (error 'eval-aloe "load cycle: ~a" path)]
+    [entry hit-result]
+    [else
+     (hash-set! cache path (evaluator-load-entry 'running '()))
+     (define completed? #f)
+     (dynamic-wind
+      void
+      (lambda ()
+        (begin0
+          (run)
+          (hash-set! cache path (evaluator-load-entry 'completed '()))
+          (set! completed? #t)))
+      (lambda ()
+        (unless completed?
+          (hash-remove! cache path))))]))
+
+;; A base records the libraries it installed as completed loads.
+(define (record-evaluated-libraries! environment)
+  (define cache (env-load-cache environment))
+  (for ([path (in-list (list list-library-resolved-path
+                             string-library-resolved-path
+                             int-library-resolved-path))])
+    (hash-set! cache path (evaluator-load-entry 'completed '()))))
 
 (define (eval-expr expression environment)
   (match expression

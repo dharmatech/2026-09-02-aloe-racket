@@ -1,0 +1,3 @@
+(load "box.aloe")
+
+((Box new 3) get)

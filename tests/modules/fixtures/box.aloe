@@ -1,0 +1,6 @@
+(define-class Box
+  (fields
+    (value Int))
+  (methods
+    (get () Int
+      (self value))))
