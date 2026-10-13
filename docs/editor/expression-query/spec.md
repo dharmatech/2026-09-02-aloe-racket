@@ -20,9 +20,10 @@ A new Racket module, `aloe/expression-query.rkt`, provides:
 ```racket
 (struct expression-query-result (type signatures location) #:transparent)
 
-(query-expression-at source-path position)
+(query-expression-at source-path position #:document-path [document-path source-path])
   ; source-path : path-string?
   ; position    : exact-positive-integer?
+  ; document-path : path-string?
   ; -> (or/c expression-query-result? #f)
 ```
 
@@ -39,6 +40,11 @@ its `srcloc-source`.
 character position in the source port. It is not a byte offset, a zero-based
 editor offset, a `line:column` pair, or a UTF-16 position. A later adapter may
 convert its own coordinates before calling this function.
+
+`#:document-path`, when supplied, is the path the query treats as the file's
+identity: its load-cache key and the defining path of classes it defines. It
+defaults to the normalized source path. Loads still resolve relative to the
+source path's directory.
 
 For a position contained by an expression, the fields are:
 

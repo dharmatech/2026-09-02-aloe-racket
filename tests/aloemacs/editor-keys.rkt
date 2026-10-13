@@ -78,7 +78,7 @@
 
 (test-case "editor loading is explicit, source-relative, and driver-local"
   (define state (make-driver))
-  (for ([name (in-list '(AloemacsEditor Option Position Span Text EditResult))])
+  (for ([name (in-list '(AloemacsEditor Position Span Text EditResult))])
     (check-true (unbound-in-driver? state name)))
 
   (check-true (void? (load-editor! state)))
@@ -86,7 +86,7 @@
     (check-true (bound-in-driver? state name)))
 
   (define fresh-state (make-driver))
-  (for ([name (in-list '(AloemacsEditor Option Position Span Text EditResult))])
+  (for ([name (in-list '(AloemacsEditor Position Span Text EditResult))])
     (check-true (unbound-in-driver? fresh-state name)))
   (check-exn #rx"unbound symbol: AloemacsEditor"
              (lambda () (driver-eval! fresh-state 'AloemacsEditor))))

@@ -455,7 +455,8 @@
               (hover-message uri 0 0 "dirty-hover")
               shutdown-message
               exit-message)
-        (lambda (_query-path _query-position)
+        (lambda (_query-path _query-position
+                 #:document-path [_document-path #f])
           (set! calls (add1 calls))
           (stub-result 1))))
      (check-clean-exchange result 3)

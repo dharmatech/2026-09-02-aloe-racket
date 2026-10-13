@@ -125,7 +125,7 @@
   (for ([name
          (in-list
           '(fs-host term Fs Path Entry Disk Location Item File Directory
-                    SymbolicLink Other Option))])
+                    SymbolicLink Other))])
     (check-false (env-bound? (driver-runtime-environment state) name))
     (check-false
      (type-environment-bound? (driver-type-environment state) name))))

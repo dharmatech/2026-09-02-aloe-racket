@@ -14,7 +14,8 @@
                   type-environment-inject-host!)
          (only-in (submod "type.rkt" load-cache)
                   typecheck-keyed-root
-                  record-checked-libraries!))
+                  record-checked-libraries!
+                  record-checked-option-class!))
 
 (provide (struct-out driver)
          make-driver
@@ -37,9 +38,13 @@
   (typecheck-program (list-library-expressions) type-environment)
   (typecheck-program (string-library-expressions) type-environment)
   (typecheck-program (int-library-expressions) type-environment)
+  (typecheck-program (option-library-expressions) type-environment)
+  (record-checked-option-class! type-environment)
   (eval-exprs (list-library-expressions) runtime-environment)
   (eval-exprs (string-library-expressions) runtime-environment)
   (eval-exprs (int-library-expressions) runtime-environment)
+  (eval-exprs (option-library-expressions) runtime-environment)
+  (record-evaluated-option-class! runtime-environment)
   (record-checked-libraries! type-environment)
   (record-evaluated-libraries! runtime-environment)
   (driver runtime-environment type-environment))

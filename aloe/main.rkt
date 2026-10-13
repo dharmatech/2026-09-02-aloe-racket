@@ -9,7 +9,9 @@
          (prefix-in checker: "type.rkt")
          (only-in (submod "type.rkt" load-cache)
                   typecheck-keyed-root
-                  record-checked-libraries!))
+                  typecheck-keyed-buffer
+                  record-checked-libraries!
+                  record-checked-option-class!))
 
 (provide make-top-level-env
          make-type-environment
@@ -35,6 +37,8 @@
   (typecheck-program (list-library-expressions) environment)
   (typecheck-program (string-library-expressions) environment)
   (typecheck-program (int-library-expressions) environment)
+  (typecheck-program (option-library-expressions) environment)
+  (record-checked-option-class! environment)
   (record-checked-libraries! environment)
   environment)
 
@@ -43,6 +47,8 @@
   (eval-exprs (list-library-expressions) environment)
   (eval-exprs (string-library-expressions) environment)
   (eval-exprs (int-library-expressions) environment)
+  (eval-exprs (option-library-expressions) environment)
+  (record-evaluated-option-class! environment)
   (record-evaluated-libraries! environment)
   (hash-set! runtime-type-environments
              environment
@@ -57,6 +63,8 @@
      (eval-exprs (list-library-expressions) environment)
      (eval-exprs (string-library-expressions) environment)
      (eval-exprs (int-library-expressions) environment)
+     (eval-exprs (option-library-expressions) environment)
+     (record-evaluated-option-class! environment)
      (record-evaluated-libraries! environment)
      (hash-set! runtime-type-environments environment type-environment)
      type-environment]))
@@ -107,3 +115,42 @@
      (define expressions (read-program input))
      (typecheck-program expressions (type-environment-for environment))
      (eval-exprs expressions environment)]))
+
+;; The base libraries in install order, by resolved path.
+(define base-libraries
+  (list (cons list-library-resolved-path list-library-expressions)
+        (cons string-library-resolved-path string-library-expressions)
+        (cons int-library-resolved-path int-library-expressions)
+        (cons option-library-resolved-path option-library-expressions)))
+
+;; The resolved path when a query's identity path names a base library.
+(define (base-library-path identity-path)
+  (define path (resolved-source-path identity-path))
+  (and (assoc path base-libraries) path))
+
+;; A query of a base library does not check the buffer on top of an installed
+;; copy. Its fresh base installs the other libraries and then the buffer, last,
+;; as the query's one root check, keyed by the library's path.
+(define (typecheck-base-library-buffer library-path
+                                       source-bytes
+                                       expressions
+                                       observe)
+  (define environment (make-raw-type-environment))
+  (for ([library (in-list base-libraries)]
+        #:unless (equal? (car library) library-path))
+    (typecheck-program ((cdr library)) environment)
+    (when (equal? (car library) option-library-resolved-path)
+      (record-checked-option-class! environment)))
+  (record-checked-libraries! environment #:except library-path)
+  (begin0
+    (typecheck-keyed-buffer environment
+                            library-path
+                            source-bytes
+                            (lambda () (observe expressions environment)))
+    (when (equal? library-path option-library-resolved-path)
+      (record-checked-option-class! environment))))
+
+;; The editor queries install a queried base library through these hooks.
+(module* query-base #f
+  (provide base-library-path
+           typecheck-base-library-buffer))

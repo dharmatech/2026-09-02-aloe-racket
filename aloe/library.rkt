@@ -10,12 +10,15 @@
 (provide list-library-expressions
          string-library-expressions
          int-library-expressions
+         option-library-expressions
          list-library-bytes
          string-library-bytes
          int-library-bytes
+         option-library-bytes
          list-library-resolved-path
          string-library-resolved-path
          int-library-resolved-path
+         option-library-resolved-path
          resolved-source-path
          displayed-path)
 
@@ -23,6 +26,7 @@
 (define-runtime-path list-library-path "../lib/list.aloe")
 (define-runtime-path string-library-path "../lib/string.aloe")
 (define-runtime-path int-library-path "../lib/int.aloe")
+(define-runtime-path option-library-path "../lib/option.aloe")
 
 ;; A root resolves the way load-expr-resolved-path resolves a load, without
 ;; the filesystem, so two spellings of one file are one load-cache key.
@@ -55,11 +59,14 @@
 (define cached-list-library (read-library list-library-path))
 (define cached-string-library (read-library string-library-path))
 (define cached-int-library (read-library int-library-path))
+(define cached-option-library (read-library option-library-path))
 
 (define list-library-resolved-path (resolved-source-path list-library-path))
 (define string-library-resolved-path
   (resolved-source-path string-library-path))
 (define int-library-resolved-path (resolved-source-path int-library-path))
+(define option-library-resolved-path
+  (resolved-source-path option-library-path))
 
 (define (list-library-expressions)
   (cdr (force cached-list-library)))
@@ -70,6 +77,9 @@
 (define (int-library-expressions)
   (cdr (force cached-int-library)))
 
+(define (option-library-expressions)
+  (cdr (force cached-option-library)))
+
 (define (list-library-bytes)
   (car (force cached-list-library)))
 
@@ -78,3 +88,6 @@
 
 (define (int-library-bytes)
   (car (force cached-int-library)))
+
+(define (option-library-bytes)
+  (car (force cached-option-library)))

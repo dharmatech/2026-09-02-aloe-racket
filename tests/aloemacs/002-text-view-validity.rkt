@@ -63,7 +63,7 @@
 
 (test-case "text library loading is explicit and driver-local"
   (define state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? state name)))
 
   (check-true (void? (load-text! state)))
@@ -84,7 +84,7 @@
     '((Span new (Position new 3 4) (Position new 3 4)) empty?)))
 
   (define fresh-state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? fresh-state name)))
   (for ([name (in-list '(Position Span Text))])
     (check-exn

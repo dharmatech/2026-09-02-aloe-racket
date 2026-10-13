@@ -403,9 +403,12 @@
                                (raise-snapshot-failure))])
     (delete-file snapshot-path)))
 
-(define (invoke-query query path query-position)
+(define (invoke-query query path query-position
+                      #:document-path [document-path #f])
   (with-handlers ([exn:fail? (lambda (_exception) #f)])
-    (query path query-position)))
+    (if document-path
+        (query path query-position #:document-path document-path)
+        (query path query-position))))
 
 (define (query-through-snapshot query path synchronized-bytes query-position)
   (define snapshot-path #f)
@@ -435,7 +438,9 @@
   (dynamic-wind
     void
     (lambda ()
-      (invoke-query query snapshot-path query-position))
+      ;; The sibling is read; the document stays the buffer's identity.
+      (invoke-query query snapshot-path query-position
+                    #:document-path path))
     (lambda ()
       (remove-snapshot snapshot-path))))
 

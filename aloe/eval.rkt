@@ -11,6 +11,7 @@
                   list-library-resolved-path
                   string-library-resolved-path
                   int-library-resolved-path
+                  option-library-resolved-path
                   resolved-source-path)
          "mirror.rkt"
          "parse.rkt"
@@ -22,6 +23,7 @@
          eval-exprs
          eval-keyed-root
          record-evaluated-libraries!
+         record-evaluated-option-class!
          aloe-value->string
          aloe-value->display-string
          instance-value?
@@ -111,8 +113,14 @@
   (define cache (env-load-cache environment))
   (for ([path (in-list (list list-library-resolved-path
                              string-library-resolved-path
-                             int-library-resolved-path))])
-    (hash-set! cache path (evaluator-load-entry 'completed '()))))
+                             int-library-resolved-path
+                             option-library-resolved-path))]
+        [exports (in-list '(() () () (Option)))])
+    (hash-set! cache path (evaluator-load-entry 'completed exports))))
+
+;; A base keeps the Option class it installed; find reads it, not the name.
+(define (record-evaluated-option-class! environment)
+  (set-env-option-class! environment (env-lookup environment 'Option)))
 
 (define (eval-expr expression environment)
   (match expression
@@ -355,6 +363,9 @@
 
 (define (int-class-for environment)
   (and environment (env-int-class environment)))
+
+(define (option-class-for environment)
+  (and environment (env-option-class environment)))
 
 (define (value-signature-specs value [environment #f])
   (cond
@@ -1539,7 +1550,9 @@
                   (char=? (string-ref receiver (+ candidate offset))
                           (string-ref pattern offset))))
              candidate)))
-     (define option-class (env-lookup environment 'Option))
+     (define option-class (option-class-for environment))
+     (unless option-class
+       (error 'eval-aloe "unbound symbol: ~a" 'Option))
      (if index
          (construct-instance option-class 'Some (list index))
          (struct-copy instance-value

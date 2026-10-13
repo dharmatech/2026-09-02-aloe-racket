@@ -136,7 +136,8 @@
   (define error-output (open-output-bytes))
   (define calls 0)
   (define arguments '())
-  (define (counting-query path position)
+  (define (counting-query path position
+                          #:document-path [_document-path #f])
     (set! calls (add1 calls))
     (set! arguments (append arguments (list (list path position))))
     (query path position))

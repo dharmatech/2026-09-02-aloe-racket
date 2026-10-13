@@ -19,9 +19,14 @@
     (parse-datum datum)
     (driver-type-environment state))))
 
-(test-case "Option is loadable but absent from fresh drivers"
+(test-case "Option is installed in fresh drivers and loadable"
   (define state (make-driver))
-  (for ([name (in-list '(Option term fs-host))])
+  (check-true
+   (env-bound? (driver-runtime-environment state) 'Option))
+  (check-true
+   (type-environment-bound?
+    (driver-type-environment state) 'Option))
+  (for ([name (in-list '(term fs-host))])
     (check-false
      (env-bound? (driver-runtime-environment state) name))
     (check-false

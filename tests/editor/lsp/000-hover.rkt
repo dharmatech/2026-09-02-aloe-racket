@@ -309,7 +309,8 @@
         input
         output
         error-output
-        (lambda (_path _position)
+        (lambda (_path _position
+                 #:document-path [_document-path #f])
           (set! calls (add1 calls))
           #f)))
      (successful-messages #:text dirty-text)))

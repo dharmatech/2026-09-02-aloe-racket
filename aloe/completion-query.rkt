@@ -4,6 +4,9 @@
          racket/string
          (only-in "main.rkt"
                   make-type-environment)
+         (only-in (submod "main.rkt" query-base)
+                  base-library-path
+                  typecheck-base-library-buffer)
          (only-in "parse.rkt"
                   bool-expr?
                   case-clause-body
@@ -198,12 +201,23 @@
                   (selector-completion-site-expressions site)))
             '()]
            [else
-            (define environment (make-type-environment))
-            (define observation
+            (define (observe expressions environment)
               (typecheck-program/observe-selector-receiver
-               (selector-completion-site-expressions site)
+               expressions
                environment
                (selector-completion-site-target-send site)))
+            ;; The source path is the buffer's identity.
+            (define library-path
+              (and normalized-path (base-library-path normalized-path)))
+            (define observation
+              (if library-path
+                  (typecheck-base-library-buffer
+                   library-path
+                   (string->bytes/utf-8 source)
+                   (selector-completion-site-expressions site)
+                   observe)
+                  (observe (selector-completion-site-expressions site)
+                           (make-type-environment))))
             (define replacement-start
               (selector-completion-site-replacement-start site))
             (define replacement-span

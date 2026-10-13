@@ -170,7 +170,7 @@
 
 (test-case "file session loading is explicit, source-relative, and local"
   (define state (make-driver))
-  (for ([name (in-list '(AloemacsSession AloemacsEditor Text Fs Path Option))])
+  (for ([name (in-list '(AloemacsSession AloemacsEditor Text Fs Path))])
     (check-true (unbound-in-driver? state name)))
   (check-true (unbound-in-driver? state 'fs-host))
   (check-true (unbound-in-driver? state 'term))
@@ -182,7 +182,7 @@
   (check-true (unbound-in-driver? state 'term))
 
   (define fresh-state (make-driver))
-  (for ([name (in-list '(AloemacsSession AloemacsEditor Text Fs Path Option))])
+  (for ([name (in-list '(AloemacsSession AloemacsEditor Text Fs Path))])
     (check-true (unbound-in-driver? fresh-state name))))
 
 (test-case "AloemacsSession exposes the exact checked application surface"

@@ -13,10 +13,13 @@
          env-lookup
          env-int-class
          env-string-class
+         env-option-class
+         set-env-option-class!
          env-load-cache
          env-define!)
 
-(struct top-level-env (bindings parent int-class string-class load-cache))
+(struct top-level-env
+  (bindings parent int-class string-class option-class load-cache))
 (struct dummy-object ())
 (struct list-class-object ([methods #:mutable] [environment #:mutable]))
 (struct int-class-object ([methods #:mutable] [environment #:mutable]))
@@ -36,6 +39,7 @@
    #f
    int-class
    string-class
+   (box #f)
    (make-hash)))
 
 (define (make-local-env parent bindings)
@@ -44,6 +48,7 @@
    parent
    (top-level-env-int-class parent)
    (top-level-env-string-class parent)
+   (top-level-env-option-class parent)
    (top-level-env-load-cache parent)))
 
 (define (env-int-class environment)
@@ -51,6 +56,14 @@
 
 (define (env-string-class environment)
   (top-level-env-string-class environment))
+
+;; A base's installed Option class, or #f before an install sets it. The cell
+;; is shared with every child environment, as the load cache is.
+(define (env-option-class environment)
+  (unbox (top-level-env-option-class environment)))
+
+(define (set-env-option-class! environment class)
+  (set-box! (top-level-env-option-class environment) class))
 
 (define (env-load-cache environment)
   (top-level-env-load-cache environment))

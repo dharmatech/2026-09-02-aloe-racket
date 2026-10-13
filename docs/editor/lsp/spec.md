@@ -176,7 +176,9 @@ The original document is never overwritten, renamed, or removed. A temporary
 file is not retained after success or failure. It is a sibling, rather than a
 file in the system temporary directory, so an Aloe `load` in the root buffer
 continues to resolve relative to the root document's directory. The adapter
-does not copy, parse, or rewrite `load` forms.
+does not copy, parse, or rewrite `load` forms. When it queries through a
+sibling, it passes the document's own path as `#:document-path`, so the query
+keys and names the buffer by the document, not the sibling.
 
 Loaded files continue to come from disk through the expression query. An
 unsaved edit in a different open document is not substituted into a load in

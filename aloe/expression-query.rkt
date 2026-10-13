@@ -1,7 +1,11 @@
 #lang racket/base
 
-(require (only-in "main.rkt"
+(require (only-in racket/port port->bytes)
+         (only-in "main.rkt"
                   make-type-environment)
+         (only-in (submod "main.rkt" query-base)
+                  base-library-path
+                  typecheck-base-library-buffer)
          (only-in "parse.rkt"
                   expression-loc
                   read-program)
@@ -19,7 +23,9 @@
 
 (struct expression-query-result (type signatures location) #:transparent)
 
-(define (query-expression-at source-path position)
+(define (query-expression-at source-path
+                             position
+                             #:document-path [document-path source-path])
   (unless (path-string? source-path)
     (raise-argument-error
      'query-expression-at
@@ -30,6 +36,11 @@
      'query-expression-at
      "exact-positive-integer?"
      position))
+  (unless (path-string? document-path)
+    (raise-argument-error
+     'query-expression-at
+     "path-string?"
+     document-path))
 
   (define normalized-path
     (simplify-path (path->complete-path source-path) #f))
@@ -39,18 +50,23 @@
      "source path does not name a regular file"
      "source path" normalized-path))
 
+  (define source-bytes
+    (call-with-input-file normalized-path port->bytes))
   (define expressions
-    (call-with-input-file
-     normalized-path
-     (lambda (input)
-       (read-program input #:source-path normalized-path))))
+    (read-program (open-input-bytes source-bytes)
+                  #:source-path normalized-path))
   (define selected
     (select-expression-at-position expressions position))
+  (define (observe expressions environment)
+    (typecheck-program/observe expressions environment selected))
+  ;; The document path is the buffer's identity; the file read may be the LSP
+  ;; adapter's sibling of it.
+  (define library-path (base-library-path document-path))
   (define observation
-    (typecheck-program/observe
-     expressions
-     (make-type-environment)
-     selected))
+    (if library-path
+        (typecheck-base-library-buffer
+         library-path source-bytes expressions observe)
+        (observe expressions (make-type-environment))))
   (and observation
        (expression-query-result
         (expression-type-observation-type observation)

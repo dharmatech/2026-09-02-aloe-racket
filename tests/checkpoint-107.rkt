@@ -113,7 +113,7 @@
   (define state (make-driver))
   (for ([name
          (in-list
-          '(fs-host term Disk Location Item Directory Option))])
+          '(fs-host term Disk Location Item Directory))])
     (check-false (env-bound? (driver-runtime-environment state) name))
     (check-false
      (type-environment-bound? (driver-type-environment state) name))))

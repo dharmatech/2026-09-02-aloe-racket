@@ -51,6 +51,10 @@ for ordinary Aloe `load` forms. A buffer containing `load` without a
 `source-path` has no completion result; the query does not resolve it relative
 to an ambient current directory.
 
+`source-path` is also the buffer's identity. When it names one of the base
+libraries, the query installs that library from `source` instead of the file on
+disk, and checks it once.
+
 Each result item contains only editor data:
 
 - `label` is the selector symbol written as an Aloe/Racket source token;

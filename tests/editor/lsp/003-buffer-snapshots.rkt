@@ -226,9 +226,11 @@
      (define observed-snapshot #f)
      (define result
        (run-with-query
-        (lambda (query-path query-position)
+        (lambda (query-path query-position
+                 #:document-path document-path)
           (set! observed-snapshot query-path)
           (check-not-equal? (normalized query-path) (normalized path))
+          (check-equal? (normalized document-path) (normalized path))
           (check-equal? (normalized (path->directory-path
                                      (path-only query-path)))
                         (normalized (path->directory-path directory)))
@@ -267,7 +269,8 @@
      (define uri (path-uri path))
      (define result
        (run-with-query
-        (lambda (query-path query-position)
+        (lambda (query-path query-position
+                 #:document-path [_document-path #f])
           (set! calls (append calls (list (list query-path query-position))))
           (check-not-equal? (normalized query-path) (normalized path))
           (check-equal? (file->bytes query-path)
@@ -312,7 +315,8 @@
         (list (shutdown-message) exit-message)))
      (define result
        (run-with-query
-        (lambda (query-path _query-position)
+        (lambda (query-path _query-position
+                 #:document-path [_document-path #f])
           (set! call-count (add1 call-count))
           (set! snapshots (append snapshots (list query-path)))
           (check-equal? (file->bytes query-path)
@@ -350,7 +354,8 @@
      (define calls 0)
      (define result
        (run-with-query
-        (lambda (query-path _query-position)
+        (lambda (query-path _query-position
+                 #:document-path [_document-path #f])
           (set! calls (add1 calls))
           (set! observed-snapshot query-path)
           (check-equal? (file->bytes query-path)
@@ -386,7 +391,8 @@
      (define observed-snapshot #f)
      (define result
        (run-with-query
-        (lambda (query-path query-position)
+        (lambda (query-path query-position
+                 #:document-path [_document-path #f])
           (set! observed-snapshot query-path)
           (check-false (file-exists? path))
           (check-equal? (normalized (path->directory-path

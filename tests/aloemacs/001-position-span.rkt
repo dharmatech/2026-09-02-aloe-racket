@@ -40,7 +40,7 @@
 
 (test-case "text library is explicit, source-relative, and driver-local"
   (define state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? state name)))
   (check-equal?
    (aloe-value->string (driver-eval! state '((List of 1 2 3) reverse)))
@@ -56,7 +56,7 @@
     (check-true (unbound-in-driver? state name)))
 
   (define fresh-state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? fresh-state name)))
   (check-equal?
    (aloe-value->string (driver-eval! fresh-state '("ready\n" split-lines)))

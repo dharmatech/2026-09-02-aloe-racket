@@ -166,7 +166,8 @@ outside the crossing vocabulary; opaque handles and `Result` remain deferred.
 
 Decided: under filesystem pressure, `Option` is an ordinary loadable Aloe
 library at `lib/option.aloe`. Programs opt in with `load`; `make-driver` does
-not bootstrap it, and `Option` is not a host crossing type.
+not bootstrap it, and `Option` is not a host crossing type. Superseded by
+"Option on the base" (2026-10-13).
 
 ## Filesystem host test double (2026-09-08)
 
@@ -282,3 +283,11 @@ reload of an edited file.
 Decided: every census file loads each file whose names it uses;
 `Math` lives in `examples/mpl/math.aloe`. Rejected: a barrel file and a
 checker that walks identifiers.
+
+## Option on the base (2026-10-13)
+
+Decided: `lib/option.aloe` is installed beside the other libraries;
+`String find` returns it; a load of the file is a hit; an editor query of a
+base library installs it from the buffer. Rejected: resolving `find`'s
+`Option` by name, and a second `Option`. Supersedes the 2026-09-08 "Option
+library" sentence that `make-driver` does not bootstrap it.

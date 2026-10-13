@@ -106,7 +106,7 @@
 
 (test-case "text edits load explicitly and bind only their declaring driver"
   (define state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? state name)))
 
   (check-true (void? (load-text! state)))
@@ -120,7 +120,7 @@
              (lambda () (driver-eval! state 'None)))
 
   (define fresh-state (make-driver))
-  (for ([name (in-list '(Option Position Span Text EditResult))])
+  (for ([name (in-list '(Position Span Text EditResult))])
     (check-true (unbound-in-driver? fresh-state name))))
 
 (test-case "EditResult has exactly its immutable Text and Position fields"

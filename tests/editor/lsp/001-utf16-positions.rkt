@@ -328,7 +328,8 @@
         path
         mixed-text
         '((0 0))
-        (lambda (_path _position)
+        (lambda (_path _position
+                 #:document-path [_document-path #f])
           (set! calls (add1 calls))
           (stub-result 1 0))))
      (check-clean-exchange result 1)

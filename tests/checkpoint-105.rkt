@@ -65,7 +65,7 @@
 
 (test-case "fresh drivers have no filesystem libraries or optional capabilities"
   (define state (make-driver))
-  (for ([name (in-list '(fs-host term Fs Path Entry Disk Location Item Option))])
+  (for ([name (in-list '(fs-host term Fs Path Entry Disk Location Item))])
     (check-false (env-bound? (driver-runtime-environment state) name))
     (check-false
      (type-environment-bound? (driver-type-environment state) name)))

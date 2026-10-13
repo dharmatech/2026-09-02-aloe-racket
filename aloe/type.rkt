@@ -70,7 +70,8 @@
         explicit-constructors?
         [methods #:mutable])
   #:transparent)
-(struct type-environment (bindings parent int-class string-class load-cache)
+(struct type-environment
+  (bindings parent int-class string-class option-class load-cache)
   #:transparent)
 ;; A base's checker load cache maps a resolved path to its entry. The state is
 ;; running or completed; exports stay empty until file environments exist.
@@ -118,6 +119,7 @@
    #f
    int-class
    string-class
+   (box #f)
    (make-hash)))
 
 (define (make-local-type-environment parent bindings)
@@ -126,6 +128,7 @@
    parent
    (type-environment-int-class parent)
    (type-environment-string-class parent)
+   (type-environment-option-class parent)
    (type-environment-load-cache parent)))
 
 (define (type-environment-bound? environment name)
@@ -633,16 +636,43 @@
       "load file changed: ~a; this version does not reload a changed file"
       (displayed-path path))]))
 
-;; A base records the libraries it installed as completed loads.
-(define (record-checked-libraries! environment)
+;; An editor query of a base library checks the buffer it already read as a
+;; keyed root under the document's path, so its base installs that library from
+;; the buffer, once.
+(define (typecheck-keyed-buffer environment document-path source-bytes
+                                check-buffer)
+  (typecheck-once! environment
+                   (resolved-source-path document-path)
+                   (lambda () source-bytes)
+                   (lambda (_source-bytes) (check-buffer))))
+
+;; A base records the libraries it installed as completed loads. A query's base
+;; skips the library it installs from the buffer.
+(define (record-checked-libraries! environment #:except [skipped-path #f])
   (define cache (type-environment-load-cache environment))
   (for ([path (in-list (list list-library-resolved-path
                              string-library-resolved-path
-                             int-library-resolved-path))]
+                             int-library-resolved-path
+                             option-library-resolved-path))]
         [source-bytes (in-list (list (list-library-bytes)
                                      (string-library-bytes)
-                                     (int-library-bytes)))])
-    (hash-set! cache path (checker-load-entry 'completed source-bytes '()))))
+                                     (int-library-bytes)
+                                     (option-library-bytes)))]
+        [exports (in-list '(() () () (Option)))]
+        #:unless (equal? path skipped-path))
+    (hash-set! cache
+               path
+               (checker-load-entry 'completed source-bytes exports))))
+
+;; A base keeps the Option class record it installed; find reads it, not the
+;; name. A queried buffer that binds no Option class leaves the field empty.
+(define (record-checked-option-class! environment)
+  (define option-type
+    (and (type-environment-bound? environment 'Option)
+         (type-environment-ref environment 'Option)))
+  (when (class-type? option-type)
+    (set-box! (type-environment-option-class environment)
+              (class-type-class option-type))))
 
 (define (infer-expression expression environment expected
                           [mismatch-context #f])
@@ -1910,7 +1940,11 @@
        (define actual-type (infer-expression argument environment expected-type))
        (unify-types! actual-type expected-type
                      "String find argument type mismatch"))
-     (type-from-sexpr '(Option Int) environment (make-hasheq))]
+     (define option-class
+       (unbox (type-environment-option-class environment)))
+     (unless option-class
+       (raise-type-error "unbound symbol: ~a" 'Option))
+     (instance-type option-class (list INT))]
     [else
      (infer-defined-string-method selector arguments environment)]))
 
@@ -2063,11 +2097,13 @@
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
 
-;; Bases record their installed libraries, and keyed roots share the load
-;; cache, through these hooks for the driver and aloe/main.rkt.
+;; Bases record their installed libraries and Option, and keyed roots share the
+;; load cache, through these hooks for the driver and aloe/main.rkt.
 (module* load-cache #f
   (provide typecheck-keyed-root
-           record-checked-libraries!))
+           typecheck-keyed-buffer
+           record-checked-libraries!
+           record-checked-option-class!))
 
 ;; Editor expression queries observe the real checker pass through this
 ;; deliberately narrow internal bridge.
