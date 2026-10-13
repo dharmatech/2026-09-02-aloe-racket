@@ -1,6 +1,6 @@
 # modules
 
-**Status: Charter written. Spec not started.**
+**Status: Spec written. Awaiting human review.**
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -11,7 +11,7 @@ Language change. `load` becomes the module system. Not an aloemacs feature layer
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Whole assignment for the designer |
-| `spec.md` | Not written. Design authority after the human accepts it |
+| [`spec.md`](spec.md) | Written 2026-10-12. Design authority after the human accepts it |
 | `checkpoints/` | Not written. One file at a time, after the spec is accepted |
 
 Series identity is `modules`. Checkpoint 000 is spoken **modules 000** and will be filed as `checkpoints/000-run-once.md`. Numbers are three digits, start at 000, and are never renumbered. The checkpoint manager writes one checkpoint, then stops.
@@ -24,10 +24,9 @@ A load copies the names the loaded file defines, in a file and at the prompt. A 
 
 Code and tests live in the project root. Tests for this series live under `tests/modules/`.
 
-Next step: a designer conversation. Its whole assignment is this folder's `charter.md`.
+Next step: the human reviews `spec.md`. After it is accepted, a checkpoint-manager conversation writes `checkpoints/000-run-once.md` from it and stops.
 
 ```text
-Read docs/workflow.md. You are the designer. Your assignment is
-docs/design/implementation/modules/charter.md. If you have been
-told to read that file, it is the whole assignment.
+Read docs/workflow.md. You are the checkpoint manager. Your assignment is
+docs/design/implementation/modules/spec.md. Write one checkpoint and stop.
 ```
