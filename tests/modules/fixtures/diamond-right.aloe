@@ -1,0 +1,3 @@
+(load "diamond-leaf.aloe")
+
+(define right-leaf (Leaf new))

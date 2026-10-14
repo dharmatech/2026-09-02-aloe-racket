@@ -1,0 +1,6 @@
+(load "diamond-left.aloe")
+(load "diamond-right.aloe")
+(load "diamond-leaf.aloe")
+(load "diamond-leaf.aloe")
+
+(define top-leaf (Leaf new))

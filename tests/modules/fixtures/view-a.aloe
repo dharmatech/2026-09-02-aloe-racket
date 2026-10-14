@@ -1,0 +1,3 @@
+(define-class View
+  (fields)
+  (methods))

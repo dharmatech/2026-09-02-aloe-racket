@@ -805,7 +805,11 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
   without running the file; different bytes are a type error. The prompt is
   not a file: its parent is the base, and a file loaded there copies its
   definitions into the prompt's environment. A program given with a source
-  path is a file module.
+  path is a file module. A copied name does not replace a different definition
+  already visible where it lands; that is a type error naming both origins. A
+  file may not define a name the base binds, or a name one of its loads copied
+  in. A second definition of a name in the same environment replaces the
+  first.
 - `cond` is syntax sugar for nested `if` forms; its final `else` clause is
   required.
 - `define-protocol` declares a protocol type and may declare required method

@@ -1,0 +1,7 @@
+(load "view-a.aloe")
+
+(define local-load
+  (let ((x 1))
+    (load "view-b.aloe")))
+
+(define a-view (View new))

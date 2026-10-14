@@ -247,14 +247,17 @@
                 'GelPicks)
   (check-not-exn (lambda () (driver-eval! state picks))))
 
-(test-case "a later load replaces a prompt name"
+(test-case "a later load of a prompt name is a collision"
   (define state (make-driver))
   (driver-eval! state '(define-class Point (fields) (methods)))
   (define prompt-point (driver-eval! state 'Point))
-  (driver-eval! state (load-datum point-path))
-  (check-false (eq? (driver-eval! state 'Point) prompt-point))
+  (check-equal?
+   (raised (lambda () (driver-eval! state (load-datum point-path))))
+   (list #t (string-append "typecheck: name collision: Point is defined by "
+                           "the prompt and by examples/point.aloe")))
+  (check-eq? (driver-eval! state 'Point) prompt-point)
   (check-not-exn
-   (lambda () (type-of (parse-datum '(Point new 1 2)) (checker state)))))
+   (lambda () (type-of (parse-datum '(Point new)) (checker state)))))
 
 (test-case "define-methods runs in the file that wrote it"
   (define state (make-driver))

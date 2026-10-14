@@ -1,0 +1,5 @@
+(load "view-a.aloe")
+
+(define-class View
+  (fields)
+  (methods))

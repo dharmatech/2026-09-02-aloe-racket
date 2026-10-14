@@ -309,3 +309,11 @@ where they were written; a load of `editor.aloe` binds the names
 barrels, a load path, a declared module name, per-importer method
 tables, scoped selectors, parenting a file at the loader or at a
 bare kernel.
+
+## Load collisions (2026-10-14)
+
+Decided: the identity of a binding is its defining file plus the name; a
+different definition already visible is a check-time error naming both; the
+prompt may shadow the base, a file may not; a file may not define a name its
+own loads copied in; a load or definition in a local scope is not checked.
+Rejected: `prefix`, `only`, `rename`, and silent replacement across files.

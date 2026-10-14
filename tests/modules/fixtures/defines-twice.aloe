@@ -1,0 +1,3 @@
+(define twice-name 1)
+
+(define twice-name "two")

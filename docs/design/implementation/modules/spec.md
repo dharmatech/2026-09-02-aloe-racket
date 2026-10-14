@@ -15,6 +15,10 @@ against the left's type, so the mismatch surfaces as `type mismatch:
 expected P, got P`). While issuing modules 004 the manager corrected
 §6.3's "nothing a program sees changes": a caller's local names stop
 leaking into method annotations and the deferred generic re-check.
+While issuing modules 007 the manager recorded in §6.6 and §12 row 3f
+two decisions the human made on 2026-10-14: a file may not define a
+name one of its own loads copied in, and loads and definitions in a
+local scope are not checked.
 [`SPEC.md`](../../../../SPEC.md) remains language law; this series
 amends it only in the checkpoints §12 names.
 [`docs/workflow.md`](../../../workflow.md) is the process.
@@ -1035,7 +1039,10 @@ then the base) is compared by origin:
 
 A file module that defines a name already bound on the base is the
 same error, raised when its `define`, `define-class`, or
-`define-protocol` is checked. Two paths that export the same name
+`define-protocol` is checked. So is a file module that defines a name
+one of its own loads copied in from another file (decided by the
+human, 2026-10-14); the first-named side is the copied binding's
+origin. Two paths that export the same name
 collide even when the values would be equal by content; the identity
 of a binding is its defining file plus the name. Two files that
 define `View` and never meet are legal; a third file that loads both
@@ -1056,6 +1063,12 @@ typecheck: name collision: List is defined by the language base and by examples/
 The first-named side is the binding already visible; the second is
 the file whose load or definition collided.
 
+**Local scopes.** `load` and `define` are expressions, so either may
+appear inside a `let`, a `fn` body, a method body, or a `case` clause.
+There the binding lands in that local scope, as slice 3e left it, and
+no collision rule applies: local environments record no origins
+(decided by the human, 2026-10-14).
+
 This error is the only collision tool in this series. If adoption
 (§10) cannot drop a prefix without a new tool, the checkpoint writer
 stops and reports it.
@@ -1071,7 +1084,9 @@ two loaders is not an error (`lib/option.aloe` through `text.aloe`
 and `fs.aloe`; a diamond fixture); a file that defines a name twice
 replaces; a prompt redefinition replaces. The 3a base-library query
 rule has landed before this slice, so a query of `lib/option.aloe`
-is not this error; the test proves that.
+is not this error; the test proves that. Also tested: a file that
+loads a `View` file and then defines `View` is the first message with
+the loading file second; a load inside a `let` is not checked.
 
 ---
 
@@ -1468,7 +1483,7 @@ not edited.
 | **3c** | none | none |
 | **3d** | §3.3, after "Every class that opts into a protocol with signatures must implement each required method with compatible parameter and return types." add: "That is checked when the outermost program finishes, over every class the environment's base, cache, file, and prompt hold." | none |
 | **3e** | §11, first bullet, becomes: "`load` reads, typechecks, and evaluates another Aloe file once per base, as a file module: the file runs in its own environment, whose parent is the base, and the names it defines with `define`, `define-class`, and `define-protocol` are copied into the loading environment. Names the file only received from its own loads are not copied. Relative paths resolve from the loading file before the current directory and project root. A later `load` of the same path with the same bytes copies the same definitions without running the file; different bytes are a type error. The prompt is not a file: its parent is the base, and a file loaded there copies its definitions into the prompt's environment. A program given with a source path is a file module." §3.1, after "`self` is implicit in every method body." add: "A method body, and the types named in its signature, are checked and evaluated in the environment of the file that wrote the method, whether in the class form or in a later `define-methods`." §3.3 add: "A protocol's signatures are resolved in the file that wrote the protocol." §4.6 add: "A method added with `define-methods` runs in the file that wrote it." §8, "modules beyond `load`" becomes "modules beyond `load`'s file modules: `import`, export lists, prefixes, renames, packages, a load path, reload of an edited file". | **File modules and the copy rule.** Decided: a load copies the loaded file's own definitions, in a file and at the prompt; a file's environment is a child of the base; a root's definitions go to the prompt; methods and protocols resolve where they were written; a load of `editor.aloe` binds the names `editor.aloe` defines, and `Span` is bound by a load of `lib/text.aloe`. Rejected: `import`, a prefix clause, export lists, barrels, a load path, a declared module name, per-importer method tables, scoped selectors, parenting a file at the loader or at a bare kernel. |
-| **3f** | §11, append to the first bullet: "A copied name does not replace a different definition already visible where it lands; that is a type error naming both origins. A file may not define a name the base binds. A second definition of a name in the same environment replaces the first." | **Load collisions.** Decided: the identity of a binding is its defining file plus the name; a different definition already visible is a check-time error naming both; the prompt may shadow the base, a file may not. Rejected: `prefix`, `only`, `rename`, and silent replacement across files. |
+| **3f** | §11, append to the first bullet: "A copied name does not replace a different definition already visible where it lands; that is a type error naming both origins. A file may not define a name the base binds, or a name one of its loads copied in. A second definition of a name in the same environment replaces the first." | **Load collisions.** Decided: the identity of a binding is its defining file plus the name; a different definition already visible is a check-time error naming both; the prompt may shadow the base, a file may not; a file may not define a name its own loads copied in; a load or definition in a local scope is not checked. Rejected: `prefix`, `only`, `rename`, and silent replacement across files. |
 | **4** | none | **Defining paths.** Decided: a class records the path of the file that defined it; hover and the `expected, got` mismatch print each class's repository-relative path as a second rendering; `type->datum` is unchanged. Rejected: paths inside `type->datum`, paths on rows and completion items, a decorative module name. |
 | **5** | none | **Aloemacs adoption.** Decided: `file.aloe` splits toward one class per file under the field-cycle rule and the `Aloemacs` class prefixes come off in the same move; Gel keeps its prefixes. Rejected: a barrel, a prefix tool, renaming Gel. |
 

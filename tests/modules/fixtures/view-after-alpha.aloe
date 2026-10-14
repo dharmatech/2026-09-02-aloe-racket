@@ -1,0 +1,5 @@
+(define alpha 1)
+
+(define-class View
+  (fields)
+  (methods))

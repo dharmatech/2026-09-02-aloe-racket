@@ -83,9 +83,11 @@
         method-environments)
   #:transparent)
 ;; A file environment records its file's resolved path; every other environment
-;; records #f.
+;; records #f. A base, an interactive environment, and a file environment map
+;; each name in their own table to its origin: the resolved path of the file
+;; that defined it, prompt, or base. A local environment's origins are #f.
 (struct type-environment
-  (bindings parent int-class string-class option-class load-cache path)
+  (bindings parent int-class string-class option-class load-cache path origins)
   #:transparent)
 ;; A base's checker load cache maps a resolved path to its entry. The state is
 ;; running or completed. Exports are the (name . type) bindings the file's own
@@ -125,8 +127,7 @@
     (parameter-type (gensym 'T) 'T))
   (define string-class (string-class-type '() (make-hasheq)))
   (define int-class (int-class-type '() (make-hasheq)))
-  (type-environment
-   (make-hasheq
+  (define bindings
     (list (cons 'dummy (opaque-type 'Dummy))
           (cons 'List
                 (list-class-type list-element-parameter '() (make-hasheq)))
@@ -134,21 +135,26 @@
           (cons 'String string-class)
           (cons 'Symbol (symbol-class-type))
           (cons 'Mirror (mirror-class-type))))
+  (type-environment
+   (make-hasheq bindings)
    #f
    int-class
    string-class
    (box #f)
    (make-hash)
-   #f))
+   #f
+   (make-hasheq
+    (for/list ([binding (in-list bindings)])
+      (cons (car binding) 'base)))))
 
 (define (make-local-type-environment parent bindings)
-  (make-child-type-environment parent bindings #f))
+  (make-child-type-environment parent bindings #f #f))
 
 ;; A loaded file is checked in its own environment, a child of the base.
 (define (make-file-type-environment base path)
-  (make-child-type-environment base '() path))
+  (make-child-type-environment base '() path (make-hasheq)))
 
-(define (make-child-type-environment parent bindings path)
+(define (make-child-type-environment parent bindings path origins)
   (type-environment
    (make-hasheq bindings)
    parent
@@ -156,7 +162,8 @@
    (type-environment-string-class parent)
    (type-environment-option-class parent)
    (type-environment-load-cache parent)
-   path))
+   path
+   origins))
 
 ;; The base is the end of an environment's parent chain.
 (define (type-environment-base environment)
@@ -165,7 +172,7 @@
 
 ;; A base's interactive environment starts with no bindings of its own.
 (define (make-interactive-type-environment base)
-  (make-local-type-environment base '()))
+  (make-child-type-environment base '() #f (make-hasheq)))
 
 (define (type-environment-bound? environment name)
   (cond
@@ -184,8 +191,56 @@
     [else
      (raise-type-error "unbound symbol: ~a" name)]))
 
-(define (type-environment-set! environment name type)
-  (hash-set! (type-environment-bindings environment) name type))
+;; A binding records its origin where the environment keeps origins: the given
+;; one for a copy, otherwise the environment's own.
+(define (type-environment-set! environment name type [origin #f])
+  (hash-set! (type-environment-bindings environment) name type)
+  (define origins (type-environment-origins environment))
+  (when origins
+    (hash-set! origins name (or origin (definition-origin environment)))))
+
+;; A definition in a file environment comes from its file, one in an
+;; interactive environment from the prompt, and one in a base from the base.
+(define (definition-origin environment)
+  (cond
+    [(type-environment-path environment)]
+    [(type-environment-parent environment) 'prompt]
+    [else 'base]))
+
+;; The origin of the binding a base, interactive, or file environment sees for
+;; name: its own table's, else its base's; #f when neither binds it.
+(define (visible-origin environment name)
+  (or (hash-ref (type-environment-origins environment) name #f)
+      (hash-ref (type-environment-origins (type-environment-base environment))
+                name
+                #f)))
+
+;; A file may not define a name the base binds, or a name one of its loads
+;; copied in; a name the file itself defined earlier is replaced. Every other
+;; environment's definitions are not checked.
+(define (check-definition-name! environment name)
+  (define path (type-environment-path environment))
+  (define origin
+    (and path
+         (or (hash-ref
+              (type-environment-origins (type-environment-base environment))
+              name
+              #f)
+             (hash-ref (type-environment-origins environment) name #f))))
+  (when (and origin (not (equal? origin path)))
+    (raise-name-collision name origin path)))
+
+;; The binding already visible is named first, the colliding file second.
+(define (raise-name-collision name visible-origin origin)
+  (define (origin->string origin)
+    (case origin
+      [(prompt) "the prompt"]
+      [(base) "the language base"]
+      [else (displayed-path origin)]))
+  (raise-type-error "name collision: ~a is defined by ~a and by ~a"
+                    name
+                    (origin->string visible-origin)
+                    (origin->string origin)))
 
 (define (type-environment-inject-host! environment name receiver)
   (unless (type-environment? environment)
@@ -672,16 +727,30 @@
         (cons (cons name (hash-ref bindings name)) exports)
         exports)))
 
-;; A copied name already bound in the loader replaces it.
-(define (copy-exports! loader exports)
-  (for ([export (in-list exports)])
-    (type-environment-set! loader (car export) (cdr export))))
+;; Every export is a definition made by the file at path. A loader that keeps
+;; origins compares each export with its visible binding before any is bound:
+;; the same origin is already there, and a different one is a collision, so
+;; nothing from a colliding copy lands. A local environment takes every export.
+(define (copy-exports! loader path exports)
+  (define copied
+    (for/fold ([copied '()]
+               #:result (reverse copied))
+              ([export (in-list exports)])
+      (define origin
+        (and (type-environment-origins loader)
+             (visible-origin loader (car export))))
+      (cond
+        [(not origin) (cons export copied)]
+        [(equal? origin path) copied]
+        [else (raise-name-collision (car export) origin path)])))
+  (for ([export (in-list copied)])
+    (type-environment-set! loader (car export) (cdr export) path)))
 
 ;; One rule for a load and a keyed root: a resolved path is checked once per
 ;; base; the same bytes again are a hit, and different bytes are an error that
 ;; parses nothing. A check that does not complete leaves no entry and copies
 ;; nothing. Otherwise the file's exports are copied into the loader, on a miss
-;; and on every hit.
+;; and on every hit; a copy that collides leaves the entry completed.
 (define (typecheck-once! loader path read-source-bytes check-source)
   (define cache (type-environment-load-cache loader))
   (define entry (hash-ref cache path #f))
@@ -701,13 +770,13 @@
                    path
                    (checker-load-entry 'completed source-bytes exports))
         (set! completed? #t)
-        (copy-exports! loader exports)
+        (copy-exports! loader path exports)
         result)
       (lambda ()
         (unless completed?
           (hash-remove! cache path))))]
     [(equal? (checker-load-entry-source-bytes entry) source-bytes)
-     (copy-exports! loader (checker-load-entry-exports entry))
+     (copy-exports! loader path (checker-load-entry-exports entry))
      VOID]
     [else
      (raise-type-error
@@ -766,14 +835,18 @@
                (checker-load-entry 'completed source-bytes exports))))
 
 ;; A base keeps the Option class record it installed; find reads it, not the
-;; name. A queried buffer that binds no Option class leaves the field empty.
+;; name. Its origin is lib/option.aloe. A queried buffer that binds no Option
+;; class leaves the field empty.
 (define (record-checked-option-class! environment)
   (define option-type
     (and (type-environment-bound? environment 'Option)
          (type-environment-ref environment 'Option)))
   (when (class-type? option-type)
     (set-box! (type-environment-option-class environment)
-              (class-type-class option-type))))
+              (class-type-class option-type))
+    (hash-set! (type-environment-origins environment)
+               'Option
+               option-library-resolved-path)))
 
 (define (infer-expression expression environment expected
                           [mismatch-context #f])
@@ -798,11 +871,13 @@
         "check operands must have the same type")
        right-type]
       [(define-expr name value-expression _)
+       (check-definition-name! environment name)
        (define value-type
          (infer-expression value-expression environment #f))
        (type-environment-set! environment name value-type)
        VOID]
       [(define-protocol-expr name signatures _)
+       (check-definition-name! environment name)
        (define protocol (protocol-type name signatures environment))
        (type-environment-set! environment name protocol)
        (for ([signature (in-list signatures)])
@@ -810,6 +885,7 @@
        VOID]
       [(define-class-expr
         name type-parameters protocol fields constructors methods _)
+       (check-definition-name! environment name)
        (check-class-definition!
         name
         type-parameters

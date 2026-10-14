@@ -1,0 +1,3 @@
+(load "view-b.aloe")
+
+(define b-view (View new 5))
