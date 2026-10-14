@@ -38,12 +38,14 @@ conversation.
 | 5 | VS Code client | [`vscode/`](vscode/) | **Implemented and reviewed.** editor-vscode 000 (hover). | 4 |
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
 | 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
+| 8 | Class-name definition | [`definition/`](definition/) | **Charter written.** Spec not started. editor-definition. | 1, 3, 4 |
 
 Projects 1–7 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
 implemented by editor-completion 000–002 for the public Racket query and 003
 for its LSP integration. Project 7 is a client skin: lexical coloring of
-`.aloe` buffers. It does not add an LSP method or a Racket query.
+`.aloe` buffers. It does not add an LSP method or a Racket query. Project 8
+is a charter for jumping to a class name. Its spec is not written.
 
 Incomplete-buffer recovery is **in** project 6's first spec (one named
 rule, tested). It remains out of hover. Wrap-form and top-level name
@@ -59,7 +61,9 @@ These are easy to smuggle in as "editor prerequisites." They are not.
   completion rule
 - Macros / `syntax-rules` / `syntax-case`
 - Wrap-the-preceding-expression as a VS Code command
-- Rename, go-to-definition, semantic tokens, formatting
+- Rename, references, semantic tokens, formatting
+- Go-to-definition for a method selector, a protocol, a `define` name,
+  or an instance. Class-name definition is project 8.
 - Tree-sitter, GitHub Linguist, or a second editor's grammar
 - Embedding Gel in VS Code
 - Global checkpoints
@@ -77,6 +81,7 @@ because the editor learned a new keyword.
 | Expression query | A Racket function and, if the spec wants it, a CLI |
 | Completion | Snippet + cursor unit tests; LSP then wraps the same function |
 | Syntax highlighting | Grammar-token tests. VS Code is the human consumer; there is no Racket query. |
+| Class-name definition | Snippet + cursor unit tests; LSP then wraps the same function. |
 
 If a proposed slice has no consumer besides "we will need this for
 LSP," it is too early. Project 7 is a client skin, not an LSP feature,
