@@ -117,10 +117,11 @@ own name from an alias.
 - A variable whose symbol is the class's own name.
   `AloemacsBuffer` in `(AloemacsBuffer new* ...)` is the original
   case.
-- A local that reuses the class's own name and holds the class
-  object. `((fn (Point) (Point new* ...)) call Point)` jumps from
-  the inner `Point`. That parameter is not an alias. The symbol
-  rule cannot exclude it.
+- A later use of a local that reuses the class's own name and holds
+  the class object. In `((fn (Point) (Point new* ...)) call Point)`
+  the `Point` in the body jumps. The `Point` in `(fn (Point)` does
+  not. That parameter is not an alias. The symbol rule cannot
+  exclude the use.
 - The target name of `define-methods`, when that symbol is the
   class's own name. `(define-methods AloemacsWindowTree ...)` and a
   target defined in another file both jump. `List`, `String`, and
@@ -166,9 +167,11 @@ These return no location. They are not errors.
 - A selector. This includes method selectors, constructor
   selectors such as `Some` and `new`, and the markers `new*` and
   `with`.
-- The name bound by `define`, `let`, or `fn`, when §4.1's rule does
-  not hold. An alias fails that rule. The inner `Point` in §4.1
-  meets it and jumps to the class, not to the parameter.
+- A binding site. The name in `define`, the name in `let`, and the
+  parameter in `fn` are bare symbols, and §4.7 gives them no span.
+  A later use jumps only when §4.1's rule holds. In the §4.1
+  example the `Point` in the body jumps to the class, and the
+  `Point` in `(fn (Point)` does not.
 - A class with no defining path. Kernel classes, a class defined
   at the prompt, and an unkeyed port are in this group.
 - `fn` annotations. The parser accepts `(fn (name ...) body)` only.
@@ -275,15 +278,22 @@ the symbols in that type. A constructor payload type is a
 `field-declaration`. A protocol signature is a
 `method-declaration`. `parse-datum` sets the new field to `#f`.
 The field may be a flat list in reading order or a tree of the same
-shape as the type. Pick one and record it. Each symbol occurrence
-has its own span, so two uses of one name stay apart. The type
-sexpr stays a raw datum. The new field does not change Aloe's
-meaning: a field is still a name and a type sexpr.
+shape as the type. Pick one and record it. A span tree stored in
+that one field is not the program-wide parallel syntax tree that
+editor-source-locations 000 bans. Each symbol occurrence has its
+own span, so two uses of one name stay apart. The type sexpr stays
+a raw datum. The new field does not change Aloe's meaning: a field
+is still a name and a type sexpr.
 
 That type span tells the query which symbol the cursor is on. The
 location the query returns is the class name's span on the class
 record. Resolve the symbol in the environment that wrote the
-annotation, with that form's type parameters in scope.
+annotation. A field type has the class's type parameters in scope.
+For a method, the type parameters in scope are the class's plus
+that method's own `(type ...)` parameters, the substitution
+`extend-method-substitution` builds. A `define-methods` form has
+no type parameters of its own. A protocol signature has none; the
+parser stores `'()`.
 [`../../design/implementation/modules/spec.md`](../../design/implementation/modules/spec.md)
 §6.3 names those environments: the class form for a field type, the
 method's recorded environment for a parameter or return type, and
@@ -367,8 +377,8 @@ this charter wins for class-name definition and nowhere else.
 
 - Method selectors, constructor selectors, `new*`, and `with`
 - Protocols as jump targets
-- The binding site of a `define`, `let`, or `fn` parameter. A
-  cursor that meets §4.1 still jumps to the class.
+- A binding site of `define`, `let`, or `fn`. A later use that
+  meets §4.1 still jumps to the class.
 - Go-to-type-definition on an instance
 - References, rename, signature help, formatting, code actions,
   semantic tokens, diagnostics
