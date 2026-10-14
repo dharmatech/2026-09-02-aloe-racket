@@ -316,6 +316,7 @@
   (define file-output (open-output-string))
   (check-equal? (driver-load-file! file-state box-root-path file-output)
                 '(3))
+  (driver-eval! file-state (load-datum box-path))
   (define box-class (runtime-value file-state 'Box))
   (check-equal? (driver-load-file! file-state box-root-path file-output)
                 '())
@@ -390,7 +391,7 @@
   (check-equal?
    (raised (lambda () (driver-eval! state (load-datum failing-check-path))))
    (list #f check-message))
-  (check-equal? (driver-eval! state 'before-failure) 1)
+  (check-false (env-bound? (driver-runtime-environment state) 'before-failure))
   (check-equal?
    (raised (lambda () (driver-eval! state (load-datum failing-check-path))))
    (list #f check-message)))

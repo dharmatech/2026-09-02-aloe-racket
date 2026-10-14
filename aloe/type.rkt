@@ -82,12 +82,14 @@
         environment
         method-environments)
   #:transparent)
+;; A file environment records its file's resolved path; every other environment
+;; records #f.
 (struct type-environment
-  (bindings parent int-class string-class option-class load-cache)
+  (bindings parent int-class string-class option-class load-cache path)
   #:transparent)
 ;; A base's checker load cache maps a resolved path to its entry. The state is
-;; running or completed. Exports are (name . type) bindings in definition order;
-;; only the Option seed has one until file environments exist.
+;; running or completed. Exports are the (name . type) bindings the file's own
+;; definitions made, in definition order.
 (struct checker-load-entry (state source-bytes exports) #:transparent)
 
 (define INT (int-type))
@@ -102,6 +104,9 @@
 
 (define current-typecheck-load-paths (make-parameter '()))
 (define current-typecheck-program-depth (make-parameter 0))
+;; The interactive environment a root's conformance walk visits when the root
+;; is checked in a file environment; #f when the root is checked in it.
+(define current-root-interactive-environment (make-parameter #f))
 (define current-construction-obligations (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
@@ -133,16 +138,34 @@
    int-class
    string-class
    (box #f)
-   (make-hash)))
+   (make-hash)
+   #f))
 
 (define (make-local-type-environment parent bindings)
+  (make-child-type-environment parent bindings #f))
+
+;; A loaded file is checked in its own environment, a child of the base.
+(define (make-file-type-environment base path)
+  (make-child-type-environment base '() path))
+
+(define (make-child-type-environment parent bindings path)
   (type-environment
    (make-hasheq bindings)
    parent
    (type-environment-int-class parent)
    (type-environment-string-class parent)
    (type-environment-option-class parent)
-   (type-environment-load-cache parent)))
+   (type-environment-load-cache parent)
+   path))
+
+;; The base is the end of an environment's parent chain.
+(define (type-environment-base environment)
+  (define parent (type-environment-parent environment))
+  (if parent (type-environment-base parent) environment))
+
+;; A base's interactive environment starts with no bindings of its own.
+(define (make-interactive-type-environment base)
+  (make-local-type-environment base '()))
 
 (define (type-environment-bound? environment name)
   (cond
@@ -580,9 +603,12 @@
         (materialize-expression-observation-at-root-end!)
         root-type)))
   (when outermost?
-    (check-protocol-conformance! environment environment))
+    (check-protocol-conformance!
+     environment
+     (or (current-root-interactive-environment) environment)))
   result)
 
+;; The loader is the environment the load form is checked in.
 (define (typecheck-load! expression environment)
   (define path (load-expr-resolved-path expression))
   (unless (file-exists? path)
@@ -597,30 +623,67 @@
      (parameterize
          ([current-typecheck-load-paths
            (cons path (current-typecheck-load-paths))])
-       (typecheck-program expressions environment))))
+       (check-file-module environment path expressions))))
   VOID)
 
 ;; A program given with a source path is checked once per base, under the
-;; same rule as a nested load. A hit returns Void and no expressions.
+;; same rule as a nested load; the caller's environment is its loader. A hit
+;; returns Void and no expressions.
 (define (typecheck-keyed-root environment source-path source-bytes)
+  (define path (resolved-source-path source-path))
   (define expressions #f)
   (define result
     (typecheck-once!
      environment
-     (resolved-source-path source-path)
+     path
      (lambda () source-bytes)
      (lambda (source-bytes)
        (set! expressions
              (read-program (open-input-bytes source-bytes)
                            #:source-path source-path))
-       (typecheck-program expressions environment))))
+       (check-file-module environment path expressions))))
   (values result expressions))
+
+;; A file's forms are checked in a new file environment under the loader's
+;; base. When the file is a root, the loader is the interactive environment its
+;; conformance walk visits.
+(define (check-file-module loader path expressions)
+  (define file-environment
+    (make-file-type-environment (type-environment-base loader) path))
+  (define result
+    (parameterize ([current-root-interactive-environment loader])
+      (typecheck-program expressions file-environment)))
+  (values result (file-exports expressions file-environment)))
+
+;; The bindings a file's own define, define-class, and define-protocol forms
+;; left in its environment, in definition order, each name once.
+(define (file-exports expressions file-environment)
+  (define bindings (type-environment-bindings file-environment))
+  (for/fold ([exports '()]
+             #:result (reverse exports))
+            ([expression (in-list expressions)])
+    (define name
+      (match expression
+        [(define-expr name _ _) name]
+        [(define-class-expr name _ _ _ _ _ _) name]
+        [(define-protocol-expr name _ _) name]
+        [_ #f]))
+    (if (and name (not (assq name exports)))
+        (cons (cons name (hash-ref bindings name)) exports)
+        exports)))
+
+;; A copied name already bound in the loader replaces it.
+(define (copy-exports! loader exports)
+  (for ([export (in-list exports)])
+    (type-environment-set! loader (car export) (cdr export))))
 
 ;; One rule for a load and a keyed root: a resolved path is checked once per
 ;; base; the same bytes again are a hit, and different bytes are an error that
-;; parses nothing. A check that does not complete leaves no entry.
-(define (typecheck-once! environment path read-source-bytes check-source)
-  (define cache (type-environment-load-cache environment))
+;; parses nothing. A check that does not complete leaves no entry and copies
+;; nothing. Otherwise the file's exports are copied into the loader, on a miss
+;; and on every hit.
+(define (typecheck-once! loader path read-source-bytes check-source)
+  (define cache (type-environment-load-cache loader))
   (define entry (hash-ref cache path #f))
   (when (or (and entry (eq? (checker-load-entry-state entry) 'running))
             (member path (current-typecheck-load-paths) equal?))
@@ -633,16 +696,19 @@
      (dynamic-wind
       void
       (lambda ()
-        (begin0
-          (check-source source-bytes)
-          (hash-set! cache
-                     path
-                     (checker-load-entry 'completed source-bytes '()))
-          (set! completed? #t)))
+        (define-values (result exports) (check-source source-bytes))
+        (hash-set! cache
+                   path
+                   (checker-load-entry 'completed source-bytes exports))
+        (set! completed? #t)
+        (copy-exports! loader exports)
+        result)
       (lambda ()
         (unless completed?
           (hash-remove! cache path))))]
-    [(equal? (checker-load-entry-source-bytes entry) source-bytes) VOID]
+    [(equal? (checker-load-entry-source-bytes entry) source-bytes)
+     (copy-exports! loader (checker-load-entry-exports entry))
+     VOID]
     [else
      (raise-type-error
       "load file changed: ~a; this version does not reload a changed file"
@@ -656,7 +722,26 @@
   (typecheck-once! environment
                    (resolved-source-path document-path)
                    (lambda () source-bytes)
-                   (lambda (_source-bytes) (check-buffer))))
+                   (lambda (_source-bytes) (values (check-buffer) '()))))
+
+;; Any other queried buffer is a file module keyed by the document's path: a
+;; file environment under the query's base, with the query's interactive
+;; environment for conformance. The query's base is discarded afterwards, so
+;; the buffer copies nothing into it.
+(define (typecheck-file-buffer environment document-path source-bytes
+                               check-buffer)
+  (define path (resolved-source-path document-path))
+  (typecheck-once!
+   environment
+   path
+   (lambda () source-bytes)
+   (lambda (_source-bytes)
+     (define file-environment
+       (make-file-type-environment (type-environment-base environment) path))
+     (values
+      (parameterize ([current-root-interactive-environment environment])
+        (check-buffer file-environment))
+      '()))))
 
 ;; A base records the libraries it installed as completed loads. A query's base
 ;; skips the library it installs from the buffer. The Option seed exports the
@@ -2192,13 +2277,17 @@
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
 
-;; Bases record their installed libraries and Option, and keyed roots share the
-;; load cache, through these hooks for the driver and aloe/main.rkt.
+;; Bases record their installed libraries and Option, keyed roots share the
+;; load cache, and each base gets its interactive environment, through these
+;; hooks for the driver and aloe/main.rkt.
 (module* load-cache #f
   (provide typecheck-keyed-root
            typecheck-keyed-buffer
+           typecheck-file-buffer
            record-checked-libraries!
-           record-checked-option-class!))
+           record-checked-option-class!
+           make-interactive-type-environment
+           type-environment-base))
 
 ;; Editor expression queries observe the real checker pass through this
 ;; deliberately narrow internal bridge.

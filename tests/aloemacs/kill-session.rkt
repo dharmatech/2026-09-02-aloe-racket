@@ -9,6 +9,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
@@ -21,6 +24,10 @@
                         (hash "/cwd" 'directory "/cwd/a.txt" 'file)
                         (hash "/cwd/a.txt" "visited\ntext")))
   (driver-eval! st `(load ,(path->string (if main? main-path file-path))))
+  (driver-eval! st `(load ,(path->string file-path)))
+  (driver-eval! st `(load ,(path->string editor-path)))
+  (driver-eval! st `(load ,(path->string text-path)))
+  (driver-eval! st `(load ,(path->string fs-path)))
   st)
 
 (define (session source line column #:mark [mark no-mark]

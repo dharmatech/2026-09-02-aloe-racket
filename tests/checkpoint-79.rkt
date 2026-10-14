@@ -6,11 +6,16 @@
 
 (define-runtime-path gel-loop-path "../gel/loop.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
+(define-runtime-path gel-menu-path "../gel/menu.aloe")
 
 (define checker-environment (make-type-environment))
 (void
  (typecheck-source
-  (format "(load ~s)" (path->string gel-loop-path))
+  (format "(load ~s) (load ~s) (load ~s)"
+          (path->string gel-loop-path)
+          (path->string gel-stack-path)
+          (path->string gel-menu-path))
   checker-environment))
 (void
  (typecheck-source
@@ -70,7 +75,10 @@ ALOE
 (define environment (make-top-level-env))
 (void
  (eval-source
-  (format "(load ~s)" (path->string gel-loop-path))
+  (format "(load ~s) (load ~s) (load ~s)"
+          (path->string gel-loop-path)
+          (path->string gel-stack-path)
+          (path->string gel-menu-path))
   environment))
 (void
  (eval-source

@@ -2,7 +2,7 @@
 
 (require racket/runtime-path
          rackunit
-         (only-in "../aloe/env.rkt" env-define!)
+         (only-in "../aloe/env.rkt" env-base env-define!)
          "../aloe/eval.rkt"
          "../aloe/host.rkt"
          (only-in "../aloe/main.rkt"
@@ -16,6 +16,8 @@
 (define-runtime-path gel-loop-path "../gel/loop.aloe")
 (define-runtime-path gel-main-path "../gel/main.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
+(define-runtime-path gel-menu-path "../gel/menu.aloe")
 
 (define (load-runtime! path environment)
   (eval-expr
@@ -25,7 +27,10 @@
 (define environment (make-top-level-env))
 (void
  (eval-source
-  (format "(load ~s)" (path->string gel-loop-path))
+  (format "(load ~s) (load ~s) (load ~s)"
+          (path->string gel-loop-path)
+          (path->string gel-stack-path)
+          (path->string gel-menu-path))
   environment))
 (void
  (eval-source
@@ -36,15 +41,17 @@
  (type->datum
   (typecheck-source
    (format
-    "(load ~s) ((GelStack new (List empty)) push 10)"
-    (path->string gel-loop-path))))
+    "(load ~s) (load ~s) ((GelStack new (List empty)) push 10)"
+    (path->string gel-loop-path)
+    (path->string gel-stack-path))))
  'GelStack)
 (check-equal?
  (type->datum
   (typecheck-source
    (format
-    "(load ~s) ((gel-empty-stack push 1) push 2)"
-    (path->string gel-loop-path))))
+    "(load ~s) (load ~s) ((gel-empty-stack push 1) push 2)"
+    (path->string gel-loop-path)
+    (path->string gel-stack-path))))
  'GelStack)
 (check-exn
  #rx"unbound symbol: gel-push"
@@ -157,7 +164,7 @@
 (define transcript-keys (box '("1" "q")))
 (define transcript-output (open-output-string))
 (env-define!
- transcript-environment
+ (env-base transcript-environment)
  'term
  (make-term-receiver
   transcript-output
@@ -166,6 +173,9 @@
     (set-box! transcript-keys (cdr keys))
     (car keys))))
 (load-runtime! gel-main-path transcript-environment)
+(load-runtime! gel-loop-path transcript-environment)
+(load-runtime! gel-stack-path transcript-environment)
+(load-runtime! gel-menu-path transcript-environment)
 (load-runtime! point-path transcript-environment)
 (void
  (eval-expr

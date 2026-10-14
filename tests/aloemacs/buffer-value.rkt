@@ -14,6 +14,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/typed-none"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
@@ -83,6 +86,9 @@
 (define (loaded)
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   st)
 
 ;; Forward the real double through fixed host arities while counting effects.
@@ -334,6 +340,10 @@
   (define st (make-driver))
   (define calls (attach-fs! st))
   (ev st `(load ,(path->string main-path)))
+  (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   (same-session st 'aloemacs-editor (fresh-session "" no-path #f))
   (check-equal? (ev st '((aloemacs-editor current-buffer) name)) "untitled")
   (check-equal? (ev st '((aloemacs-editor text) case

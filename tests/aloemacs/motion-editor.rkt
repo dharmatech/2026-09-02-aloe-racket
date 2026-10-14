@@ -7,11 +7,17 @@
          "../../host/racket/fs.rkt")
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 (define (state)
   (define st (make-driver))
   (driver-inject-host! st 'fs-host (make-fs-double "/cwd" (hash "/cwd" 'directory) (hash)))
   (driver-eval! st `(load ,(path->string file-path)))
+  (driver-eval! st `(load ,(path->string editor-path)))
+  (driver-eval! st `(load ,(path->string text-path)))
+  (driver-eval! st `(load ,(path->string fs-path)))
   st)
 
 (define (editor source line column)

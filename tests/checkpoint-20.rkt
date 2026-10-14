@@ -9,6 +9,7 @@
 (define-runtime-path point-path "../examples/point.aloe")
 (define-runtime-path boids-path "../examples/boids.aloe")
 (define-runtime-path nested-path "fixtures/load-nested-a.aloe")
+(define-runtime-path nested-b-path "fixtures/load-nested-b.aloe")
 (define-runtime-path cycle-path "fixtures/load-cycle-a.aloe")
 (define-runtime-path missing-path "fixtures/no-such-file.aloe")
 
@@ -47,10 +48,20 @@
  (driver-eval! boids-driver '(((demo step) flock) len))
  3)
 
-;; Nested relative loads are allowed and share bindings with their caller.
+;; A nested relative load copies only into the file that loads it:
+;; load-nested-a.aloe defines nothing itself, and nested-value is bound by a
+;; load of load-nested-b.aloe.
+(check-exn
+ #rx"unbound symbol: nested-value"
+ (lambda ()
+   (eval-source
+    (string-append (load-form nested-path) "\nnested-value"))))
 (check-equal?
  (eval-source
-  (string-append (load-form nested-path) "\nnested-value"))
+  (string-append (load-form nested-path)
+                 "\n"
+                 (load-form nested-b-path)
+                 "\nnested-value"))
  7)
 
 ;; Missing files and active load cycles are explicit errors.

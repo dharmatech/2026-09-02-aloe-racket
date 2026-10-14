@@ -6,6 +6,7 @@
          "../aloe/main.rkt")
 
 (define-runtime-path boids-path "../examples/boids.aloe")
+(define-runtime-path point-path "../examples/point.aloe")
 (define boids-source (file->string boids-path))
 
 (define scenario-source
@@ -27,6 +28,9 @@
   (typecheck-source boids-source checker-environment
                     #:source-path boids-path))
  'Sim)
+(void
+ (typecheck-source (format "(load ~s)" (path->string point-path))
+                   checker-environment))
 (check-equal?
  (type->datum (typecheck-source "(demo step)" checker-environment))
  'Sim)
@@ -41,6 +45,8 @@
 (define runtime-environment (make-top-level-env))
 (void (eval-source boids-source runtime-environment
                    #:source-path boids-path))
+(void (eval-source (format "(load ~s)" (path->string point-path))
+                   runtime-environment))
 (check-equal?
  (eval-source "(((demo step) flock) len)" runtime-environment)
  3)

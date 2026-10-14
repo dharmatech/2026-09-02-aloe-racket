@@ -55,6 +55,9 @@ to an ambient current directory.
 libraries, the query installs that library from `source` instead of the file on
 disk, and checks it once.
 
+The buffer is checked as a file module: its own environment is a child of the
+default environment, and its nested loads copy only what they define.
+
 Each result item contains only editor data:
 
 - `label` is the selector symbol written as an Aloe/Racket source token;
@@ -208,12 +211,12 @@ parameters, `let` bindings, case payloads, expected types already available
 at the receiver, and earlier top-level declarations.
 
 Each call creates a fresh checker environment and installs the standard List
-then String libraries in the same order as `make-driver`,
-`query-expression-at`, and the public default environment. Earlier root forms
-and earlier loads affect the receiver normally. Later roots do not
-retroactively contribute bindings or `define-methods` rows. Loaded source is
-read from disk relative to `source-path`; open-document overlays for loaded
-files are not substituted.
+then String libraries, then `lib/int.aloe` and `lib/option.aloe`, in the same
+order as `make-driver`, `query-expression-at`, and the public default
+environment. Earlier root forms and earlier loads affect the receiver
+normally. Later roots do not retroactively contribute bindings or
+`define-methods` rows. Loaded source is read from disk relative to
+`source-path`; open-document overlays for loaded files are not substituted.
 
 The existing expression-query rule for observing a selected expression in a
 deferred generic method body applies to a target receiver there as well. The

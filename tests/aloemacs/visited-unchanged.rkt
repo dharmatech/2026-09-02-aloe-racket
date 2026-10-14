@@ -6,6 +6,9 @@
          "../../host/racket/fs.rkt")
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 (define (make-session-state)
   (define state (make-driver))
@@ -16,6 +19,9 @@
     (hash "/cwd" 'directory "/cwd/a.txt" 'file)
     (hash "/cwd/a.txt" "a\nb")))
   (driver-eval! state `(load ,(path->string file-path)))
+  (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
+  (driver-eval! state `(load ,(path->string fs-path)))
   state)
 
 (test-case "unchanged preserves editor and session fields"

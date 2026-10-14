@@ -15,6 +15,8 @@
 (define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 (define (driver-type state datum)
   (type->datum
@@ -65,6 +67,9 @@
     (hash "/cwd" 'directory "/cwd/a.txt" 'file)
     (hash "/cwd/a.txt" "first\nsecond")))
   (driver-eval! state `(load ,(path->string file-path)))
+  (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
+  (driver-eval! state `(load ,(path->string fs-path)))
   state)
 
 (define no-path
@@ -224,6 +229,10 @@
     (hash "/cwd" 'directory "/cwd/a.txt" 'file)
     (hash "/cwd/a.txt" "first\nsecond")))
   (check-equal? (driver-load-file! state main-path) '())
+  (driver-eval! state `(load ,(path->string file-path)))
+  (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
+  (driver-eval! state `(load ,(path->string fs-path)))
   (check-origin state '(aloemacs-editor editor) 0 0)
   (define-editor! state 'scrolled "first\nsecond" 1 4 #f 5 6)
   (driver-eval! state
@@ -256,6 +265,7 @@
 (test-case "all editor transitions carry origin even when point exits the window"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define-editor! state 'source "abcd\nwxyz\npqrs" 1 2 #f 1 2)
   (for ([entry
          (in-list
@@ -322,6 +332,7 @@
 (test-case "fit keeps each axis independently in a half-open window"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define source (string-join (make-list 12 "abcdefghijklmnop") "\n"))
   ;; line, column, old row, old column, columns, rows, new row, new column
   (for ([case
@@ -365,6 +376,7 @@
 (test-case "Down and Up move within a held vertical frame before crossing its edge"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define source "zero\none\ntwo\nthree\nfour\nfive")
   (define-editor! state 'initial source 0 0 #f 0 0)
   (step-and-fit! state 'down-1 'initial "down" 8 4)
@@ -406,6 +418,7 @@
 (test-case "Left holds a clipped window until its edge; Right crosses the other edge"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define-editor! state 'initial "0123456789" 0 10 #f 0 0)
   (driver-eval! state
                 '(define start (initial ensure-visible 4 3)))

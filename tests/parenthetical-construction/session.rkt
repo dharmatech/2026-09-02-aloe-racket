@@ -12,6 +12,10 @@
          (only-in "../../host/racket/fs.rkt" make-fs-double))
 
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 ;; Independent original startup fixture: positional construction throughout,
 ;; including every inactive alternative used to witness an Option's type.
@@ -68,6 +72,10 @@
   (define fs-host (make-fs-double "/cwd" (hash "/cwd" 'directory)))
   (driver-inject-host! state 'fs-host fs-host)
   (driver-load-file! state main-path (open-output-string))
+  (driver-eval! state `(load ,(path->string file-path)))
+  (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
+  (driver-eval! state `(load ,(path->string fs-path)))
   (values state fs-host))
 
 (define (define-positional-startup! state)

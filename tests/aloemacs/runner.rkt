@@ -193,10 +193,12 @@
   (define load-output (open-output-string))
   (check-equal? (driver-load-file! state main-path load-output) '())
   (check-equal? (get-output-string load-output) "")
+  ;; main.aloe's own definition is copied; the names it loaded are not.
+  (check-true (bound-in-driver? state 'aloemacs-editor))
+  (check-true (unbound-in-driver? fresh-state 'aloemacs-editor))
   (for ([name (in-list
-               '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path
-                 aloemacs-editor))])
-    (check-true (bound-in-driver? state name))
+               '(AloemacsPrompt AloemacsCompletionScan AloemacsBuffer AloemacsBuffers AloemacsSession AloemacsEditor Text Fs Path))])
+    (check-true (unbound-in-driver? state name))
     (check-true (unbound-in-driver? fresh-state name)))
   (check-equal? (driver-type state 'aloemacs-editor)
                 '(AloemacsSession FsHost))

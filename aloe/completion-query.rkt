@@ -6,7 +6,8 @@
                   make-type-environment)
          (only-in (submod "main.rkt" query-base)
                   base-library-path
-                  typecheck-base-library-buffer)
+                  typecheck-base-library-buffer
+                  typecheck-file-module-buffer)
          (only-in "parse.rkt"
                   bool-expr?
                   case-clause-body
@@ -206,18 +207,27 @@
                expressions
                environment
                (selector-completion-site-target-send site)))
-            ;; The source path is the buffer's identity.
+            ;; The source path is the buffer's identity. Any buffer with one,
+            ;; but a base library, is a file module.
             (define library-path
               (and normalized-path (base-library-path normalized-path)))
             (define observation
-              (if library-path
-                  (typecheck-base-library-buffer
-                   library-path
-                   (string->bytes/utf-8 source)
-                   (selector-completion-site-expressions site)
-                   observe)
-                  (observe (selector-completion-site-expressions site)
-                           (make-type-environment))))
+              (cond
+                [library-path
+                 (typecheck-base-library-buffer
+                  library-path
+                  (string->bytes/utf-8 source)
+                  (selector-completion-site-expressions site)
+                  observe)]
+                [normalized-path
+                 (typecheck-file-module-buffer
+                  normalized-path
+                  (string->bytes/utf-8 source)
+                  (selector-completion-site-expressions site)
+                  observe)]
+                [else
+                 (observe (selector-completion-site-expressions site)
+                          (make-type-environment))]))
             (define replacement-start
               (selector-completion-site-replacement-start site))
             (define replacement-span

@@ -7,11 +7,14 @@
 
 (define-runtime-path stack-path "../gel/stack.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path menu-path "../gel/menu.aloe")
 
 (define environment (make-top-level-env))
 (void
  (eval-source
-  (format "(load ~s)" (path->string stack-path))
+  (format "(load ~s) (load ~s)"
+          (path->string stack-path)
+          (path->string menu-path))
   environment))
 (void
  (eval-source

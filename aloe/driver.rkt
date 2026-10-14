@@ -3,6 +3,8 @@
 (require (only-in racket/port port->bytes)
          (only-in "env.rkt"
                   [make-top-level-env make-runtime-environment]
+                  make-local-env
+                  env-base
                   env-bound?
                   env-define!)
          "eval.rkt"
@@ -15,7 +17,9 @@
          (only-in (submod "type.rkt" load-cache)
                   typecheck-keyed-root
                   record-checked-libraries!
-                  record-checked-option-class!))
+                  record-checked-option-class!
+                  make-interactive-type-environment
+                  type-environment-base))
 
 (provide (struct-out driver)
          make-driver
@@ -30,24 +34,27 @@
          run-repl
          run-cli)
 
+;; The two fields hold the interactive environments; each one's parent is its
+;; half's base.
 (struct driver (runtime-environment type-environment) #:transparent)
 
 (define (make-driver)
-  (define runtime-environment (make-runtime-environment))
-  (define type-environment (make-type-environment))
-  (typecheck-program (list-library-expressions) type-environment)
-  (typecheck-program (string-library-expressions) type-environment)
-  (typecheck-program (int-library-expressions) type-environment)
-  (typecheck-program (option-library-expressions) type-environment)
-  (record-checked-option-class! type-environment)
-  (eval-exprs (list-library-expressions) runtime-environment)
-  (eval-exprs (string-library-expressions) runtime-environment)
-  (eval-exprs (int-library-expressions) runtime-environment)
-  (eval-exprs (option-library-expressions) runtime-environment)
-  (record-evaluated-option-class! runtime-environment)
-  (record-checked-libraries! type-environment)
-  (record-evaluated-libraries! runtime-environment)
-  (driver runtime-environment type-environment))
+  (define runtime-base (make-runtime-environment))
+  (define type-base (make-type-environment))
+  (typecheck-program (list-library-expressions) type-base)
+  (typecheck-program (string-library-expressions) type-base)
+  (typecheck-program (int-library-expressions) type-base)
+  (typecheck-program (option-library-expressions) type-base)
+  (record-checked-option-class! type-base)
+  (eval-exprs (list-library-expressions) runtime-base)
+  (eval-exprs (string-library-expressions) runtime-base)
+  (eval-exprs (int-library-expressions) runtime-base)
+  (eval-exprs (option-library-expressions) runtime-base)
+  (record-evaluated-option-class! runtime-base)
+  (record-checked-libraries! type-base)
+  (record-evaluated-libraries! runtime-base)
+  (driver (make-local-env runtime-base '())
+          (make-interactive-type-environment type-base)))
 
 (define (driver-inject-host! state name receiver)
   (unless (driver? state)
@@ -76,9 +83,10 @@
      "binding-name" name
      "runtime binding present" runtime-bound?
      "checker binding present" checker-bound?))
+  ;; A host lives on the base, so every file loaded afterwards sees it.
   (type-environment-inject-host!
-   (driver-type-environment state) name receiver)
-  (env-define! (driver-runtime-environment state) name receiver)
+   (type-environment-base (driver-type-environment state)) name receiver)
+  (env-define! (env-base (driver-runtime-environment state)) name receiver)
   (void))
 
 (define (driver-eval! state datum)
@@ -113,8 +121,9 @@
                            #:source-path [source-path #f])
   (cond
     [source-path
-     ;; A program with a source path runs once per driver; a hit returns '()
-     ;; and writes nothing.
+     ;; A program with a source path runs once per driver, in its own file
+     ;; environment, and copies its definitions to the prompt; a hit returns
+     ;; '() and writes nothing.
      (define source-bytes (port->bytes input))
      (define-values (_result expressions)
        (typecheck-keyed-root (driver-type-environment state)
@@ -124,21 +133,21 @@
                       source-path
                       source-bytes
                       expressions
-                      (lambda (expressions)
-                        (eval-and-write state expressions output))
+                      (lambda (expressions file-environment)
+                        (eval-and-write file-environment expressions output))
                       '())]
     [else
      (define expressions (read-program input))
      ;; Check the complete file before evaluating its first expression.
      (typecheck-program expressions (driver-type-environment state))
-     (eval-and-write state expressions output)]))
+     (eval-and-write (driver-runtime-environment state) expressions output)]))
 
-(define (eval-and-write state expressions output)
+(define (eval-and-write environment expressions output)
   (reverse
    (for/fold ([results '()])
              ([expression (in-list expressions)])
      (define value
-       (eval-expr expression (driver-runtime-environment state)))
+       (eval-expr expression environment))
      (cond
        [(void? value) results]
        [else

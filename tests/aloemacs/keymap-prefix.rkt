@@ -8,6 +8,9 @@
          "../../host/racket/fs.rkt")
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-default '(if #t (Option None) (Option Some aloemacs-self-insert-command)))
@@ -108,6 +111,9 @@
 (define (state #:fail-write? [fail-write? #f])
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   (define inner
     (make-fs-double "/cwd"
                     (hash "/cwd" 'directory "/cwd/a.txt" 'file "/cwd/dir" 'directory)

@@ -6,6 +6,9 @@
          "../../host/racket/fs.rkt")
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
@@ -21,6 +24,9 @@
 (define (state #:fail [fail #f] #:vanish? [vanish? #f])
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   (define inner
     (make-fs-double "/cwd"
       (hash "/cwd" 'directory "/cwd/a.txt" 'file "/cwd/b.txt" 'file
@@ -529,11 +535,7 @@
         (rebuild 'active #:searching #f #:query "" #:origin '(Position new 0 0)
                          #:wrapped #f #:failing #f)))
     (same-session st '(active handle-key "backspace") 'active)
-    (same-session st '(active handle-key "find") 'active)
-    (def! st 'aloemacs-global-keymap '(AloemacsKeymap new (map bindings) (map default)))
-    (def! st 'idle (rebuild 'base #:pending no-pending))
-    (same-session st '(idle handle-key "select") (reset 'idle expected))
-    (same-session st '((idle find) handle-key "select") (reset 'idle expected)))
+    (same-session st '(active handle-key "find") 'active))
   (check-equal? (unbox calls) '()))
 
 (test-case "production maps keep their exact commands, prefix and idle misses"

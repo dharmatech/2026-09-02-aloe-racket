@@ -46,6 +46,9 @@ identity: its load-cache key and the defining path of classes it defines. It
 defaults to the normalized source path. Loads still resolve relative to the
 source path's directory.
 
+The file is checked as a file module: its own environment is a child of the
+default environment, and its nested loads copy only what they define.
+
 For a position contained by an expression, the fields are:
 
 - `type`: the selected expression's checker type converted with the existing

@@ -8,10 +8,12 @@
                   exn:fail:aloe-type? type-of type->datum))
 
 (define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
 
 (define (make-editor-state)
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   state)
 
 (define (checked-type state datum)

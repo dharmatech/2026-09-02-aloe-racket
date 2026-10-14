@@ -9,6 +9,8 @@
          (struct-out string-class-object)
          make-top-level-env
          make-local-env
+         make-file-env
+         env-base
          env-bound?
          env-lookup
          env-int-class
@@ -18,8 +20,10 @@
          env-load-cache
          env-define!)
 
+;; A file environment records its file's resolved path; every other environment
+;; records #f.
 (struct top-level-env
-  (bindings parent int-class string-class option-class load-cache))
+  (bindings parent int-class string-class option-class load-cache path))
 (struct dummy-object ())
 ;; Each primitive class object maps each of its method declarations, by eq?,
 ;; to the environment that wrote it. A base owns its objects and their tables.
@@ -42,16 +46,30 @@
    int-class
    string-class
    (box #f)
-   (make-hash)))
+   (make-hash)
+   #f))
 
 (define (make-local-env parent bindings)
+  (make-child-env parent bindings #f))
+
+;; A loaded file runs in its own environment, a child of the base.
+(define (make-file-env base path)
+  (make-child-env base '() path))
+
+(define (make-child-env parent bindings path)
   (top-level-env
    (make-hasheq bindings)
    parent
    (top-level-env-int-class parent)
    (top-level-env-string-class parent)
    (top-level-env-option-class parent)
-   (top-level-env-load-cache parent)))
+   (top-level-env-load-cache parent)
+   path))
+
+;; The base is the end of an environment's parent chain.
+(define (env-base environment)
+  (define parent (top-level-env-parent environment))
+  (if parent (env-base parent) environment))
 
 (define (env-int-class environment)
   (top-level-env-int-class environment))

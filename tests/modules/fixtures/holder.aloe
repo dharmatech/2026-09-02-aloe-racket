@@ -1,0 +1,3 @@
+(define-class Holder
+  (fields)
+  (methods))

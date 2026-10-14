@@ -48,6 +48,7 @@
 (test-case "AloemacsEditor no longer accepts line-length"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define editor
     '(AloemacsEditor new
        (Text from-string "abc")

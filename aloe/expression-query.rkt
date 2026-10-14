@@ -1,11 +1,10 @@
 #lang racket/base
 
 (require (only-in racket/port port->bytes)
-         (only-in "main.rkt"
-                  make-type-environment)
          (only-in (submod "main.rkt" query-base)
                   base-library-path
-                  typecheck-base-library-buffer)
+                  typecheck-base-library-buffer
+                  typecheck-file-module-buffer)
          (only-in "parse.rkt"
                   expression-loc
                   read-program)
@@ -60,13 +59,14 @@
   (define (observe expressions environment)
     (typecheck-program/observe expressions environment selected))
   ;; The document path is the buffer's identity; the file read may be the LSP
-  ;; adapter's sibling of it.
+  ;; adapter's sibling of it. Any buffer but a base library is a file module.
   (define library-path (base-library-path document-path))
   (define observation
     (if library-path
         (typecheck-base-library-buffer
          library-path source-bytes expressions observe)
-        (observe expressions (make-type-environment))))
+        (typecheck-file-module-buffer
+         document-path source-bytes expressions observe)))
   (and observation
        (expression-query-result
         (expression-type-observation-type observation)

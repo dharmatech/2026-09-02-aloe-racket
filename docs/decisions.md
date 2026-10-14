@@ -297,3 +297,15 @@ library" sentence that `make-driver` does not bootstrap it.
 Decided: class and protocol parameters select by record in both halves;
 `define-protocol` binds a runtime record. Rejected: changing
 `Mirror invoke`, `Signature accepts?`, or sole-method dispatch.
+
+## File modules and the copy rule (2026-10-14)
+
+Decided: a load copies the loaded file's own definitions, in a file
+and at the prompt; a file's environment is a child of the base; a
+root's definitions go to the prompt; methods and protocols resolve
+where they were written; a load of `editor.aloe` binds the names
+`editor.aloe` defines, and `Span` is bound by a load of
+`lib/text.aloe`. Rejected: `import`, a prefix clause, export lists,
+barrels, a load path, a declared module name, per-importer method
+tables, scoped selectors, parenting a file at the loader or at a
+bare kernel.

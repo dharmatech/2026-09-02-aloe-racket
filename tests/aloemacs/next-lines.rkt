@@ -58,6 +58,7 @@
 (test-case "editor has no render-rows and a fitted frame keeps its bytes"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   (define editor
     '(AloemacsEditor new
        (Text from-string "ab\nc")

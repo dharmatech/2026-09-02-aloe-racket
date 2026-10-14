@@ -7,10 +7,12 @@
          "../../aloe/driver.rkt")
 
 (define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
 
 (test-case "80-column editor frame stays fast and paints exact text"
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
 
   (define line (make-string 80 #\x))
   (define source (string-join (make-list 24 line) "\n"))

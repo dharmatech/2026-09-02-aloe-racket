@@ -1,0 +1,7 @@
+(load "holder.aloe")
+(load "holder-helper.aloe")
+
+(define-methods Holder
+  (methods
+    (answer () Int
+      (helper-value + 1))))

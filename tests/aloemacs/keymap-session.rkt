@@ -14,6 +14,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 ;; This is the acceptance table, independent of the production dispatcher.
 (define rows
@@ -70,6 +73,9 @@
 (define (loaded)
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   st)
 
 ;; Retain the real Fs-double behavior and record every host call. The fixed
@@ -407,27 +413,6 @@
   (check-false (ev st '((default-map lookup "s") present?)))
   (check-equal? (unbox calls) '()))
 
-(test-case "idle dispatch uses a bound character before the map's optional default"
-  (define-values (st calls) (state))
-  (rich! st)
-  (define original (ev st 'base))
-  (define bindings
-    '(List of (AloemacsBinding Command "x" (AloemacsCommand MoveLeft))))
-  ;; Replace the map only in this fresh test driver to exercise dispatch rules
-  ;; the fixed production table cannot expose.
-  (def! st 'aloemacs-global-keymap
-    `(AloemacsKeymap new ,bindings (Option Some (AloemacsCommand Newline))))
-  (same-session st '(base handle-key "x") (expected 'base (third rows)))
-  (same-session st '(base handle-key "s") (expected 'base (first rows)))
-  (for ([key (in-list '("" "unknown"))])
-    (same-session st `(base handle-key ,key) (token 'base "")))
-  (def! st 'aloemacs-global-keymap `(AloemacsKeymap new ,bindings ,no-default))
-  (same-session st '(base handle-key "x") (expected 'base (third rows)))
-  (same-session st '(base handle-key "s") (token 'base ""))
-  (same st '(aloemacs-global-keymap bindings) bindings)
-  (check-equal? (ev st 'base) original)
-  (check-equal? (unbox calls) '()))
-
 (test-case "checked execution and new session sends retain each receiver's concrete host"
   (define-values (st calls) (state))
   (def! st 'base (session "abc" 0 1))
@@ -694,6 +679,10 @@
   (def! st 'base (session "abc" 0 1))
   (check-false (ev st '((base pending) present?)))
   (ev st `(load ,(path->string main-path)))
+  (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   (check-equal? (type st '(aloemacs-editor pending))
                 '(Option (AloemacsKeymap AloemacsBinding)))
   (check-false (ev st '((aloemacs-editor pending) present?)))

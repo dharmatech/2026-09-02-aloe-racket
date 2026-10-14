@@ -2,7 +2,8 @@
 
 (require (only-in racket/port port->bytes)
          (only-in "env.rkt"
-                  [make-top-level-env make-runtime-environment])
+                  [make-top-level-env make-runtime-environment]
+                  make-local-env)
          "eval.rkt"
          "library.rkt"
          "parse.rkt"
@@ -10,8 +11,10 @@
          (only-in (submod "type.rkt" load-cache)
                   typecheck-keyed-root
                   typecheck-keyed-buffer
+                  typecheck-file-buffer
                   record-checked-libraries!
-                  record-checked-option-class!))
+                  record-checked-option-class!
+                  make-interactive-type-environment))
 
 (provide make-top-level-env
          make-type-environment
@@ -24,7 +27,12 @@
          eval-program
          eval-source)
 
+;; Each runtime interactive environment maps to its checker interactive
+;; environment.
 (define runtime-type-environments (make-weak-hasheq))
+;; A raw kernel environment handed to eval-source, eval-program, or eval-datum
+;; is the base of the interactive environment memoized here beside it.
+(define raw-interactive-environments (make-ephemeron-hasheq))
 
 (define make-raw-type-environment checker:make-type-environment)
 (define type-of checker:type-of)
@@ -32,42 +40,56 @@
 (define type->datum checker:type->datum)
 (define exn:fail:aloe-type? checker:exn:fail:aloe-type?)
 
+;; The interactive environment of a fresh base.
 (define (make-type-environment)
-  (define environment (make-raw-type-environment))
-  (typecheck-program (list-library-expressions) environment)
-  (typecheck-program (string-library-expressions) environment)
-  (typecheck-program (int-library-expressions) environment)
-  (typecheck-program (option-library-expressions) environment)
-  (record-checked-option-class! environment)
-  (record-checked-libraries! environment)
-  environment)
+  (define base (make-raw-type-environment))
+  (typecheck-program (list-library-expressions) base)
+  (typecheck-program (string-library-expressions) base)
+  (typecheck-program (int-library-expressions) base)
+  (typecheck-program (option-library-expressions) base)
+  (record-checked-option-class! base)
+  (record-checked-libraries! base)
+  (make-interactive-type-environment base))
 
+;; The interactive environment of a fresh base.
 (define (make-top-level-env)
-  (define environment (make-runtime-environment))
-  (eval-exprs (list-library-expressions) environment)
-  (eval-exprs (string-library-expressions) environment)
-  (eval-exprs (int-library-expressions) environment)
-  (eval-exprs (option-library-expressions) environment)
-  (record-evaluated-option-class! environment)
-  (record-evaluated-libraries! environment)
+  (define base (make-runtime-environment))
+  (install-evaluated-libraries! base)
+  (make-interactive-environment base))
+
+(define (install-evaluated-libraries! base)
+  (eval-exprs (list-library-expressions) base)
+  (eval-exprs (string-library-expressions) base)
+  (eval-exprs (int-library-expressions) base)
+  (eval-exprs (option-library-expressions) base)
+  (record-evaluated-option-class! base)
+  (record-evaluated-libraries! base))
+
+(define (make-interactive-environment base)
+  (define environment (make-local-env base '()))
   (hash-set! runtime-type-environments
              environment
              (make-type-environment))
   environment)
 
-(define (type-environment-for environment)
+;; Forms evaluate in an interactive environment: the one given, or the one
+;; memoized beside a raw kernel environment, which is bootstrapped in place
+;; the first time and never holds a prompt definition.
+(define (interactive-environment-for environment)
   (cond
-    [(hash-ref runtime-type-environments environment #f) => values]
+    [(hash-has-key? runtime-type-environments environment) environment]
+    [(hash-ref raw-interactive-environments environment #f) => values]
     [else
-     (define type-environment (make-type-environment))
-     (eval-exprs (list-library-expressions) environment)
-     (eval-exprs (string-library-expressions) environment)
-     (eval-exprs (int-library-expressions) environment)
-     (eval-exprs (option-library-expressions) environment)
-     (record-evaluated-option-class! environment)
-     (record-evaluated-libraries! environment)
-     (hash-set! runtime-type-environments environment type-environment)
-     type-environment]))
+     (install-evaluated-libraries! environment)
+     (define interactive-environment
+       (make-interactive-environment environment))
+     (hash-set! raw-interactive-environments
+                environment
+                interactive-environment)
+     interactive-environment]))
+
+(define (type-environment-for interactive-environment)
+  (hash-ref runtime-type-environments interactive-environment))
 
 (define (source-bytes input)
   (if (string? input)
@@ -86,35 +108,40 @@
      (typecheck-program (read-program input) environment)]))
 
 (define (eval-datum datum [environment (make-top-level-env)])
+  (define interactive-environment (interactive-environment-for environment))
   (define expression (parse-datum datum))
-  (type-of expression (type-environment-for environment))
-  (eval-expr expression environment))
+  (type-of expression (type-environment-for interactive-environment))
+  (eval-expr expression interactive-environment))
 
 (define (eval-program datums [environment (make-top-level-env)])
+  (define interactive-environment (interactive-environment-for environment))
   (define expressions (parse-program datums))
-  (typecheck-program expressions (type-environment-for environment))
-  (eval-exprs expressions environment))
+  (typecheck-program expressions
+                     (type-environment-for interactive-environment))
+  (eval-exprs expressions interactive-environment))
 
 (define (eval-source input
                      [environment (make-top-level-env)]
                      #:source-path [source-path #f])
+  (define interactive-environment (interactive-environment-for environment))
   (cond
     [source-path
      (define input-bytes (source-bytes input))
      (define-values (_result expressions)
-       (typecheck-keyed-root (type-environment-for environment)
+       (typecheck-keyed-root (type-environment-for interactive-environment)
                              source-path
                              input-bytes))
-     (eval-keyed-root environment
+     (eval-keyed-root interactive-environment
                       source-path
                       input-bytes
                       expressions
-                      (lambda (expressions)
-                        (eval-exprs expressions environment)))]
+                      (lambda (expressions file-environment)
+                        (eval-exprs expressions file-environment)))]
     [else
      (define expressions (read-program input))
-     (typecheck-program expressions (type-environment-for environment))
-     (eval-exprs expressions environment)]))
+     (typecheck-program expressions
+                        (type-environment-for interactive-environment))
+     (eval-exprs expressions interactive-environment)]))
 
 ;; The base libraries in install order, by resolved path.
 (define base-libraries
@@ -150,7 +177,21 @@
     (when (equal? library-path option-library-resolved-path)
       (record-checked-option-class! environment))))
 
-;; The editor queries install a queried base library through these hooks.
+;; Any other queried buffer is a file module at its identity path, in a fresh
+;; base whose interactive environment stays empty.
+(define (typecheck-file-module-buffer document-path
+                                      source-bytes
+                                      expressions
+                                      observe)
+  (typecheck-file-buffer (make-type-environment)
+                         document-path
+                         source-bytes
+                         (lambda (file-environment)
+                           (observe expressions file-environment))))
+
+;; The editor queries install a queried base library, or check any other
+;; buffer as a file module, through these hooks.
 (module* query-base #f
   (provide base-library-path
-           typecheck-base-library-buffer))
+           typecheck-base-library-buffer
+           typecheck-file-module-buffer))

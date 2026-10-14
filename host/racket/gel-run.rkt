@@ -15,6 +15,7 @@
 
 (define-runtime-path gel-main-path "../../gel/main.aloe")
 (define-runtime-path point-path "../../examples/point.aloe")
+(define-runtime-path gel-stack-path "../../gel/stack.aloe")
 
 (define (run-gel)
   (call-with-tty-term-receiver
@@ -23,6 +24,7 @@
      (driver-inject-host! state 'term term)
      (driver-load-file! state gel-main-path)
      (driver-load-file! state point-path)
+     (driver-load-file! state gel-stack-path)
      (driver-eval!
       state
       '(gel-main call

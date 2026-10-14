@@ -8,6 +8,8 @@
 
 (define-runtime-path gel-loop-path "../gel/loop.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
+(define-runtime-path gel-menu-path "../gel/menu.aloe")
 
 (define environment (make-top-level-env))
 
@@ -17,6 +19,8 @@
    environment))
 
 (load-runtime! gel-loop-path)
+(load-runtime! gel-stack-path)
+(load-runtime! gel-menu-path)
 (load-runtime! point-path)
 
 (void

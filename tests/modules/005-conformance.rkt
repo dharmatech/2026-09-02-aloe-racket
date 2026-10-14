@@ -15,6 +15,7 @@
          "../../aloe/expression-query.rkt")
 
 (define-runtime-path sym-late-path "fixtures/sym-late.aloe")
+(define-runtime-path sym-late-error-path "fixtures/sym-late-error.aloe")
 (define-runtime-path core-path "../../examples/mpl/core.aloe")
 (define-runtime-path sym-path "../../examples/mpl/sym.aloe")
 
@@ -47,8 +48,12 @@
    (raised (lambda ()
              (driver-load-file! state sym-late-path (open-output-string))))
    (list #t sym-message))
-  (check-true (type-environment-bound? (driver-type-environment state)
-                                       'after-load))
+  ;; The root's own later form is checked before conformance runs.
+  (check-equal?
+   (raised (lambda ()
+             (driver-load-file! (make-driver) sym-late-error-path
+                                (open-output-string))))
+   (list #t "typecheck: Int + expects an Int argument"))
   (check-false (env-bound? (driver-runtime-environment state) 'after-load)))
 
 (test-case "hover inside the MPL files"

@@ -9,6 +9,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new "/typed-none"))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
@@ -27,6 +30,9 @@
 (define (loaded)
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   st)
 
 ;; Count the complete thin-Fs call sequence, including nested resolves.
@@ -444,6 +450,10 @@
   (check-exn exn:fail:aloe-type? (lambda () (ev (make-driver) `(load ,(path->string main-path)))))
   (define-values (main calls) (state))
   (ev main `(load ,(path->string main-path)))
+  (ev main `(load ,(path->string file-path)))
+  (ev main `(load ,(path->string editor-path)))
+  (ev main `(load ,(path->string text-path)))
+  (ev main `(load ,(path->string fs-path)))
   (same-session main 'aloemacs-editor
     `(AloemacsSession new ,(zipper (list `(AloemacsBuffer new ,(editor "" #t) ,no-path 0)) 0)
        (Fs new fs-host) "" #f "" (Position new 0 0) #f #f (List empty)

@@ -12,6 +12,7 @@
                   type->datum))
 
 (define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
 
 (define (driver-type state datum)
   (type->datum
@@ -26,6 +27,7 @@
        (not (type-environment-bound? (driver-type-environment state) name))))
 
 (define (load-editor! state)
+  (driver-eval! state `(load ,(path->string text-path)))
   (driver-eval! state `(load ,(path->string editor-path))))
 
 (define (editor-expression source line column quit)

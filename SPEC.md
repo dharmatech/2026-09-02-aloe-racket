@@ -130,6 +130,9 @@ Constructors are not types, subtypes, or top-level bindings.
   selectors on the same class.
 - Method parameter types and return type are required in 0.1.
 - `self` is implicit in every method body.
+- A method body, and the types named in its signature, are checked and
+  evaluated in the environment of the file that wrote the method, whether in
+  the class form or in a later `define-methods`.
 - Methods belong to the whole class, not to individual constructors.
 - No inheritance. No setters. Payload values do not change after construction.
 - Overloading: a class may have more than one method with the same selector (section 3.4).
@@ -204,6 +207,7 @@ Rules for this slice:
 - Sending still looks up the selector on the *class*, not on the protocol. The protocol is a type, not a second method table.
 - No `super`. No inherited fields. No default implementations.
 - A class without a protocol is unchanged.
+- A protocol's signatures are resolved in the file that wrote the protocol.
 
 Out of scope here: multiple protocols per class and implementation inheritance.
 
@@ -315,6 +319,8 @@ Adds Aloe method bodies to the existing built-in `List`, `String`, or `Int`
 class. For `List` declarations, `T` denotes the list element type. `String`
 and `Int` have no class type parameter, so `T` is not implicitly in scope
 there.
+
+A method added with `define-methods` runs in the file that wrote it.
 
 ### 4.7 Method / `fn` / `let` bodies
 
@@ -702,7 +708,8 @@ copies into one result String.
 - full Julia/CLOS multimethods (receiver is not special)
 - `begin`
 - macros
-- modules beyond `load`
+- modules beyond `load`'s file modules: `import`, export lists, prefixes,
+  renames, packages, a load path, reload of an edited file
 - computed selectors
 - native compilation
 - required protocol method lists
@@ -788,13 +795,17 @@ Do not elaborate into Racket evaluation for object sends. `let` may be expanded 
 
 ## 11. 0.2 additions
 
-- `load` reads, typechecks, and evaluates another Aloe file in the same
-  environment, resolving relative paths from the loading file before the
-  current directory and project root. A resolved path runs once per base: a
-  later `load` of the same path with the same bytes runs nothing, and a later
-  `load` of the same path with different bytes is a type error. The list,
-  string, and int libraries installed in a default environment count as
-  already loaded.
+- `load` reads, typechecks, and evaluates another Aloe file once per base, as
+  a file module: the file runs in its own environment, whose parent is the
+  base, and the names it defines with `define`, `define-class`, and
+  `define-protocol` are copied into the loading environment. Names the file
+  only received from its own loads are not copied. Relative paths resolve from
+  the loading file before the current directory and project root. A later
+  `load` of the same path with the same bytes copies the same definitions
+  without running the file; different bytes are a type error. The prompt is
+  not a file: its parent is the base, and a file loaded there copies its
+  definitions into the prompt's environment. A program given with a source
+  path is a file module.
 - `cond` is syntax sugar for nested `if` forms; its final `else` clause is
   required.
 - `define-protocol` declares a protocol type and may declare required method

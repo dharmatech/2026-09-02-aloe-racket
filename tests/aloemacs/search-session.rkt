@@ -9,6 +9,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 
 (define no-path '(if #t (Option None) (Option Some (Path new "/unused"))))
 
@@ -20,6 +23,10 @@
                    (hash "/cwd" 'directory "/cwd/a.txt" 'file)
                    (hash "/cwd/a.txt" "ababa\nsecond\nababa")))
   (driver-eval! state `(load ,(path->string (if main? main-path file-path))))
+  (driver-eval! state `(load ,(path->string file-path)))
+  (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
+  (driver-eval! state `(load ,(path->string fs-path)))
   state)
 
 (define (session source line column [echo ""] [path #f])

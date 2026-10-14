@@ -5,6 +5,10 @@
          "../../host/racket/fs.rkt")
 
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define (ev st expr) (driver-eval! st expr))
 (define (def! st name expr) (ev st `(define ,name ,expr)))
 (define (state)
@@ -26,6 +30,10 @@
             [(2) (lambda (_ a b) (forward selector (list a b)))])))))
   (driver-inject-host! st 'fs-host (make-host-receiver interface #f))
   (ev st `(load ,(path->string main-path)))
+  (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   (def! st 's '(aloemacs-editor with-editor
                 (AloemacsEditor new ((Text from-string "abc\ndef") indexed-value)
                   (Position new 0 1) #f 0 0

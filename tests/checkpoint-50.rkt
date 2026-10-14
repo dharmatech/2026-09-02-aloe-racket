@@ -14,6 +14,12 @@
 (define mpl-setup
   (string-append
    (format "(load ~s)\n" (path->string core-path))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "math.aloe")))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "sym.aloe")))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "sum.aloe")))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "num.aloe")))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "prod.aloe")))
+   (format "(load ~s)\n" (path->string (build-path core-path 'up "pow.aloe")))
    "(define x (Sym new \"x\"))\n"))
 
 (define checker-environment (make-type-environment))

@@ -12,6 +12,9 @@
 (define-runtime-path gel-main-path "../gel/main.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
 (define-runtime-path gel-run-path "../host/racket/gel-run.rkt")
+(define-runtime-path gel-loop-path "../gel/loop.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
+(define-runtime-path gel-menu-path "../gel/menu.aloe")
 
 ;; The injected production interface gives gel-main its checked Term shape.
 (define checker-driver (make-driver))
@@ -21,6 +24,9 @@
  (make-term-receiver (open-output-string) (lambda () "q")))
 (define checker-environment (driver-type-environment checker-driver))
 (void (driver-load-file! checker-driver gel-main-path (open-output-string)))
+(driver-eval! checker-driver `(load ,(path->string gel-loop-path)))
+(driver-eval! checker-driver `(load ,(path->string gel-stack-path)))
+(driver-eval! checker-driver `(load ,(path->string gel-menu-path)))
 (void (driver-load-file! checker-driver point-path (open-output-string)))
 (check-equal?
  (type->datum
@@ -48,6 +54,9 @@
   (define-values (term output) (make-scripted-term keys))
   (driver-inject-host! state 'term term)
   (void (driver-load-file! state gel-main-path (open-output-string)))
+  (driver-eval! state `(load ,(path->string gel-loop-path)))
+  (driver-eval! state `(load ,(path->string gel-stack-path)))
+  (driver-eval! state `(load ,(path->string gel-menu-path)))
   (void (driver-load-file! state point-path (open-output-string)))
   (driver-eval!
    state

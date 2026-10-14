@@ -16,6 +16,9 @@
 
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define-runtime-path runner-path "../../host/racket/aloemacs-run.rkt")
 (define-runtime-path term-path "../../host/racket/term.rkt")
 (define-runtime-path gel-run-path "../../host/racket/gel-run.rkt")
@@ -30,6 +33,10 @@
 (define st (make-driver))
 (driver-inject-host! st 'fs-host (fs-double))
 (void (driver-load-file! st main-path))
+(driver-eval! st `(load ,(path->string file-path)))
+(driver-eval! st `(load ,(path->string editor-path)))
+(driver-eval! st `(load ,(path->string text-path)))
+(driver-eval! st `(load ,(path->string fs-path)))
 
 (define (ev expr) (driver-eval! st expr))
 (define (def! name expr) (ev `(define ,name ,expr)))

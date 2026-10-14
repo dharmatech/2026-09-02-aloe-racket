@@ -6,10 +6,12 @@
          (only-in "../../aloe/type.rkt" exn:fail:aloe-type?))
 
 (define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
 
 (define (state-with-editor)
   (define state (make-driver))
   (driver-eval! state `(load ,(path->string editor-path)))
+  (driver-eval! state `(load ,(path->string text-path)))
   state)
 
 (test-case "editor no longer accepts clamp-column or max-zero"

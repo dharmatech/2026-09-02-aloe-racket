@@ -9,6 +9,9 @@
 
 (define-runtime-path file-path "../../examples/aloemacs/file.aloe")
 (define-runtime-path main-path "../../examples/aloemacs/main.aloe")
+(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
+(define-runtime-path text-path "../../lib/text.aloe")
+(define-runtime-path fs-path "../../lib/fs.aloe")
 (define no-mark '(if #t (Option None) (Option Some (Position new 0 0))))
 (define no-path '(if #t (Option None) (Option Some (Path new ""))))
 (define no-pending '(if #t (Option None) (Option Some aloemacs-global-keymap)))
@@ -25,6 +28,9 @@
 (define (loaded)
   (define st (make-driver))
   (ev st `(load ,(path->string file-path)))
+  (ev st `(load ,(path->string editor-path)))
+  (ev st `(load ,(path->string text-path)))
+  (ev st `(load ,(path->string fs-path)))
   st)
 (define (counted-fs [host-name 'FsHost] [contents "abc\ndef"])
   (define disk (make-fs-double "/cwd"
@@ -222,6 +228,10 @@
     (same st '(aloemacs-global-keymap default) '(Option Some (AloemacsCommand SelfInsert)))
     (same st '(aloemacs-ctrl-x-keymap lookup "save") '(aloemacs-global-keymap lookup "save"))
     (ev st `(load ,(path->string main-path)))
+    (ev st `(load ,(path->string file-path)))
+    (ev st `(load ,(path->string editor-path)))
+    (ev st `(load ,(path->string text-path)))
+    (ev st `(load ,(path->string fs-path)))
     (same-session st 'aloemacs-editor
       `(AloemacsSession new
          ,(zipper (list (buffer 0 (editor '(Text from-string "")
@@ -573,6 +583,10 @@
     (define-values (direct-host direct-calls _) (counted-fs))
     (driver-inject-host! st 'fs-host direct-host)
     (ev st `(load ,(path->string main-path)))
+    (ev st `(load ,(path->string file-path)))
+    (ev st `(load ,(path->string editor-path)))
+    (ev st `(load ,(path->string text-path)))
+    (ev st `(load ,(path->string fs-path)))
     (def! st 's '(aloemacs-editor visit (Path new "/cwd/a.txt")))
     (def! st 's '(s case (None () aloemacs-editor) (Some (value) value)))
     (for ([size sizes] [key keys] [frame frames] [i (in-naturals)])

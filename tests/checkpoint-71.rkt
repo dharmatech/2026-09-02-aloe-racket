@@ -2,7 +2,7 @@
 
 (require racket/runtime-path
          rackunit
-         (only-in "../aloe/env.rkt" env-define!)
+         (only-in "../aloe/env.rkt" env-base env-define!)
          "../aloe/eval.rkt"
          (only-in "../aloe/main.rkt" make-top-level-env)
          "../aloe/parse.rkt"
@@ -10,6 +10,9 @@
 
 (define-runtime-path gel-main-path "../gel/main.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path gel-loop-path "../gel/loop.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
+(define-runtime-path gel-menu-path "../gel/menu.aloe")
 
 (define (load-runtime! path environment)
   (eval-expr
@@ -20,7 +23,7 @@
 (define remaining-keys (box '("1" "q")))
 (define output (open-output-string))
 (env-define!
- environment
+ (env-base environment)
  'term
  (make-term-receiver
   output
@@ -31,6 +34,9 @@
     (set-box! remaining-keys (cdr keys))
     (car keys))))
 (load-runtime! gel-main-path environment)
+(load-runtime! gel-loop-path environment)
+(load-runtime! gel-stack-path environment)
+(load-runtime! gel-menu-path environment)
 (load-runtime! point-path environment)
 
 (void

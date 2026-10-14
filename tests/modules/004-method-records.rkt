@@ -1,12 +1,16 @@
 #lang racket/base
 
 (require racket/file
+         (only-in racket/list
+                  drop
+                  take)
          racket/runtime-path
          rackunit
          "../../aloe/driver.rkt"
          (only-in "../../aloe/env.rkt"
                   [make-top-level-env make-raw-top-level-env]
                   make-local-env
+                  env-base
                   env-lookup)
          (only-in "../../aloe/eval.rkt"
                   eval-expr)
@@ -18,6 +22,8 @@
          (only-in "../../aloe/parse.rkt"
                   parse-datum)
          (submod "../../aloe/type.rkt" method-records)
+         (only-in (submod "../../aloe/type.rkt" load-cache)
+                  type-environment-base)
          "../../host/racket/fs.rkt")
 
 (define-runtime-path aloemacs-main-path "../../examples/aloemacs/main.aloe")
@@ -79,8 +85,12 @@
                                 (min max)
                                 (starts-with?)
                                 (present?)))])
-      (check-records (checker-method-records T name) selectors T)
-      (check-records (evaluator-method-records R name) selectors R)))
+      (check-records (checker-method-records T name)
+                     selectors
+                     (type-environment-base T))
+      (check-records (evaluator-method-records R name)
+                     selectors
+                     (env-base R))))
   (check-base-records first-state)
   (check-base-records second-state)
   (check-false (eq? (driver-type-environment first-state)
@@ -89,14 +99,14 @@
                     (driver-runtime-environment second-state)))
   (driver-eval! first-state
                 '(define-methods Int (methods (thrice () Int (self * 3)))))
-  (check-records
-   (checker-method-records (driver-type-environment first-state) 'Int)
-   '(min max thrice)
-   (driver-type-environment first-state))
-  (check-records
-   (evaluator-method-records (driver-runtime-environment first-state) 'Int)
-   '(min max thrice)
-   (driver-runtime-environment first-state))
+  (define T (driver-type-environment first-state))
+  (define R (driver-runtime-environment first-state))
+  (define checker-records (checker-method-records T 'Int))
+  (define evaluator-records (evaluator-method-records R 'Int))
+  (check-records (take checker-records 2) '(min max) (type-environment-base T))
+  (check-records (drop checker-records 2) '(thrice) T)
+  (check-records (take evaluator-records 2) '(min max) (env-base R))
+  (check-records (drop evaluator-records 2) '(thrice) R)
   (check-equal? (driver-eval! first-state '(4 thrice)) 12))
 
 (test-case "a later define-methods leaves earlier records alone"

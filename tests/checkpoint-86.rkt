@@ -13,6 +13,7 @@
 
 (define-runtime-path gel-main-path "../gel/main.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
+(define-runtime-path gel-stack-path "../gel/stack.aloe")
 (define-runtime-path gel-run-path "../host/racket/gel-run.rkt")
 (define-runtime-path term-run-path "../host/racket/term-run.rkt")
 
@@ -129,6 +130,7 @@
   (driver-inject-host! state 'term term)
   (check-equal? (driver-load-file! state gel-main-path load-output) '())
   (check-equal? (driver-load-file! state point-path load-output) '())
+  (check-equal? (driver-load-file! state gel-stack-path load-output) '())
   (driver-eval!
    state
    '(define checkpoint-86-initial-stack
