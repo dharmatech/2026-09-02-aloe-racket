@@ -1,7 +1,9 @@
 # Editor LSP 010 — CR LF positions
 
-**Status.** Issued 2026-10-14 as a standalone checkpoint from a
-high-level discussion. Not implemented.
+**Status.** Implemented and reviewed 2026-10-14. Issued as a standalone
+checkpoint from a high-level discussion. The 5 new test cases pass and
+all fail on the old parser; the suite passed 3017 tests; reader error
+text is unchanged; the VS Code hand check passed.
 
 ## Goal
 

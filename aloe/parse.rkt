@@ -257,12 +257,45 @@
 (define (parse-program datums)
   (map parse-datum datums))
 
+;; Racket's reader counts CR LF as one position. Aloe positions count
+;; characters of the source text (editor-lsp 010). While read-program
+;; reads, this holds the text position of each reader position, or #f
+;; when the text has no CR LF and the two counts agree.
+(define current-text-positions (make-parameter #f))
+
+;; Element r - 1 is the one-based text index of the first character of
+;; reader position r. The last element is one past the end of the text.
+(define (text-position-table text)
+  (define text-length (string-length text))
+  (define (crlf-at? index)
+    (and (< (add1 index) text-length)
+         (char=? (string-ref text index) #\return)
+         (char=? (string-ref text (add1 index)) #\newline)))
+  (and (regexp-match? #rx"\r\n" text)
+       (let loop ([index 0] [positions '()])
+         (if (= index text-length)
+             (list->vector (reverse (cons (add1 text-length) positions)))
+             (loop (if (crlf-at? index) (+ index 2) (add1 index))
+                   (cons (add1 index) positions))))))
+
+(define (text-position table position)
+  (vector-ref table (sub1 position)))
+
 (define (syntax-location form)
   (define source (syntax-source form))
   (define line (syntax-line form))
   (define column (syntax-column form))
-  (define position (syntax-position form))
-  (define span (syntax-span form))
+  (define reader-position (syntax-position form))
+  (define reader-span (syntax-span form))
+  (define table (current-text-positions))
+  (define position
+    (if (and table reader-position)
+        (text-position table reader-position)
+        reader-position))
+  (define span
+    (if (and table reader-position reader-span)
+        (- (text-position table (+ reader-position reader-span)) position)
+        reader-span))
   (and (or source line column position span)
        (srcloc source line column position span)))
 
@@ -773,13 +806,17 @@
 (define (parse-datum datum)
   (parse-syntax-expression (datum->syntax #f datum)))
 
-(define (read-program-port input source-path)
+;; The string port keeps the caller's port name, which read-syntax
+;; reports as the source when source-path is #f.
+(define (read-program-text text port-name source-path)
+  (define input (open-input-string text port-name))
   (port-count-lines! input)
-  (let loop ([expressions '()])
-    (define form (read-syntax source-path input))
-    (if (eof-object? form)
-        (reverse expressions)
-        (loop (cons (parse-syntax-expression form) expressions)))))
+  (parameterize ([current-text-positions (text-position-table text)])
+    (let loop ([expressions '()])
+      (define form (read-syntax source-path input))
+      (if (eof-object? form)
+          (reverse expressions)
+          (loop (cons (parse-syntax-expression form) expressions))))))
 
 (define (read-program input #:source-path [source-path #f])
   (parameterize
@@ -789,12 +826,11 @@
             (current-aloe-source-directory))])
     (cond
       [(string? input)
-       (call-with-input-string
-        input
-        (lambda (port)
-          (read-program-port port source-path)))]
+       (read-program-text input 'string source-path)]
       [(input-port? input)
-       (read-program-port input source-path)]
+       (read-program-text (port->string input)
+                          (object-name input)
+                          source-path)]
       [else
        (raise-argument-error
         'read-program

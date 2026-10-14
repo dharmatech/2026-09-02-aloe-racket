@@ -201,9 +201,12 @@ character position used by Racket `srcloc-position`. Conversion always uses
 the exact synchronized string, never `srcloc-line` or `srcloc-column`.
 
 For conversion, a line break is LF, CRLF, or a lone CR. CRLF is one LSP line
-break but remains two Racket characters in the absolute position count. A
-Racket character at or below `#xFFFF` occupies one UTF-16 code unit; a
-character above it occupies two.
+break but remains two Racket characters in the absolute position count. Aloe
+source positions count it the same way: `read-program` records each position
+as the one-based index of a character in the source text, although Racket's
+reader counts CR LF as one position (editor-lsp 010). A Racket character at or
+below `#xFFFF` occupies one UTF-16 code unit; a character above it occupies
+two.
 
 To convert an incoming hover position:
 

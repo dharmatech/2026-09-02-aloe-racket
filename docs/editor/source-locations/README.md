@@ -13,3 +13,7 @@ the global spine.
 
 Editor-source-locations 000 is implemented and reviewed. No later checkpoint
 has been issued; editor-source-locations 001 remains unissued.
+
+Editor-lsp 010 amends 000: `read-program` positions and spans count
+CR and LF as two characters of the source text. Lines, columns, and
+sources are still the reader's.
