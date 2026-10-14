@@ -16,6 +16,8 @@ Local experiment. Not Aloe law. Not Gel. Not a global checkpoint.
 | [`checkpoints/007-lifecycle.md`](checkpoints/007-lifecycle.md) | **Implemented and reviewed.** Complete initialize, shutdown, exit, and EOF state machine |
 | [`checkpoints/008-adapter-failures.md`](checkpoints/008-adapter-failures.md) | **Implemented and reviewed.** Recoverable unexpected Hover-adapter failures |
 | [`checkpoints/009-launch.md`](checkpoints/009-launch.md) | **Implemented and reviewed.** Installed-module stdio launch and process status |
+| [`checkpoints/010-crlf-positions.md`](checkpoints/010-crlf-positions.md) | **Issued, not implemented.** Parser positions count CR LF as two characters, as §6 says |
 
-Editor-lsp 000–009 are implemented and reviewed. The planned local editor-lsp
-series is complete; no further checkpoint is ready to implement.
+Editor-lsp 000–009 are implemented and reviewed. Editor-lsp 010 is a
+standalone checkpoint issued 2026-10-14 from a high-level discussion: it
+fixes CRLF positions in the parser and awaits implementation.
