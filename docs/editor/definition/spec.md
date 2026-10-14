@@ -28,7 +28,7 @@ slice this work is in this file.
 ## 1. Predecessors, as found on 2026-10-14
 
 The tree at `019cd18` (product code as of `28c0f26`) has every
-predecessor:
+predecessor. Editor-lsp 010 landed afterwards (`6c81883`); see §3.1.
 
 | Predecessor | Found |
 |---|---|
@@ -96,8 +96,13 @@ Each structure gains one field, after its existing fields:
   protocol signature.
 
 Each span is taken from the syntax object of that symbol, the same way
-`selector-loc` is. The whole-form `loc` of `define-class-expr` and
-`define-methods-expr` stays the form's span.
+`selector-loc` is: through the parser's one location helper,
+`syntax-location`, never from `syntax-position` directly. Since
+[editor-lsp 010](../lsp/checkpoints/010-crlf-positions.md) that helper
+counts CR LF as two characters, so the new spans count the source text
+the way the LSP converter does. This series does not reopen 010. The
+whole-form `loc` of `define-class-expr` and `define-methods-expr` stays
+the form's span.
 
 ### 3.2 Span trees
 
@@ -380,7 +385,9 @@ query observes an expression:
   lies inside a deferred generic method body, that body is checked at
   its declaration, as expression-query §5 does for a selected
   expression. `selected-expression-in-method-body?` also considers
-  the definition owner. A class name inside an `AloemacsSession`
+  the definition owner; with no definition observer active it answers
+  exactly as today, for hover and for completion. A class name inside
+  an `AloemacsSession`
   method body is this case. Observations made while re-checking a
   deferred body for a concrete send are ignored.
 - The answer is built only after the complete file has checked.
@@ -608,7 +615,10 @@ All four files check on the found tree; `Box`'s methods are deferred
 ### 6.1 Targets
 
 Lines are one-based, columns zero-based, positions one-based, as
-`srcloc` reports them.
+`srcloc` reports them. The File column names the file. A result's
+`srcloc-source` is that file's complete, simplified path (the class's
+defining path), for example the absolute path of `lib/option.aloe`,
+not the repository-relative form a `from:` line prints.
 
 | Target | File | Line | Column | Position | Span |
 |---|---|---:|---:|---:|---:|
@@ -829,17 +839,6 @@ moved it to `file.aloe` for the reason in §9.
   `from:` path.
 - Arguments of a non-generic class head, as in `(Point Foo)`, are
   never resolved by the checker and never jump.
-- **CRLF, inherited.** With line counting on, Racket's reader counts
-  CR LF as one position. The LSP converter counts it as two
-  characters, as `docs/editor/lsp/spec.md` §6 says. Probed 2026-10-14:
-  in `(x)\r\n(a b)` the reader puts `b` at position 8, and the
-  adapter's offset gives 9. In a CRLF file, hover and definition both
-  address the wrong character after the first line break. This series
-  reuses the converter unchanged and its fixtures are LF. The fix is
-  [editor-lsp 010](../lsp/checkpoints/010-crlf-positions.md), issued
-  2026-10-14: the parser records positions that count CR LF as two
-  characters. It changes no converter, and the spans §3 adds go through
-  the same parser helper. Once it lands, this item no longer applies.
 
 ## 10. Non-goals
 
@@ -860,7 +859,7 @@ moved it to `file.aloe` for the reason in §9.
 - Host injection in the editor queries
 - A VS Code extension change, a second editor, a client-side parser,
   or a TypeScript or JavaScript copy of name resolution
-- A fix to the CRLF position mismatch
+- A change to how editor-lsp 010 counts positions
 - `CHECKPOINTS.md` and `docs/checkpoints/`
 - Gel, evaluation, and host capabilities
 
