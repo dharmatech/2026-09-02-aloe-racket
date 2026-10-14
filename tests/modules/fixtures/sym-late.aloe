@@ -1,0 +1,3 @@
+(load "../../../examples/mpl/sym.aloe")
+
+(define after-load 1)

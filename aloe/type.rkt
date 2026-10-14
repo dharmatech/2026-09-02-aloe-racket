@@ -86,7 +86,8 @@
   (bindings parent int-class string-class option-class load-cache)
   #:transparent)
 ;; A base's checker load cache maps a resolved path to its entry. The state is
-;; running or completed; exports stay empty until file environments exist.
+;; running or completed. Exports are (name . type) bindings in definition order;
+;; only the Option seed has one until file environments exist.
 (struct checker-load-entry (state source-bytes exports) #:transparent)
 
 (define INT (int-type))
@@ -579,7 +580,7 @@
         (materialize-expression-observation-at-root-end!)
         root-type)))
   (when outermost?
-    (check-protocol-conformance! environment))
+    (check-protocol-conformance! environment environment))
   result)
 
 (define (typecheck-load! expression environment)
@@ -658,7 +659,8 @@
                    (lambda (_source-bytes) (check-buffer))))
 
 ;; A base records the libraries it installed as completed loads. A query's base
-;; skips the library it installs from the buffer.
+;; skips the library it installs from the buffer. The Option seed exports the
+;; class the base binds under Option right after the install.
 (define (record-checked-libraries! environment #:except [skipped-path #f])
   (define cache (type-environment-load-cache environment))
   (for ([path (in-list (list list-library-resolved-path
@@ -669,8 +671,11 @@
                                      (string-library-bytes)
                                      (int-library-bytes)
                                      (option-library-bytes)))]
-        [exports (in-list '(() () () (Option)))]
+        [exported-names (in-list '(() () () (Option)))]
         #:unless (equal? path skipped-path))
+    (define exports
+      (for/list ([name (in-list exported-names)])
+        (cons name (type-environment-ref environment name))))
     (hash-set! cache
                path
                (checker-load-entry 'completed source-bytes exports))))
@@ -1078,30 +1083,48 @@
       "define-methods target is not a class: ~a"
       target)]))
 
-(define (check-protocol-conformance! environment)
+;; A root's conformance walk visits each class a completed cache entry exports,
+;; then each class bound in the file environment and its parents, then in the
+;; interactive environment and its parents. Each class record is visited once.
+(define (conformance-walk-classes file-environment interactive-environment)
   (define seen-classes (make-hasheq))
-  (let loop ([current environment])
-    (when current
-      (for ([binding (in-hash-values
-                      (type-environment-bindings current))])
-        (when (class-type? binding)
-          (define class (class-type-class binding))
-          (unless (hash-ref seen-classes class #f)
-            (hash-set! seen-classes class #t)
-            (define protocol (class-info-protocol class))
-            (when protocol
-              (for ([signature
-                     (in-list (protocol-type-signatures protocol))])
-                (unless
-                    (for/or ([method (in-list (class-info-methods class))])
-                      (method-signature-conforms?
-                       class method protocol signature))
-                  (raise-type-error
-                   "class ~a does not implement protocol ~a method ~a"
-                   (class-info-name class)
-                   (protocol-type-name protocol)
-                   (method-declaration-selector signature))))))))
-      (loop (type-environment-parent current)))))
+  (define classes '())
+  (define (visit! type)
+    (when (class-type? type)
+      (define class (class-type-class type))
+      (unless (hash-ref seen-classes class #f)
+        (hash-set! seen-classes class #t)
+        (set! classes (cons class classes)))))
+  (for ([entry (in-hash-values
+                (type-environment-load-cache file-environment))]
+        #:when (eq? (checker-load-entry-state entry) 'completed))
+    (for ([export (in-list (checker-load-entry-exports entry))])
+      (visit! (cdr export))))
+  (for ([environment (in-list (list file-environment
+                                    interactive-environment))])
+    (let loop ([current environment])
+      (when current
+        (for ([binding (in-hash-values
+                        (type-environment-bindings current))])
+          (visit! binding))
+        (loop (type-environment-parent current)))))
+  (reverse classes))
+
+(define (check-protocol-conformance! file-environment interactive-environment)
+  (for ([class (in-list (conformance-walk-classes file-environment
+                                                  interactive-environment))])
+    (define protocol (class-info-protocol class))
+    (when protocol
+      (for ([signature (in-list (protocol-type-signatures protocol))])
+        (unless
+            (for/or ([method (in-list (class-info-methods class))])
+              (method-signature-conforms?
+               class method protocol signature))
+          (raise-type-error
+           "class ~a does not implement protocol ~a method ~a"
+           (class-info-name class)
+           (protocol-type-name protocol)
+           (method-declaration-selector signature)))))))
 
 ;; The protocol's annotations resolve in the protocol's environment, the
 ;; method's in the method's.
@@ -2188,6 +2211,18 @@
 (module* completion-query-observation #f
   (provide (struct-out selector-receiver-observation)
            typecheck-program/observe-selector-receiver))
+
+;; Tests read the classes a root's conformance walk visits through this hook;
+;; nothing else does.
+(module* conformance-walk #f
+  (provide conformance-classes)
+
+  ;; The names of the classes the walk visits for a root checked in
+  ;; environment, as both its file and its interactive environment, in visit
+  ;; order, each class record once.
+  (define (conformance-classes environment)
+    (map class-info-name
+         (conformance-walk-classes environment environment))))
 
 ;; Tests read the environment each method, class, and protocol recorded through
 ;; this hook; nothing else does.

@@ -1,6 +1,6 @@
 # modules
 
-**Status: Spec accepted 2026-10-13. modules 000 implemented and accepted (5d435a5). modules 001 implemented and accepted (efe39e7). modules 002 implemented and accepted (0f026a6). modules 003 implemented and accepted (1ab41bb). modules 004 implemented, manager-reviewed, and accepted 2026-10-13.**
+**Status: Spec accepted 2026-10-13. modules 000 implemented and accepted (5d435a5). modules 001 implemented and accepted (efe39e7). modules 002 implemented and accepted (0f026a6). modules 003 implemented and accepted (1ab41bb). modules 004 implemented and accepted (c6a0333). modules 005 implemented, manager-reviewed, and accepted 2026-10-14.**
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -16,7 +16,8 @@ Language change. `load` becomes the module system. Not an aloemacs feature layer
 | [`checkpoints/001-explicit-loads.md`](checkpoints/001-explicit-loads.md) | Implemented 2026-10-13, manager-reviewed, accepted, committed as efe39e7: the explicit-load layer, not split by tree. Every census file loads each file whose names it uses; `Math` moves to `examples/mpl/math.aloe`; the census test `tests/modules/001-census.rkt`; 17 pins. Inventory from a scratch census and a scratch suite run. Census 44/44; the whole suite green at 221 files, 2916 tests |
 | [`checkpoints/002-option-base.md`](checkpoints/002-option-base.md) | Implemented 2026-10-13, manager-reviewed, accepted, committed as 0f026a6: slice 3a. `lib/option.aloe` installed on the base; `String find` reads the base's `Option`; an editor query of a base library installs it from the buffer; `query-expression-at` gains `#:document-path`. Checkpoint amended after the implementer's first suite run (a missed snapshot stub in `008-adapter-failures.rkt`, the `runner.rkt` fresh-driver loop, and the `(Some "x")` parse rejection). Focused proof 10/10; the whole suite green at 222 files, 2926 tests |
 | [`checkpoints/003-overload-identity.md`](checkpoints/003-overload-identity.md) | Implemented 2026-10-13, manager-reviewed, accepted, committed as 1ab41bb: slice 3b. Protocol types unify by record in the checker; `define-protocol` binds a runtime record; a send with more than one candidate matches class and protocol annotations by record in the environment of the send; single candidates, `Mirror invoke`, and `Signature accepts?` keep short names. A scratch prototype left the whole suite green, so no existing test changes. Focused proof 9/9; the whole suite green at 223 files, 2935 tests |
-| [`checkpoints/004-method-records.md`](checkpoints/004-method-records.md) | Implemented 2026-10-13, manager-reviewed, accepted, and committed: slice 3c. Each method and protocol records the environment that wrote it, in a table on each class record (per base); the checker resolves method, protocol, and field annotations there and the evaluator runs bodies and multi-candidate selection there. A scratch prototype left the whole suite green; it also showed the per-base table is required, because library method declarations are shared across bases. Focused proof 9/9; the whole suite green at 224 files, 2944 tests |
+| [`checkpoints/004-method-records.md`](checkpoints/004-method-records.md) | Implemented 2026-10-13, manager-reviewed, accepted, committed as c6a0333: slice 3c. Each method and protocol records the environment that wrote it, in a table on each class record (per base); the checker resolves method, protocol, and field annotations there and the evaluator runs bodies and multi-candidate selection there. A scratch prototype left the whole suite green; it also showed the per-base table is required, because library method declarations are shared across bases. Focused proof 9/9; the whole suite green at 224 files, 2944 tests |
+| [`checkpoints/005-conformance.md`](checkpoints/005-conformance.md) | Implemented 2026-10-14, manager-reviewed, accepted, and committed: slice 3d. Conformance at a root's end walks the classes exported by completed cache entries, then the file environment's chain, then the interactive environment's; checker exports become bindings (only the `Option` seed has one). Accepts exactly what today's walk accepts; a scratch prototype left the suite green. Focused proof 4/4; the whole suite green at 225 files, 2949 tests |
 
 Series identity is `modules`. Checkpoint 000 is spoken **modules 000** and will be filed as `checkpoints/000-run-once.md`. Numbers are three digits, start at 000, and are never renumbered. The checkpoint manager writes one checkpoint, then stops.
 
@@ -28,10 +29,10 @@ A load copies the names the loaded file defines, in a file and at the prompt. A 
 
 Code and tests live in the project root. Tests for this series live under `tests/modules/`.
 
-Next step: a checkpoint-manager conversation writes `checkpoints/005-…` for slice 3d (root-end conformance; spec §6.4) and stops.
+Next step: a checkpoint-manager conversation writes `checkpoints/006-…` for slice 3e (file environments and the copy rule; spec §6.5, the slice that is not split further) and stops.
 
 ```text
 Read docs/workflow.md. You are the checkpoint manager. Your assignment is
-docs/design/implementation/modules/spec.md. modules 000 through 004 are
+docs/design/implementation/modules/spec.md. modules 000 through 005 are
 implemented and accepted. Write the next checkpoint and stop.
 ```

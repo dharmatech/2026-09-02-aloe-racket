@@ -192,7 +192,9 @@ Rules for this slice:
 - `define-protocol` declares a name and may list required method signatures.
   `(define-protocol Math)` remains legal as an empty marker.
 - Every class that opts into a protocol with signatures must implement each
-  required method with compatible parameter and return types.
+  required method with compatible parameter and return types. That is checked
+  when the outermost program finishes, over every class the environment's
+  base, cache, file, and prompt hold.
 - `define-class Name Protocol ...` opts the class into one protocol.
 - A value of class `Sym` has type `Sym` and also type `Math`.
 - A method may return `Math` when every returned value's class has opted in.
