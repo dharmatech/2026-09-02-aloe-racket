@@ -174,7 +174,8 @@
   (query:expression-query-result
    type
    (list (query:signature-spec 'probe '() type))
-   (srcloc 'private-snapshot-source 999 888 start span)))
+   (srcloc 'private-snapshot-source 999 888 start span)
+   type))
 
 (test-case "unchanged read-only document queries its original path"
   (call-with-test-directory
@@ -460,6 +461,9 @@
         'value
         (string-append
          "type: LoadedFromDisk\n"
+         (format "from: ~s\n"
+                 (string->symbol
+                  (format "LoadedFromDisk@~a" (path->string support-path))))
          "messages:\n"
          "  value : () -> Int"))
        'range
@@ -471,7 +475,11 @@
      (check-equal? (directory-entry-paths directory) original-entries)
      (define protocol-text
        (bytes->string/utf-8 (get-output-bytes (exchange-output result))))
-     (check-false (string-contains? protocol-text (path->string directory)))
+     ;; Only support.aloe's own path, on the from: line, names the directory.
+     (check-false
+      (string-contains?
+       (string-replace protocol-text (path->string support-path) "")
+       (path->string directory)))
      (check-false (string-contains? protocol-text "aloe-lsp-snapshot")))))
 
 (test-case "snapshot setup failures return RequestFailed and service continues"

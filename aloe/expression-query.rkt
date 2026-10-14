@@ -12,6 +12,7 @@
                   select-expression-at-position)
          "signature-catalog.rkt"
          (only-in (submod "type.rkt" expression-query-observation)
+                  expression-type-observation-pathed-type
                   expression-type-observation-signatures
                   expression-type-observation-type
                   typecheck-program/observe))
@@ -20,7 +21,8 @@
          (struct-out signature-spec)
          query-expression-at)
 
-(struct expression-query-result (type signatures location) #:transparent)
+(struct expression-query-result (type signatures location pathed-type)
+  #:transparent)
 
 (define (query-expression-at source-path
                              position
@@ -71,4 +73,5 @@
        (expression-query-result
         (expression-type-observation-type observation)
         (expression-type-observation-signatures observation)
-        (expression-loc selected))))
+        (expression-loc selected)
+        (expression-type-observation-pathed-type observation))))

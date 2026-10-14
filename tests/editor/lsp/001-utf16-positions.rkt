@@ -151,7 +151,8 @@
    'Stub
    (list (query:signature-spec 'probe '() 'Stub))
    ;; These deliberately disagree with the actual range.
-   (srcloc 'ignored-source 999 777 start span)))
+   (srcloc 'ignored-source 999 777 start span)
+   'Stub))
 
 (define (check-clean-exchange result expected-hover-count)
   (check-equal? (exchange-status result) 0)

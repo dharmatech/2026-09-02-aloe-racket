@@ -31,6 +31,7 @@
 (define expected-hover-text
   (string-append
    "type: (Point Int)\n"
+   "from: (Point@tests/editor/lsp/fixtures/point.aloe Int)\n"
    "messages:\n"
    "  x : () -> Int\n"
    "  y : () -> Int\n"
@@ -246,7 +247,8 @@
      (list
       (query:signature-spec 'second '(Int) 'Bool)
       (query:signature-spec 'first '() 'String))
-     (srcloc 'ignored 100 200 163 15)))
+     (srcloc 'ignored 100 200 163 15)
+     '(Stub String)))
   (define (counting-query path position)
     (set! calls (cons (list path position) calls))
     stub-result)

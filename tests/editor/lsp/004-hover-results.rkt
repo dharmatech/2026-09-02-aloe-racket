@@ -446,6 +446,9 @@
          'value
          (string-append
           "type: Render004\n"
+          (format "from: ~s\n"
+                  (string->symbol
+                   (format "Render004@~a" (path->string path))))
           "messages:\n"
           "  z : () -> Int\n"
           "  pick : (Int) -> Int\n"

@@ -140,11 +140,11 @@
 (test-case "public surface, structures, and shared signature identity are exact"
   (check-equal? (procedure-arity public:query-expression-at) 2)
   (define result
-    (public:expression-query-result 'A '(rows) 'location))
+    (public:expression-query-result 'A '(rows) 'location 'A))
   (check-true (public:expression-query-result? result))
   (check-equal?
    (struct->vector result)
-   '#(struct:expression-query-result A (rows) location))
+   '#(struct:expression-query-result A (rows) location A))
   (check-equal? (public:expression-query-result-type result) 'A)
   (check-equal? (public:expression-query-result-signatures result) '(rows))
   (check-equal? (public:expression-query-result-location result) 'location)

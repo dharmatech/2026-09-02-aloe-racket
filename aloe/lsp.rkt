@@ -19,6 +19,7 @@
                   query-expression-at
                   expression-query-result?
                   expression-query-result-location
+                  expression-query-result-pathed-type
                   expression-query-result-signatures
                   expression-query-result-type
                   signature-spec-parameters
@@ -532,11 +533,17 @@
 (define (datum-text datum)
   (format "~s" datum))
 
+;; The from: line appears only when a class in the type has a defining path.
 (define (result-contents result)
+  (define type (expression-query-result-type result))
+  (define pathed-type (expression-query-result-pathed-type result))
   (define signatures (expression-query-result-signatures result))
   (string-append
    "type: "
-   (datum-text (expression-query-result-type result))
+   (datum-text type)
+   (if (equal? pathed-type type)
+       ""
+       (string-append "\nfrom: " (datum-text pathed-type)))
    (if (null? signatures)
        "\nmessages: none"
        (string-append

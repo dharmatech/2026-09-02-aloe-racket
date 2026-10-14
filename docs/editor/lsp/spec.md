@@ -243,7 +243,7 @@ range for the selected expression:
 {
   "contents": {
     "kind": "plaintext",
-    "value": "type: (Point Int)\nmessages:\n  x : () -> Int\n  y : () -> Int\n  + : ((Point Int)) -> (Point Int)\n  dist2 : ((Point Int)) -> Int"
+    "value": "type: (Point Int)\nfrom: (Point@tests/editor/lsp/fixtures/point.aloe Int)\nmessages:\n  x : () -> Int\n  y : () -> Int\n  + : ((Point Int)) -> (Point Int)\n  dist2 : ((Point Int)) -> Int"
   },
   "range": {
     "start": { "line": 9, "character": 0 },
@@ -255,15 +255,18 @@ range for the selected expression:
 The value is deterministic:
 
 1. `type: ` followed by the result type datum written with Racket `write`;
-2. a newline and `messages:`; and
-3. for each `signature-spec`, in the query's existing order, a newline, two
+2. when the query's `pathed-type` differs from its `type`, a newline,
+   `from: `, and the pathed type datum written with `write`;
+3. a newline and `messages:`; and
+4. for each `signature-spec`, in the query's existing order, a newline, two
    spaces, the selector written with `write`, ` : `, the entire parameter
    list datum written with `write`, ` -> `, and the return datum written with
    `write`.
 
-An empty signature list renders `messages: none` on the second line. The
-adapter does not sort, deduplicate, group overloads, substitute types, or
-invoke signatures.
+An empty signature list renders `messages: none` in place of `messages:` and
+its rows. The adapter does not sort, deduplicate, group overloads, substitute
+types, or invoke signatures. It prints a class's defining path only on the
+`from:` line, as the query renders it, and never a temporary sibling's path.
 
 The hover result is JSON null when:
 
@@ -346,8 +349,9 @@ asserting the expression query's exact serialized result.
 - Emacs or Neovim client configuration
 - Gel UI or evaluation of an Aloe program
 - A TypeScript/JavaScript parser, checker, dispatcher, or method table
-- Changes to `query-expression-at`, `srcloc`, type datums, or
-  `signature-spec`
+- Changes to `srcloc` or `signature-spec`; the `pathed-type` field and
+  `#:document-path` keyword are the modules series' additions to
+  `query-expression-at`
 
 When the implementation satisfies this specification, stop. A later local
 checkpoint-manager conversation decides the slices under

@@ -452,7 +452,8 @@
        (first () Int)
        (rest () (List Int))
        (cons (Int) (List Int))
-       (len () Int))))))
+       (len () Int)))
+    '(List Int))))
 
 (test-case "the observation is exactly the shared catalog result"
   (define site (recover "(1 p|)"))

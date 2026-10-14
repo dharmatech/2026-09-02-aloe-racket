@@ -18,7 +18,14 @@ leaking into method annotations and the deferred generic re-check.
 While issuing modules 007 the manager recorded in §6.6 and §12 row 3f
 two decisions the human made on 2026-10-14: a file may not define a
 name one of its own loads copied in, and loads and definitions in a
-local scope are not checked.
+local scope are not checked. While issuing modules 008 the manager
+made two corrections in §7 so its rules agree with its own examples:
+§7.1 now says the base's installed `Option`, and a class a queried
+base library's buffer defines, record that library's path (the §7.2
+table, the §7.3 and §7.4 examples, and the 3a `#:document-path`
+paragraph already print `Option@lib/option.aloe`); and §7.3's second
+example is the contextual `type mismatch for ~a` sentence, because the
+plain sentence reports the innermost mismatch of two compound types.
 [`SPEC.md`](../../../../SPEC.md) remains language law; this series
 amends it only in the checkpoints §12 names.
 [`docs/workflow.md`](../../../workflow.md) is the process.
@@ -1106,7 +1113,10 @@ Every class a file module defines records that file's resolved path
 in its checker record: the path of the file environment that checked
 the `define-class`, found through the local-environment chain.
 Kernel classes, prompt classes, unkeyed-port classes, and classes
-whose `define-class` ran in a raw environment record none. A class
+whose `define-class` ran in a raw environment record none. The
+exception is an installed library: the base's `Option` records the
+resolved path of `lib/option.aloe`, and a class a queried base
+library's buffer defines records the identity path (3a). A class
 the queried buffer defines records the identity path (the document),
 not the temporary sibling. A class a nested load defines records
 that file's path on disk. The cache key stays the resolved path.
@@ -1148,8 +1158,13 @@ both pathed datums joined by ` vs `:
 
 ```text
 typecheck: type mismatch: expected Box, got Box (Box@tests/modules/fixtures/box-a.aloe vs Box@tests/modules/fixtures/box-b.aloe)
-typecheck: type mismatch: expected (Option Position), got (Option Int) ((Option@lib/option.aloe Position@lib/text.aloe) vs (Option@lib/option.aloe Int))
+typecheck: type mismatch for with field held: expected (Option Position), got (Option Int) ((Option@lib/option.aloe Position@lib/text.aloe) vs (Option@lib/option.aloe Int))
 ```
+
+Unification reports the innermost mismatch of two compound types, so
+the plain sentence for those two values reads `type mismatch: expected
+Position, got Int (Position@lib/text.aloe vs Int)`; the contextual
+sentence is formatted from the whole types before unifying.
 
 When neither side has a pathed class the sentence is unchanged.
 Other messages that print one type are unchanged.

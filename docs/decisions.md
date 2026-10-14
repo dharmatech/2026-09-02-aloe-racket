@@ -317,3 +317,11 @@ different definition already visible is a check-time error naming both; the
 prompt may shadow the base, a file may not; a file may not define a name its
 own loads copied in; a load or definition in a local scope is not checked.
 Rejected: `prefix`, `only`, `rename`, and silent replacement across files.
+
+## Defining paths (2026-10-14)
+
+Decided: a class records the path of the file that defined it; hover
+and the `expected, got` mismatch print each class's
+repository-relative path as a second rendering; `type->datum` is
+unchanged. Rejected: paths inside `type->datum`, paths on rows and
+completion items, a decorative module name.

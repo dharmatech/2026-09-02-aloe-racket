@@ -190,6 +190,7 @@
     'value
     (string-append
      "type: (Point Int)\n"
+     "from: (Point@tests/editor/lsp/fixtures/point.aloe Int)\n"
      "messages:\n"
      "  x : () -> Int\n"
      "  y : () -> Int\n"

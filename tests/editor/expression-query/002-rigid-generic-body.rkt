@@ -114,7 +114,7 @@
   (check-eq? selected (method-body (first fixture-expressions) 0))
   (check-equal?
    (observe fixture-expressions selected)
-   (expression-type-observation '(Point T) point-t-rows)))
+   (expression-type-observation '(Point T) point-t-rows '(Point T))))
 
 (test-case "later concrete Point uses cannot specialize the observation"
   (define source
@@ -127,7 +127,7 @@
   (define selected (select-expression-at-position expressions 108))
   (check-equal?
    (observe expressions selected)
-   (expression-type-observation '(Point T) point-t-rows)))
+   (expression-type-observation '(Point T) point-t-rows '(Point T))))
 
 (test-case "a deferred body receives its declared return type as expected"
   (define expressions
@@ -141,7 +141,7 @@
   (define selected (method-body (first expressions) 0))
   (check-equal?
    (observe expressions selected)
-   (expression-type-observation '(List T) list-t-rows)))
+   (expression-type-observation '(List T) list-t-rows '(List T))))
 
 (define rigid-values-source
   (string-append
@@ -169,13 +169,14 @@
    (observe expressions (method-body declaration 0))
    (expression-type-observation
     '(ContextValues002 T)
-    rigid-values-rows))
+    rigid-values-rows
+    '(ContextValues002 T)))
   (check-equal?
    (observe expressions (method-body declaration 1))
-   (expression-type-observation 'T (parameter-rows 'T)))
+   (expression-type-observation 'T (parameter-rows 'T) 'T))
   (check-equal?
    (observe expressions (method-body declaration 2))
-   (expression-type-observation 'U (parameter-rows 'U))))
+   (expression-type-observation 'U (parameter-rows 'U) 'U)))
 
 (define selective-source
   (string-append
@@ -190,7 +191,7 @@
   (define declaration (first expressions))
   (check-equal?
    (observe expressions (method-body declaration 0))
-   (expression-type-observation 'T (parameter-rows 'T)))
+   (expression-type-observation 'T (parameter-rows 'T) 'T))
 
   (define bad-error
     (captured-type-error
@@ -225,7 +226,8 @@
    (observe expressions (method-body extension 0))
    (expression-type-observation
     '(ContextExtension002 T)
-    extension-rows))
+    extension-rows
+    '(ContextExtension002 T)))
 
   (define bad-error
     (captured-type-error
@@ -240,7 +242,7 @@
   (for ([declaration (in-list expressions)])
     (check-equal?
      (observe expressions declaration)
-     (expression-type-observation 'Void '()))))
+     (expression-type-observation 'Void '() 'Void))))
 
 (test-case "ordinary and target-free checks retain legacy deferral"
   (define ordinary-expressions (read-expressions selective-source))

@@ -1,0 +1,3 @@
+(load "box-a.aloe")
+
+(define a-box (Box new))

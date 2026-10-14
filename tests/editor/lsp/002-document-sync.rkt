@@ -334,7 +334,8 @@
   (query:expression-query-result
    'Stub
    (list (query:signature-spec 'probe '() 'Stub))
-   (srcloc 'ignored 1 0 start span)))
+   (srcloc 'ignored 1 0 start span)
+   'Stub))
 
 (define (check-clean-exchange result response-count)
   (check-equal? (exchange-status result) 0)

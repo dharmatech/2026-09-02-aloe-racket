@@ -10,7 +10,8 @@
          (struct-out selector-receiver-observation)
          make-checker-observation-api)
 
-(struct expression-type-observation (type signatures) #:transparent)
+(struct expression-type-observation (type signatures pathed-type)
+  #:transparent)
 (struct selector-receiver-observation (signatures) #:transparent)
 
 (struct retained-expression-type (expression type environment))
@@ -22,6 +23,7 @@
          typecheck-program
          current-typecheck-program-depth
          type->datum
+         type->pathed-datum
          type-signature-specs)
   (define current-expression-observer (make-parameter #f))
   (define current-selector-receiver-observer (make-parameter #f))
@@ -94,7 +96,8 @@
       (define answer
         (expression-type-observation
          (type->datum type)
-         (type-signature-specs type environment)))
+         (type-signature-specs type environment)
+         (type->pathed-datum type)))
       (set-expression-observer-answer! observer answer)
       (set-expression-observer-retained! observer #f)))
 

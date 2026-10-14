@@ -18,7 +18,7 @@ operations; it does not add another type or method catalog.
 A new Racket module, `aloe/expression-query.rkt`, provides:
 
 ```racket
-(struct expression-query-result (type signatures location) #:transparent)
+(struct expression-query-result (type signatures location pathed-type) #:transparent)
 
 (query-expression-at source-path position #:document-path [document-path source-path])
   ; source-path : path-string?
@@ -55,9 +55,12 @@ For a position contained by an expression, the fields are:
   `type->datum` operation;
 - `signatures`: a fresh proper Racket list returned by the existing
   `type-signature-specs` operation for that checker type and its checker
-  environment; and
+  environment;
 - `location`: the `srcloc` of the selected expression, not the location of the
-  token that happened to be addressed.
+  token that happened to be addressed; and
+- `pathed-type`: the same datum with each class that has a defining path
+  written `Name@path`, the path repository-relative when inside the
+  repository; it equals `type` when no class has a path.
 
 The query returns Racket data, not Aloe values. It does not produce a runtime
 `List`, `Symbol`, `Mirror`, or `Signature`, and it does not evaluate the

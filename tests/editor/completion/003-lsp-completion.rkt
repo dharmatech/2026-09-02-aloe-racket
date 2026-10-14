@@ -249,7 +249,8 @@
   (hover:expression-query-result
    type
    '()
-   (srcloc 'injected-completion-003 1 0 position span)))
+   (srcloc 'injected-completion-003 1 0 position span)
+   type))
 
 (define (phase-zero-export-names exports)
   (map car (cdr (assq 0 exports))))

@@ -73,12 +73,12 @@
 
 (test-case "observation bridge is narrow and the result field order is exact"
   (define sample
-    (expression-type-observation 'Sample '(row)))
+    (expression-type-observation 'Sample '(row) 'Sample))
   (check-true (expression-type-observation? sample))
-  (check-equal? (procedure-arity expression-type-observation) 2)
+  (check-equal? (procedure-arity expression-type-observation) 3)
   (check-equal?
    (struct->vector sample)
-   '#(struct:expression-type-observation Sample (row)))
+   '#(struct:expression-type-observation Sample (row) Sample))
   (check-equal? (expression-type-observation-type sample) 'Sample)
   (check-equal? (expression-type-observation-signatures sample) '(row))
   (check-equal? (procedure-arity typecheck-program/observe) 3)
@@ -99,7 +99,7 @@
   (define answer (observe expressions selected))
   (check-equal?
    answer
-   (expression-type-observation '(List Int) list-int-rows)))
+   (expression-type-observation '(List Int) list-int-rows '(List Int))))
 
 (define non-generic-class-source
   (string-append
@@ -125,7 +125,8 @@
   (for ([selected (in-list (list self-expression parameter-expression))])
     (check-equal?
      (observe expressions selected)
-     (expression-type-observation 'ContextPair001 expected-rows))))
+     (expression-type-observation
+      'ContextPair001 expected-rows 'ContextPair001))))
 
 (test-case "function and desugared let parameters use same-root constraints"
   (define function-expressions
@@ -135,7 +136,7 @@
     (fn-expr-body (send-expr-receiver function-root)))
   (check-equal?
    (observe function-expressions function-parameter-use)
-   (expression-type-observation 'Int int-rows))
+   (expression-type-observation 'Int int-rows 'Int))
 
   (define let-expressions
     (read-expressions
@@ -146,7 +147,7 @@
   (define let-binding-use (check-expr-left let-body))
   (check-equal?
    (observe let-expressions let-binding-use)
-   (expression-type-observation '(List Int) list-int-rows)))
+   (expression-type-observation '(List Int) list-int-rows '(List Int))))
 
 (define case-source
   (string-append
@@ -172,7 +173,7 @@
   (for ([selected (in-list (list payload-expression else-expression))])
     (check-equal?
      (observe expressions selected)
-     (expression-type-observation 'Int int-rows))))
+     (expression-type-observation 'Int int-rows 'Int))))
 
 (test-case "explicit-constructor generic self stays rigid and symbolic"
   (define expressions
@@ -196,7 +197,8 @@
     (triples->specs
      '((same
         ((ContextExplicit001 T))
-        (ContextExplicit001 T)))))))
+        (ContextExplicit001 T))))
+    '(ContextExplicit001 T))))
 
 (test-case "define-methods materializes after every row is installed"
   (define expressions
@@ -219,10 +221,10 @@
         (decorate001 (String) String)))))
   (check-equal?
    (observe expressions selected)
-   (expression-type-observation 'String expected-rows))
+   (expression-type-observation 'String expected-rows 'String))
   (check-equal?
    (observe expressions declaration)
-   (expression-type-observation 'Void '())))
+   (expression-type-observation 'Void '() 'Void)))
 
 (test-case "later roots do not change an earlier materialized catalog"
   (define expressions
@@ -234,7 +236,7 @@
       "    (later001 () String self)))")))
   (check-equal?
    (observe expressions (first expressions))
-   (expression-type-observation 'String string-rows)))
+   (expression-type-observation 'String string-rows 'String)))
 
 (test-case "only the successful overload derivation is observed"
   (define expressions
@@ -249,7 +251,7 @@
   (define selected (second expressions))
   (check-equal?
    (observe expressions selected)
-   (expression-type-observation 'String string-rows)))
+   (expression-type-observation 'String string-rows 'String)))
 
 (define (captured-type-error thunk)
   (with-handlers ([type:exn:fail:aloe-type? values])
@@ -333,7 +335,8 @@
       '(ContextLegacy001 T)
       (triples->specs
        '((value () T)
-         (identity () (ContextLegacy001 T)))))))
+         (identity () (ContextLegacy001 T))))
+      '(ContextLegacy001 T))))
 
   (define ordinary-expressions
     (read-expressions legacy-source-with-use))
@@ -375,7 +378,8 @@
         'String
         (append
          string-rows
-         (triples->specs '((loaded001 () String)))))))
+         (triples->specs '((loaded001 () String))))
+        'String)))
     (lambda ()
       (when (file-exists? loaded-path)
         (delete-file loaded-path)))))
@@ -401,7 +405,7 @@
   (define selected (parse-datum '(context-host-001 value)))
   (check-equal?
    (typecheck-program/observe (list selected) environment selected)
-   (expression-type-observation 'Int int-rows))
+   (expression-type-observation 'Int int-rows 'Int))
   (check-false called?))
 
 (test-case "calls are independent and ordinary checker entry points remain clean"

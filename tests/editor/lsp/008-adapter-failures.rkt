@@ -212,7 +212,8 @@
   (query:expression-query-result
    type
    signatures
-   (srcloc 'private-source-008 800 80 position span)))
+   (srcloc 'private-source-008 800 80 position span)
+   type))
 
 (define expected-stub-hover
   (hasheq

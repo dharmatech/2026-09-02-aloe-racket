@@ -1,0 +1,3 @@
+(define-class Box
+  (fields)
+  (methods))

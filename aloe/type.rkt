@@ -74,13 +74,15 @@
 (struct construction-obligation (parameter class type) #:transparent)
 
 ;; A class records the environment its define-class form is checked in, where
-;; its field annotations resolve, beside its method table.
+;; its field annotations resolve, beside its method table, and the resolved
+;; path of the file that defined it, or #f.
 (struct class-info
   (name type-parameters parameter-types protocol fields constructors
         explicit-constructors?
         [methods #:mutable]
         environment
-        method-environments)
+        method-environments
+        [defining-path #:mutable])
   #:transparent)
 ;; A file environment records its file's resolved path; every other environment
 ;; records #f. A base, an interactive environment, and a file environment map
@@ -110,6 +112,9 @@
 ;; is checked in a file environment; #f when the root is checked in it.
 (define current-root-interactive-environment (make-parameter #f))
 (define current-construction-obligations (make-parameter #f))
+;; The identity path of a queried base library while its buffer is checked in
+;; the query's base; #f otherwise.
+(define current-installed-library-path (make-parameter #f))
 
 (define (raise-type-error format-string . arguments)
   (raise
@@ -169,6 +174,15 @@
 (define (type-environment-base environment)
   (define parent (type-environment-parent environment))
   (if parent (type-environment-base parent) environment))
+
+;; The path of the file environment an environment's parent chain reaches; #f
+;; when it reaches none.
+(define (type-environment-file-path environment)
+  (cond
+    [(type-environment-path environment)]
+    [(type-environment-parent environment)
+     => type-environment-file-path]
+    [else #f]))
 
 ;; A base's interactive environment starts with no bindings of its own.
 (define (make-interactive-type-environment base)
@@ -271,7 +285,26 @@
      resolved]
     [else type]))
 
+;; The plain datum writes each class as its name.
 (define (type->datum type)
+  (render-type type class-info-name))
+
+;; The pathed datum writes each class that has a defining path as Name@path, the
+;; path displayed; it equals the plain datum when no class in the type has one.
+(define (type->pathed-datum type)
+  (render-type type class-pathed-name))
+
+(define (class-pathed-name class)
+  (define path (class-info-defining-path class))
+  (if path
+      (string->symbol
+       (format "~a@~a" (class-info-name class) (displayed-path path)))
+      (class-info-name class)))
+
+;; A type's datum, each class written by class-name.
+(define (render-type type class-name)
+  (define (render type)
+    (render-type type class-name))
   (define resolved (resolve-type type))
   (cond
     [(int-type? resolved) 'Int]
@@ -284,14 +317,14 @@
     [(type-data-type? resolved) 'TypeData]
     [(protocol-type? resolved) (protocol-type-name resolved)]
     [(instance-type? resolved)
-     (define name (class-info-name (instance-type-class resolved)))
+     (define name (class-name (instance-type-class resolved)))
      (if (null? (instance-type-arguments resolved))
          name
-         (cons name (map type->datum (instance-type-arguments resolved))))]
+         (cons name (map render (instance-type-arguments resolved))))]
     [(list-type? resolved)
-     (list 'List (type->datum (list-type-element resolved)))]
+     (list 'List (render (list-type-element resolved)))]
     [(class-type? resolved)
-     (list 'Class (class-info-name (class-type-class resolved)))]
+     (list 'Class (class-name (class-type-class resolved)))]
     [(list-class-type? resolved) '(Class List)]
     [(int-class-type? resolved) '(Class Int)]
     [(string-class-type? resolved) '(Class String)]
@@ -300,8 +333,8 @@
     [(function-type? resolved)
      (cons '->
            (append
-            (map type->datum (function-type-parameters resolved))
-            (list (type->datum (function-type-result resolved)))))]
+            (map render (function-type-parameters resolved))
+            (list (render (function-type-result resolved)))))]
     [(host-receiver-type? resolved)
      (host-interface-name (host-receiver-type-interface resolved))]
     [(parameter-type? resolved) (parameter-type-name resolved)]
@@ -488,9 +521,20 @@
 (define (type-mismatch message left right)
   (if message
       (raise-type-error "~a" message)
-      (raise-type-error "type mismatch: expected ~a, got ~a"
+      (raise-type-error "type mismatch: expected ~a, got ~a~a"
                         (type->datum right)
-                        (type->datum left))))
+                        (type->datum left)
+                        (mismatch-paths right left))))
+
+;; A mismatch whose sides name a class with a defining path ends with both sides'
+;; pathed datums; otherwise it ends as before.
+(define (mismatch-paths expected got)
+  (define pathed-expected (type->pathed-datum expected))
+  (define pathed-got (type->pathed-datum got))
+  (if (and (equal? pathed-expected (type->datum expected))
+           (equal? pathed-got (type->datum got)))
+      ""
+      (format " (~s vs ~s)" pathed-expected pathed-got)))
 
 (define (occurs-in? variable type)
   (define resolved (resolve-type type))
@@ -785,13 +829,18 @@
 
 ;; An editor query of a base library checks the buffer it already read as a
 ;; keyed root under the document's path, so its base installs that library from
-;; the buffer, once.
+;; the buffer, once. The classes the buffer defines record the document's path.
 (define (typecheck-keyed-buffer environment document-path source-bytes
                                 check-buffer)
+  (define path (resolved-source-path document-path))
   (typecheck-once! environment
-                   (resolved-source-path document-path)
+                   path
                    (lambda () source-bytes)
-                   (lambda (_source-bytes) (values (check-buffer) '()))))
+                   (lambda (_source-bytes)
+                     (values
+                      (parameterize ([current-installed-library-path path])
+                        (check-buffer))
+                      '()))))
 
 ;; Any other queried buffer is a file module keyed by the document's path: a
 ;; file environment under the query's base, with the query's interactive
@@ -835,15 +884,18 @@
                (checker-load-entry 'completed source-bytes exports))))
 
 ;; A base keeps the Option class record it installed; find reads it, not the
-;; name. Its origin is lib/option.aloe. A queried buffer that binds no Option
-;; class leaves the field empty.
+;; name. Its origin and its defining path are lib/option.aloe. A queried buffer
+;; that binds no Option class leaves the field empty.
 (define (record-checked-option-class! environment)
   (define option-type
     (and (type-environment-bound? environment 'Option)
          (type-environment-ref environment 'Option)))
   (when (class-type? option-type)
-    (set-box! (type-environment-option-class environment)
-              (class-type-class option-type))
+    (define option-class (class-type-class option-type))
+    (set-box! (type-environment-option-class environment) option-class)
+    (unless (class-info-defining-path option-class)
+      (set-class-info-defining-path! option-class
+                                     option-library-resolved-path))
     (hash-set! (type-environment-origins environment)
                'Option
                option-library-resolved-path)))
@@ -915,10 +967,11 @@
      inferred
      expected
      (and mismatch-context
-          (format "type mismatch for ~a: expected ~a, got ~a"
+          (format "type mismatch for ~a: expected ~a, got ~a~a"
                   mismatch-context
                   (type->datum expected)
-                  (type->datum inferred)))))
+                  (type->datum inferred)
+                  (mismatch-paths expected inferred)))))
   (retain-expression-observation! expression inferred environment)
   (observe-selector-receiver! expression inferred environment)
   inferred)
@@ -1095,7 +1148,9 @@
      (and constructors #t)
      methods
      environment
-     (make-hasheq)))
+     (make-hasheq)
+     (or (type-environment-file-path environment)
+         (current-installed-library-path))))
   (record-method-environments!
    (class-info-method-environments class) methods environment)
   (type-environment-set! environment name (class-type class))
@@ -2346,6 +2401,7 @@
    typecheck-program
    current-typecheck-program-depth
    type->datum
+   type->pathed-datum
    type-signature-specs))
 
 ;; The driver needs one narrow construction hook without making host types a
@@ -2376,6 +2432,11 @@
 (module* completion-query-observation #f
   (provide (struct-out selector-receiver-observation)
            typecheck-program/observe-selector-receiver))
+
+;; Tests read the pathed datum of a checker type through this hook; hover and
+;; mismatches print it, and nothing else exports it.
+(module* defining-path #f
+  (provide type->pathed-datum))
 
 ;; Tests read the classes a root's conformance walk visits through this hook;
 ;; nothing else does.

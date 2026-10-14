@@ -220,7 +220,8 @@
   (query:expression-query-result
    'Stub
    (list (query:signature-spec 'probe '() 'Stub))
-   (srcloc 'ignored 10 0 start span)))
+   (srcloc 'ignored 10 0 start span)
+   'Stub))
 
 (define stub-hover-result
   (hasheq
