@@ -201,7 +201,12 @@ Locations are written `(line column position span)`.
 1. **Parser, one line break.** For `"x\n(a b)"` and `"x\r(a b)"`, the
    second form's send is `(2 0 3 5)`, its receiver `a` is `(2 1 4 1)`,
    and its `selector-loc` is `(2 3 6 1)`, as today. For `"x\r\n(a b)"`
-   they are `(2 0 4 5)`, `(2 1 5 1)`, and `(2 3 7 1)`.
+   they are `(2 0 4 5)`, `(2 1 5 1)`, and `(2 3 7 1)`. Read
+   `"x\r\n(a b)"` again, from an input port over its UTF-8 bytes with
+   `#:source-path` set to a path in a temporary directory: the same three
+   locations come back, and each one's `srcloc-source` is that path.
+   Editor-source-locations 000 pins the source path only for LF text,
+   and the fix reads through a new string port, so this case guards it.
 2. **Span across a line break.** For `"(a\r\n b) c"`, the first form is
    `(1 0 1 7)` and `c` is `(2 4 9 1)`.
 3. **Characters, a string literal, and a port.** For the text
@@ -293,6 +298,8 @@ Stop for review without committing.
 - Unicode line separators as line breaks
 - Byte positions, or positions for text that is not read through
   `read-program`
+- Positions inside a Racket reader error (`exn:fail:read`) on CRLF text;
+  they stay the reader's own
 - Diagnostics or location-bearing errors (source-locations 001)
 - A rewrite of editor-lsp 001's tests or specimen
 - Normalizing line endings in source files, or CRLF handling in Aloemacs
