@@ -48,7 +48,8 @@ workspace, a TypeScript parser, and jump-to-selector are defects.
 Intended order, which the spec may pack or split to the checkpoint
 size in [`docs/workflow.md`](../../workflow.md) and must not reorder:
 
-1. The class name's span is stored for every file-defined class.
+1. The class name's span, and the `define-methods` target's span,
+   are stored for every file-defined class.
 2. A public Racket query answers the positions in §4.1 and §4.2.
    Hover is unchanged.
 3. `textDocument/definition` adapts that query. The VS Code
@@ -75,8 +76,8 @@ consumer, not a predecessor you extend.
 
 The specification is wrong unless all of these are true:
 
-1. A public Racket function, given a source, a document path, and a
-   cursor, returns the defining name's location or no location.
+1. A public Racket function, given a source path, a document path, and
+   a cursor, returns the defining name's location or no location.
    Unit tests are the first consumer. Each test is a snippet plus a
    cursor. Fixtures live under `tests/editor/definition/`.
 2. The location is the class name in `define-class`, a short span.
@@ -103,14 +104,18 @@ The specification is wrong unless all of these are true:
 
 ### 4.1 Name uses that jump
 
-The cursor is on a name that resolves to a class which has a
-defining path.
+A symbol jumps when the checker resolves it to a class that has a
+defining path and the symbol is that class's own name.
+`type-from-sexpr` treats every `(class-type info)` binding as a
+type, and `(define P Point)` stores that same type. The origin
+records only the file. The symbol text is what separates the class's
+own name from an alias.
 
-- A variable whose binding is that class. `AloemacsBuffer` in
-  `(AloemacsBuffer new* ...)` is the original case. The binding is
-  the class, not a `define` or `let` that holds the class object.
-- The target name of `define-methods`, when the checker resolves it
-  to such a class. `(define-methods AloemacsWindowTree ...)` and a
+- A variable whose symbol is the class's own name.
+  `AloemacsBuffer` in `(AloemacsBuffer new* ...)` is the original
+  case.
+- The target name of `define-methods`, when that symbol is the
+  class's own name. `(define-methods AloemacsWindowTree ...)` and a
   target defined in another file both jump. `List`, `String`, and
   `Int` have no defining file, so they do not.
 - The class's own name in `define-class`. Both headers work:
@@ -119,9 +124,9 @@ defining path.
 
 ### 4.2 Type names that jump
 
-A type is a sexpr. Each symbol in it that the checker resolves to a
-class with a defining path is its own target. The cursor sits on
-that symbol.
+A type is a sexpr. Each symbol in it jumps when §4.1's rule holds:
+the checker resolves it to a class with a defining path, and the
+symbol is that class's own name. The cursor sits on that symbol.
 
 - A field type.
 - A constructor payload field type.
@@ -132,7 +137,9 @@ that symbol.
 
 `(Option AloemacsBuffer)` is two targets. `(AloemacsSession H)`
 jumps for `AloemacsSession` only. `(List String)` jumps for neither
-name, because those classes have no defining file.
+name, because those classes have no defining file. An alias in a
+type does not jump. After `(define P Point)`, `P` in
+`(fields (p P))` is not `Point`.
 
 ### 4.3 What does not jump
 
@@ -140,9 +147,10 @@ These return no location. They are not errors.
 
 - An expression whose type is an instance. F12 on `buf` does not
   open `AloemacsBuffer`. This includes a field read and a send.
-- An alias. After `(define Buffer AloemacsBuffer)`, F12 on
-  `Buffer` does not open the class. F12 on the `AloemacsBuffer`
-  value in that definition does.
+- An alias, in an expression and in a type. After
+  `(define P Point)`, F12 on `P` does not open `Point`, including
+  `P` in `(fields (p P))`. F12 on the `Point` value in that
+  definition does.
 - A protocol. This includes the protocol slot of
   `(define-class Sym Math ...)` and a type position that resolves
   to a protocol. Do not open `define-protocol`.
@@ -163,6 +171,11 @@ A file that fails checking, an incomplete or malformed buffer, an
 unopened document, an unsupported URI, an invalid position, and an
 unreadable load are the same misses as hover. Copy those rules.
 Do not publish diagnostics from this project.
+
+Two consequences of those rules are accepted. A type error anywhere
+in a file turns definition off for the whole file. A class brought
+in by `load` is located from the bytes on disk, including when that
+file is open with unsaved edits.
 
 ### 4.4 Where the jump lands
 
@@ -219,8 +232,9 @@ their count in the spec.
 Reuse the LSP adapter's UTF-16 conversion. The range is the name's
 span in the file the location names. For the queried document, convert
 with the synchronized text. For a loaded file, convert with the
-bytes that were checked. A name is an identifier and may be ASCII;
-the converter still has to be the existing one.
+bytes that were checked. The name's column depends on the characters
+before it on the line, so the conversion goes through the existing
+UTF-16 converter.
 
 The extension in `editors/vscode/` does not change.
 `editors/vscode/test/000-hover-client.test.js` already requires
@@ -229,28 +243,32 @@ without an edit.
 
 ### 4.7 Spans
 
-Editor-source-locations 000 stores no location on
-`field-declaration`, `parameter-declaration`,
-`constructor-declaration`, or `method-declaration`. This project
-needs the span of the class name and of each class-name symbol in
-a type. That freeze is amended for those name tokens only.
+The class name on `define-class` and the target name on
+`define-methods` each get a `srcloc` field on that form, the same
+kind of field as `send-expr`'s `selector-loc`. `parse-datum` sets
+those fields to `#f`. The whole-form `loc` on `define-class-expr`
+and `define-methods-expr` stays the form's span. Record each span
+from the syntax object of that name. Do not find it by searching
+for the text `define-class` or `define-methods`.
 
-The spec chooses the smallest representation that lets the checker,
-after resolving the name, return that span. Record the choice.
-Constraints:
+A symbol inside a type sexpr is the representation the spec chooses.
+A type is still a raw datum. Choose the smallest store that lets the
+checker, after resolving the symbol, return that symbol's span.
+Record the choice.
 
-- One parser. `read-program` remains syntax-aware. `parse-datum`
-  still yields `#f` locations, and two `parse-datum` trees of the
-  same datum still compare `equal?`.
-- No second syntax tree retained beside the program, no wrapper
-  node, and no new special form.
-- Declaration structure does not gain a new Aloe meaning. A field
-  is still a name and a type sexpr.
-- The whole-form `loc` on `define-class-expr` stays the form's
-  span. The name span is separate.
+Editor-source-locations 000 still forbids a wrapper node, a side
+table, a parallel syntax tree, a structure property, and a new
+expression type. Those five bans hold. The one amendment is that a
+name token which is not an expression may carry a `srcloc`: the
+class name, the `define-methods` target, and each class-name symbol
+in a type. A field is still a name and a type sexpr. One parser.
+`read-program` remains syntax-aware. `parse-datum` still yields `#f`
+locations, and two `parse-datum` trees of the same datum still
+compare `equal?`.
 
 If those constraints cannot be met together, stop and report the
-conflict. Do not drop type-name jumps to save the representation.
+conflict. Do not drop type-name jumps, and do not drop the
+`define-methods` target, to save the representation.
 
 ### 4.8 Tests and the hand check
 
@@ -260,15 +278,18 @@ and on the suites the spec names. Include `-j 4` and `-y`.
 The fixture suite covers §4.1, §4.2, and §4.3, including a class
 used from another file, a `define-methods` target, a compound type,
 a generic header, a kernel name, a protocol name, an instance, and
-an alias. One hover golden on a definition cursor stays byte-for-byte
-the same.
+an alias in both an expression and a field type `(fields (p P))`.
+`Option` is covered twice: a use from another file lands on the name
+in `lib/option.aloe`, and a query with `lib/option.aloe` open reports
+that document's URI. One hover golden on a definition cursor stays
+byte-for-byte the same.
 
 The human check, after the LSP slice, is in VS Code. Open
 `examples/aloemacs/main.aloe`, go to definition on `AloemacsBuffer`
-in `(AloemacsBuffer new* ...)`, and land on the name in
-`examples/aloemacs/file.aloe` with the name selected. Then go to
-definition on a field type that names a class. That check is not a
-`raco test`.
+in `(AloemacsBuffer new* ...)`, and land in the file that defines
+`AloemacsBuffer`. The cursor rests at the start of the name, and the
+name highlights briefly. Then go to definition on a field type that
+names a class. That check is not a `raco test`.
 
 On the LSP slice, `npm test` in `editors/vscode/` still passes, and
 `git diff` shows no change under `editors/vscode/`.
