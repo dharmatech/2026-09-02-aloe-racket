@@ -12,11 +12,13 @@ Checkpoints, when a later conversation writes them, live in
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Design assignment that produces the spec |
-| `spec.md` | Not written |
+| [`spec.md`](spec.md) | Design specification. Written, awaiting review |
 | `checkpoints/` | Not written |
 
 Depends on **source locations**, **expression query**, **editor-lsp
 000–009**, and a class record that already stores its defining path.
 Parent map: [`../README.md`](../README.md), project 8.
 
-**Status.** Charter written. Spec not started.
+**Status.** Spec written, awaiting review. The hand check moved from
+`examples/aloemacs/main.aloe` to `examples/aloemacs/file.aloe`
+(spec §8, §9; decided by the human 2026-10-14).
