@@ -48,8 +48,11 @@ workspace, a TypeScript parser, and jump-to-selector are defects.
 Intended order, which the spec may pack or split to the checkpoint
 size in [`docs/workflow.md`](../../workflow.md) and must not reorder:
 
-1. The class name's span, and the `define-methods` target's span,
-   are stored for every file-defined class.
+1. The parser stores three spans: the class name on `define-class`,
+   the target name on `define-methods`, and the symbol spans in a
+   type. The checker copies the class-name span onto the class
+   record. The target span and the type-symbol spans stay on the
+   queried form.
 2. A public Racket query answers the positions in §4.1 and §4.2.
    Hover is unchanged.
 3. `textDocument/definition` adapts that query. The VS Code
@@ -114,6 +117,10 @@ own name from an alias.
 - A variable whose symbol is the class's own name.
   `AloemacsBuffer` in `(AloemacsBuffer new* ...)` is the original
   case.
+- A local that reuses the class's own name and holds the class
+  object. `((fn (Point) (Point new* ...)) call Point)` jumps from
+  the inner `Point`. That parameter is not an alias. The symbol
+  rule cannot exclude it.
 - The target name of `define-methods`, when that symbol is the
   class's own name. `(define-methods AloemacsWindowTree ...)` and a
   target defined in another file both jump. `List`, `String`, and
@@ -159,7 +166,9 @@ These return no location. They are not errors.
 - A selector. This includes method selectors, constructor
   selectors such as `Some` and `new`, and the markers `new*` and
   `with`.
-- The name bound by `define`, `let`, or `fn`.
+- The name bound by `define`, `let`, or `fn`, when §4.1's rule does
+  not hold. An alias fails that rule. The inner `Point` in §4.1
+  meets it and jumps to the class, not to the parameter.
 - A class with no defining path. Kernel classes, a class defined
   at the prompt, and an unkeyed port are in this group.
 - `fn` annotations. The parser accepts `(fn (name ...) body)` only.
@@ -174,8 +183,11 @@ Do not publish diagnostics from this project.
 
 Two consequences of those rules are accepted. A type error anywhere
 in a file turns definition off for the whole file. A class brought
-in by `load` is located from the bytes on disk, including when that
-file is open with unsaved edits.
+in by `load` is located from the bytes read for that load, including
+when that file is open with unsaved edits. A use of `Option` from
+another file uses the bytes `aloe/library.rkt` read when its promise
+was first forced, once per process, not a fresh read of the disk.
+A query whose document is `lib/option.aloe` uses that buffer.
 
 ### 4.4 Where the jump lands
 
@@ -184,9 +196,10 @@ cover the `define-class` form. `AloemacsSession` is most of
 `examples/aloemacs/file.aloe`; a range over that form would select
 the whole class.
 
-Record the span when the class is checked, from the syntax object
-of the name. Do not find the definition by searching for the text
-`define-class`.
+The parser records the class-name span from the syntax object of the
+name. The checker copies that span onto the class record. The
+checker does not see a syntax object. Do not find the definition by
+searching for the text `define-class`.
 
 One class has one definition. The LSP result is a single
 `Location`, not a list and not a location link.
@@ -203,8 +216,9 @@ The public function takes a source path, a document path, and a
 uses. Follow that function's `#:document-path` rule and the LSP
 spec's temporary-sibling rule. A class defined by the queried
 buffer reports the document URI, including when the buffer is
-dirty. A class brought in by `load` reports that loaded file. The
-client never sees the sibling path.
+dirty. A class brought in by `load` reports that loaded file. A use
+of `Option` from another file reports the library path and uses the
+promise bytes named in §4.3. The client never sees the sibling path.
 
 A type name is not an expression node today. Hover on declaration
 syntax stays on the enclosing declaration. Definition may answer
@@ -245,26 +259,54 @@ without an edit.
 
 The class name on `define-class` and the target name on
 `define-methods` each get a `srcloc` field on that form, the same
-kind of field as `send-expr`'s `selector-loc`. `parse-datum` sets
+kind of field as `send-expr`'s `selector-loc`. The parser records
+each span from the syntax object of that name. `parse-datum` sets
 those fields to `#f`. The whole-form `loc` on `define-class-expr`
-and `define-methods-expr` stays the form's span. Record each span
-from the syntax object of that name. Do not find it by searching
-for the text `define-class` or `define-methods`.
+and `define-methods-expr` stays the form's span. The checker copies
+the class-name span onto the class record. It does not copy the
+target span onto the class. A loaded file's parse is not kept, so
+the class record is what a later query reads. Do not find either
+name by searching for the text `define-class` or `define-methods`.
 
-A symbol inside a type sexpr is the representation the spec chooses.
-A type is still a raw datum. Choose the smallest store that lets the
-checker, after resolving the symbol, return that symbol's span.
-Record the choice.
+How a type symbol's span is stored is the spec's choice, inside
+this place. `field-declaration`, `parameter-declaration`, and
+`method-declaration` may each gain one field holding the spans of
+the symbols in that type. A constructor payload type is a
+`field-declaration`. A protocol signature is a
+`method-declaration`. `parse-datum` sets the new field to `#f`.
+The field may be a flat list in reading order or a tree of the same
+shape as the type. Pick one and record it. Each symbol occurrence
+has its own span, so two uses of one name stay apart. The type
+sexpr stays a raw datum. The new field does not change Aloe's
+meaning: a field is still a name and a type sexpr.
+
+That type span tells the query which symbol the cursor is on. The
+location the query returns is the class name's span on the class
+record. Resolve the symbol in the environment that wrote the
+annotation, with that form's type parameters in scope.
+[`../../design/implementation/modules/spec.md`](../../design/implementation/modules/spec.md)
+§6.3 names those environments: the class form for a field type, the
+method's recorded environment for a parameter or return type, and
+the protocol's environment for a protocol signature.
+`check-class-definition!` and `check-method-types!` already use the
+form's own environment. Do not replay a send. `type-from-sexpr`
+resolves one annotation many times and does not remember which
+occurrence it resolved.
 
 Editor-source-locations 000 still forbids a wrapper node, a side
 table, a parallel syntax tree, a structure property, and a new
 expression type. Those five bans hold. The one amendment is that a
 name token which is not an expression may carry a `srcloc`: the
 class name, the `define-methods` target, and each class-name symbol
-in a type. A field is still a name and a type sexpr. One parser.
-`read-program` remains syntax-aware. `parse-datum` still yields `#f`
-locations, and two `parse-datum` trees of the same datum still
-compare `equal?`.
+in a type. One parser. `read-program` remains syntax-aware.
+`parse-datum` still yields `#f` locations, and two `parse-datum`
+trees of the same datum still compare `equal?`.
+
+Existing constructions and matches of `define-class-expr`,
+`define-methods-expr`, `field-declaration`,
+`parameter-declaration`, and `method-declaration` may gain the new
+`#f` fields and nothing else. That is the mechanical permission
+from editor-source-locations 000.
 
 If those constraints cannot be met together, stop and report the
 conflict. Do not drop type-name jumps, and do not drop the
@@ -277,8 +319,9 @@ and on the suites the spec names. Include `-j 4` and `-y`.
 
 The fixture suite covers §4.1, §4.2, and §4.3, including a class
 used from another file, a `define-methods` target, a compound type,
-a generic header, a kernel name, a protocol name, an instance, and
-an alias in both an expression and a field type `(fields (p P))`.
+a generic header, a kernel name, a protocol name, an instance, an
+alias in both an expression and a field type `(fields (p P))`, and
+the inner `Point` of §4.1.
 `Option` is covered twice: a use from another file lands on the name
 in `lib/option.aloe`, and a query with `lib/option.aloe` open reports
 that document's URI. One hover golden on a definition cursor stays
@@ -308,6 +351,9 @@ On the LSP slice, `npm test` in `editors/vscode/` still passes, and
 - [`../source-locations/checkpoints/000-spans.md`](../source-locations/checkpoints/000-spans.md)
   — expression spans and the `parse-datum` rule. §4.7 is the only
   amendment.
+- [`../../design/implementation/modules/spec.md`](../../design/implementation/modules/spec.md)
+  §6.3 — which environment resolves a field type, a method
+  annotation, and a protocol signature. Do not reopen that spec.
 - [`../README.md`](../README.md) — project 8. The map already lists
   this charter.
 - [`../../workflow.md`](../../workflow.md) — checkpoint size and the
@@ -321,7 +367,8 @@ this charter wins for class-name definition and nowhere else.
 
 - Method selectors, constructor selectors, `new*`, and `with`
 - Protocols as jump targets
-- `define`, `let`, and `fn` parameter names
+- The binding site of a `define`, `let`, or `fn` parameter. A
+  cursor that meets §4.1 still jumps to the class.
 - Go-to-type-definition on an instance
 - References, rename, signature help, formatting, code actions,
   semantic tokens, diagnostics
