@@ -472,7 +472,8 @@
   (check-equal?
    (regexp-match* #rx"\"[^\"]+\\.rkt\"" source)
    '("\"expression-query.rkt\""
-     "\"completion-query.rkt\""))
+     "\"completion-query.rkt\""
+     "\"definition-query.rkt\""))
   (for ([required
          (in-list
           '("query-expression-at"

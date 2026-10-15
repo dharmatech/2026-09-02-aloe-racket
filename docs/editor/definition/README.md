@@ -15,15 +15,26 @@ manager writes one, then stops. Tests live in
 | [`spec.md`](spec.md) | Design specification. Reviewed 2026-10-14; the authority for the checkpoints |
 | [`checkpoints/000-spans.md`](checkpoints/000-spans.md) | Implemented 2026-10-15, manager-reviewed (conforming), accepted, committed as 87c0844: layer 1. `name-loc`, `target-loc`, and type span trees from `read-program`; the class-name span on the class record. Focused test: 7 test cases in `tests/editor/definition/000-spans.rkt`. Whole suite: 3026 tests, all passing under `-j 4` (3017, the 7 new cases, and 2 modules-census cases for the new fixtures) |
 | [`checkpoints/001-query.md`](checkpoints/001-query.md) | Implemented 2026-10-15, manager-reviewed (conforming), accepted, committed as a727aaa: layer 2, first part (spec §2). `query-definition-at` in `aloe/definition-query.rkt` for kinds V, C, and M; type symbols stay `#f` until 002. Focused test: 9 test cases in `tests/editor/definition/001-query.rkt`. Whole suite: 3037 tests, all passing under `-j 4` (3026, the 9 new cases, and 2 modules-census cases for `wide.aloe` and `wide-user.aloe`), no existing test edited |
-| [`checkpoints/002-type-symbols.md`](checkpoints/002-type-symbols.md) | Implemented 2026-10-15, manager-reviewed (conforming), accepted: layer 2, second part (spec §2). Kind T: `type-from-sexpr` reports each symbol it resolves at a declaration, through an optional span-tree argument passed only by the field loop and `check-method-types!`. Focused test: 9 test cases in `tests/editor/definition/002-type-symbols.rkt`. Whole suite: 3045 tests, all passing under `-j 4` (3037, less 001's deleted placeholder test-case, and the 9 new cases), no other existing test edited |
+| [`checkpoints/002-type-symbols.md`](checkpoints/002-type-symbols.md) | Implemented 2026-10-15, manager-reviewed (conforming), accepted, committed as 542fd61: layer 2, second part (spec §2). Kind T: `type-from-sexpr` reports each symbol it resolves at a declaration, through an optional span-tree argument passed only by the field loop and `check-method-types!`. Focused test: 9 test cases in `tests/editor/definition/002-type-symbols.rkt`. Whole suite: 3045 tests, all passing under `-j 4` (3037, less 001's deleted placeholder test-case, and the 9 new cases), no other existing test edited |
+| [`checkpoints/003-lsp-definition.md`](checkpoints/003-lsp-definition.md) | Implemented 2026-10-15, manager-reviewed (conforming), hand check passed, accepted, and committed: layer 3, the last (spec §5). `textDocument/definition` and `definitionProvider` in `aloe/lsp.rkt`; eight existing LSP tests gain the capability or the third module name, exactly the table's ten edits. Focused test: 14 test cases in `tests/editor/definition/003-lsp-definition.rkt`. Whole suite: 3059 tests (3045 and the 14 new cases); under `-j 4` the only failure was `tests/aloemacs/window-pictures.rkt`'s 30 ms timing bar (42.2 ms), which passes alone (27.4 ms). `npm test` in `editors/vscode/` passes 14 of 14 with no client change. Carries the spec §8 VS Code hand check on `examples/aloemacs/file.aloe` |
 
 Depends on **source locations**, **expression query**, **editor-lsp
 000–009**, and a class record that already stores its defining path.
 Parent map: [`../README.md`](../README.md), project 8.
 
-**Status.** Spec reviewed. Editor-definition 000 (spans) implemented
-and accepted. Editor-definition 001 (query for V, C, and M) implemented
-and accepted. Editor-definition 002 (type symbols) implemented and
-accepted. The LSP layer (spec §5) remains. The hand check moved from
-`examples/aloemacs/main.aloe` to `examples/aloemacs/file.aloe`
+**Status.** Complete. Editor-definition 000–003 are implemented and
+accepted, and the spec §8 VS Code hand check on
+`examples/aloemacs/file.aloe` passed on 2026-10-15. The hand check moved
+from `examples/aloemacs/main.aloe` to `examples/aloemacs/file.aloe`
 (spec §8, §9; decided by the human 2026-10-14).
+
+**Series stop (2026-10-15).** All three layers of the spec are
+implemented: spans (000), the query (001 for variables, class headers,
+and `define-methods` targets; 002 for type symbols), and the LSP
+`textDocument/definition` request (003). Go to Definition and Ctrl+click
+on a class name work in VS Code with no client change. The spec has no
+further layer, so no editor-definition 004 is issued. Its non-goals
+(§10) stay out of scope: method selectors, protocols as targets, binding
+sites, go-to-type-definition, references, rename, and host injection.
+New work there starts from a high-level discussion, not from this
+series.

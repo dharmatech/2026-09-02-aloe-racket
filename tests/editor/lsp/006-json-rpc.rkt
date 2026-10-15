@@ -123,7 +123,8 @@
     'textDocumentSync (hasheq 'openClose #t 'change 1)
     'hoverProvider #t
     'completionProvider
-    (hasheq 'triggerCharacters (list " ")))
+    (hasheq 'triggerCharacters (list " "))
+    'definitionProvider #t)
    'serverInfo (hasheq 'name "aloe-lsp")))
 
 (define (success-response id result)

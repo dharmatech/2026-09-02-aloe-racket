@@ -5,11 +5,13 @@
                   json-null
                   read-json)
          (only-in net/url
+                  path->url
                   string->url
                   url-host
                   url-path-absolute?
                   url-scheme
-                  url->path)
+                  url->path
+                  url->string)
          (only-in racket/file
                   file->bytes
                   make-temporary-file)
@@ -32,7 +34,12 @@
                   selector-completion-item-detail
                   selector-completion-item-insert-text
                   selector-completion-item-replacement-start
-                  selector-completion-item-replacement-span))
+                  selector-completion-item-replacement-span)
+         (only-in "definition-query.rkt"
+                  query-definition-at
+                  definition-query-result?
+                  definition-query-result-location
+                  definition-query-result-text))
 
 (provide run-lsp-server)
 
@@ -46,6 +53,8 @@
 (struct hover-failure (message) #:transparent)
 (struct completion-success (result) #:transparent)
 (struct completion-failure () #:transparent)
+(struct definition-success (result) #:transparent)
+(struct definition-failure (message) #:transparent)
 
 (define snapshot-failure-message
   "unable to create synchronized document snapshot")
@@ -55,6 +64,9 @@
 
 (define completion-failure-message
   "unable to produce completion result")
+
+(define generic-definition-failure-message
+  "unable to produce definition result")
 
 (define (raise-snapshot-failure)
   (raise
@@ -151,7 +163,8 @@
     'hoverProvider #t
     'completionProvider
     (hasheq
-     'triggerCharacters (list " ")))
+     'triggerCharacters (list " "))
+    'definitionProvider #t)
    'serverInfo
    (hasheq
     'name "aloe-lsp")))
@@ -316,6 +329,7 @@
   '("initialize"
     "textDocument/hover"
     "textDocument/completion"
+    "textDocument/definition"
     "shutdown"))
 
 (define supported-notification-methods
@@ -370,6 +384,9 @@
        (hash-ref (hash-ref params 'position) 'character))))))
 
 (define (completion-params? request)
+  (hover-params? request))
+
+(define (definition-params? request)
   (hover-params? request))
 
 (define (shutdown-params? request)
@@ -511,8 +528,7 @@
    (<= offset (string-length text))
    (vector-ref (text-offset-positions text) offset)))
 
-(define (result-range text result)
-  (define location (expression-query-result-location result))
+(define (location-range text location)
   (and
    (srcloc? location)
    (let ([start (srcloc-position location)]
@@ -529,6 +545,9 @@
              (hasheq
               'start start-position
               'end end-position)))))))
+
+(define (result-range text result)
+  (location-range text (expression-query-result-location result)))
 
 (define (datum-text datum)
   (format "~s" datum))
@@ -654,8 +673,59 @@
           (completion-failure))])
     (completion-success (computation))))
 
+;; The range is over the text the class was parsed from. A jump into the
+;; queried document answers with the URI exactly as the client sent it.
+(define (definition-location uri path result)
+  (define location (definition-query-result-location result))
+  (define text (definition-query-result-text result))
+  (define range
+    (and (srcloc? location)
+         (path? (srcloc-source location))
+         (string? text)
+         (location-range text location)))
+  (if range
+      (let ([source (srcloc-source location)])
+        (hasheq
+         'uri
+         (if (equal? (simplify-path source #f)
+                     (simplify-path path #f))
+             uri
+             (url->string (path->url source)))
+         'range range))
+      (json-null)))
+
+(define (query-definition query document line character)
+  (define text (open-document-text document))
+  (define uri (open-document-uri document))
+  (define path (uri->local-path uri))
+  (define query-position
+    (and path
+         (lsp-position->query-position text line character)))
+  (if query-position
+      (let ([result
+             (query-synchronized-document
+              query path text query-position)])
+        (cond
+          [(eq? result #f) (json-null)]
+          [(definition-query-result? result)
+           (definition-location uri path result)]
+          [else
+           (error 'query-definition "unexpected query result")]))
+      (json-null)))
+
+(define (definition-outcome computation)
+  (with-handlers
+      ([exn:fail:snapshot?
+        (lambda (_exception)
+          (definition-failure snapshot-failure-message))]
+       [exn:fail?
+        (lambda (_exception)
+          (definition-failure generic-definition-failure-message))])
+    (definition-success (computation))))
+
 (define (run-lsp-server/with-queries
-         input output error-output hover-query completion-query)
+         input output error-output hover-query completion-query
+         #:definition-query [definition-query query-definition-at])
   (void error-output)
   (define documents (make-hash))
   (with-handlers ([exn:fail:framing? (lambda (_exception) 1)])
@@ -769,6 +839,40 @@
                        [else
                         (write-error-response
                          output id -32803 completion-failure-message)])
+                     (loop state)))]
+                 [(string=? method "textDocument/definition")
+                  (if
+                   (not (definition-params? message))
+                   (begin
+                     (write-error-response
+                      output id -32602 "Invalid params")
+                     (loop state))
+                   (let ()
+                     (define parameters (rpc-request-params message))
+                     (define uri
+                       (hash-ref (hash-ref parameters 'textDocument) 'uri))
+                     (define position (hash-ref parameters 'position))
+                     (define document (hash-ref documents uri #f))
+                     (define outcome
+                       (definition-outcome
+                        (lambda ()
+                          (if document
+                              (query-definition
+                               definition-query
+                               document
+                               (hash-ref position 'line)
+                               (hash-ref position 'character))
+                              (json-null)))))
+                     (cond
+                       [(definition-success? outcome)
+                        (write-response
+                         output id (definition-success-result outcome))]
+                       [else
+                        (write-error-response
+                         output
+                         id
+                         -32803
+                         (definition-failure-message outcome))])
                      (loop state)))]
                  [(string=? method "shutdown")
                   (if (shutdown-params? message)
