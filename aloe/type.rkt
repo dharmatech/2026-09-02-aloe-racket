@@ -1170,7 +1170,10 @@
   (for* ([constructor (in-list normalized-constructors)]
          [field (in-list (constructor-declaration-fields constructor))])
     (type-from-sexpr
-     (field-declaration-type field) environment substitution))
+     (field-declaration-type field)
+     environment
+     substitution
+     (field-declaration-type-spans field)))
   (for ([method (in-list methods)])
     (check-method-definition!
      class
@@ -1213,11 +1216,13 @@
     (type-from-sexpr
      (parameter-declaration-type parameter)
      environment
-     substitution))
+     substitution
+     (parameter-declaration-type-spans parameter)))
   (type-from-sexpr
    (method-declaration-return-type method)
    environment
-   substitution))
+   substitution
+   (method-declaration-return-type-spans method)))
 
 (define (extend-method-substitution substitution method rigid?)
   (define extended (hash-copy substitution))
@@ -1428,21 +1433,37 @@
    (format "method ~a return type mismatch"
            (method-declaration-selector method))))
 
-(define (type-from-sexpr datum environment substitution)
+;; The kernel type a symbol names in an annotation, or #f.
+(define (kernel-named-type name)
+  (cond
+    [(eq? name 'Int) INT]
+    [(eq? name 'Float) FLOAT]
+    [(eq? name 'Bool) BOOL]
+    [(eq? name 'String) STRING]
+    [(eq? name 'Symbol) SYMBOL]
+    [(eq? name 'Mirror) MIRROR]
+    [(eq? name 'Signature) SIGNATURE]
+    [else #f]))
+
+;; Spans, when given at an annotation's declaration, is the span tree of datum.
+;; Each symbol's span is then reported with the class record it resolved to, or
+;; #f; the arguments of a non-generic head are not read and report nothing.
+(define (type-from-sexpr datum environment substitution [spans #f])
   (cond
     [(symbol? datum)
      (cond
-       [(eq? datum 'Int) INT]
-       [(eq? datum 'Float) FLOAT]
-       [(eq? datum 'Bool) BOOL]
-       [(eq? datum 'String) STRING]
-       [(eq? datum 'Symbol) SYMBOL]
-       [(eq? datum 'Mirror) MIRROR]
-       [(eq? datum 'Signature) SIGNATURE]
+       [(kernel-named-type datum)
+        => (lambda (type)
+             (observe-definition-type-symbol! spans #f)
+             type)]
        [(hash-has-key? substitution datum)
+        (observe-definition-type-symbol! spans #f)
         (hash-ref substitution datum)]
        [else
         (define named-type (type-environment-ref environment datum))
+        (observe-definition-type-symbol!
+         spans
+         (and (class-type? named-type) (class-type-class named-type)))
         (cond
           [(class-type? named-type)
            (define class (class-type-class named-type))
@@ -1457,31 +1478,48 @@
     [(and (list? datum) (pair? datum) (symbol? (car datum)))
      (define name (car datum))
      (define arguments (cdr datum))
+     (define head-spans (and spans (car spans)))
+     (define argument-spans
+       (if spans (cdr spans) (make-list (length arguments) #f)))
      (cond
        [(eq? name '->)
         (unless (pair? arguments)
           (raise-type-error
            "function type needs at least a result type"))
+        (observe-definition-type-symbol! head-spans #f)
         (define parts
-          (for/list ([argument (in-list arguments)])
-            (type-from-sexpr argument environment substitution)))
+          (for/list ([argument (in-list arguments)]
+                     [argument-spans (in-list argument-spans)])
+            (type-from-sexpr
+             argument environment substitution argument-spans)))
         (function-type (drop-right parts 1) (last parts))]
        [(eq? name 'List)
         (unless (= (length arguments) 1)
           (raise-type-error "List type needs one argument"))
+        (observe-definition-type-symbol! head-spans #f)
         (list-type
-         (type-from-sexpr (car arguments) environment substitution))]
+         (type-from-sexpr
+          (car arguments) environment substitution (car argument-spans)))]
        [else
         (define named-type (type-environment-ref environment name))
         (unless (class-type? named-type)
           (raise-type-error "~a is not a class type" name))
         (define class (class-type-class named-type))
+        (observe-definition-type-symbol! head-spans class)
         (define expected-count
           (length (class-info-type-parameters class)))
         (if (zero? expected-count)
             ;; Checkpoints 3–4 used (Point Int) annotations on a
             ;; non-generic Point. Preserve that accepted surface form.
-            (instance-type class '())
+            (begin
+              ;; The arguments are not read, so each span in them reports
+              ;; nothing.
+              (let observe-unread! ([spans argument-spans])
+                (cond
+                  [(srcloc? spans) (observe-definition-type-symbol! spans #f)]
+                  [(list? spans) (for-each observe-unread! spans)]
+                  [else (void)]))
+              (instance-type class '()))
             (begin
               (unless (= expected-count (length arguments))
                 (raise-type-error
@@ -1489,9 +1527,10 @@
                  name expected-count (length arguments)))
               (instance-type
                class
-               (for/list ([argument (in-list arguments)])
+               (for/list ([argument (in-list arguments)]
+                          [argument-spans (in-list argument-spans)])
                  (type-from-sexpr
-                  argument environment substitution)))))])]
+                  argument environment substitution argument-spans)))))])]
     [else
      (raise-type-error "malformed type: ~a" datum)]))
 
@@ -2408,6 +2447,7 @@
    observe-selector-receiver!
    retain-definition-observation!
    observe-definition-binding!
+   observe-definition-type-symbol!
    materialize-expression-observation-at-root-end!
    selected-expression-in-method-body?)
   (make-checker-observation-api
@@ -2461,14 +2501,15 @@
   (struct definition-jump (name-loc defining-path source-bytes)
     #:transparent)
 
-  ;; Checks the program with the token's owner observed. The record jumps when
-  ;; symbol is its name and it has a defining path and a name span; the bytes
-  ;; are those of the load-cache entry under that path, read after the complete
-  ;; file checked.
+  ;; Checks the program with the token's owner observed, and for a type symbol
+  ;; its span, type-loc, or else #f. The record jumps when symbol is its name
+  ;; and it has a defining path and a name span; the bytes are those of the
+  ;; load-cache entry under that path, read after the complete file checked.
   (define (typecheck-program/definition-jump
-           expressions environment owner symbol)
+           expressions environment owner symbol type-loc)
     (define class
-      (typecheck-program/observe-definition expressions environment owner))
+      (typecheck-program/observe-definition
+       expressions environment owner type-loc))
     (define path (and class (class-info-defining-path class)))
     (define name-loc (and class (class-info-name-loc class)))
     (and class

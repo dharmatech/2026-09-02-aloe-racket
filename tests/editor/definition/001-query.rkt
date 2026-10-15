@@ -122,11 +122,6 @@
    (string-contains? (definition-query-result-text wide-result)
                      (string (integer->char #x1F600)))))
 
-(test-case "type symbols are not tokens before editor-definition 002"
-  (for ([position (in-list
-                   '(100 107 173 192 199 233 333 410 499 568 747 751 779))])
-    (check-false (query-shapes position) (format "position ~a" position))))
-
 (test-case "positions without a jumping token answer #f"
   (for ([row (in-list
               '((2 2 23)

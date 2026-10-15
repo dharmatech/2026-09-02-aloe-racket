@@ -38,7 +38,7 @@ conversation.
 | 5 | VS Code client | [`vscode/`](vscode/) | **Implemented and reviewed.** editor-vscode 000 (hover). | 4 |
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
 | 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
-| 8 | Class-name definition | [`definition/`](definition/) | **Spec reviewed; editor-definition 000–001 implemented and accepted.** | 1, 3, 4 |
+| 8 | Class-name definition | [`definition/`](definition/) | **Spec reviewed; editor-definition 000–002 implemented and accepted.** The LSP layer remains. | 1, 3, 4 |
 
 Projects 1–7 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
@@ -46,8 +46,9 @@ implemented by editor-completion 000–002 for the public Racket query and 003
 for its LSP integration. Project 7 is a client skin: lexical coloring of
 `.aloe` buffers. It does not add an LSP method or a Racket query. Project 8
 is jumping to a class name. Its spec is reviewed, editor-definition 000
-(spans) is implemented and accepted, and 001 (the query) is implemented and
-accepted.
+(spans) and 001 (the query for variables, headers, and targets) are
+implemented and accepted, and so is 002 (type symbols). The LSP layer
+remains.
 
 Incomplete-buffer recovery is **in** project 6's first spec (one named
 rule, tested). It remains out of hover. Wrap-form and top-level name

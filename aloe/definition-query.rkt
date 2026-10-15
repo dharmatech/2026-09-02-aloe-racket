@@ -8,8 +8,10 @@
          (only-in "parse.rkt"
                   read-program)
          (only-in "private/definition-selection.rkt"
+                  name-token-loc
                   name-token-owner
                   name-token-symbol
+                  name-token-type-symbol?
                   select-name-token-at-position)
          (only-in (submod "type.rkt" definition-query-observation)
                   definition-jump-defining-path
@@ -61,7 +63,8 @@
      expressions
      environment
      (and token (name-token-owner token))
-     (and token (name-token-symbol token))))
+     (and token (name-token-symbol token))
+     (and token (name-token-type-symbol? token) (name-token-loc token))))
   ;; The document path is the buffer's identity; the file read may be the LSP
   ;; adapter's sibling of it. Any buffer but a base library is a file module.
   (define library-path (base-library-path document-path))

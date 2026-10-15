@@ -18,11 +18,12 @@
 (struct expression-observer
   (target root-depth [retained #:mutable] [answer #:mutable]))
 (struct selector-receiver-observer (target escape))
-;; A definition observer waits for the owner of one name token. A variable's
-;; type is retained until its root form ends; once the owner is observed, the
-;; record is its class record, or #f for nothing.
+;; A definition observer waits for the owner of one name token, and for a type
+;; symbol also its span, or #f for any other token. A variable's type is
+;; retained until its root form ends; once the token is observed, the record is
+;; its class record, or #f for nothing.
 (struct definition-observer
-  (owner root-depth
+  (owner type-loc root-depth
          [retained #:mutable]
          [observed? #:mutable]
          [record #:mutable]))
@@ -77,10 +78,11 @@
   ;; The class record the owner names, or #f; a program with no owner observes
   ;; nothing and answers #f.
   (define (typecheck-program/observe-definition
-           expressions environment owner)
+           expressions environment owner type-loc)
     (define observer
       (definition-observer
        owner
+       type-loc
        (add1 (current-typecheck-program-depth))
        #f
        #f
@@ -96,11 +98,13 @@
         'typecheck-program/observe-definition
         "successful program did not observe the definition owner")]))
 
-  ;; The definition observer active for owner, unless it already observed it
-  ;; or a deferred generic body is re-checked for a concrete send.
+  ;; The definition observer active for owner, unless it waits for a type
+  ;; symbol, it already observed, or a deferred generic body is re-checked for
+  ;; a concrete send.
   (define (waiting-definition-observer owner)
     (define observer (current-definition-observer))
     (and observer
+         (not (definition-observer-type-loc observer))
          (not (definition-observer-observed? observer))
          (eq? owner (definition-observer-owner observer))
          (not (current-legacy-deferred-generic-instantiation?))
@@ -125,6 +129,17 @@
     (define observer (waiting-definition-observer expression))
     (when observer
       (observe-definition! observer (binding-class-record type))))
+
+  ;; A type symbol is observed where its annotation is declared, by the class
+  ;; record it resolved to there, or #f.
+  (define (observe-definition-type-symbol! loc record)
+    (define observer (current-definition-observer))
+    (when (and observer
+               loc
+               (eq? loc (definition-observer-type-loc observer))
+               (not (definition-observer-observed? observer))
+               (not (current-legacy-deferred-generic-instantiation?)))
+      (observe-definition! observer record)))
 
   (define (retain-expression-observation! expression type environment)
     (define observer (current-expression-observer))
@@ -211,5 +226,6 @@
    observe-selector-receiver!
    retain-definition-observation!
    observe-definition-binding!
+   observe-definition-type-symbol!
    materialize-expression-observation-at-root-end!
    selected-expression-in-method-body?))
