@@ -1,0 +1,2 @@
+(load "wide.aloe")
+(define w (Wide new 1))

@@ -18,15 +18,27 @@
 (struct expression-observer
   (target root-depth [retained #:mutable] [answer #:mutable]))
 (struct selector-receiver-observer (target escape))
+;; A definition observer waits for the owner of one name token. A variable's
+;; type is retained until its root form ends; once the owner is observed, the
+;; record is its class record, or #f for nothing.
+(struct definition-observer
+  (owner root-depth
+         [retained #:mutable]
+         [observed? #:mutable]
+         [record #:mutable]))
 
 (define (make-checker-observation-api
          typecheck-program
          current-typecheck-program-depth
          type->datum
          type->pathed-datum
-         type-signature-specs)
+         type-signature-specs
+         resolve-type
+         class-type?
+         class-type-class)
   (define current-expression-observer (make-parameter #f))
   (define current-selector-receiver-observer (make-parameter #f))
+  (define current-definition-observer (make-parameter #f))
   (define current-legacy-deferred-generic-instantiation?
     (make-parameter #f))
 
@@ -62,6 +74,58 @@
        'typecheck-program/observe-selector-receiver
        "successful program did not observe the target send receiver")))
 
+  ;; The class record the owner names, or #f; a program with no owner observes
+  ;; nothing and answers #f.
+  (define (typecheck-program/observe-definition
+           expressions environment owner)
+    (define observer
+      (definition-observer
+       owner
+       (add1 (current-typecheck-program-depth))
+       #f
+       #f
+       #f))
+    (parameterize ([current-definition-observer observer])
+      (typecheck-program expressions environment))
+    (cond
+      [(not owner) #f]
+      [(definition-observer-observed? observer)
+       (definition-observer-record observer)]
+      [else
+       (error
+        'typecheck-program/observe-definition
+        "successful program did not observe the definition owner")]))
+
+  ;; The definition observer active for owner, unless it already observed it
+  ;; or a deferred generic body is re-checked for a concrete send.
+  (define (waiting-definition-observer owner)
+    (define observer (current-definition-observer))
+    (and observer
+         (not (definition-observer-observed? observer))
+         (eq? owner (definition-observer-owner observer))
+         (not (current-legacy-deferred-generic-instantiation?))
+         observer))
+
+  (define (observe-definition! observer record)
+    (set-definition-observer-retained! observer #f)
+    (set-definition-observer-record! observer record)
+    (set-definition-observer-observed?! observer #t))
+
+  (define (binding-class-record type)
+    (and (class-type? type) (class-type-class type)))
+
+  (define (retain-definition-observation! expression type)
+    (define observer (waiting-definition-observer expression))
+    (when observer
+      (set-definition-observer-retained! observer type)))
+
+  ;; A define-class name or define-methods target is observed at once, by the
+  ;; binding its form checked.
+  (define (observe-definition-binding! expression type)
+    (define observer (waiting-definition-observer expression))
+    (when observer
+      (observe-definition! observer (binding-class-record type))))
+
   (define (retain-expression-observation! expression type environment)
     (define observer (current-expression-observer))
     (when (and observer
@@ -82,7 +146,25 @@
        (selector-receiver-observation
         (type-signature-specs type environment)))))
 
+  ;; Both observers that retain an expression's type resolve it at the end of
+  ;; the root form that encloses it.
   (define (materialize-expression-observation-at-root-end!)
+    (materialize-expression-type-at-root-end!)
+    (materialize-definition-at-root-end!))
+
+  (define (materialize-definition-at-root-end!)
+    (define observer (current-definition-observer))
+    (when (and observer
+               (= (current-typecheck-program-depth)
+                  (definition-observer-root-depth observer))
+               (definition-observer-retained observer)
+               (not (definition-observer-observed? observer)))
+      (observe-definition!
+       observer
+       (binding-class-record
+        (resolve-type (definition-observer-retained observer))))))
+
+  (define (materialize-expression-type-at-root-end!)
     (define observer (current-expression-observer))
     (when (and observer
                (= (current-typecheck-program-depth)
@@ -104,6 +186,7 @@
   (define (selected-expression-in-method-body? method)
     (define expression-observer (current-expression-observer))
     (define selector-observer (current-selector-receiver-observer))
+    (define definition-observer (current-definition-observer))
     (define targets
       (filter
        values
@@ -111,7 +194,9 @@
         (and expression-observer
              (expression-observer-target expression-observer))
         (and selector-observer
-             (selector-receiver-observer-target selector-observer)))))
+             (selector-receiver-observer-target selector-observer))
+        (and definition-observer
+             (definition-observer-owner definition-observer)))))
     (for/or ([target (in-list targets)])
       (expression-contains-node?
        (method-declaration-body method)
@@ -121,7 +206,10 @@
    current-legacy-deferred-generic-instantiation?
    typecheck-program/observe
    typecheck-program/observe-selector-receiver
+   typecheck-program/observe-definition
    retain-expression-observation!
    observe-selector-receiver!
+   retain-definition-observation!
+   observe-definition-binding!
    materialize-expression-observation-at-root-end!
    selected-expression-in-method-body?))

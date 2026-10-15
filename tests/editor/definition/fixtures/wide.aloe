@@ -1,0 +1,1 @@
+(define wide "😀") (define-class Wide (fields (n Int)) (methods))

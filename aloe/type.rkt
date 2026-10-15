@@ -949,9 +949,13 @@
         methods
         environment
         name-loc)
+       (observe-definition-binding!
+        expression (type-environment-ref environment name))
        VOID]
       [(define-methods-expr target methods _ _)
        (check-method-definitions! target methods environment)
+       (observe-definition-binding!
+        expression (type-environment-ref environment target))
        VOID]
       [(fn-expr parameters body _)
        (infer-function parameters body environment expected)]
@@ -977,6 +981,7 @@
                   (mismatch-paths expected inferred)))))
   (retain-expression-observation! expression inferred environment)
   (observe-selector-receiver! expression inferred environment)
+  (retain-definition-observation! expression inferred)
   inferred)
 
 (define (infer-function parameters body environment expected)
@@ -2398,8 +2403,11 @@
   (current-legacy-deferred-generic-instantiation?
    typecheck-program/observe
    typecheck-program/observe-selector-receiver
+   typecheck-program/observe-definition
    retain-expression-observation!
    observe-selector-receiver!
+   retain-definition-observation!
+   observe-definition-binding!
    materialize-expression-observation-at-root-end!
    selected-expression-in-method-body?)
   (make-checker-observation-api
@@ -2407,7 +2415,10 @@
    current-typecheck-program-depth
    type->datum
    type->pathed-datum
-   type-signature-specs))
+   type-signature-specs
+   resolve-type
+   class-type?
+   class-type-class))
 
 ;; The driver needs one narrow construction hook without making host types a
 ;; normal part of the checker's public API.
@@ -2437,6 +2448,42 @@
 (module* completion-query-observation #f
   (provide (struct-out selector-receiver-observation)
            typecheck-program/observe-selector-receiver))
+
+;; Editor definition queries observe the class record a name token names in the
+;; real checker pass, and jump only to a class by its own name, through this
+;; deliberately narrow internal bridge.
+(module* definition-query-observation #f
+  (provide (struct-out definition-jump)
+           typecheck-program/definition-jump)
+
+  ;; A jump's span of the class name, the class's defining path, and the bytes
+  ;; its define-class was parsed from.
+  (struct definition-jump (name-loc defining-path source-bytes)
+    #:transparent)
+
+  ;; Checks the program with the token's owner observed. The record jumps when
+  ;; symbol is its name and it has a defining path and a name span; the bytes
+  ;; are those of the load-cache entry under that path, read after the complete
+  ;; file checked.
+  (define (typecheck-program/definition-jump
+           expressions environment owner symbol)
+    (define class
+      (typecheck-program/observe-definition expressions environment owner))
+    (define path (and class (class-info-defining-path class)))
+    (define name-loc (and class (class-info-name-loc class)))
+    (and class
+         (eq? symbol (class-info-name class))
+         path
+         name-loc
+         (let ([entry (hash-ref (type-environment-load-cache environment)
+                                path
+                                #f)])
+           (unless entry
+             (error 'typecheck-program/definition-jump
+                    "no load-cache entry for the defining path ~a"
+                    path))
+           (definition-jump
+            name-loc path (checker-load-entry-source-bytes entry))))))
 
 ;; Tests read the pathed datum of a checker type through this hook; hover and
 ;; mismatches print it, and nothing else exports it.

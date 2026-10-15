@@ -3,7 +3,8 @@
 (require racket/match
          "../parse.rkt")
 
-(provide select-expression-at-position
+(provide expression-children
+         select-expression-at-position
          expression-contains-node?)
 
 (define (expression-children expression)
