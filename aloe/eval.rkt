@@ -136,7 +136,7 @@
     (define name
       (match expression
         [(define-expr name _ _) name]
-        [(define-class-expr name _ _ _ _ _ _) name]
+        [(define-class-expr name _ _ _ _ _ _ _) name]
         [(define-protocol-expr name _ _) name]
         [_ #f]))
     (if (and name (not (assq name exports)))
@@ -192,7 +192,7 @@
      (env-define! environment name value)]
     [(define-protocol-expr name _ _)
      (env-define! environment name (protocol-value name environment))]
-    [(define-class-expr name type-parameters protocol fields constructors methods _)
+    [(define-class-expr name type-parameters protocol fields constructors methods _ _)
      (define class-protocol
        (and protocol (lookup-protocol environment protocol)))
      (define class-fields (or fields '()))
@@ -213,7 +213,7 @@
                    methods
                    environment
                    method-environments))]
-    [(define-methods-expr target methods _)
+    [(define-methods-expr target methods _ _)
      (define target-class (env-lookup environment target))
      (define method-environments
        (cond

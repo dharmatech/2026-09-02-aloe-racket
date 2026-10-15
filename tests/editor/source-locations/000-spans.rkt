@@ -77,10 +77,10 @@
      (for ([signature (in-list signatures)]
            #:when (method-declaration-body signature))
        (check-location-free (method-declaration-body signature)))]
-    [(define-class-expr _ _ _ _ _ methods _)
+    [(define-class-expr _ _ _ _ _ methods _ _)
      (for ([method (in-list methods)])
        (check-location-free (method-declaration-body method)))]
-    [(define-methods-expr _ methods _)
+    [(define-methods-expr _ methods _ _)
      (for ([method (in-list methods)])
        (check-location-free (method-declaration-body method)))]
     [(fn-expr _ body _)

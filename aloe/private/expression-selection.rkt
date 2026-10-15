@@ -19,9 +19,9 @@
      (list left right)]
     [(define-expr _ value _)
      (list value)]
-    [(define-class-expr _ _ _ _ _ methods _)
+    [(define-class-expr _ _ _ _ _ methods _ _)
      (map method-declaration-body methods)]
-    [(define-methods-expr _ methods _)
+    [(define-methods-expr _ methods _ _)
      (map method-declaration-body methods)]
     [(fn-expr _ body _)
      (list body)]

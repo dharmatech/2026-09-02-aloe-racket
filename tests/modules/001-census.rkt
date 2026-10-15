@@ -74,7 +74,7 @@
                         (define-protocol-expr? expression)))
     (match expression
       [(define-expr name _ _) name]
-      [(define-class-expr name _ _ _ _ _ _) name]
+      [(define-class-expr name _ _ _ _ _ _ _) name]
       [(define-protocol-expr name _ _) name])))
 
 (define (direct-load-paths program)
@@ -108,7 +108,7 @@
 
 (define (method-references method type-parameters target-parameters)
   (match method
-    [(method-declaration _ method-type-parameters parameters return-type body)
+    [(method-declaration _ method-type-parameters parameters return-type body _)
      (define in-scope (append method-type-parameters type-parameters))
      (append
       (append-map (lambda (parameter)
@@ -164,7 +164,7 @@
              (append-map (lambda (binding)
                            (walk (construction-binding-value binding)))
                          bindings))]
-    [(define-class-expr _ type-parameters protocol fields constructors methods _)
+    [(define-class-expr _ type-parameters protocol fields constructors methods _ _)
      (append
       (if protocol (list protocol) '())
       (field-references fields type-parameters)
@@ -180,7 +180,7 @@
      (append-map (lambda (signature)
                    (method-references signature '() target-parameters))
                  signatures)]
-    [(define-methods-expr target methods _)
+    [(define-methods-expr target methods _ _)
      (define type-parameters (target-parameters target))
      (cons target
            (append-map (lambda (method)

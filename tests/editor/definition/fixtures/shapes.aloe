@@ -1,0 +1,52 @@
+(load "point.aloe")
+; Point and Box in a comment do not jump.
+
+(define-protocol Mover
+  (moved (by Point) Point))
+
+(define-class (Box T)
+  (fields
+    (item T)
+    (corner Point)
+    (spare (Option Point)))
+  (methods
+    (fresh () Point
+      (Point new 0 0))))
+
+(define-class Segment Mover
+  (constructors
+    (Line (fields (from Point) (to Point)))
+    (Dot (fields (at Point))))
+  (methods
+    (moved (by Point) Point
+      by)))
+
+(define-methods Point
+  (methods
+    (boxed (type A) (item A) (Box A)
+      (Box new item self (Option None)))
+    (nudge (m Mover) Point
+      (m moved self))))
+
+(define-methods Box
+  (methods
+    (item-of () T
+      (self item))))
+
+(define P Point)
+
+(define-class Holder
+  (fields
+    (p P)
+    (boxes (List (Box Point)))
+    (maker (-> Int Point)))
+  (methods))
+
+(define origin (Point new 0 0))
+(define ox (origin x))
+(define alias-made (P new 3 4))
+(define again ((fn (Point) (Point new 1 2)) call Point))
+(define third (Point new* (x 5) (y 6)))
+(define shifted (origin with (x 9)))
+(define no-points (List empty))
+(define label "Point")

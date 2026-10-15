@@ -58,11 +58,12 @@ ALOE
      'Int
      (list
       (method-declaration 'min '()
-                          (list (parameter-declaration 'other 'Int))
-                          'Int _)
+                          (list (parameter-declaration 'other 'Int _))
+                          'Int _ _)
       (method-declaration 'max '()
-                          (list (parameter-declaration 'other 'Int))
-                          'Int _))
+                          (list (parameter-declaration 'other 'Int _))
+                          'Int _ _))
+     _
      _)))
   (define kernel-rows (kernel-instance-signature-specs 'Int))
   (check-equal? (length kernel-rows) 11)

@@ -102,7 +102,7 @@
       (method-declaration
        'starts-with?
        '()
-       (list (parameter-declaration 'prefix 'String))
+       (list (parameter-declaration 'prefix 'String _))
        'Bool
        (send-expr
         (send-expr
@@ -119,7 +119,9 @@
         '=
         (list (variable-expr 'prefix _))
         _
-        _)))
+        _)
+       _))
+     _
      _))))
 
 (define (define-string-reflection! environment)

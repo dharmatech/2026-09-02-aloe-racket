@@ -74,15 +74,17 @@
 (struct construction-obligation (parameter class type) #:transparent)
 
 ;; A class records the environment its define-class form is checked in, where
-;; its field annotations resolve, beside its method table, and the resolved
-;; path of the file that defined it, or #f.
+;; its field annotations resolve, beside its method table, the resolved path of
+;; the file that defined it, or #f, and the span of the class name in its
+;; define-class header, or #f.
 (struct class-info
   (name type-parameters parameter-types protocol fields constructors
         explicit-constructors?
         [methods #:mutable]
         environment
         method-environments
-        [defining-path #:mutable])
+        [defining-path #:mutable]
+        name-loc)
   #:transparent)
 ;; A file environment records its file's resolved path; every other environment
 ;; records #f. A base, an interactive environment, and a file environment map
@@ -764,7 +766,7 @@
     (define name
       (match expression
         [(define-expr name _ _) name]
-        [(define-class-expr name _ _ _ _ _ _) name]
+        [(define-class-expr name _ _ _ _ _ _ _) name]
         [(define-protocol-expr name _ _) name]
         [_ #f]))
     (if (and name (not (assq name exports)))
@@ -936,7 +938,7 @@
          (check-method-types! signature environment (make-hasheq)))
        VOID]
       [(define-class-expr
-        name type-parameters protocol fields constructors methods _)
+        name type-parameters protocol fields constructors methods _ name-loc)
        (check-definition-name! environment name)
        (check-class-definition!
         name
@@ -945,9 +947,10 @@
         fields
         constructors
         methods
-        environment)
+        environment
+        name-loc)
        VOID]
-      [(define-methods-expr target methods _)
+      [(define-methods-expr target methods _ _)
        (check-method-definitions! target methods environment)
        VOID]
       [(fn-expr parameters body _)
@@ -1111,7 +1114,8 @@
          fields
          constructors
          methods
-         environment)
+         environment
+         name-loc)
   (define protocol
     (and protocol-name
          (let ([candidate
@@ -1150,7 +1154,8 @@
      environment
      (make-hasheq)
      (or (type-environment-file-path environment)
-         (current-installed-library-path))))
+         (current-installed-library-path))
+     name-loc))
   (record-method-environments!
    (class-info-method-environments class) methods environment)
   (type-environment-set! environment name (class-type class))
@@ -2493,3 +2498,16 @@
     (unless (protocol-type? protocol)
       (error 'checker-protocol-environment "~a is not a protocol" name))
     (protocol-type-environment protocol)))
+
+;; Tests read the class-name span on a class record through this hook;
+;; nothing else does.
+(module* class-name-span #f
+  (provide checker-class-name-loc)
+
+  ;; The span of the class name in the define-class header of the class bound
+  ;; to name, or #f.
+  (define (checker-class-name-loc environment name)
+    (define class (type-environment-ref environment name))
+    (unless (class-type? class)
+      (error 'checker-class-name-loc "~a is not a class" name))
+    (class-info-name-loc (class-type-class class))))

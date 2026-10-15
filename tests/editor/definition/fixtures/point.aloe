@@ -1,0 +1,5 @@
+(define-class Point
+  (fields
+    (x Int)
+    (y Int))
+  (methods))

@@ -179,19 +179,19 @@
 
 (test-case "declaration conversion retains order and overload rows"
   (define fields
-    (list (field-declaration 'left 'T)
-          (field-declaration 'right '(List T))))
+    (list (field-declaration 'left 'T #f)
+          (field-declaration 'right '(List T) #f)))
   (define methods
     (list
      (method-declaration
-      'pick '() (list (parameter-declaration 'value 'T)) 'T #f)
+      'pick '() (list (parameter-declaration 'value 'T #f)) 'T #f #f)
      (method-declaration
-      'pick '(A) (list (parameter-declaration 'value 'A)) 'A #f)))
+      'pick '(A) (list (parameter-declaration 'value 'A #f)) 'A #f #f)))
   (define constructors
     (list (constructor-declaration 'None '())
           (constructor-declaration
            'Some
-           (list (field-declaration 'value 'T)))))
+           (list (field-declaration 'value 'T #f)))))
   (check-equal?
    (field-declarations->signature-specs fields (hasheq 'T 'Int))
    (triples->specs

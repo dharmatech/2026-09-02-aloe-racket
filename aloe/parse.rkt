@@ -41,17 +41,17 @@
 (struct load-expr (path directory loc) #:transparent)
 (struct check-expr (left right left-datum right-datum loc) #:transparent)
 (struct define-expr (name value loc) #:transparent)
-(struct field-declaration (name type) #:transparent)
+(struct field-declaration (name type type-spans) #:transparent)
 (struct constructor-declaration (selector fields) #:transparent)
-(struct parameter-declaration (name type) #:transparent)
+(struct parameter-declaration (name type type-spans) #:transparent)
 (struct method-declaration
-  (selector type-parameters parameters return-type body)
+  (selector type-parameters parameters return-type body return-type-spans)
   #:transparent)
 (struct define-protocol-expr (name signatures loc) #:transparent)
 (struct define-class-expr
-  (name type-parameters protocol fields constructors methods loc)
+  (name type-parameters protocol fields constructors methods loc name-loc)
   #:transparent)
-(struct define-methods-expr (target methods loc) #:transparent)
+(struct define-methods-expr (target methods loc target-loc) #:transparent)
 (struct fn-expr (parameters body loc) #:transparent)
 (struct case-clause (selector payload-names body) #:transparent)
 (struct case-expr (scrutinee clauses else-body loc) #:transparent)
@@ -71,8 +71,8 @@
     [(check-expr _ _ _ _ loc) loc]
     [(define-expr _ _ loc) loc]
     [(define-protocol-expr _ _ loc) loc]
-    [(define-class-expr _ _ _ _ _ _ loc) loc]
-    [(define-methods-expr _ _ loc) loc]
+    [(define-class-expr _ _ _ _ _ _ loc _) loc]
+    [(define-methods-expr _ _ loc _) loc]
     [(fn-expr _ _ loc) loc]
     [(case-expr _ _ _ loc) loc]
     [(new-star-expr _ _ loc) loc]
@@ -97,10 +97,11 @@
     (load-expr-directory expression))
    #f))
 
-(define (parse-field-declaration datum)
+(define (parse-field-declaration form)
+  (define datum (syntax->datum form))
   (match datum
     [(list (? symbol? name) type)
-     (field-declaration name type)]
+     (field-declaration name type (type-span-tree (cadr (syntax->list form))))]
     [_
      (raise-arguments-error
       'parse-datum
@@ -131,10 +132,12 @@
       "header" header
       "datum" datum)]))
 
-(define (parse-parameter-declaration datum)
+(define (parse-parameter-declaration form)
+  (define datum (syntax->datum form))
   (match datum
     [(list (? symbol? name) type)
-     (parameter-declaration name type)]
+     (parameter-declaration
+      name type (type-span-tree (cadr (syntax->list form))))]
     [_
      (raise-arguments-error
       'parse-datum
@@ -153,7 +156,8 @@
            (or (eq? (car datum) '->)
                (capital-name? (car datum))))))
 
-(define (parse-protocol-signature datum)
+(define (parse-protocol-signature form)
+  (define datum (syntax->datum form))
   (match datum
     [(list (? symbol? selector) raw-parts ...)
      (when (null? raw-parts)
@@ -169,10 +173,11 @@
         'parse-datum
         "malformed zero-parameter protocol signature"
         "signature" datum))
-     (define parameter-datums
+     (define part-forms (cdr (syntax->list form)))
+     (define parameter-forms
        (if explicit-empty-parameters?
            '()
-           (drop-right raw-parts 1)))
+           (drop-right part-forms 1)))
      (define return-type (last raw-parts))
      (unless (clearly-type-sexpr? return-type)
        (raise-arguments-error
@@ -183,9 +188,10 @@
      (method-declaration
       selector
       '()
-      (map parse-parameter-declaration parameter-datums)
+      (map parse-parameter-declaration parameter-forms)
       return-type
-      #f)]
+      #f
+      (type-span-tree (last part-forms)))]
     [_
      (raise-arguments-error
       'parse-datum
@@ -203,7 +209,8 @@
      "datum" datum))
   fields)
 
-(define (parse-constructor-declaration datum)
+(define (parse-constructor-declaration form)
+  (define datum (syntax->datum form))
   (match datum
     [(list (? symbol? selector) (cons 'fields field-datums))
      (unless (list? field-datums)
@@ -211,10 +218,12 @@
         'parse-datum
         "malformed constructor fields; expected (fields ...)"
         "constructor" datum))
+     (define field-forms
+       (cdr (syntax->list (cadr (syntax->list form)))))
      (constructor-declaration
       selector
       (ensure-distinct-fields
-       (map parse-field-declaration field-datums)
+       (map parse-field-declaration field-forms)
        datum))]
     [_
      (raise-arguments-error
@@ -222,15 +231,15 @@
       "malformed constructor; expected (Name (fields ...))"
       "constructor" datum)]))
 
-(define (parse-constructors constructor-datums datum)
-  (unless (and (list? constructor-datums)
-               (pair? constructor-datums))
+(define (parse-constructors constructor-forms datum)
+  (unless (and (list? constructor-forms)
+               (pair? constructor-forms))
     (raise-arguments-error
      'parse-datum
      "constructors section must be nonempty"
      "datum" datum))
   (define constructors
-    (map parse-constructor-declaration constructor-datums))
+    (map parse-constructor-declaration constructor-forms))
   (define duplicate
     (check-duplicates
      (map constructor-declaration-selector constructors)))
@@ -298,6 +307,18 @@
         reader-span))
   (and (or source line column position span)
        (srcloc source line column position span)))
+
+;; The span tree of a type form has the datum's shape at every list and
+;; symbol: a symbol's srcloc, a list of its elements' trees, and #f for any
+;; other datum. A form with no location, as parse-datum builds, has #f.
+(define (type-span-tree form)
+  (and (syntax-location form)
+       (let tree ([form form])
+         (define items (syntax->list form))
+         (cond
+           [(symbol? (syntax-e form)) (syntax-location form)]
+           [items (map tree items)]
+           [else #f]))))
 
 (define (syntax-section-items form name)
   (define items (syntax->list form))
@@ -375,11 +396,11 @@
     (if explicit-empty-parameters?
         '()
         (take parts (- (length parts) 2))))
-  (define return-type
-    (syntax->datum
-     (if explicit-empty-parameters?
-         (cadr parts)
-         (list-ref parts (length parameter-forms)))))
+  (define return-type-form
+    (if explicit-empty-parameters?
+        (cadr parts)
+        (list-ref parts (length parameter-forms))))
+  (define return-type (syntax->datum return-type-form))
   (define body-form
     (if explicit-empty-parameters?
         (caddr parts)
@@ -393,12 +414,10 @@
   (method-declaration
    selector
    type-parameters
-   (map (lambda (parameter-form)
-          (parse-parameter-declaration
-           (syntax->datum parameter-form)))
-        parameter-forms)
+   (map parse-parameter-declaration parameter-forms)
    return-type
-   (parse-syntax-expression body-form)))
+   (parse-syntax-expression body-form)
+   (type-span-tree return-type-form)))
 
 (define (parse-case-syntax scrutinee-form clause-forms form)
   (define datum (syntax->datum form))
@@ -594,18 +613,19 @@
        "datum" datum))
     (define class-header
       (parse-class-header (syntax->datum header-form) datum))
+    (define name-loc
+      (syntax-location
+       (if (symbol? (syntax-e header-form))
+           header-form
+           (car (syntax->list header-form)))))
     (define fields
       (and field-forms
            (ensure-distinct-fields
-            (map (lambda (field-form)
-                   (parse-field-declaration (syntax->datum field-form)))
-                 field-forms)
+            (map parse-field-declaration field-forms)
             datum)))
     (define constructors
       (and constructor-forms
-           (parse-constructors
-            (map syntax->datum constructor-forms)
-            datum)))
+           (parse-constructors constructor-forms datum)))
     (define-class-expr
      (car class-header)
      (cdr class-header)
@@ -613,7 +633,8 @@
      fields
      constructors
      (map parse-method-syntax method-forms)
-     loc))
+     loc
+     name-loc))
   (cond
     [(= (length items) 4)
      (build (list-ref items 1)
@@ -688,10 +709,7 @@
               (symbol? (syntax-e (cadr items))))
          (define-protocol-expr
           (syntax-e (cadr items))
-          (map (lambda (signature-form)
-                 (parse-protocol-signature
-                  (syntax->datum signature-form)))
-               (cddr items))
+          (map parse-protocol-signature (cddr items))
           loc)
          (raise-arguments-error
           'parse-datum
@@ -714,7 +732,8 @@
          (define-methods-expr
           (syntax-e (cadr items))
           (map parse-method-syntax method-forms)
-          loc)
+          loc
+          (syntax-location (cadr items)))
          (raise-arguments-error
           'parse-datum
           "malformed define-methods; expected a target and methods"
