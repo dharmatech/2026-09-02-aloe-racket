@@ -996,7 +996,10 @@ them:
 - `aloe/lsp.rkt` contains exactly one `(query path query-position)` and,
   in its completion section, exactly one
   `(query text query-position #:source-path path)`. Keep today's call
-  forms literally, and add the host forms beside them.
+  forms literally, and add the host forms beside them. Both pin patterns
+  end in a closing parenthesis right after `query-position` or `path`,
+  so a host form that adds `#:hosts` (or `#:document-path`) anywhere
+  after those names does not match them.
 - `aloe/lsp.rkt` must not contain the substrings `host.rkt`, `main.rkt`,
   `type.rkt`, `empty?`, `exn?`, or `Point`, among others (lsp 000, 004,
   and 008, and completion 003).
@@ -1014,7 +1017,7 @@ inventory.
 
 After layer 2, in VS Code with the extension running
 `racket -l aloe/lsp`. First run the layer's test command, or
-`raco make aloe/lsp.rkt host/racket/fs.rkt host/racket/term.rkt`, then
+`TMPDIR=/tmp raco make aloe/lsp.rkt host/racket/fs.rkt host/racket/term.rkt`, then
 Reload Window. Find each place by its text.
 
 1. Open `examples/aloemacs/main.aloe`.
