@@ -70,13 +70,19 @@ checkpoint.
 | Host modules | `host/racket/fs.rkt` exports `fs-interface` (`FsHost`). `host/racket/term.rkt` exports `term-interface` (`Term`). Both resolve as collection modules, `host/racket/fs` and `host/racket/term`. Every module in `host/racket/` has a definition-only top level. Effects live in `main` submodules. |
 | Runners | `host/racket/aloemacs-run.rkt` injects `term` and `fs-host`, then loads `examples/aloemacs/main.aloe`. `host/racket/gel-run.rkt` injects `term`, then loads `gel/main.aloe`. |
 
-The problem, as found. Every query on `examples/aloemacs/main.aloe` fails
-with `typecheck: unbound symbol: fs-host`, from line 74,
-`(fs (Fs new fs-host))`. Every query on `gel/main.aloe` fails on `term`,
-first used in a `GelMain` method body. On the tree at `6deecab`, binding
-only each host's type on a fresh query base makes both files check.
-`main.aloe` then checks in about 40 ms, and hover on `fs-host` returns
-`FsHost` with its rows. Nothing else in either file is unbound.
+The problem, as found. Hover and definition check the whole file, so they
+miss at every position in `examples/aloemacs/main.aloe`. The check fails
+with `typecheck: unbound symbol: fs-host`, from `(Fs new fs-host)` in the
+`aloemacs-editor` definition. In `gel/main.aloe` they miss the same way
+on `term`, first used in a `GelMain` method body. Completion is not dark
+everywhere. Its recovery ends the buffer at the cursor, and it returns as
+soon as the receiver is typed. So `(Text ` inside the `initial-buffer`
+binding offers `from-string` today, and `(fs-host ` offers nothing.
+
+On the tree at `6deecab`, binding only each host's type on a fresh query
+base makes both files check. `main.aloe` then checks in about 40 ms, and
+hover on `fs-host` returns `FsHost` with its rows. Nothing else in either
+file is unbound.
 
 ## 3. Bar (acceptance)
 
@@ -89,10 +95,10 @@ The specification is wrong unless all of these are true:
    `003-public-query.rkt` stays green with no edit.
 2. With `fs-host` bound to `fs-interface`, a query of
    `examples/aloemacs/main.aloe` answers:
-   - Hover on `fs-host` at line 74 shows `FsHost` and its rows in
-     interface declaration order.
-   - Hover on `AloemacsBuffer` in `(AloemacsBuffer new* ...)` at line 8
-     shows the class.
+   - Hover on `fs-host` in `(Fs new fs-host)` shows `FsHost` and its
+     rows in interface declaration order.
+   - Hover on `AloemacsBuffer` in `(AloemacsBuffer new* ...)`, the
+     `initial-buffer` binding, shows the class.
    - Go to definition on that `AloemacsBuffer` lands on the class name
      in `examples/aloemacs/file.aloe`.
    - Completion after `(fs-host ` lists `FsHost`'s selectors.
@@ -108,10 +114,12 @@ The specification is wrong unless all of these are true:
    the snapshot sibling is never used for matching.
 6. A document with no row gets the same query call as today. The server
    passes no host argument.
-7. A bad manifest, a bad row, or a failed module load is a miss, the
-   same empty answer a type error gives today. The server keeps
-   running. It publishes no diagnostic and writes nothing to stdout
-   outside the LSP frames.
+7. A manifest that cannot be read or is malformed counts as absent, so
+   every document in its folder behaves as today. A well-formed row that
+   fails, including a failed module load, is a miss for that row's
+   document. That is the same empty answer a type error gives today. The
+   server keeps running. It publishes no diagnostic and writes nothing
+   to stdout outside the LSP frames.
 8. `aloe/` keeps no static `require` of anything under `host/racket/`.
    No host module loads until a manifest row names it.
 9. `editors/vscode/` is unchanged and `npm test` there passes. `SPEC.md`,
@@ -275,6 +283,15 @@ The specification is wrong unless all of these are true:
   This is accepted.
 - The reader's first consumer is its own unit tests over fixture
   folders, not LSP.
+- Tests need a module that prints when it loads, and the effects rule
+  forbids such a module under `host/racket/` as product code. So the
+  spec names one test-only allowance and records it. An injectable
+  loader is the suggested form: the reader takes its loading procedure
+  as an optional argument, which defaults to `dynamic-require`. The
+  boundary check runs before the loader is called, so one test loader
+  can prove that a rejected path never reaches it. Another test loader
+  can print, to prove that output is captured. No printing module is
+  added under `host/racket/`.
 
 ### 4.6 Unconfigured files and failure
 
@@ -282,16 +299,32 @@ The specification is wrong unless all of these are true:
   the same query call as today: the server passes no host argument.
   Existing LSP tests whose fake queries take today's arguments need no
   edit. A temp file that uses `term` stays unbound.
-- A configured document's row can fail in these ways:
+- **A broken manifest counts as absent.** The manifest may be unreadable,
+  may fail to parse, or may not have the manifest's shape. Its shape is
+  a list of rows, each a file name with well-formed host entries. A file
+  name repeated in one manifest also breaks it. In any of these cases
+  the server treats the folder as having no manifest, and every
+  document in it gets today's query call. A broken manifest cannot say
+  which documents it configures, so it configures none. The reason is
+  that `file.aloe` sits beside `main.aloe`. A typo in the manifest must
+  not turn off hover, completion, and definition for `file.aloe`,
+  because nothing would tell the user why. `main.aloe` is a miss for
+  hover and definition either way, because its host stays unbound. The
+  spec defines the exact shape.
+- **A failing row is a miss for its document.** A well-formed row can
+  fail in these ways:
   - The boundary rejects a module path.
   - A module fails to load, for example because the optional `tui-term`
     package is missing.
   - An export is missing or is not an interface.
-  - A binding name is duplicated.
+  - A binding name is duplicated in the row.
   - A binding name is already bound on the base.
 
-  Any of these is a miss for that document. A row is all or nothing.
-  The server never checks a document with only some of its row's hosts.
+  Any of these is a miss for that document. A row is all or nothing. A
+  document the manifest configures is never checked without its hosts,
+  and never with only some of them. One consequence is accepted:
+  completion positions that answer today without hosts, such as `(Text `
+  in `main.aloe`, also miss while that document's row fails.
 - Every miss is the same empty answer the three features already give
   for a type error: a null hover, a null definition, or an empty
   completion list. There is no crash and no diagnostic; this project
@@ -306,6 +339,11 @@ The specification is wrong unless all of these are true:
   no hover format.
 - Completion after `(fs-host ` lists `FsHost`'s selectors through the
   existing catalog.
+- Completion keeps its one recovery rule and its early exit. It still
+  returns as soon as the receiver is typed. Hosts only add bindings to
+  the base. Binding the host is what makes the `(fs-host ` cursor
+  answer. Completion at a position that answers today, such as `(Text `,
+  gives the same items with or without the host.
 - Go to definition on a host name returns no location. A host is not a
   class and has no span, and there is no jump into Racket source.
   Go to definition on `Fs` in `(Fs new fs-host)` still lands in
@@ -338,7 +376,10 @@ The coverage must include:
   `host/racket/term` themselves. Tests are not under `aloe/`. Cases:
   - the §3 cursors in `examples/aloemacs/main.aloe` and in
     `gel/main.aloe`
-  - the same queries without hosts, which still fail as unbound
+  - the same queries without hosts, where hover and definition still
+    fail as unbound and `(fs-host ` still offers nothing
+  - `(Text ` in `main.aloe`, which gives the same completion items with
+    and without the host
   - a query whose source path is a sibling copy and whose document path
     is the real file
   - a host bound for one query that the next query does not see
@@ -349,13 +390,16 @@ The coverage must include:
   - a row matched on the document path
   - a snapshot sibling's name that never matches
   - a document with no row, whose fake query receives no host argument
-  - each failure kind in §4.6, which is a miss
-  - a rejected module path, which never loads
-  - a host module's load-time output, which never reaches the frames
+  - each kind of broken manifest in §4.6, including a repeated file
+    name. The folder counts as having no manifest, and a neighbor
+    document keeps answering.
+  - each kind of failing row in §4.6, which is a miss for that document
+  - a rejected module path, which never reaches the loader
+  - load-time output, which never reaches the frames. This test uses
+    §4.5's test-only allowance.
   - the static-require rule in §3 bar 8
 
-  The spec picks how to prove "never loads" and the static-require
-  rule.
+  The spec picks how to prove the static-require rule.
 - **LSP.** Hover, definition, and completion through the server on a
   fixture folder with a manifest. Initialize's capabilities are
   unchanged.
@@ -363,13 +407,15 @@ The coverage must include:
 The human check comes after the LSP layer, in VS Code:
 
 1. Open `examples/aloemacs/main.aloe`.
-2. Hover `fs-host` and see `FsHost`'s rows.
-3. Hover `AloemacsBuffer` on line 8, then go to definition on it, and
-   land on the class name in `file.aloe`. This is the check
-   editor-definition moved to `file.aloe` (definition spec §8, §9).
+2. Hover `fs-host` in `(Fs new fs-host)` and see `FsHost`'s rows.
+3. Hover `AloemacsBuffer` in `(AloemacsBuffer new* ...)`, the
+   `initial-buffer` binding. Then go to definition on it, and land on
+   the class name in `file.aloe`. This is the check editor-definition
+   moved to `file.aloe` (definition spec §8, §9).
 4. Type `(fs-host ` and see its selectors offered.
-5. Edit the file without saving, and hover again.
-6. Open `gel/main.aloe` and hover `term`.
+5. Edit the file without saving. Hover `fs-host` in `(Fs new fs-host)`
+   again, and see that it still shows `FsHost`'s rows.
+6. Open `gel/main.aloe` and hover `term`. See `Term`'s rows.
 7. Confirm that `examples/aloemacs/file.aloe` behaves as before.
 
 On the LSP layer, `npm test` in `editors/vscode/` passes, and `git diff`
@@ -384,39 +430,50 @@ shows no change under `editors/vscode/`.
   with no source path are ignored or refused.
 - How a query refuses a bad host argument: an exception or the miss
   result. Through the server, either one becomes a miss.
-- What a manifest that cannot be read, or does not parse as a manifest,
-  does. It is either a miss for every document in its folder, or it
-  counts as absent. Test the choice.
+- The exact manifest shape. Anything outside that shape is a broken
+  manifest under §4.6.
 - Whether the Aloemacs row also lists `term`, to mirror
   `aloemacs-run.rkt`. That runner injects both hosts, but `main.aloe`
   and its loads use only `fs-host`.
 - Where the effects rule (§4.4) is written in `host/racket/`.
 - The manifest reader's module name and API under `aloe/`.
-- How the tests prove that a rejected path never loads, that output is
-  captured, and that `aloe/` has no static `require` of `host/racket/`.
+- The test-only allowance for load-time output, within §4.5. An
+  injectable loader is suggested. A printing module under
+  `host/racket/` is not allowed.
+- How the tests prove that `aloe/` has no static `require` of
+  `host/racket/`.
 - The checkpoint split, inside §1's order.
 
 ## 6. Authority
 
 - `SPEC.md`: language law. This project does not amend it.
+
+Four earlier editor specs rule out host injection or a configuration
+file. Their series are closed. Leave those files as written, as the definition spec left
+the LSP spec's deferral standing ("lifts that deferral for class names
+only and does not edit that file"). The new `spec.md` carries one
+pointer to each sentence below and says it lifts that sentence for
+host-interface bindings only. The new spec is where the host argument
+and the manifest are defined.
+
 - [`../expression-query/spec.md`](../expression-query/spec.md) §4: "The
   query has no host-injection parameter", and "Adding a host-configured
-  query is a separate design". This is that design. It amends §4 for
-  host-interface bindings only. No query infers hosts from its path.
+  query is a separate design". This is that design. No query infers
+  hosts from its path.
 - [`../completion/spec.md`](../completion/spec.md) §4: "There is no host
-  injection parameter." Amended the same way.
-- [`../definition/spec.md`](../definition/spec.md) §9 and §10. That
-  series stays as written. Its "`main.aloe` is a whole-file miss"
-  consequence still holds for an unconfigured `main.aloe`. Its non-goal
-  "Host injection in the editor queries" belongs to that series and is
-  not rewritten. This project restores the `main.aloe` hand check.
+  injection parameter." Its recovery rule and early exit stay as
+  written.
+- [`../definition/spec.md`](../definition/spec.md) §9 and §10. Its
+  "`main.aloe` is a whole-file miss" consequence still holds for an
+  unconfigured `main.aloe`. Its non-goal "Host injection in the editor
+  queries" belongs to that series. This project restores the
+  `main.aloe` hand check.
 - [`../lsp/spec.md`](../lsp/spec.md) §2 says the adapter "never invokes
   a host capability". That stays true, because loading an interface
   runs no implementation. §8's "There is no configuration file, … or
   workspace scan" is about launching the server. The manifest is
-  per-folder query data, not launch configuration. This charter amends
-  that sentence for the manifest only. There is still no workspace
-  scan.
+  per-folder query data, not launch configuration. There is still no
+  workspace scan.
 - [`../signatures-of-type/spec.md`](../signatures-of-type/spec.md) §4.6:
   host rows, nominal interface identity, and host names unavailable in
   annotations. Not reopened.
@@ -434,8 +491,10 @@ charter wins for host-configured queries and nowhere else.
 ## 7. Non-goals
 
 - Partial checking that answers for the forms before the first error.
-  `main.aloe` line 8 and line 74 are in the same top-level `define`, so
-  it would recover nothing.
+  In `main.aloe`, `(AloemacsBuffer new* ...)` and `(Fs new fs-host)` are
+  in the same top-level `define`, so it would recover nothing.
+- Edits to the closed expression-query, completion, definition, or LSP
+  spec files
 - Runners reading the manifest, a factory column, or any change to
   `aloemacs-run.rkt`, `gel-run.rkt`, or `driver-inject-host!`
 - Evaluation, constructing a receiver (including a placeholder one), or

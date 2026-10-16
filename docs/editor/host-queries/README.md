@@ -17,10 +17,12 @@ Checkpoints, when a later conversation writes them, live in
 | `spec.md` | Not written |
 | `checkpoints/` | Not written |
 
-Hover, completion, and go-to-definition miss on every position in
+Hover and go-to-definition miss on every position in
 `examples/aloemacs/main.aloe`, because the file uses the injected
 `fs-host`. They miss on `gel/main.aloe` the same way, because of `term`.
-Only the runners inject those hosts. This project adds a manifest beside
+Completion still answers where its receiver is typed before that use,
+but it offers nothing after `(fs-host ` or `(term `. Only the runners
+inject those hosts. This project adds a manifest beside
 the program. The language server reads the manifest and binds each
 host's type, taken from the real interface, on the query's base. Nothing
 is evaluated.
