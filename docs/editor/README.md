@@ -39,6 +39,7 @@ conversation.
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
 | 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
 | 8 | Class-name definition | [`definition/`](definition/) | **Implemented and reviewed.** editor-definition 000–003 (spans, query, LSP). | 1, 3, 4 |
+| 9 | Host-configured queries | [`host-queries/`](host-queries/) | **Charter written.** Spec not started. editor-host-queries. | 3, 4, 6, 8 |
 
 Projects 1–8 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
@@ -47,7 +48,11 @@ for its LSP integration. Project 7 is a client skin: lexical coloring of
 `.aloe` buffers. It does not add an LSP method or a Racket query. Project 8
 is jumping to a class name: editor-definition 000 records the spans, 001
 and 002 answer the query, and 003 serves `textDocument/definition`. The
-series is complete.
+series is complete. Project 9 is a charter for host-configured queries. A
+manifest beside a program names the hosts its runner injects, and the
+server binds their types. Hover, completion, and definition then answer
+in `examples/aloemacs/main.aloe` and `gel/main.aloe`. Its spec is not
+written.
 
 Incomplete-buffer recovery is **in** project 6's first spec (one named
 rule, tested). It remains out of hover. Wrap-form and top-level name
@@ -84,6 +89,7 @@ because the editor learned a new keyword.
 | Completion | Snippet + cursor unit tests; LSP then wraps the same function |
 | Syntax highlighting | Grammar-token tests. VS Code is the human consumer; there is no Racket query. |
 | Class-name definition | Snippet + cursor unit tests; LSP then wraps the same function. |
+| Host-configured queries | Query unit tests that pass the real interfaces, and manifest-reader unit tests; LSP then passes the manifest's hosts to the same functions. |
 
 If a proposed slice has no consumer besides "we will need this for
 LSP," it is too early. Project 7 is a client skin, not an LSP feature,
