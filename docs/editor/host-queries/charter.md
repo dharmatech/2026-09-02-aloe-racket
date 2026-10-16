@@ -75,9 +75,11 @@ miss at every position in `examples/aloemacs/main.aloe`. The check fails
 with `typecheck: unbound symbol: fs-host`, from `(Fs new fs-host)` in the
 `aloemacs-editor` definition. In `gel/main.aloe` they miss the same way
 on `term`, first used in a `GelMain` method body. Completion is not dark
-everywhere. Its recovery ends the buffer at the cursor, and it returns as
-soon as the receiver is typed. So `(Text ` inside the `initial-buffer`
-binding offers `from-string` today, and `(fs-host ` offers nothing.
+everywhere. Its recovery keeps the whole buffer, including
+`(Fs new fs-host)`, but it returns as soon as the target's receiver is
+typed, before the checker reaches the later unbound name (completion
+spec §3, §4). So `(Text ` inside the `initial-buffer` binding offers
+`from-string` today, and `(fs-host ` offers nothing.
 
 On the tree at `6deecab`, binding only each host's type on a fresh query
 base makes both files check. `main.aloe` then checks in about 40 ms, and
