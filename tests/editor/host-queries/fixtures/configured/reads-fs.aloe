@@ -1,0 +1,1 @@
+(define start (fs-host current))

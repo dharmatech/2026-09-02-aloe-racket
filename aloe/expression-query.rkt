@@ -3,6 +3,7 @@
 (require (only-in racket/port port->bytes)
          (only-in (submod "main.rkt" query-base)
                   base-library-path
+                  check-query-hosts
                   typecheck-base-library-buffer
                   typecheck-file-module-buffer)
          (only-in "parse.rkt"
@@ -26,7 +27,8 @@
 
 (define (query-expression-at source-path
                              position
-                             #:document-path [document-path source-path])
+                             #:document-path [document-path source-path]
+                             #:hosts [hosts '()])
   (unless (path-string? source-path)
     (raise-argument-error
      'query-expression-at
@@ -42,6 +44,7 @@
      'query-expression-at
      "path-string?"
      document-path))
+  (check-query-hosts 'query-expression-at hosts)
 
   (define normalized-path
     (simplify-path (path->complete-path source-path) #f))
@@ -68,7 +71,8 @@
         (typecheck-base-library-buffer
          library-path source-bytes expressions observe)
         (typecheck-file-module-buffer
-         document-path source-bytes expressions observe)))
+         document-path source-bytes expressions observe
+         #:hosts hosts #:who 'query-expression-at)))
   (and observation
        (expression-query-result
         (expression-type-observation-type observation)

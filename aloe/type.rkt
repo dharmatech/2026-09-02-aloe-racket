@@ -274,10 +274,34 @@
      'type-environment-inject-host!
      "receiver must be a validated host receiver"
      "receiver" receiver))
-  (type-environment-set!
-   environment
-   name
-   (host-receiver-type (host-receiver-interface receiver))))
+  (type-environment-set-host! environment
+                              name
+                              (host-receiver-interface receiver)))
+
+;; Editor queries bind a host's type from its interface alone; nothing is
+;; constructed and no implementation runs.
+(define (type-environment-bind-host-interface! environment name interface)
+  (unless (type-environment? environment)
+    (raise-arguments-error
+     'type-environment-bind-host-interface!
+     "environment must be a type environment"
+     "environment" environment))
+  (unless (symbol? name)
+    (raise-arguments-error
+     'type-environment-bind-host-interface!
+     "name must be a symbol"
+     "name" name))
+  (unless (host-interface? interface)
+    (raise-arguments-error
+     'type-environment-bind-host-interface!
+     "interface must be a validated host interface"
+     "interface" interface))
+  (type-environment-set-host! environment name interface))
+
+;; Both host hooks store a host's type here, so a type made from an interface
+;; and one made from a receiver are built the same way.
+(define (type-environment-set-host! environment name interface)
+  (type-environment-set! environment name (host-receiver-type interface)))
 
 (define (resolve-type type)
   (cond
@@ -2464,6 +2488,23 @@
 ;; normal part of the checker's public API.
 (module* driver-host-injection #f
   (provide type-environment-inject-host!))
+
+;; Editor queries bind a host's type from its interface alone, without
+;; constructing a receiver, through this deliberately narrow hook.
+(module* query-host-binding #f
+  (provide type-environment-bind-host-interface!))
+
+;; Tests read the interface inside a bound host type through this hook;
+;; nothing else does.
+(module* host-binding-interface #f
+  (provide checker-host-interface)
+
+  ;; The host interface inside the host type bound to name.
+  (define (checker-host-interface environment name)
+    (define type (type-environment-ref environment name))
+    (unless (host-receiver-type? type)
+      (error 'checker-host-interface "~a is not a host" name))
+    (host-receiver-type-interface type)))
 
 ;; Bases record their installed libraries and Option, keyed roots share the
 ;; load cache, and each base gets its interactive environment, through these

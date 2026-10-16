@@ -6,6 +6,7 @@
                   make-type-environment)
          (only-in (submod "main.rkt" query-base)
                   base-library-path
+                  check-query-hosts
                   typecheck-base-library-buffer
                   typecheck-file-module-buffer)
          (only-in "parse.rkt"
@@ -166,7 +167,8 @@
    replacement-span))
 
 (define (query-selector-completions source position
-                                    #:source-path [source-path #f])
+                                    #:source-path [source-path #f]
+                                    #:hosts [hosts '()])
   (unless (string? source)
     (raise-argument-error
      'query-selector-completions
@@ -182,6 +184,7 @@
      'query-selector-completions
      "(or/c path-string? #f)"
      source-path))
+  (check-query-hosts 'query-selector-completions hosts)
 
   (cond
     [(> position (add1 (string-length source))) '()]
@@ -224,7 +227,9 @@
                   normalized-path
                   (string->bytes/utf-8 source)
                   (selector-completion-site-expressions site)
-                  observe)]
+                  observe
+                  #:hosts hosts
+                  #:who 'query-selector-completions)]
                 [else
                  (observe (selector-completion-site-expressions site)
                           (make-type-environment))]))

@@ -1,8 +1,9 @@
 # Editor host-queries 000 — Queries accept host interfaces
 
 **Status.** Written 2026-10-16 by the checkpoint manager from
-[`../spec.md`](../spec.md) (reviewed, `80b46fd`). Not implemented. The
-human reviews this file before an implementer starts. If you have been
+[`../spec.md`](../spec.md) (reviewed, `80b46fd`), committed `c009703`.
+Implemented 2026-10-16. Manager-reviewed 2026-10-16 against this
+document: conforming. Accepted by the human 2026-10-16. If you have been
 told to read this file, it is the whole assignment.
 
 ## Goal

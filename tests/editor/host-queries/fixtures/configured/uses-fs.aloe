@@ -1,0 +1,6 @@
+(load "spot.aloe")
+(load "reads-fs.aloe")
+
+(define here (fs-host current))
+(define corner (Spot new 1 2))
+(define listing (fs-host names start))

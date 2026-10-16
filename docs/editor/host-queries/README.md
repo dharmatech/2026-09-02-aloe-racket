@@ -15,7 +15,7 @@ Checkpoints, when a later conversation writes them, live in
 |---|---|
 | [`charter.md`](charter.md) | Design assignment that produces the spec |
 | [`spec.md`](spec.md) | Design specification. Reviewed 2026-10-16 (revised in review, 5432ff6); the authority for the checkpoints |
-| [`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md) | Written 2026-10-16, awaiting review: layer 1 (spec §2). `#:hosts` on the three queries, the checker's `query-host-binding` hook, and host binding on the query base. Not implemented |
+| [`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md) | Implemented 2026-10-16, manager-reviewed (conforming), accepted: layer 1 (spec §2). `#:hosts` on the three queries, the checker's `query-host-binding` hook, and host binding on the query base. Focused test: 12 test cases in `tests/editor/host-queries/000-query-hosts.rkt`, with four fixtures under `tests/editor/host-queries/fixtures/configured/`. Whole suite: 3075 tests (3059, the 12 new cases, and 4 modules-census cases for the new fixtures); under `-j 4` the only failure was `tests/aloemacs/window-pictures.rkt`'s 30 ms timing bar (30.5 ms), which passes alone (27.5 ms). The one existing test edit is completion 002's keyword line |
 
 Hover and go-to-definition miss on every position in
 `examples/aloemacs/main.aloe`, because the file uses the injected
@@ -32,6 +32,6 @@ and **editor-definition 000–003** (closed at `6deecab`). Parent map:
 [`../README.md`](../README.md), project 9.
 
 **Status.** Spec reviewed and accepted 2026-10-16. Editor-host-queries
-000 is written and awaits the human's review. Next: after that review,
-an implementer conversation implements
-[`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md).
+000 ([`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md))
+is implemented, manager-reviewed (conforming), and accepted. Next: the
+checkpoint manager writes editor-host-queries 001.

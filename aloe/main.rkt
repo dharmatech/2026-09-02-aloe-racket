@@ -7,6 +7,7 @@
          "eval.rkt"
          "library.rkt"
          "parse.rkt"
+         (only-in "host.rkt" host-interface?)
          (prefix-in checker: "type.rkt")
          (only-in (submod "type.rkt" load-cache)
                   typecheck-keyed-root
@@ -14,7 +15,10 @@
                   typecheck-file-buffer
                   record-checked-libraries!
                   record-checked-option-class!
-                  make-interactive-type-environment))
+                  make-interactive-type-environment
+                  type-environment-base)
+         (only-in (submod "type.rkt" query-host-binding)
+                  type-environment-bind-host-interface!))
 
 (provide make-top-level-env
          make-type-environment
@@ -178,20 +182,57 @@
       (record-checked-option-class! environment))))
 
 ;; Any other queried buffer is a file module at its identity path, in a fresh
-;; base whose interactive environment stays empty.
+;; base whose interactive environment stays empty. Each host's type is bound on
+;; that base first, as the driver's injection binds it, so the buffer and every
+;; file it loads see the host; a name the base already binds is refused. Who
+;; names the query.
 (define (typecheck-file-module-buffer document-path
                                       source-bytes
                                       expressions
-                                      observe)
-  (typecheck-file-buffer (make-type-environment)
+                                      observe
+                                      #:hosts [hosts '()]
+                                      #:who [who 'typecheck-file-module-buffer])
+  (define environment (make-type-environment))
+  (define base (type-environment-base environment))
+  (for ([host (in-list hosts)])
+    (define name (car host))
+    (when (checker:type-environment-bound? base name)
+      (raise-arguments-error who
+                             "host name is already bound on the query base"
+                             "host name" name))
+    (type-environment-bind-host-interface! base name (cdr host)))
+  (typecheck-file-buffer environment
                          document-path
                          source-bytes
                          (lambda (file-environment)
                            (observe expressions file-environment))))
 
+;; A query's hosts are a list of distinct names, each paired with a host
+;; interface. Who names the query.
+(define (check-query-hosts who hosts)
+  (unless (and (list? hosts)
+               (for/and ([host (in-list hosts)])
+                 (and (pair? host)
+                      (symbol? (car host))
+                      (host-interface? (cdr host)))))
+    (raise-argument-error who
+                          "(listof (cons/c symbol? host-interface?))"
+                          hosts))
+  (for/fold ([seen (hasheq)])
+            ([host (in-list hosts)])
+    (define name (car host))
+    (when (hash-ref seen name #f)
+      (raise-arguments-error who
+                             "host names must be distinct"
+                             "host name" name))
+    (hash-set seen name #t))
+  (void))
+
 ;; The editor queries install a queried base library, or check any other
-;; buffer as a file module, through these hooks.
+;; buffer as a file module, through these hooks, and check their hosts'
+;; shape through check-query-hosts.
 (module* query-base #f
   (provide base-library-path
+           check-query-hosts
            typecheck-base-library-buffer
            typecheck-file-module-buffer))

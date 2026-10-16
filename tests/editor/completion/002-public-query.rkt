@@ -166,7 +166,7 @@
   (define-values (required-keywords allowed-keywords)
     (procedure-keywords public:query-selector-completions))
   (check-equal? required-keywords '())
-  (check-equal? allowed-keywords '(#:source-path))
+  (check-equal? allowed-keywords '(#:hosts #:source-path))
 
   (dynamic-require public-path #f)
   (define-values (value-exports syntax-exports)

@@ -1,0 +1,5 @@
+(define-class Spot
+  (fields
+    (x Int)
+    (y Int))
+  (methods))
