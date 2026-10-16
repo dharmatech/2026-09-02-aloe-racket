@@ -14,7 +14,7 @@ Checkpoints, when a later conversation writes them, live in
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Design assignment that produces the spec |
-| `spec.md` | Not written |
+| [`spec.md`](spec.md) | Design specification. Written 2026-10-16, awaiting review; after acceptance, the authority for the checkpoints |
 | `checkpoints/` | Not written |
 
 Hover and go-to-definition miss on every position in
@@ -31,4 +31,4 @@ Depends on **expression query**, **editor-lsp 000–010**, **completion**,
 and **editor-definition 000–003** (closed at `6deecab`). Parent map:
 [`../README.md`](../README.md), project 9.
 
-**Status.** Charter written. Spec not started.
+**Status.** Spec written, awaiting review. No checkpoint is written.
