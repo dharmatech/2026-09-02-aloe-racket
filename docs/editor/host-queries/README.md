@@ -15,7 +15,7 @@ Checkpoints, when a later conversation writes them, live in
 |---|---|
 | [`charter.md`](charter.md) | Design assignment that produces the spec |
 | [`spec.md`](spec.md) | Design specification. Reviewed 2026-10-16 (revised in review, 5432ff6); the authority for the checkpoints |
-| `checkpoints/` | Not written |
+| [`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md) | Written 2026-10-16, awaiting review: layer 1 (spec §2). `#:hosts` on the three queries, the checker's `query-host-binding` hook, and host binding on the query base. Not implemented |
 
 Hover and go-to-definition miss on every position in
 `examples/aloemacs/main.aloe`, because the file uses the injected
@@ -31,6 +31,7 @@ Depends on **expression query**, **editor-lsp 000–010**, **completion**,
 and **editor-definition 000–003** (closed at `6deecab`). Parent map:
 [`../README.md`](../README.md), project 9.
 
-**Status.** Spec reviewed and accepted 2026-10-16. No checkpoint is
-written. Next: a checkpoint-manager conversation writes
-editor-host-queries 000 from [`spec.md`](spec.md).
+**Status.** Spec reviewed and accepted 2026-10-16. Editor-host-queries
+000 is written and awaits the human's review. Next: after that review,
+an implementer conversation implements
+[`checkpoints/000-query-hosts.md`](checkpoints/000-query-hosts.md).
