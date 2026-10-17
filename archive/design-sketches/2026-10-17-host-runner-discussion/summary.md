@@ -1,0 +1,490 @@
+# Host runner discussion
+
+Record of the 2026-10-17 discussion about the driver files every
+host-using Aloe program needs today, and whether to replace the typed
+host boundary with a traditional import of Racket modules. This is a
+discussion record. It is not language law, not a charter, and not a
+decision to build anything. Where it says "recommend", that is the
+analysis's opinion, not the user's decision.
+
+Three participants: the user, a first agent whose answer the user
+brought for review, and Claude (in Claude Code), which checked that
+answer against the tree with an eleven-agent workflow: four
+fact-checkers, two experiments, a pin inventory, three design judges
+with different lenses, and a critic. The probes that produced the
+measurements are in this folder. Nothing in the product tree was
+changed.
+
+Tree at the time: branch `experiment/2026-10-16-host-queries` at
+`85f92c4`, the last commit of editor project 9.
+
+## Conclusion
+
+Keep the typed host boundary. The awkwardness is real, but it is not
+the boundary. It is a missing generic entry point: `bin/aloe` injects
+nothing, so every program that needs a terminal or a disk has a Racket
+runner written by hand, and Aloemacs's runner also holds its event
+loop, its startup visit, and its terminal escape policy.
+
+The fix the tree already points at: let `bin/aloe` read the folder
+manifest `aloe-hosts.rktd` that editor project 9 just added, extended
+with a factory clause the language server ignores, and inject
+production receivers before loading. The manifest's own spec reserved
+that step. Then, as a separate aloemacs series, move the Aloemacs loop
+and startup visit into an Aloe entry file. Both changes are measured
+below. The second needs a small checker fix first.
+
+Rejected: an FFI or `(require racket-module)`, an in-source host
+declaration, an amendment to SPEC section 14, a Deno-style permission
+flag, and adding tui-term to `info.rkt`.
+
+## The question
+
+The user: the implementation is an interpreter hosted on Racket, and
+instead of a foreign function interface it has a typed host boundary.
+Every application that uses a host facility needs a driver file. Most
+languages let you write one file, say what you import, and run it.
+Should Aloe move that way, with a file that imports a term library or a
+filesystem library and loads Racket as needed? Or does the boundary
+have benefits, with ergonomics that can be improved? Earlier agents
+had said keep the boundary and clean up its use.
+
+## The first answer
+
+The first agent said: keep the boundary and fix the wiring. It split
+`host/racket/aloemacs-run.rkt` into boundary wiring (a few lines), a
+startup visit written as quoted datums, a Racket event loop with
+prepare caching, and boilerplate. It gave four reasons to keep the
+boundary: the aloemacs tests run the real editor with doubles and no
+TTY; `(Fs new fs-host)` wraps the host as a value carried in a field;
+one descriptor feeds checker, evaluator, and Mirror; the host surface
+is small and auditable. It named four defects: `main.aloe` uses
+`fs-host` as a free variable; there is no generic granting runner;
+Aloemacs keeps its loop in Racket, which it called the lock "Term only
+at the runner"; four runners repeat the same lines. It proposed three
+changes: a capability declaration in Aloe source, checked by the
+checker; `bin/aloe` reading those declarations and granting production
+receivers, possibly behind a flag; and reopening the loop lock to move
+the loop into Aloe. It named a language-spine charter and a separate
+aloemacs decision as the exits.
+
+## What checked out
+
+Verified against the tree:
+
+- The runner anatomy is right in shape. `host/racket/aloemacs-run.rkt`
+  lines 24-27 are the wiring (make driver, inject `term` and `fs-host`,
+  load `main.aloe`), 28-41 the startup visit as datums through
+  `driver-eval!`, 42-81 the prepared loop, 94-107 the alternate-screen
+  and mouse-motion bracket in a `dynamic-wind`, 109-126 the command
+  line. The numbers in its table do not match any counting convention
+  (the code lines are about 5 / 14 / 40 / 52), but nothing turns on
+  them.
+- `./bin/aloe --quit examples/aloemacs/main.aloe` prints
+  `aloe: typecheck: unbound symbol: fs-host` and exits 1. `gel/main.aloe`
+  fails the same way on `term`. It is a checker error, not a runtime
+  one.
+- The doubles claim is nearly right. Of 81 files under `tests/aloemacs/`,
+  26 drive the real runner loop over `main.aloe` with a scripted Term
+  and (in 25) an fs double, 13 more load `main.aloe` into a driver with
+  only an fs double, and no test needs a TTY. "Every" is too strong:
+  `fs-contents.rkt` touches a real temp directory, and 34 files need the
+  optional tui-term package to load `term.rkt`.
+- One descriptor for checker, evaluator, and Mirror, and checkpoints
+  83-88 as the anti-drift design: `docs/decisions.md` "Typed host
+  capabilities (2026-09-06)" says exactly that.
+- `lib/fs.aloe` and `lib/disk.aloe` are single-field generic classes
+  over an injected receiver, and `AloemacsSession` carries `(Fs H)` as a
+  field. The raw receiver is still a driver-base global named `fs-host`,
+  wrapped once in `main.aloe` line 74. "Rooted at one directory" holds
+  for the test double only; `make-fs-receiver` follows the process cwd.
+- There is no runner that grants both a terminal and a disk to an
+  arbitrary file. `term-run.rkt` already is a generic Term runner for
+  any file, and `fs-repl.rkt` is a REPL with `fs-host` that can `load` a
+  file from its prompt, so "a terminal or a disk needs its own Racket
+  file" overstates it.
+
+## What did not check out
+
+- **Term has six methods, not five.** `host/racket/term.rkt` lines
+  243-253: `read-key`, `write-line`, `write`, `columns`, `rows`,
+  `read-event`. The mouse series added the sixth. FsHost has ten
+  (`host/racket/fs.rkt` lines 217-230).
+- **The Racket loop is not a lock.** "Term only at the runner" is in the
+  aloemacs README's "Why this program" paragraph, not its "Locks" list.
+  The loop charter, section 4.9 "Who iterates (resolve this)", offered
+  Aloe recursion or a Racket loop. The loop spec, section 7 line 348,
+  chose Racket for one stated reason: "This avoids making stack
+  overflow the normal lifetime limit of an editor session." The first
+  answer never engaged that reason. The measurement below does.
+- **The per-key typecheck cost.** The runner-check checkpoint names the
+  cause as `driver-eval!` being check-then-run on every submission,
+  compounded by the session being generic in its host. Driving the loop
+  from Racket is the mechanism that resubmitted the datum. An Aloe-side
+  loop would not have paid it, because a method body is checked at its
+  send site once, and the evaluator never calls the checker.
+- **Philosophy's `require` is a module-system item**, listed with
+  `#lang aloe` and macros. The modules series then filled the module
+  hole with `load` and recorded `import` as rejected
+  (`docs/decisions.md` "File modules and the copy rule (2026-10-14)").
+  An in-source host declaration is deferred, not anticipated: decisions
+  2026-09-06 deferred "source-written host types" pending application
+  pressure, and project 9 put "An Aloe declaration for hosts, a SPEC.md
+  amendment, or host names in annotations" in its non-goals.
+- **Networking is not "a third descriptor"** in today's shape. Crossing
+  types are `Int`, `Bool`, `String`, `(List String)` (`aloe/host.rkt` line
+  28). A socket is a handle; opaque handles, bytes, and `Result` are all
+  explicitly deferred. A narrow host with a fixed endpoint in receiver
+  state and text payloads would fit; a general one is a SPEC section 14
+  extension of its own.
+
+## What the first answer missed
+
+**The manifest already exists.** Editor project 9, host-configured
+queries, closed on 2026-10-17 (commits `7a93158`, `042e451`, `85f92c4`).
+A manifest beside a program names its hosts:
+
+```racket
+;; examples/aloemacs/aloe-hosts.rktd
+((file "main.aloe"
+   (host fs-host host/racket/fs fs-interface)))
+```
+
+The language server reads it through `aloe/host-manifest.rkt` as data,
+never evaluated, admits only modules matching
+`^host/racket/[a-z0-9_-]+$`, loads them with `dynamic-require`, and
+binds each host's type only. Its charter locked, section 4.3: "It is
+not a new Aloe declaration, and SPEC.md is not amended." Line 219:
+"Leave room for runners. A later project may let the runners read the
+same manifest. A runner would also need a way to build a receiver,
+such as a factory." Its spec, section 6.9 "Room for runners", reserves
+a fifth element or a new entry head. Its non-goals (spec section 14,
+lines 1117 and 1125) list both "Runners reading the manifest, a factory
+element" and "An Aloe declaration for hosts". So the first answer's
+proposal 1 re-derives, in Aloe source, a declaration the tree already
+keeps one file over, creating two sources of truth, and proposal 2
+ignores that the reader is already two thirds of a generic runner.
+
+**The runner and the manifest already disagree.** `aloemacs-run.rkt`
+injects `term` and `fs-host`; the manifest lists `fs-host` only. Spec
+section 12 item 5 says why: `term.rkt` line 9 requires `tui/term` at
+module level, so listing `term` would make hover in `main.aloe` depend
+on the optional package. Making `bin/aloe` read the manifest reduces the
+sources of truth from two to one plus a runner-only column, and splitting
+`term.rkt` into a tui-free interface module and a TTY module removes the
+reason for the omission.
+
+**`bin/aloe` cannot statically require `term.rkt`.** `tests/checkpoint-53.rkt`
+lines 41-54 pin that `bin/aloe` and the core never contain `tui/term`
+and that `info.rkt` never names `tui-term`; `tests/checkpoint-88.rkt`
+line 110 pins that `aloe/driver.rkt`, `aloe/main.rkt`, and `bin/aloe`
+never match `host/racket/term.rkt`, `tui/term`, `term-interface`, or
+`make-term-receiver`, not even in a comment. A granting `bin/aloe` must
+load host modules dynamically, by data, as the manifest reader does.
+`docs/checkpoints/0086` line 112, "Do not make either runner part of
+ordinary bin/aloe", and `docs/gel.md` line 111, "bin/aloe stays
+term-free", are the sentences a charter must reopen, under the
+condition that a run with no manifest row injects nothing and loads no
+host module.
+
+**The factory is not a constructor.** `make-fs-receiver` is one.
+The production Term receiver is handed to a continuation by
+`call-with-tty-term-receiver` (`term.rkt` lines 262-268) inside
+tui-term's `with-term`, which swaps the current ports to the TTY, puts
+it in raw mode, and restores it on normal return, errors, and breaks.
+Aloemacs wraps that in a `dynamic-wind` that writes
+`\e[?1049h\e[?1002h\e[?1006h` before and the reverse after
+(`aloemacs-run.rkt` lines 94-107). A data-driven runner therefore needs
+one call-with shape for every host, nesting in row order with the load
+innermost, and a home for per-application terminal policy with its
+error-path teardown intact. The same fact is the strongest argument
+against an import: an import binds a value, and cannot wrap the rest of
+the program in a dynamic extent without a second evaluation rule, which
+SPEC section 14 forbids.
+
+**The cost of deleting runners.** Five test files read `gel-run.rkt`
+and `term-run.rkt` as text or spawn them (`checkpoint-65`,
+`checkpoint-86`, `alternate-screen`, `mouse`, `split-drag-motion`);
+`tests/fs-repl.rkt` requires `fs-repl.rkt`; 27 files require
+`aloemacs-run.rkt`. "Deletes two runners outright" is a migration.
+
+## Measurements
+
+Run on Racket v9.3 [cs], one 16-core laptop. Probes in this folder.
+
+**Stack safety of a recursive Aloe loop** (`loop-stack.rkt`). A
+Gel-shaped method: read a key, write a line, nested `let`, `if`,
+tail self-send.
+
+| N iterations | wall ms | per iteration | max RSS | heap after GC vs before |
+|---|---|---|---|---|
+| 1,000 | 7.0 | 7.0 us | 133.2 MB | +0.06 MB |
+| 10,000 | 62.6 | 6.3 us | 131.5 MB | +0.02 MB |
+| 100,000 | 648.4 | 6.5 us | 133.0 MB | +0.07 MB |
+| 1,000,000 | 6507.1 | 6.5 us | 133.1 MB | +0.01 MB |
+
+Time linear, memory flat. The deliberately non-tail control,
+`((self loop-nontail (n + 1)) + 0)`, still completes at 1,000,000
+iterations because Racket CS grows continuations on the heap: it holds
+about 1.4 GB (1.4 KB per pending iteration) and spends half its time in
+GC. There is no stack limit on the tail path. The code explains it: the
+send clause of `eval-expr` (`aloe/eval.rkt` line 255) ends in
+`lookup-message`; `send-to-instance` (1115) ends in `apply-method`
+(1327), which ends in `eval-expr` of the body; `send-to-function`
+(1406) likewise; `send-to-bool` (1570) tail-calls the chosen thunk.
+`let` is `fn` plus `call`; `if` is a Bool send to two thunks. The only
+`parameterize` and `dynamic-wind` in `eval.rkt` are on the `load` path.
+The loop spec's reason for a Racket loop does not hold. The one design
+constraint it leaves: the recursive send must stay in tail position, or
+the session leaks about 1.4 KB per keystroke without an error.
+
+**Per-key cost of an Aloe-side Aloemacs loop** (`loop-cost.rkt`). Same
+scripted Term (20 by 8, 50 "down" keys then "escape"), same fs double
+with `/cwd/a.txt`, same startup visit of `a.txt`, three rounds. Gaps
+are measured from one key read returning to the next being called, as
+`tests/aloemacs/runner-check.rkt` does.
+
+| Variant | median gap | first gap | max gap |
+|---|---|---|---|
+| A. Today's runner, Racket loop with `driver-prepare!` | 0.94-0.96 ms | 1.01-1.08 ms | 2.84-3.07 ms |
+| B. Aloe loop, one `driver-eval!`, no `driver-prepare!` | 0.94-1.14 ms | 1.02-1.24 ms | 2.87-2.98 ms |
+| C. Per-key `driver-eval!`, no prepare (the pre-runner-check shape) | 128-134 ms | 132-137 ms | 134-139 ms |
+
+A and B write byte-identical frames in the same host-call order.
+B's one-time check of the loop send costs about 134 ms, the same walk
+today's seven prepares cost (130-137 ms), nearly all of it the
+`handle-event` walk over the generic session, which has grown from the
+41 ms the runner-check checkpoint recorded. B needs no `driver-prepare!`
+and no per-size re-preparation: columns and rows are values inside the
+loop. The 20 ms Down-cycle bar holds with a wide margin.
+
+**The checker hangs on the natural encodings** (`recursion-hang.rkt`).
+This is new and bears on sequencing. Two encodings of the Aloe loop,
+a `define-methods AloemacsSession` adding a recursive `run`, and a
+generic `(fields ...)` wrapper class recursing through a new wrapper,
+both typecheck at definition and then never return from the send that
+starts the loop. `aloe/type.rkt` line 1949: every instance send on a
+generic class without explicit constructors re-checks the method body
+under the instantiated substitution (`check-method-body!`, line 1429),
+and nothing records that a body is already being checked, so a
+recursive send is an infinite walk. The five-line reproduction:
+
+```aloe
+(define-class (Loop H)
+  (fields (h H))
+  (methods
+    (run (n Int) Int
+      (if (n = 0) 0 (self run (n - 1))))))
+((Loop new 1) run 3)
+```
+
+Gel never hit this because `GelMain` is not generic. A class with
+explicit `constructors` checks its bodies once at definition and is
+immune, but under rigid `H` a body cannot send host messages
+(`typecheck: unknown message: kind`). Variant B above used a third
+encoding: an explicit-constructors loop class whose `run` takes the
+session and a step function `(-> (AloemacsSession H) (AloemacsSession
+H))` returned by a session method, whose body is deferred to the send
+that sees the concrete host. It works, and it is contorted. The honest
+fix is an in-progress set or memo in `check-method-body!`, with a test
+that a recursive method on a generic `(fields ...)` class checks and
+runs. That is a language-spine checkpoint and a precondition of any
+loop series.
+
+## What pins the current shape
+
+From the inventory, for the two changes: (G) `bin/aloe` reads the
+manifest and the three small runners go; (L) the Aloemacs loop and
+startup visit move into Aloe.
+
+| Count | What |
+|---|---|
+| 27 | test files require `host/racket/aloemacs-run.rkt`; keep the file name, shrink it |
+| 35 | test files load `examples/aloemacs/main.aloe` with only an fs double; the loop must live in a new file |
+| 22 | test files pin `file.aloe`'s define-class list; no loop class there |
+| 12 | test files break across G and L: 8 mechanical pin edits, 4 behavior changes |
+| 5 | test files read or spawn `gel-run.rkt` and `term-run.rkt` |
+
+The behavior changes: `runner-check.rkt`'s prepare counts and 20 ms
+bar; `fs-repl.rkt`'s REPL round trip; `checkpoint-86.rkt`'s usage and
+exit-2 pins on `term-run.rkt`; `file-runner.rkt`'s main-submodule usage
+test and its Racket-raised "cannot visit path" refusal with zero Term
+calls. The twenty-odd scripted runner tests keep passing under L only
+if `run-aloemacs-with-hosts` keeps its signature as a test shim and the
+Aloe loop preserves, per iteration, exactly one `columns`, one `rows`,
+one flushing `write`, one `read-event`, never `read-key` or
+`write-line`, no Term call after quit, and the startup visit's `kind`
+then `read` before the first frame. Several doubles are four-method
+interfaces, and one raises on `write-line`.
+
+Documents G contradicts or dates: `docs/gel.md` sections 5-6,
+`docs/handoff.md` ("injected only by the optional checked terminal
+runners"), `docs/decisions.md` 2026-09-04, checkpoints 0086 and 0088
+(historical, dated not rewritten), host-queries spec sections 1, 6.3,
+8.2, 12.5, 13, 14. Documents L contradicts: loop spec section 7,
+runner-check 000's non-goal at line 378 ("Moving the loop into an Aloe
+method"), the aloemacs README's "Term only at the runner" and its
+alternate-screen and motion sentences, and the mouse and
+alternate-screen placement of the bracket bytes "in the runner, as
+terminal setup, outside any Aloe send". SPEC section 14,
+`docs/philosophy.md`, and the README lock "Host stays a typed injected
+capability" are compatible with both, provided `make-driver` and the
+file-less REPL stay capability-free; "Default environments contain no
+optional capability" wants one clarifying sentence.
+
+## Recommendation
+
+Keep the boundary. Make `bin/aloe` the only runner, in this order.
+
+1. **Language spine: manifest-driven `bin/aloe`.** A call-with factory
+   clause in the manifest grammar, which the language server ignores by
+   rule and never loads. Split `term.rkt` so `term-interface` loads
+   without tui-term. `run-cli` reads the row keyed by the file it is
+   given, in that file's folder only, nests the factories in row order,
+   injects on the base, loads, and refuses when the factory's receiver
+   interface is not `eq?` to the row's export. It prints the reader's
+   failure reason instead of the editor's silent miss, so a missing
+   tui-term is an error, never a hostless run. A small `args` host, one
+   method returning `(List String)`, carries the program's arguments;
+   the crossing type already exists. Gel is the first consumer: a
+   `gel/run.aloe` whose last form is today's entry send, because tests
+   load `gel/main.aloe` expecting definitions only. Delete `term-run.rkt`,
+   `fs-repl.rkt`, and `gel-run.rkt` in the last checkpoint, after a hand
+   check, with every disappearing pin listed. `make-driver` and the bare
+   REPL stay capability-free. SPEC section 14 needs at most one
+   clarifying sentence. This is a charter, not a brief: factory shape,
+   grant policy, REPL interplay, and the failure surface are open.
+2. **Language spine: checker cycle guard.** The recursion hang above,
+   with its test. Small and local.
+3. **Aloemacs: loop into Aloe.** A new `examples/aloemacs/run.aloe`
+   holds the loop and the startup visit; `main.aloe` keeps its exact
+   datums and its fs-only manifest row; `run.aloe` gets a row naming
+   `fs-host`, `term`, and `args`. The alternate-screen and mouse bracket
+   stays in Racket as a per-application call-with factory in a shrunken
+   `aloemacs-run.rkt`, because Aloe has no `dynamic-wind` and the
+   scripted tests assert no enable bytes in the output.
+   `run-aloemacs-with-hosts` keeps its arity as the test shim. The 20 ms
+   bar transfers through the scripted term's timestamps; a memory bar
+   under a custodian limit pins the tail shape. This reopens loop spec
+   section 7 and runner-check 000's non-goal, so it is a charter under
+   the aloemacs map.
+
+Do not: add an in-source declaration (the file would grant itself
+authority, Racket module paths would appear in Aloe source, and the
+inject-a-double-then-load test idiom would need an "already satisfied"
+rule); open an FFI; add a Deno-style flag (the program's author writes
+the manifest, and the trust boundary is the `host/racket` collection,
+as project 9 already accepted); add tui-term to `info.rkt`; make terminal
+modes Term methods; search parent folders for a manifest; design
+networking or concurrency hosts here.
+
+The program already declares its need as a type: `(AloemacsSession H)`
+and `(Fs new fs-host)`. The manifest is the grant. Keeping the two apart
+is what makes doubles free.
+
+## Where the reviewers differ
+
+The three judges and the critic converged on the conclusion and the
+order. They differed on three points.
+
+- **Where the alternate-screen and mouse-motion bytes live.** The
+  language-design judge: the enables are program policy, so Aloe writes
+  them once before the first frame as strings (the term charter already
+  calls ANSI an Aloe string), and the disables are lifetime, so the TTY
+  module owns a generic reset of every mode on normal and exceptional
+  exit. The ergonomics and cost judges: keep both halves in a Racket
+  call-with factory, per application or selected by factory options in
+  the manifest row, because Aloe has no exception path and tui-term's
+  own cleanup never writes `1049l`. Claude sides with the factory,
+  first as a per-application module, generalizing to manifest options
+  only if a second application wants the same modes.
+- **Whether a configured run enters the REPL.** `bin/aloe file` without
+  `--quit` opens the REPL after loading. Inside a TTY factory's extent,
+  `read` would see tui-term key structs. Options: a configured run
+  implies `--quit`; the REPL runs after the extents exit, with hosts
+  gone; the REPL is allowed only when no factory holds the TTY. The
+  same answer decides whether `fs-repl.rkt`'s use case survives.
+  Unresolved.
+- **When to delete the small runners.** The first answer: outright.
+  The cost judge: last, after the manifest path has a hand check, in a
+  checkpoint that names every pin that disappears, because those files
+  are the only interactive proof points besides Aloemacs. Claude agrees
+  with the latter.
+
+One judge also disagreed with the Deno instinct in the first answer:
+flags exist there because the code is third-party; here the sandbox the
+project relies on is inside the program, the Newspeak or OCaml-functor
+shape of `(AloemacsSession H)`, and the outer grant can be folder
+configuration bounded by the collection rule.
+
+## Open questions for a charter
+
+- Factory clause spelling: a fifth element naming an export, or a
+  `(receiver MODULE EXPORT)` pair; call-with shape for every host, or
+  constructors wrapped by `run-cli`. May the factory module differ from
+  the interface module (needed for the term/tty split)?
+- Grant policy: the folder manifest unconditionally, or behind a flag;
+  an opt-out such as `--no-hosts`; the manifest read beside the program
+  file, never beside the cwd.
+- Failure surface of `run-cli`: messages and exit codes for a broken
+  manifest, a row for another file only, a bad module path, a missing
+  export, a factory that raises inside its extent, and the checker's
+  unbound-symbol error when the folder has a manifest but no row.
+- The `args` host: interface name, methods beyond a list, how `run-cli`
+  splits its own flags from the program's remainder, its double.
+- Which file is the program: `run.aloe` beside `main.aloe` for Gel and
+  Aloemacs, with its own row; does only the entry file's row apply, as
+  the queried-document rule does for the server.
+- The REPL question above.
+- The refusal channel for a failed startup visit: Aloe has no `raise`;
+  `check` prints an ugly message; a host method that raises, an exit
+  host, or opening untitled with the message on the echo row.
+- The loop's last form and return value, since `driver-load-port!`
+  prints non-void results after the screen is restored.
+- The no-growth bar: iteration count, memory limit, sampling method;
+  whether the tail shape is also pinned by source text.
+- Whether `driver-prepare!` stays as test-facing API or retires with the
+  runner (other tests use it today).
+- Which closed documents get dated notes versus edits, and in which
+  checkpoint; the spine checkpoint numbers (117 was the last, 118
+  declared nonexistent); the aloemacs folder name and spoken identity.
+- Whether `term-run.rkt`'s capability, run any file with a terminal,
+  survives as a manifest row convention for scratch files.
+
+## Exits
+
+This conversation had no assigned role, so it wrote nothing in the
+product tree. The exits named to the user:
+
+- An exploration charter for the spine series, `README.md` and
+  `charter.md`, with the open questions above, including the checker
+  cycle guard's placement.
+- A later aloemacs charter for the loop, written after the spine series
+  lands.
+
+This competes with the order set on 2026-10-16, where the
+window-pictures performance item was next. That is the user's call.
+
+## Also in this folder
+
+[`end-state-sketch.md`](end-state-sketch.md) draws the tree after both
+series land: the command, every file that appears, shrinks, or goes, a
+candidate manifest, a candidate `run.aloe`, and where each piece of
+boundary information lives afterwards. Written the same day, at the
+user's request, as a sketch and not a spec.
+
+## Probes in this folder
+
+Scratch Racket programs, not tests. Their effects are in a `main`
+submodule, so `raco test` runs nothing; run them with `racket`. They
+require the repo by relative path from this folder.
+
+| File | What it measures | Run |
+|---|---|---|
+| `loop-stack.rkt` | memory and time of a tail-recursive Aloe loop, and a non-tail control | `racket loop-stack.rkt tail 1000 10000 100000` |
+| `loop-cost.rkt` | per-key gaps of variants A, B, C above, and byte identity of their frames | `racket loop-cost.rkt` |
+| `recursion-hang.rkt` | the checker hang on a recursive method of a generic class; **does not terminate** | `timeout 10 racket recursion-hang.rkt` |
+
+`loop-stack.rkt` and `loop-cost.rkt` need the tui-term package, because
+they build the Term double with `make-term-receiver` from
+`host/racket/term.rkt`.
