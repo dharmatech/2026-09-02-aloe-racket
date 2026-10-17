@@ -39,9 +39,9 @@ conversation.
 | 6 | Completion | [`completion/`](completion/) | **Implemented and reviewed.** editor-completion 000–003. | 3, 4 |
 | 7 | Syntax highlighting | [`highlighting/`](highlighting/) | **Implemented and reviewed.** editor-highlighting 000 (TextMate + language configuration). | 5 |
 | 8 | Class-name definition | [`definition/`](definition/) | **Implemented and reviewed.** editor-definition 000–003 (spans, query, LSP). | 1, 3, 4 |
-| 9 | Host-configured queries | [`host-queries/`](host-queries/) | **In progress.** editor-host-queries 000 (query hosts) is implemented and accepted; 001 (manifest reader) is implemented and accepted. | 3, 4, 6, 8 |
+| 9 | Host-configured queries | [`host-queries/`](host-queries/) | **Implemented and reviewed.** editor-host-queries 000–002 (query hosts, manifest reader, server). | 3, 4, 6, 8 |
 
-Projects 1–8 are implemented and reviewed. Project 5 is the VS Code hover
+Projects 1–9 are implemented and reviewed. Project 5 is the VS Code hover
 client. Project 6's reviewed [`completion/spec.md`](completion/spec.md) is
 implemented by editor-completion 000–002 for the public Racket query and 003
 for its LSP integration. Project 7 is a client skin: lexical coloring of
@@ -52,8 +52,9 @@ series is complete. Project 9 is host-configured queries. A
 manifest beside a program names the hosts its runner injects, and the
 server binds their types. Hover, completion, and definition then answer
 in `examples/aloemacs/main.aloe` and `gel/main.aloe`. Its spec is
-reviewed. Editor-host-queries 000, the query layer, is implemented and
-accepted. 001, the manifest reader, is implemented and accepted.
+reviewed. Editor-host-queries 000 is the query layer, 001 the manifest
+reader, and 002 the server side. The series is complete, and its VS
+Code hand check passed.
 
 Incomplete-buffer recovery is **in** project 6's first spec (one named
 rule, tested). It remains out of hover. Wrap-form and top-level name

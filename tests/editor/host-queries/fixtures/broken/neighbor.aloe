@@ -1,0 +1,6 @@
+(define-class Mark
+  (fields
+    (n Int))
+  (methods))
+
+(define first-mark (Mark new 1))

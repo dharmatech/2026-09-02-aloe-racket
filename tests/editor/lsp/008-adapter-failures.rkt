@@ -701,7 +701,8 @@
    (regexp-match* #rx"\"[^\"]+\\.rkt\"" source)
    '("\"expression-query.rkt\""
      "\"completion-query.rkt\""
-     "\"definition-query.rkt\""))
+     "\"definition-query.rkt\""
+     "\"host-manifest.rkt\""))
   (for ([forbidden
          (in-list
           '("parse.rkt"

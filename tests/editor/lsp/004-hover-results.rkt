@@ -473,7 +473,8 @@
    (regexp-match* #rx"\"[^\"]+\\.rkt\"" source)
    '("\"expression-query.rkt\""
      "\"completion-query.rkt\""
-     "\"definition-query.rkt\""))
+     "\"definition-query.rkt\""
+     "\"host-manifest.rkt\""))
   (for ([required
          (in-list
           '("query-expression-at"

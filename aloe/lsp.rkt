@@ -39,7 +39,12 @@
                   query-definition-at
                   definition-query-result?
                   definition-query-result-location
-                  definition-query-result-text))
+                  definition-query-result-text)
+         (only-in "host-manifest.rkt"
+                  read-document-hosts
+                  document-hosts?
+                  document-hosts-bindings
+                  document-hosts-failure?))
 
 (provide run-lsp-server)
 
@@ -421,14 +426,26 @@
                                (raise-snapshot-failure))])
     (delete-file snapshot-path)))
 
+;; A query is passed #:hosts only when the document's folder names hosts for
+;; it, so a document with no row gets exactly the call it got before.
 (define (invoke-query query path query-position
-                      #:document-path [document-path #f])
+                      #:document-path [document-path #f]
+                      #:hosts [hosts #f])
   (with-handlers ([exn:fail? (lambda (_exception) #f)])
-    (if document-path
-        (query path query-position #:document-path document-path)
-        (query path query-position))))
+    (cond
+      [(and document-path hosts)
+       (query path query-position
+              #:document-path document-path
+              #:hosts hosts)]
+      [document-path
+       (query path query-position #:document-path document-path)]
+      [hosts
+       (query path query-position #:hosts hosts)]
+      [else
+       (query path query-position)])))
 
-(define (query-through-snapshot query path synchronized-bytes query-position)
+(define (query-through-snapshot query path synchronized-bytes query-position
+                                #:hosts [hosts #f])
   (define snapshot-path #f)
   (with-handlers
       ([exn:fail?
@@ -458,16 +475,25 @@
     (lambda ()
       ;; The sibling is read; the document stays the buffer's identity.
       (invoke-query query snapshot-path query-position
-                    #:document-path path))
+                    #:document-path path
+                    #:hosts hosts))
     (lambda ()
       (remove-snapshot snapshot-path))))
 
+;; The manifest is read for the document, never for the sibling. A failing
+;; row is a miss and makes no sibling.
 (define (query-synchronized-document query path text query-position)
-  (define synchronized-bytes (string->bytes/utf-8 text))
-  (if (matching-disk-bytes? path synchronized-bytes)
-      (invoke-query query path query-position)
-      (query-through-snapshot
-       query path synchronized-bytes query-position)))
+  (define folder-hosts (read-document-hosts path))
+  (if (document-hosts-failure? folder-hosts)
+      #f
+      (let ([hosts (and (document-hosts? folder-hosts)
+                        (document-hosts-bindings folder-hosts))]
+            [synchronized-bytes (string->bytes/utf-8 text)])
+        (if (matching-disk-bytes? path synchronized-bytes)
+            (invoke-query query path query-position #:hosts hosts)
+            (query-through-snapshot
+             query path synchronized-bytes query-position
+             #:hosts hosts)))))
 
 (define (lsp-position line character)
   (hasheq 'line line 'character character))
@@ -656,11 +682,19 @@
   (define query-position
     (and path
          (lsp-position->query-position text line character)))
+  (define folder-hosts
+    (and query-position
+         (read-document-hosts path)))
   (cond
     [(not query-position) '()]
+    [(document-hosts-failure? folder-hosts) '()]
     [else
      (define items
-       (query text query-position #:source-path path))
+       (if (document-hosts? folder-hosts)
+           (query text query-position
+                  #:source-path path
+                  #:hosts (document-hosts-bindings folder-hosts))
+           (query text query-position #:source-path path)))
      (unless (list? items)
        (error 'query-completion "unexpected completion result"))
      (for/list ([item (in-list items)])
