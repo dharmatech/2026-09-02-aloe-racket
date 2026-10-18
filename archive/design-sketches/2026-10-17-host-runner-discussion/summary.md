@@ -18,6 +18,14 @@ changed.
 Tree at the time: branch `experiment/2026-10-16-host-queries` at
 `85f92c4`, the last commit of editor project 9.
 
+**Which sections are current.** The record was revised the same day
+after Grok's review. The authority for any charter is the section
+"Review, 2026-10-17" below, together with the revised
+[`end-state-sketch.md`](end-state-sketch.md) and the "Exits" section.
+"Recommendation" and "Where the reviewers differ" are the record of
+what was proposed first; the review replaced parts of both, and each
+carries a note saying so. Read them as history, not as instructions.
+
 ## Conclusion
 
 Keep the typed host boundary. The awkwardness is real, but it is not
@@ -334,6 +342,14 @@ optional capability" wants one clarifying sentence.
 
 ## Recommendation
 
+**Superseded in part.** This is the first proposal, kept as written.
+The review below replaced four of its points: `bin/aloe` is not the
+only runner, `term-run.rkt` and `fs-repl.rkt` stay until a scratch-file
+convention exists, the cycle guard is its own checkpoint ahead of the
+runner series rather than second inside it, and the loop is pinned by
+a sampled-peak test rather than a custodian ceiling. The current order
+is "Revised order, after review" at the end of this section.
+
 Keep the boundary. Make `bin/aloe` the only runner, in this order.
 
 1. **Language spine: manifest-driven `bin/aloe`.** A call-with factory
@@ -392,13 +408,20 @@ Claude accepts:
 2. The tail-call sentence in SPEC and a language-suite test, a second
    small spine checkpoint.
 3. The manifest runner charter, with the reader amendment before any
-   manifest in the tree grows a fifth element, Gel first, the small
-   runners kept until a scratch-file convention exists, and
-   `aloemacs-run.rkt` still owning the loop.
+   manifest in the tree grows a fifth element, Gel first,
+   `term-run.rkt` and `fs-repl.rkt` kept until a scratch-file
+   convention exists (`gel-run.rkt` goes when Gel moves to
+   `gel/run.aloe`), and `aloemacs-run.rkt` still owning the loop.
 4. The Aloemacs loop charter after those, with the memory bar as a
    precondition.
 
 ## Where the reviewers differ
+
+**Superseded in part.** The REPL and the deletion order were settled by
+the review below: a row whose factory holds the TTY runs the file and
+exits while a constructor-only row may enter the REPL, and
+`term-run.rkt` and `fs-repl.rkt` are kept. The bracket placement stands
+as agreed here.
 
 The three judges and the critic converged on the conclusion and the
 order. They differed on three points.
@@ -493,8 +516,10 @@ stack probe and reproduced both.
   scripted frame stream; a generic reset in the TTY module is the wrong
   home while Gel and Aloemacs want different modes.
 - **Deleting `term-run.rkt` hurts one-off files**, which would then need
-  a manifest row to run at all. Agreed: keep the small runners until a
-  scratch-file convention exists.
+  a manifest row to run at all. Agreed: keep `term-run.rkt` and
+  `fs-repl.rkt` until a scratch-file convention exists. `gel-run.rkt`
+  still goes when Gel moves to `gel/run.aloe`, as the sketch's table
+  says.
 - **One `--quit` rule breaks one REPL case.** Agreed: a row whose
   factory holds the TTY runs and exits; a constructor-only row may
   enter the REPL.
@@ -519,16 +544,20 @@ stack probe and reproduced both.
    instantiations. The error, not a depth bound: Grok ran
    `(Loop new (List of (self h)))` and it diverges through the same
    walk, and a bound would walk several growing types and then report
-   an arbitrary limit. Claude's addition: the in-progress set must
-   cover indirect cycles, a method reached through another method, not
-   only direct re-entry. The rule knowingly rejects a finite jump to
+   an arbitrary limit. Claude's addition, as Grok restated it: the
+   in-progress set covers indirect cycles. If `run` sends `step` and
+   `step` sends `run` at the same instantiation, the second `run` is a
+   re-entry and assumes its annotation; `step` itself is checked in
+   full. Only the re-entry of a method already in progress assumes a
+   return type; no method in the middle is skipped. The rule knowingly
+   rejects a finite jump to
    another instantiation, such as a method on `(Box Int)` that sends
    the same method once on `(Box String)`; no program in the tree does
    that, and a more precise rule can come when one does. Explicit
    constructors are the tempting wrong fix: under a rigid `H`,
    `handle-event` fails with `unknown message: kind`. Tests: the
-   five-line `Loop` program, and one program that recurses at a second
-   instantiation and is refused.
+   five-line `Loop` program, the `run` and `step` program above, and
+   one program that recurses at a second instantiation and is refused.
 2. **The tail-call test.** Not a fixed custodian ceiling: both forms
    finish within a third of a megabyte of where they started, and a
    ceiling tight enough to separate them moves with the baseline.
@@ -561,9 +590,9 @@ window-pictures performance item next.
 
 ## Open questions for a charter
 
-Several of these were settled by the review above (the REPL rule, the
-shim, the args host, the small runners, the reader ordering). They stay
-listed as the charter's checklist.
+The review settled several of these; where it did, the bullet now
+points at the agreed rule rather than at an earlier paragraph. The
+rest stay as the charter's checklist.
 
 - Factory clause spelling: a fifth element naming an export, or a
   `(receiver MODULE EXPORT)` pair; call-with shape for every host, or
@@ -576,40 +605,53 @@ listed as the charter's checklist.
   manifest, a row for another file only, a bad module path, a missing
   export, a factory that raises inside its extent, and the checker's
   unbound-symbol error when the folder has a manifest but no row.
-- The `args` host: interface name, methods beyond a list, how `run-cli`
+- The `args` host, a host and not a hand-bound value (review): interface name, methods beyond a list, how `run-cli`
   splits its own flags from the program's remainder, its double.
 - Which file is the program: `run.aloe` beside `main.aloe` for Gel and
   Aloemacs, with its own row; does only the entry file's row apply, as
   the queried-document rule does for the server.
-- The REPL question above.
+- The REPL: settled by the review. A row whose factory holds the TTY
+  runs the file and exits; a constructor-only row may enter the REPL.
+  The charter writes it down.
 - The refusal channel for a failed startup visit: Aloe has no `raise`;
   `check` prints an ugly message; a host method that raises, an exit
   host, or opening untitled with the message on the echo row.
 - The loop's last form and return value, since `driver-load-port!`
   prints non-void results after the screen is restored.
-- The no-growth bar: iteration count, memory limit, sampling method;
-  whether the tail shape is also pinned by source text.
+- The no-growth bar: shape settled by lock 2 of the review (sampled
+  peak, slot-11 cross-check, a custodian rail, a host-free non-generic
+  program). The charter picks the iteration count and the bounds, and
+  whether the tail shape of `run.aloe` is also pinned by source text.
 - Whether `driver-prepare!` stays as test-facing API or retires with the
   runner (other tests use it today).
 - Which closed documents get dated notes versus edits, and in which
   checkpoint; the spine checkpoint numbers (117 was the last, 118
   declared nonexistent); the aloemacs folder name and spoken identity.
-- Whether `term-run.rkt`'s capability, run any file with a terminal,
-  survives as a manifest row convention for scratch files.
+- The scratch-file convention: `term-run.rkt` and `fs-repl.rkt` stay
+  until one exists (review). What it is, a manifest row for a scratch
+  file or something else, is the charter's to decide.
 
 ## Exits
 
 This conversation had no assigned role, so it wrote nothing in the
-product tree. The exits named to the user:
+product tree. After the review, the exits are four, in this order:
 
-- An exploration charter for the spine series, `README.md` and
-  `charter.md`, with the open questions above, including the checker
-  cycle guard's placement.
-- A later aloemacs charter for the loop, written after the spine series
-  lands.
+- A standalone language-spine checkpoint for the checker cycle guard,
+  with the rule and the three test programs in lock 1 of the review.
+- A standalone language-spine checkpoint for the tail-call sentence in
+  SPEC and the language-suite test, locks 2 and 3 of the review.
+- An exploration charter for the manifest runner, `README.md` and
+  `charter.md`, with the open questions above, written so that the
+  reader amendment lands before any manifest grows a fifth element,
+  Gel moves first, `term-run.rkt` and `fs-repl.rkt` stay until a
+  scratch-file convention exists, and `aloemacs-run.rkt` keeps the
+  loop.
+- A later aloemacs charter for the loop, written after the three above
+  land, with the sampled-peak memory bar as a precondition.
 
-This competes with the order set on 2026-10-16, where the
-window-pictures performance item was next. That is the user's call.
+The review did not treat this exchange as a reason to open any of them.
+The order set on 2026-10-16 still has the window-pictures performance
+item next. That is the user's call.
 
 ## Also in this folder
 

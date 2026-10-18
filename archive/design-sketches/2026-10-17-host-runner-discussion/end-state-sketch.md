@@ -15,8 +15,9 @@ settles them. Where a choice is open, this file says so.
 
 Revised 2026-10-17 after Grok's review ([`grok-review.md`](grok-review.md);
 `summary.md`, "Review, 2026-10-17"): the second `load` in `run.aloe`, the
-failed-visit arm marked open, the `args` double in the test shim, the
-small runners kept, and the REPL rule. The revised order keeps
+failed-visit arm marked open, the `args` double in the test shim,
+`term-run.rkt` and `fs-repl.rkt` kept while `gel-run.rkt` still goes
+with `gel/run.aloe`, and the REPL rule. The revised order keeps
 `aloemacs-run.rkt` owning the loop until two spine gates land, so the
 Aloemacs end state here is the later of the two steps.
 
