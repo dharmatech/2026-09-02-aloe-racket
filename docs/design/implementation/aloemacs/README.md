@@ -203,7 +203,7 @@ Frame time is open and has a charter.
 | Identity | Path | This conversation |
 |---|---|---|
 | window-pictures | [`window-pictures/`](window-pictures/) | **Implemented.** aloemacs-window-pictures 000 |
-| frame-time | [`frame-time/`](frame-time/) | **Chartered.** Held Down. Awaiting a designer. The evaluator regression it measured goes to the spine through [`docs/evaluator-compile-limit-brief.md`](../../../evaluator-compile-limit-brief.md). Held typing waits on a language discussion of indexed read and slicing for List, named in its charter and not opened |
+| frame-time | [`frame-time/`](frame-time/) | **Spec written.** Held Down. Awaiting human review, then aloemacs-frame-time 000 and 001. The evaluator regression it measured landed on the spine as global 118. Held typing waits on a language discussion of indexed read and slicing for List, named in its charter and not opened |
 
 ## Not in this map
 

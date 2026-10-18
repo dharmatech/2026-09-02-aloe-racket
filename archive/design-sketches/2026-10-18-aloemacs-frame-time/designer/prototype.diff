@@ -1,0 +1,512 @@
+diff --git a/examples/aloemacs/editor.aloe b/examples/aloemacs/editor.aloe
+index 0d18ca1..01d8a8d 100644
+--- a/examples/aloemacs/editor.aloe
++++ b/examples/aloemacs/editor.aloe
+@@ -70,15 +70,25 @@
+        ""
+        (fn (acc s) (acc append s))))
+ 
++    ;; One find per control; each match becomes one space.
+     (safe-cells (clipped-string String) String
+-      (if ((clipped-string len) = 0)
+-          ""
+-          (let ((cell (clipped-string take 1)))
+-            ((if ((safe-cell-controls find cell 0) present?)
+-                 " "
+-                 cell)
+-             append
+-             (self safe-cells (clipped-string drop 1))))))
++      (self blank-controls clipped-string safe-cell-controls))
++
++    (blank-controls (shown String) (controls String) String
++      (if ((controls len) = 0)
++          shown
++          (self blank-controls
++            (self blank-from shown (controls take 1) 0)
++            (controls drop 1))))
++
++    (blank-from (shown String) (control String) (start Int) String
++      ((shown find control start) case
++        (None () shown)
++        (Some (at)
++          (self blank-from
++            (((shown take at) append " ") append (shown drop (at + 1)))
++            control
++            (at + 1)))))
+ 
+     (blank-rows (rows Int) (List String)
+       (if (rows <= 0)
+@@ -87,13 +97,27 @@
+ 
+     (frame-rows (columns Int) (rows Int) (scroll-row Int) (scroll-col Int)
+                 (List String)
+-      ;; Focus only a temporary zipper at this view's explicit origin.
+-      (((self text) focus-at scroll-row) case
++      (((self text) lines-from scroll-row rows) case
+         (None () (self blank-rows rows))
+-        (Some (at-top)
+-          ((at-top next-lines rows) map
+-            (fn (line)
+-              (self safe-cells ((line drop scroll-col) take columns)))))))
++        (Some (lines)
++          (self safe-rows
++            (lines map (fn (line) ((line drop scroll-col) take columns)))))))
++
++    ;; A leaf's clipped rows are checked as one block.
++    (safe-rows (clipped (List String)) (List String)
++      (let ((block ("" joined-with (List empty) "" clipped)))
++        (let ((shown (self safe-cells block)))
++          (if (shown = block)
++              clipped
++              (self cut-rows shown clipped)))))
++
++    ;; Cut shown into rows as long as the clipped rows.
++    (cut-rows (shown String) (clipped (List String)) (List String)
++      (if (clipped empty?)
++          (List empty)
++          (let ((width ((clipped first) len)))
++            ((self cut-rows (shown drop width) (clipped rest))
++             cons (shown take width)))))
+ 
+     (frame (columns Int) (rows Int) String
+       (let ((point (self point)))
+@@ -105,18 +129,16 @@
+               (None ()
+                 (self frame-ansi "" cursor-row cursor-column))
+               (Some (focused)
+-                ((focused focus-at top) case
++                ((focused lines-from top rows) case
+                   (None ()
+                     (self frame-ansi "" cursor-row cursor-column))
+-                  (Some (at-top)
++                  (Some (lines)
+                     (self frame-ansi
+                       (if (rows < 1)
+                           ""
+                           (let ((clipped
+-                                 ((at-top next-lines rows) map
+-                                   (fn (line)
+-                                     (self safe-cells
+-                                       ((line drop left) take columns))))))
++                                 (self safe-rows
++                                   (lines map (fn (line) ((line drop left) take columns))))))
+                             ((clipped rest) fold
+                               (clipped first)
+                               (fn (body line)
+diff --git a/examples/aloemacs/file.aloe b/examples/aloemacs/file.aloe
+index a82334a..5a02b65 100644
+--- a/examples/aloemacs/file.aloe
++++ b/examples/aloemacs/file.aloe
+@@ -286,7 +286,12 @@
+           ""))
+ 
+     (fill (remaining Int) String
+-      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self fill (remaining / 2))))
++            (if (((remaining / 2) * 2) = remaining)
++                (half append half)
++                ((half append half) append "-")))))
+ 
+     ;; Display chrome around a visible row that safe cells already produced.
+     ;; It never clips, pads or inspects the row.
+@@ -637,7 +642,12 @@
+           (columns (((self columns) - divider) - cut)))))
+ 
+     (spaces (remaining Int) String
+-      (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self spaces (remaining / 2))))
++            (if (((remaining / 2) * 2) = remaining)
++                (half append half)
++                ((half append half) append " ")))))
+ 
+     (pad-row (row String) String
+       (row append (self spaces ((self columns) - (row len)))))))
+diff --git a/lib/text.aloe b/lib/text.aloe
+index d5a6a49..600a0f5 100644
+--- a/lib/text.aloe
++++ b/lib/text.aloe
+@@ -151,6 +151,36 @@
+                 (below rest)
+                 (focus + 1))))))
+ 
++    ;; count lines from line top, read without moving the focus. None when
++    ;; top is not a line of this text; "" for each line past the end.
++    (lines-from (top Int) (count Int) (Option (List String))
++      (self case
++        (from-string (source) ((self indexed-value) lines-from top count))
++        (indexed (above current below focus)
++          (if (if (top < 0) #t (top > (focus + (below len))))
++              (Option None)
++              (let ((upper (((focus - top) max 0) min count))
++                    (here? (if (top <= focus) (focus < (top + count)) #f)))
++                (let ((lower ((count - upper) - (if here? 1 0))))
++                  (let ((middle
++                          (if here?
++                              ((self entries-after below 0 lower) cons current)
++                              (self entries-after below ((top - focus) - 1) lower))))
++                    (Option Some
++                      ((self entries-after above (((focus - top) - count) max 0) upper)
++                       fold middle
++                       (fn (lines line) (lines cons line)))))))))))
++
++    ;; After skip entries of xs, count entries in xs's order, then "" for
++    ;; each one past its end.
++    (entries-after (xs (List String)) (skip Int) (count Int) (List String)
++      (cond
++        ((count <= 0) (List empty))
++        ((xs empty?) ((self entries-after xs 0 (count - 1)) cons ""))
++        ((skip > 0) (self entries-after (xs rest) (skip - 1) count))
++        ((count = 1) (List of (xs first)))
++        (else ((self entries-after (xs rest) 0 (count - 1)) cons (xs first)))))
++
+     (valid-position? (position Position) Bool
+       (if ((position line) < 0)
+           #f
+diff --git a/tests/aloemacs/window-pictures.rkt b/tests/aloemacs/window-pictures.rkt
+index d376ff3..7e0ad80 100644
+--- a/tests/aloemacs/window-pictures.rkt
++++ b/tests/aloemacs/window-pictures.rkt
+@@ -227,53 +227,3 @@
+   (for ([bad '((AloemacsView new 0 0 0 0 (Position new 0 0) #f)
+                (AloemacsView new 0 0 0 0 (Position new 0 0) #f 0))])
+     (check-exn exn:fail:aloe-type? (lambda () (ev bad)) (format "reject ~s" bad))))
+-
+-;; Timing bar. Each sample is one untimed Down, then the runner's three
+-;; prepared calls: fit, record, and paint.
+-(def! 'timed 'top)
+-(define fit! (driver-prepare! st '(define timed (timed ensure-visible 220 54))))
+-(define record! (driver-prepare! st '(define timed (timed record-pictures 220 54))))
+-(define paint! (driver-prepare! st '(timed frame 220 54)))
+-(define down! (driver-prepare! st '(define timed (timed move-down))))
+-
+-(define (median-ms start)
+-  (def! 'timed start)
+-  (fit!)
+-  (record!)
+-  (define durations
+-    (for/list ([sample (in-range 5)])
+-      (down!)
+-      (define begun (current-inexact-monotonic-milliseconds))
+-      (fit!)
+-      (record!)
+-      (paint!)
+-      (- (current-inexact-monotonic-milliseconds) begun)))
+-  (list-ref (sort durations <) 2))
+-
+-(define (bar! label median)
+-  (check-true (< median 30.0) (format "~a: median ~a ms" label median))
+-  (when (< median 30.0)
+-    (printf "~a: median ~a ms\n" label median)))
+-
+-;; Four windows, first screen: every picture matches.
+-(bar! "four windows, first screen" (median-ms 'top))
+-
+-;; Four windows, widest leaf deep in the file: one leaf rebuilds per Down.
+-(def! 'wide 'top)
+-(let loop ([sends 0])
+-  (unless (= (selected-columns 'wide) 109)
+-    (when (= sends 4) (error 'window-pictures "no 109-column leaf"))
+-    (def! 'wide '(wide other-window))
+-    (loop (add1 sends))))
+-(page-deep! 'wide)
+-(check-true (>= (point-line 'wide) 800))
+-(check-true (> (selected-scroll 'wide) 700))
+-(check-equal? (selected-columns 'wide) 109)
+-(check-true (unselected-at-top? 'wide))
+-(bar! "four windows, widest leaf deep" (median-ms 'wide))
+-
+-;; One window deep in the file.
+-(def! 'single 'one)
+-(page-deep! 'single)
+-(check-true (>= (point-line 'single) 800))
+-(bar! "one window, deep" (median-ms 'single))
+diff --git a/tests/aloemacs/frame-time.rkt b/tests/aloemacs/frame-time.rkt
+new file mode 100644
+index 0000000..f8ee215
+--- /dev/null
++++ b/tests/aloemacs/frame-time.rkt
+@@ -0,0 +1,135 @@
++#lang racket/base
++
++;; aloemacs-frame-time prototype: a held Down stays under the key-repeat
++;; interval in four windows and in one, on a short fixture and on one as long
++;; as file.aloe, with tabs on screen.
++
++(require racket/list racket/runtime-path racket/string rackunit
++         "../../aloe/driver.rkt"
++         "../../host/racket/fs.rkt")
++
++(define-runtime-path main-path "../../examples/aloemacs/main.aloe")
++(define-runtime-path file-path "../../examples/aloemacs/file.aloe")
++(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
++(define-runtime-path text-path "../../lib/text.aloe")
++(define-runtime-path fs-path "../../lib/fs.aloe")
++
++;; Line n is n, one space, then x up to 35 characters. When n mod 7 is 3,
++;; character 10 is a tab.
++(define (fixture count)
++  (string-join
++   (for/list ([n (in-range count)])
++     (define head (format "~a " n))
++     (define line (string-append head (make-string (- 35 (string-length head)) #\x)))
++     (if (= (modulo n 7) 3)
++         (string-append (substring line 0 10) "\t" (substring line 11))
++         line))
++   "\n"))
++
++(define st (make-driver))
++(driver-inject-host!
++ st 'fs-host
++ (make-fs-double "/cwd"
++   (hash "/cwd" 'directory "/cwd/short.txt" 'file "/cwd/long.txt" 'file)
++   (hash "/cwd/short.txt" (fixture 971) "/cwd/long.txt" (fixture 2400))))
++(void (driver-load-file! st main-path))
++(for ([path (list file-path editor-path text-path fs-path)])
++  (driver-eval! st `(load ,(path->string path))))
++
++(define (ev expr) (driver-eval! st expr))
++(define (def! name expr) (ev `(define ,name ,expr)))
++(define (point-line s) (ev `((,s point) line)))
++(define (selected-columns s) (ev `((,s fit-rect 220 54) columns)))
++
++(define (one! name path)
++  (def! name `(((aloemacs-editor visit (Path new ,path)) case
++                 (None () aloemacs-editor) (Some (s) s))
++               ensure-visible 220 54)))
++(define (wide! name from)
++  (def! name from)
++  (for ([_ 3]) (def! name `(,name split-right)))
++  (let loop ([sends 0])
++    (unless (= (selected-columns name) 109)
++      (when (= sends 4) (error 'frame-time "no 109-column leaf"))
++      (def! name `(,name other-window))
++      (loop (add1 sends)))))
++(define (page-to! name line)
++  (let loop ()
++    (when (< (point-line name) line)
++      (def! name `(,name page-down))
++      (loop)))
++  (def! name `(,name ensure-visible 220 54)))
++
++(one! 'short-one "/cwd/short.txt")
++(one! 'long-one "/cwd/long.txt")
++(wide! 'short-top 'short-one)
++(def! 'short-wide 'short-top)
++(page-to! 'short-wide 800)
++(wide! 'long-wide 'long-one)
++(page-to! 'long-wide 800)
++(def! 'short-deep 'short-one)
++(page-to! 'short-deep 800)
++(def! 'long-deep 'long-one)
++(page-to! 'long-deep 800)
++(def! 'long-wide-end 'long-wide)
++(page-to! 'long-wide-end 2300)
++(def! 'long-end 'long-deep)
++(page-to! 'long-end 2300)
++(for ([name '(long-wide-end long-end)])
++  (check-true (<= 2300 (point-line name) 2380)))
++
++;; Prepared once per timed name: the key, then the runner's three calls.
++(define (sampler name)
++  (define key! (driver-prepare! st `(define ,name (,name handle-key "down"))))
++  (define fit! (driver-prepare! st `(define ,name (,name ensure-visible 220 54))))
++  (define record! (driver-prepare! st `(define ,name (,name record-pictures 220 54))))
++  (define paint! (driver-prepare! st `(,name frame 220 54)))
++  (fit!)
++  (record!)
++  (lambda ()
++    (define begun (current-inexact-monotonic-milliseconds))
++    (key!)
++    (fit!)
++    (record!)
++    (paint!)
++    (- (current-inexact-monotonic-milliseconds) begun)))
++
++(define samples 11)
++(define (median durations) (list-ref (sort durations <) (quotient samples 2)))
++
++;; Interleave the named starts so load during the suite falls on each alike.
++(define (medians . starts)
++  (define timed
++    (for/list ([start starts])
++      (define name (string->symbol (format "timed-~a" start)))
++      (def! name start)
++      (sampler name)))
++  (collect-garbage)
++  (define rounds
++    (for/list ([_ samples])
++      (for/list ([sample timed]) (sample))))
++  (for/list ([index (in-range (length starts))])
++    (median (map (lambda (round) (list-ref round index)) rounds))))
++
++(define (bar! label ms)
++  (printf "~a: median ~a ms\n" label (real->decimal-string ms 1))
++  (check-true (< ms 30.0) (format "~a: median ~a ms" label ms)))
++
++(define-values (first-screen) (apply values (medians 'short-top)))
++(bar! "four windows, first screen" first-screen)
++
++(define-values (short-wide long-wide) (apply values (medians 'short-wide 'long-wide)))
++(bar! "four windows, widest leaf deep, 971 lines" short-wide)
++(bar! "four windows, widest leaf deep, 2400 lines" long-wide)
++(define-values (short-one long-one) (apply values (medians 'short-deep 'long-deep)))
++(bar! "one window deep, 971 lines" short-one)
++(bar! "one window deep, 2400 lines" long-one)
++(define-values (wide-end one-end) (apply values (medians 'long-wide-end 'long-end)))
++(bar! "four windows, widest leaf, last page of 2400" wide-end)
++(bar! "one window, last page of 2400" one-end)
++
++(printf "growth: four windows ~a ms, one window ~a ms\n"
++        (real->decimal-string (- long-wide short-wide) 2)
++        (real->decimal-string (- long-one short-one) 2))
++(check-true (< (- long-wide short-wide) 3.0) "four-window growth")
++(check-true (< (- long-one short-one) 3.0) "one-window growth")
+diff --git a/tests/aloemacs/frame-time-cells.rkt b/tests/aloemacs/frame-time-cells.rkt
+new file mode 100644
+index 0000000..eb33fc8
+--- /dev/null
++++ b/tests/aloemacs/frame-time-cells.rkt
+@@ -0,0 +1,139 @@
++#lang racket/base
++
++;; Draft of spec §9.1: safe-cells, safe-rows, padding, and frames against a
++;; Racket reference painter.
++
++(require racket/list racket/runtime-path racket/string rackunit
++         "../../aloe/driver.rkt"
++         "../../host/racket/fs.rkt")
++
++(define-runtime-path main-path "../../examples/aloemacs/main.aloe")
++(define-runtime-path file-path "../../examples/aloemacs/file.aloe")
++(define-runtime-path editor-path "../../examples/aloemacs/editor.aloe")
++(define-runtime-path text-path "../../lib/text.aloe")
++(define-runtime-path fs-path "../../lib/fs.aloe")
++
++(define (fixture-lines count)
++  (for/list ([n (in-range count)])
++    (define head (format "~a " n))
++    (define line (string-append head (make-string (- 35 (string-length head)) #\x)))
++    (if (= (modulo n 7) 3)
++        (string-append (substring line 0 10) "\t" (substring line 11))
++        line)))
++(define short-lines (fixture-lines 971))
++
++(define st (make-driver))
++(driver-inject-host!
++ st 'fs-host
++ (make-fs-double "/cwd"
++   (hash "/cwd" 'directory "/cwd/short.txt" 'file)
++   (hash "/cwd/short.txt" (string-join short-lines "\n"))))
++(void (driver-load-file! st main-path))
++(for ([path (list file-path editor-path text-path fs-path)])
++  (driver-eval! st `(load ,(path->string path))))
++(define (ev expr) (driver-eval! st expr))
++(define (def! name expr) (ev `(define ,name ,expr)))
++
++(define (safe s)
++  (list->string
++   (for/list ([c (in-string s)])
++     (define code (char->integer c))
++     (if (or (< code 32) (= code 127)) #\space c))))
++(define (aloe-list strings) `(List of ,@strings))
++(define (aloe-strings expr)
++  ;; Read an Aloe (List String) back as a Racket list of strings.
++  (define count (ev `(,expr len)))
++  (for/list ([i (in-range count)])
++    (ev `(,(for/fold ([e expr]) ([_ i]) `(,e rest)) first))))
++
++(define controls
++  (append (for/list ([i (in-range 32)]) (string (integer->char i))) (list "\u007f")))
++
++(def! 'ed '(aloemacs-editor editor))
++
++;; 1. safe-cells against the rule
++(define long-string
++  (let ([base (make-string 300 #\y)])
++    (string-set! base 0 #\u001b)
++    (string-set! base 150 #\tab)
++    (string-set! base 299 #\u007f)
++    (string-append (substring base 0 40) "\t\t\t" (substring base 43 80) "\r\n" (substring base 82))))
++(for ([s (append (list "" (apply string-append controls) "a\tb" "\e[31m"
++                       (list->string (for/list ([i (in-range 32 127)]) (integer->char i)))
++                       "é↕↔×" long-string "\u0000\u001f\u007f\u0000\t\t")
++                 controls)])
++  (check-equal? (ev `(ed safe-cells ,s)) (safe s) (format "safe-cells ~s" s)))
++
++;; 2. safe-rows
++(for ([rows (list '() '("") '("" "" "")
++                  (list "" "a" (make-string 35 #\x) (make-string 109 #\z))
++                  (list "\tabc" "def" "ghi\u007f")
++                  (list "abc" "\u0000\u0001\u001b" "def")
++                  (list "a\t" "" "\rb"))])
++  (check-equal? (aloe-strings `(ed safe-rows ,(aloe-list rows))) (map safe rows))
++  (ev `(check (ed safe-rows ,(aloe-list rows))
++              (,(aloe-list rows) map (fn (row) (ed safe-cells row))))))
++
++;; 3. padding
++(for ([n (in-range -2 301)])
++  (check-equal? (ev `((AloemacsWindowRect new 0 0 109 53) spaces ,n)) (make-string (max n 0) #\space))
++  (check-equal? (ev `((AloemacsModeLine new) fill ,n)) (make-string (max n 0) #\-)))
++
++;; 4. one-window frames against the reference painter
++(def! 'one '(((aloemacs-editor visit (Path new "/cwd/short.txt")) case
++               (None () aloemacs-editor) (Some (s) s))
++             ensure-visible 220 54))
++(let loop () (when (< (ev '((one point) line)) 800) (def! 'one '(one page-down)) (loop)))
++(def! 'one '(one ensure-visible 220 54))
++(def! 'deep-ed '(one editor))
++(define point-line (ev '((deep-ed point) line)))
++(define point-column (ev '((deep-ed point) column)))
++(define (reference-rows top left columns rows)
++  (for/list ([i (in-range rows)])
++    (define n (+ top i))
++    (define line (if (< n (length short-lines)) (list-ref short-lines n) ""))
++    (define dropped (if (< left (string-length line)) (substring line left) ""))
++    (safe (substring dropped 0 (min columns (string-length dropped))))))
++(define (reference-frame top left columns rows)
++  (string-append "\e[?25l\e[2J\e[H"
++                 (string-join (reference-rows top left columns rows) "\r\n")
++                 "\e[" (number->string (+ (- point-line top) 1)) ";"
++                 (number->string (+ (- point-column left) 1)) "H\e[?25h"))
++(for* ([top (list (- point-line 52) point-line (- point-line 20) 0 900 940)]
++       [left '(0 5)]
++       [columns '(220 20)])
++  (check-equal? (ev `((deep-ed with-origin ,top ,left) frame ,columns 53))
++                (reference-frame top left columns 53)
++                (format "frame top ~a left ~a columns ~a" top left columns))
++  (check-equal? (aloe-strings `(deep-ed frame-rows ,columns 53 ,top ,left))
++                (reference-rows top left columns 53)))
++
++;; 5. recorded equals unrecorded, four windows, widest leaf
++(def! 'four 'one)
++(def! 'four '(((aloemacs-editor visit (Path new "/cwd/short.txt")) case
++                (None () aloemacs-editor) (Some (s) s))
++              ensure-visible 220 54))
++(for ([_ 3]) (def! 'four '(four split-right)))
++(let loop () (unless (= (ev '((four fit-rect 220 54) columns)) 109) (def! 'four '(four other-window)) (loop)))
++(define (same-frames! plain recorded)
++  (check-equal? (ev `((,recorded record-pictures 220 54) frame 220 54)) (ev `(,plain frame 220 54))))
++(def! 'plain 'four)
++(def! 'rec '(four record-pictures 220 54))
++(same-frames! 'plain 'rec)
++(let loop () (when (< (ev '((plain point) line)) 800) (def! 'plain '(plain page-down)) (loop)))
++(def! 'plain '(plain ensure-visible 220 54))
++(let loop () (when (< (ev '((rec point) line)) 800) (def! 'rec '((rec page-down) record-pictures 220 54)) (loop)))
++(def! 'rec '((rec ensure-visible 220 54) record-pictures 220 54))
++(same-frames! 'plain 'rec)
++(def! 'plain '((plain move-down) ensure-visible 220 54))
++(def! 'rec '(((rec move-down) ensure-visible 220 54) record-pictures 220 54))
++(same-frames! 'plain 'rec)
++(define before (ev '(plain frame 220 54)))
++(def! 'plain '(plain insert "q"))
++(def! 'rec '((rec insert "q") record-pictures 220 54))
++(same-frames! 'plain 'rec)
++(check-true (string-contains? (ev '(plain frame 220 54)) "q"))
++(def! 'plain '(plain undo))
++(def! 'rec '((rec undo) record-pictures 220 54))
++(same-frames! 'plain 'rec)
++(check-equal? (ev '(plain frame 220 54)) before)

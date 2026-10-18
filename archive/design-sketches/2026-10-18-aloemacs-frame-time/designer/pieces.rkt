@@ -1,0 +1,78 @@
+#lang racket/base
+
+;; Where a sample goes after the aloemacs-frame-time prototype, piece by
+;; piece (spec section 7.5). Scratch program, not a test.
+;;   racket pieces.rkt <tree> <lines> <deep-line>
+;; Tabbed fixture (tab at index 10 when n mod 7 = 3), 220x54, medians of 21.
+;; Needs a tree with Text.lines-from and AloemacsEditor.safe-rows.
+
+(require racket/format racket/list racket/string)
+
+(module+ main
+  (define args (current-command-line-arguments))
+  (define root (vector-ref args 0))
+  (define line-count (string->number (vector-ref args 1)))
+  (define deep-line (string->number (vector-ref args 2)))
+  (define (rp rel) (simplify-path (build-path root rel)))
+  (define (driver name) (dynamic-require (rp "aloe/driver.rkt") name))
+  (define st ((driver 'make-driver)))
+  (define driver-eval! (driver 'driver-eval!))
+  (define driver-prepare! (driver 'driver-prepare!))
+  (define fixture
+    (string-join
+     (for/list ([n (in-range line-count)])
+       (define head (format "~a " n))
+       (define line (string-append head (make-string (- 35 (string-length head)) #\x)))
+       (if (= (modulo n 7) 3) (string-append (substring line 0 10) "\t" (substring line 11)) line))
+     "\n"))
+  ((driver 'driver-inject-host!) st 'fs-host
+    ((dynamic-require (rp "host/racket/fs.rkt") 'make-fs-double) "/cwd"
+     (hash "/cwd" 'directory "/cwd/lines.txt" 'file) (hash "/cwd/lines.txt" fixture)))
+  (void ((driver 'driver-load-file!) st (rp "examples/aloemacs/main.aloe")))
+  (for ([file '("examples/aloemacs/file.aloe" "examples/aloemacs/editor.aloe" "lib/text.aloe" "lib/fs.aloe")])
+    (driver-eval! st `(load ,(path->string (rp file)))))
+  (define (ev e) (driver-eval! st e))
+  (define (def! n e) (ev `(define ,n ,e)))
+  (def! 'one '(((aloemacs-editor visit (Path new "/cwd/lines.txt")) case (None () aloemacs-editor) (Some (s) s)) ensure-visible 220 54))
+  (def! 'wide 'one)
+  (for ([_ 3]) (def! 'wide '(wide split-right)))
+  (let loop () (unless (= (ev '((wide fit-rect 220 54) columns)) 109) (def! 'wide '(wide other-window)) (loop)))
+  (for ([n '(wide one)])
+    (let loop () (when (< (ev `((,n point) line)) deep-line) (def! n `(,n page-down)) (loop)))
+    (def! n `((((,n ensure-visible 220 54) record-pictures 220 54) move-down) ensure-visible 220 54)))
+  (define (median-ms thunk)
+    (for ([_ 3]) (thunk))
+    (define ds (for/list ([_ 21]) (define b (current-inexact-monotonic-milliseconds)) (thunk) (- (current-inexact-monotonic-milliseconds) b)))
+    (list-ref (sort ds <) 10))
+  (define (piece label expr)
+    (define t (driver-prepare! st expr))
+    (printf "  ~a  ~a\n" (~a (~r (median-ms t) #:precision '(= 2)) #:min-width 6 #:align 'right) label))
+  (def! 'ed '(wide editor))
+  (def! 'rect '(wide fit-rect 220 54))
+  (def! 'sr '(ed scroll-row))
+  (def! 'raw '(((ed text) lines-from sr 52) case (None () (List empty)) (Some (ls) ls)))
+  (def! 'clipped '(raw map (fn (l) ((l drop 0) take 109))))
+  (def! 'shown '(ed safe-rows clipped))
+  (def! 'tree '((wide windows) tree))
+  (def! 'bufs '(wide buffers))
+  (def! 'sel '((wide windows) selected))
+  (def! 'v '((tree find-view sel) case (None () (AloemacsView new 0 0 0 0 (Position new 0 0) #f (Option None))) (Some (view) view)))
+  (printf "~a lines, point ~a, four windows, 109x52 leaf\n" line-count (ev '((wide point) line)))
+  (piece "sample: down, fit, record, frame" '(((((wide handle-key "down") ensure-visible 220 54) record-pictures 220 54) frame 220 54) len))
+  (piece "record-pictures (selected leaf rebuild)" '(wide record-pictures 220 54))
+  (piece "frame (pictures reused)" '((wide record-pictures 220 54) frame 220 54))
+  (piece "built-rows" '(tree built-rows v bufs rect sel))
+  (piece "  editor frame-rows" '(ed frame-rows 109 52 sr 0))
+  (piece "    lines-from 52" '((ed text) lines-from sr 52))
+  (piece "    clip (map drop take)" '(raw map (fn (l) ((l drop 0) take 109))))
+  (piece "    safe-rows" '(ed safe-rows clipped))
+  (piece "  pad-row x52" '(shown map (fn (l) (rect pad-row l))))
+  (piece "  mode row + bar" '((AloemacsModeLine new) bar (ed safe-cells ((AloemacsModeLine new) row "/cwd/lines.txt" 109)) #t))
+  (piece "  find-id" '(bufs find-id (v buffer-id)))
+  (def! 'ed1 '(one editor))
+  (printf "one window\n")
+  (piece "sample: down, fit, record, frame" '(((((one handle-key "down") ensure-visible 220 54) record-pictures 220 54) frame 220 54) len))
+  (piece "single-frame" '(one frame 220 54))
+  (piece "  editor frame" '(ed1 frame 220 53))
+  (piece "  mode row + bar" '((AloemacsModeLine new) bar (ed1 safe-cells ((AloemacsModeLine new) row "/cwd/lines.txt" 220)) #t))
+  (piece "  echo-row" '(one echo-row 220 53)))
