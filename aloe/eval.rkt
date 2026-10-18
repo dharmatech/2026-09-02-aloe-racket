@@ -1,18 +1,19 @@
 #lang racket/base
 
-(require racket/list
-         racket/match
-         racket/string
+;; The evaluator's hot path: eval-expr and the forms it evaluates, message
+;; lookup, every kernel send table, List construction, runtime types, and
+;; method selection and application. Racket CS inlines within this module only
+;; while its body compiles whole; tests/checkpoint-118.rkt checks that at a
+;; limit of 8,000 terms. Cold code is in eval-value.rkt, eval-load.rkt, and
+;; eval-mirror.rkt.
+(require racket/match
          "env.rkt"
+         "eval-load.rkt"
+         "eval-mirror.rkt"
+         "eval-value.rkt"
          "host.rkt"
          (only-in (submod "host.rkt" evaluator-exact-host-method)
                   host-receiver-invoke-method)
-         (only-in "library.rkt"
-                  list-library-resolved-path
-                  string-library-resolved-path
-                  int-library-resolved-path
-                  option-library-resolved-path
-                  resolved-source-path)
          "mirror.rkt"
          "parse.rkt"
          "signature-catalog.rkt"
@@ -29,30 +30,7 @@
          instance-value?
          instance-value-constructor)
 
-(struct class-value
-  (name type-parameters protocol fields constructors explicit-constructors?
-        [methods #:mutable]
-        environment
-        method-environments)
-  #:transparent)
-(struct instance-value (class type-arguments constructor field-values)
-  #:transparent)
-(struct function-value (parameters body environment) #:transparent)
-(struct list-value (class element-type elements) #:transparent)
-(struct runtime-class-type (class type-arguments) #:transparent)
-(struct runtime-list-type (element-type) #:transparent)
-(struct runtime-class-object-type (class) #:transparent)
 (struct runtime-method-match (method specificity) #:transparent)
-;; A protocol's runtime record. Identity is the record; the name serves the
-;; comparisons that still match short names. It records the environment that
-;; wrote it.
-(struct protocol-value (name environment))
-;; A base's evaluator load cache maps a resolved path to its entry. The state
-;; is running or completed. Exports are the (name . value) bindings the file's
-;; own definitions made, in definition order.
-(struct evaluator-load-entry (state exports) #:transparent)
-
-(define current-eval-load-paths (make-parameter '()))
 
 ;; The loader is the environment the load form is evaluated in.
 (define (eval-load! expression environment)
@@ -72,99 +50,6 @@
            (cons path (current-eval-load-paths))])
        (eval-exprs expressions file-environment))))
   (void))
-
-;; A program given with a source path runs once per base, in its own file
-;; environment; the caller's environment is its loader. On a checker miss the
-;; checker's expressions run; after a checker hit the bytes are parsed. run
-;; receives the expressions and the file environment.
-(define (eval-keyed-root environment
-                         source-path
-                         source-bytes
-                         expressions
-                         run
-                         [hit-result (void)])
-  (eval-once!
-   environment
-   (resolved-source-path source-path)
-   (lambda ()
-     (or expressions
-         (read-program (open-input-bytes source-bytes)
-                       #:source-path source-path)))
-   run
-   hit-result))
-
-;; One rule for a load and a keyed root. The checker has already compared
-;; bytes, so a completed entry is a hit by path alone, and a hit copies the
-;; entry's exports into the loader. A miss runs the file's forms in a new file
-;; environment under the loader's base, then copies its exports. A run that
-;; does not complete leaves no entry and copies nothing; the definitions it
-;; made stay in its file environment.
-(define (eval-once! loader path read-expressions run [hit-result (void)])
-  (define cache (env-load-cache loader))
-  (define entry (hash-ref cache path #f))
-  (cond
-    [(or (and entry (eq? (evaluator-load-entry-state entry) 'running))
-         (member path (current-eval-load-paths) equal?))
-     (error 'eval-aloe "load cycle: ~a" path)]
-    [entry
-     (copy-exports! loader (evaluator-load-entry-exports entry))
-     hit-result]
-    [else
-     (hash-set! cache path (evaluator-load-entry 'running '()))
-     (define completed? #f)
-     (dynamic-wind
-      void
-      (lambda ()
-        (define file-environment (make-file-env (env-base loader) path))
-        (define expressions (read-expressions))
-        (define result (run expressions file-environment))
-        (define exports (file-exports expressions file-environment))
-        (hash-set! cache path (evaluator-load-entry 'completed exports))
-        (set! completed? #t)
-        (copy-exports! loader exports)
-        result)
-      (lambda ()
-        (unless completed?
-          (hash-remove! cache path))))]))
-
-;; The bindings a file's own define, define-class, and define-protocol forms
-;; left in its environment, in definition order, each name once.
-(define (file-exports expressions file-environment)
-  (for/fold ([exports '()]
-             #:result (reverse exports))
-            ([expression (in-list expressions)])
-    (define name
-      (match expression
-        [(define-expr name _ _) name]
-        [(define-class-expr name _ _ _ _ _ _ _) name]
-        [(define-protocol-expr name _ _) name]
-        [_ #f]))
-    (if (and name (not (assq name exports)))
-        (cons (cons name (env-lookup file-environment name)) exports)
-        exports)))
-
-;; A copied name already bound in the loader replaces it.
-(define (copy-exports! loader exports)
-  (for ([export (in-list exports)])
-    (env-define! loader (car export) (cdr export))))
-
-;; A base records the libraries it installed as completed loads. The Option
-;; seed exports the class the base binds under Option right after the install.
-(define (record-evaluated-libraries! environment)
-  (define cache (env-load-cache environment))
-  (for ([path (in-list (list list-library-resolved-path
-                             string-library-resolved-path
-                             int-library-resolved-path
-                             option-library-resolved-path))]
-        [exported-names (in-list '(() () () (Option)))])
-    (define exports
-      (for/list ([name (in-list exported-names)])
-        (cons name (env-lookup environment name))))
-    (hash-set! cache path (evaluator-load-entry 'completed exports))))
-
-;; A base keeps the Option class it installed; find reads it, not the name.
-(define (record-evaluated-option-class! environment)
-  (set-env-option-class! environment (env-lookup environment 'Option)))
 
 (define (eval-expr expression environment)
   (match expression
@@ -280,11 +165,6 @@
                      "internal error: no recorded environment for method ~a"
                      (method-declaration-selector method)))))
 
-;; The short name of a class's protocol, or #f for a class without one.
-(define (class-value-protocol-name class)
-  (define protocol (class-value-protocol class))
-  (and protocol (protocol-value-name protocol)))
-
 (define (eval-case scrutinee-expression clauses else-body environment)
   (define scrutinee (eval-expr scrutinee-expression environment))
   (unless (instance-value? scrutinee)
@@ -370,389 +250,6 @@
     [else
      (unknown-message selector)]))
 
-(define (send-to-mirror-class receiver selector arguments)
-  (unless (eq? selector 'of)
-    (unknown-message selector))
-  (unless (= (length arguments) 1)
-    (arity-error "Mirror of" 1 (length arguments)))
-  (mirror-value (car arguments) (mirror-class-object-list-class receiver)))
-
-(define (runtime-type->datum type)
-  (cond
-    [(runtime-class-type? type)
-     (define class (runtime-class-type-class type))
-     (define arguments
-       (map runtime-type->datum
-            (vector->list
-             (runtime-class-type-type-arguments type))))
-     (if (null? arguments)
-         (class-value-name class)
-         (cons (class-value-name class) arguments))]
-    [(runtime-list-type? type)
-     (list 'List
-           (if (runtime-list-type-element-type type)
-               (runtime-type->datum
-                (runtime-list-type-element-type type))
-               '?))]
-    [(symbol? type) type]
-    [else '?]))
-
-(define (instance-signature-specs instance)
-  (define class (instance-value-class instance))
-  (define substitution
-    (make-hasheq
-     (map cons
-          (class-value-type-parameters class)
-          (map runtime-type->datum
-               (vector->list
-                (instance-value-type-arguments instance))))))
-  (append
-   (field-declarations->signature-specs
-    (class-value-fields class)
-    substitution)
-   (method-declarations->signature-specs
-    (class-value-methods class)
-    substitution)))
-
-(define (class-instance-type-datum class)
-  (define parameters (class-value-type-parameters class))
-  (if (null? parameters)
-      (class-value-name class)
-      (cons (class-value-name class) parameters)))
-
-(define (class-signature-specs class)
-  (constructor-declarations->signature-specs
-   (class-value-constructors class)
-   (class-instance-type-datum class)))
-
-(define (list-signature-specs value)
-  (define element-type
-    (if (list-value-element-type value)
-        (runtime-type->datum (list-value-element-type value))
-        'T))
-  (define substitution (make-hasheq (list (cons 'T element-type))))
-  (append
-   (substitute-signature-specs
-    (kernel-instance-signature-specs 'List)
-    substitution)
-   (method-declarations->signature-specs
-    (list-class-object-methods (list-value-class value))
-    substitution)))
-
-(define (string-class-for environment)
-  (and environment (env-string-class environment)))
-
-(define (int-class-for environment)
-  (and environment (env-int-class environment)))
-
-(define (option-class-for environment)
-  (and environment (env-option-class environment)))
-
-(define (value-signature-specs value [environment #f])
-  (cond
-    [(exact-integer? value)
-     (append
-      (kernel-instance-signature-specs 'Int)
-      (let ([class (int-class-for environment)])
-        (if class
-            (method-declarations->signature-specs
-             (int-class-object-methods class)
-             (make-hasheq))
-            '())))]
-    [(flonum? value)
-     (kernel-instance-signature-specs 'Float)]
-    [(boolean? value)
-     (kernel-instance-signature-specs 'Bool)]
-    [(string? value)
-     (append
-      (kernel-instance-signature-specs 'String)
-      (let ([class (string-class-for environment)])
-        (if class
-            (method-declarations->signature-specs
-             (string-class-object-methods class)
-             (make-hasheq))
-            '())))]
-    [(symbol-value? value)
-     (kernel-instance-signature-specs 'Symbol)]
-    [(host-receiver? value)
-     (host-method-declarations->signature-specs
-      (host-interface-methods
-       (host-receiver-interface value)))]
-    [(function-value? value)
-     (list
-      (make-call-signature-spec
-       (make-list (length (function-value-parameters value)) 'T)
-       'U))]
-    [(list-value? value) (list-signature-specs value)]
-    [(instance-value? value) (instance-signature-specs value)]
-    [(class-value? value) (class-signature-specs value)]
-    [(list-class-object? value)
-     (kernel-class-object-signature-specs 'List)]
-    [(string-class-object? value)
-     (kernel-class-object-signature-specs 'String)]
-    [(int-class-object? value) '()]
-    [(symbol-class-object? value)
-     (kernel-class-object-signature-specs 'Symbol)]
-    [(mirror-class-object? value)
-     (kernel-class-object-signature-specs 'Mirror)]
-    [(mirror-value? value)
-     (kernel-instance-signature-specs 'Mirror)]
-    [(signature-value? value)
-     (kernel-instance-signature-specs 'Signature)]
-    [else '()]))
-
-(define (value-selector-names value [environment #f])
-  (remove-duplicates
-   (map signature-spec-selector
-        (value-signature-specs value environment))
-   eq?))
-
-(define (make-type-data-list class elements)
-  (list-value class 'TypeData (apply vector-immutable elements)))
-
-(define (type-datum->aloe-value class datum)
-  (cond
-    [(symbol? datum) (intern-symbol (symbol->string datum))]
-    [(list? datum)
-     (make-type-data-list
-      class
-      (map (lambda (part)
-             (type-datum->aloe-value class part))
-           datum))]
-    [else
-     (error 'eval-aloe "cannot reify type datum: ~a" datum)]))
-
-(define (signature-type-parameters subject row-index [environment #f])
-  (cond
-    [(instance-value? subject)
-     (define class (instance-value-class subject))
-     (define method-index
-       (- row-index
-          (length
-           (field-declarations->signature-specs
-            (class-value-fields class)))))
-     (if (negative? method-index)
-         '()
-         (method-declaration-type-parameters
-          (list-ref (class-value-methods class) method-index)))]
-    [(list-value? subject)
-     (define method-index
-       (- row-index (kernel-instance-signature-count 'List)))
-     (if (negative? method-index)
-         '()
-         (method-declaration-type-parameters
-          (list-ref
-           (list-class-object-methods (list-value-class subject))
-           method-index)))]
-    [(string? subject)
-     (define method-index
-       (- row-index (kernel-instance-signature-count 'String)))
-     (define class (string-class-for environment))
-     (if (or (negative? method-index) (not class))
-         '()
-         (method-declaration-type-parameters
-          (list-ref (string-class-object-methods class) method-index)))]
-    [(exact-integer? subject)
-     (define method-index
-       (- row-index (kernel-instance-signature-count 'Int)))
-     (define class (int-class-for environment))
-     (if (or (negative? method-index) (not class))
-         '()
-         (method-declaration-type-parameters
-          (list-ref (int-class-object-methods class) method-index)))]
-    [(class-value? subject) (class-value-type-parameters subject)]
-    [(boolean? subject) '(T)]
-    [(function-value? subject) '(T U)]
-    [(list-class-object? subject) '(T)]
-    [(mirror-class-object? subject) '(T)]
-    [(and (mirror-value? subject) (memv row-index '(2 3))) '(U)]
-    [else '()]))
-
-(define (runtime-owner-type value)
-  (cond
-    [(class-value? value) (runtime-class-object-type value)]
-    [(list-class-object? value) 'ListClass]
-    [(symbol-class-object? value) 'SymbolClass]
-    [(mirror-class-object? value) 'MirrorClass]
-    [(host-receiver? value) (host-receiver-interface value)]
-    [else (runtime-type-of value)]))
-
-(define (same-runtime-owner-type? left right)
-  (cond
-    [(and (runtime-class-object-type? left)
-          (runtime-class-object-type? right))
-     (eq? (runtime-class-object-type-class left)
-          (runtime-class-object-type-class right))]
-    [(or (runtime-class-object-type? left)
-         (runtime-class-object-type? right))
-     #f]
-    [else (same-runtime-type? left right)]))
-
-(define (signature-spec->value class subject spec row-index environment)
-  (signature-value
-   (intern-symbol (symbol->string (signature-spec-selector spec)))
-   (make-type-data-list
-    class
-    (map (lambda (parameter)
-           (type-datum->aloe-value class parameter))
-         (signature-spec-parameters spec)))
-   (type-datum->aloe-value class (signature-spec-return spec))
-   (runtime-owner-type subject)
-   row-index
-   (signature-spec-parameters spec)
-   (signature-spec-return spec)
-   (signature-type-parameters subject row-index environment)))
-
-(define (send-to-mirror receiver selector arguments [environment #f])
-  (define class (mirror-value-list-class receiver))
-  (case selector
-    [(messages)
-     (unless (null? arguments)
-       (arity-error "Mirror messages" 0 (length arguments)))
-     (make-list-value
-      class
-      (map intern-symbol
-           (map symbol->string
-                (value-selector-names
-                 (mirror-value-subject receiver)
-                 environment))))]
-    [(signatures)
-     (unless (null? arguments)
-       (arity-error "Mirror signatures" 0 (length arguments)))
-     (make-list-value
-      class
-      (for/list ([spec
-                  (in-list
-                   (value-signature-specs
-                    (mirror-value-subject receiver)
-                    environment))]
-                 [row-index (in-naturals)])
-        (signature-spec->value
-         class (mirror-value-subject receiver) spec row-index environment)))]
-    [(invoke) (invoke-with-signature receiver arguments environment)]
-    [(subject)
-     (unless (null? arguments)
-       (arity-error "Mirror subject" 0 (length arguments)))
-     (mirror-value-subject receiver)]
-    [(raw)
-     (unless (null? arguments)
-       (arity-error "Mirror raw" 0 (length arguments)))
-     (aloe-value->string (mirror-value-subject receiver))]
-    [else (unknown-message selector)]))
-
-(define (bind-runtime-type-parameter! name actual bindings)
-  (cond
-    [(hash-has-key? bindings name)
-     (same-runtime-type? (hash-ref bindings name) actual)]
-    [else
-     (hash-set! bindings name actual)
-     #t]))
-
-(define (runtime-named-type-matches? expected actual)
-  (cond
-    [(eq? expected '?) #t]
-    [(and (eq? expected 'TypeData)
-          (or (eq? actual 'Symbol)
-              (and (runtime-list-type? actual)
-                   (eq? (runtime-list-type-element-type actual)
-                        'TypeData))))
-     #t]
-    [(symbol? actual) (eq? expected actual)]
-    [(runtime-class-type? actual)
-     (define class (runtime-class-type-class actual))
-     (or (eq? expected (class-value-name class))
-         (eq? expected (class-value-protocol-name class)))]
-    [else #f]))
-
-(define (runtime-type-matches-datum?
-         expected actual type-parameters bindings)
-  (cond
-    [(symbol? expected)
-     (if (memq expected type-parameters)
-         (bind-runtime-type-parameter! expected actual bindings)
-         (runtime-named-type-matches? expected actual))]
-    [(and (list? expected) (pair? expected))
-     (define name (car expected))
-     (define arguments (cdr expected))
-     (cond
-       [(eq? name '->) (eq? actual 'Fn)]
-       [(eq? name 'List)
-        (and (= (length arguments) 1)
-             (runtime-list-type? actual)
-             (or (not (runtime-list-type-element-type actual))
-                 (runtime-type-matches-datum?
-                  (car arguments)
-                  (runtime-list-type-element-type actual)
-                  type-parameters
-                  bindings)))]
-       [(runtime-class-type? actual)
-        (define class (runtime-class-type-class actual))
-        (define actual-arguments
-          (runtime-class-type-type-arguments actual))
-        (and (eq? name (class-value-name class))
-             (= (length arguments) (vector-length actual-arguments))
-             (for/and ([expected-argument (in-list arguments)]
-                       [actual-argument (in-vector actual-arguments)])
-               (runtime-type-matches-datum?
-                expected-argument
-                actual-argument
-                type-parameters
-                bindings)))]
-       [else #f])]
-    [else #f]))
-
-(define (invoke-with-signature mirror arguments environment)
-  (unless (pair? arguments)
-    (arity-error "Mirror invoke" "at least 1" (length arguments)))
-  (define signature (car arguments))
-  (unless (signature-value? signature)
-    (error 'eval-aloe "Mirror invoke expects a Signature first"))
-  (define subject (mirror-value-subject mirror))
-  (unless
-      (same-runtime-owner-type?
-       (signature-value-owner-type signature)
-       (runtime-owner-type subject))
-    (error 'eval-aloe
-           "Mirror invoke signature does not belong to the subject type"))
-  (define invoke-arguments (cdr arguments))
-  (define parameter-data (signature-value-parameter-data signature))
-  (unless (= (length invoke-arguments) (length parameter-data))
-    (arity-error
-     (format "Mirror invoke ~a"
-             (symbol-value-name (signature-value-selector signature)))
-     (length parameter-data)
-     (length invoke-arguments)))
-  (define bindings (make-hasheq))
-  (for ([argument (in-list invoke-arguments)]
-        [expected (in-list parameter-data)]
-        [position (in-naturals 1)])
-    (unless
-        (runtime-type-matches-datum?
-         expected
-         (runtime-type-of argument)
-         (signature-value-type-parameters signature)
-         bindings)
-      (error 'eval-aloe
-             "Mirror invoke argument ~a does not match ~a"
-             position
-             expected)))
-  (define result
-    (invoke-signature-row
-     subject
-     (signature-value-row-index signature)
-     invoke-arguments
-     environment))
-  (unless
-      (runtime-type-matches-datum?
-       (signature-value-return-data signature)
-       (runtime-type-of result)
-       (signature-value-type-parameters signature)
-       bindings)
-    (error 'eval-aloe
-           "Mirror invoke result does not match ~a"
-           (signature-value-return-data signature)))
-  result)
-
 (define (invoke-signature-row subject row-index arguments environment)
   (define spec
     (list-ref (value-signature-specs subject environment) row-index))
@@ -833,30 +330,6 @@
      (send-to-mirror subject selector arguments environment)]
     [(signature-value? subject)
      (send-to-signature subject selector arguments)]
-    [else (unknown-message selector)]))
-
-(define (send-to-signature receiver selector arguments)
-  (case selector
-    [(selector params return)
-     (unless (null? arguments)
-       (arity-error (format "Signature ~a" selector) 0 (length arguments)))
-     (case selector
-       [(selector) (signature-value-selector receiver)]
-       [(params) (signature-value-params receiver)]
-       [(return) (signature-value-return receiver)])]
-    [(accepts?)
-     (unless (= (length arguments) 1)
-       (arity-error "Signature accepts?" 1 (length arguments)))
-     (define mirror (car arguments))
-     (unless (mirror-value? mirror)
-       (error 'eval-aloe "Signature accepts? expects a Mirror argument"))
-     (define parameters (signature-value-parameter-data receiver))
-     (and (= (length parameters) 1)
-          (runtime-type-matches-datum?
-           (car parameters)
-           (runtime-type-of (mirror-value-subject mirror))
-           (signature-value-type-parameters receiver)
-           (make-hasheq)))]
     [else (unknown-message selector)]))
 
 (define (send-to-symbol-class selector arguments)
@@ -1756,80 +1229,10 @@
            kind))
   argument)
 
-(define (arity-error target expected actual)
-  (error 'eval-aloe
-         "arity error for ~a: expected ~a argument(s), got ~a"
-         target
-         expected
-         actual))
-
-(define (unknown-message selector)
-  (error 'eval-aloe "unknown message: ~a" selector))
-
 (define (eval-exprs expressions environment)
   (for/fold ([result (void)])
             ([expression (in-list expressions)])
     (eval-expr expression environment)))
-
-(define (aloe-value->string value)
-  (cond
-    [(boolean? value) (if value "#t" "#f")]
-    [(number? value) (number->string value)]
-    [(string? value) (format "~s" value)]
-    [(symbol-value? value)
-     (format "#<Symbol ~a>" (symbol-value-name value))]
-    [(string-class-object? value) "#<class String>"]
-    [(int-class-object? value) "#<class Int>"]
-    [(symbol-class-object? value) "#<class Symbol>"]
-    [(mirror-class-object? value) "#<class Mirror>"]
-    [(mirror-value? value) "#<Mirror>"]
-    [(signature-value? value)
-     (format "#<Signature ~a>"
-             (symbol-value-name (signature-value-selector value)))]
-    [(class-value? value)
-     (format "#<class ~a>" (class-value-name value))]
-    [(and (instance-value? value)
-          (eq? (class-value-name (instance-value-class value)) 'Sum))
-     (define fields (instance-value-field-values value))
-     (format "#<Sum terms=~a const=~a>"
-             (aloe-value->string (vector-ref fields 0))
-             (aloe-value->string (vector-ref fields 1)))]
-    [(and (instance-value? value)
-          (eq? (class-value-name (instance-value-class value)) 'Prod))
-     (define fields (instance-value-field-values value))
-     (format "#<Prod coeff=~a factors=~a>"
-             (aloe-value->string (vector-ref fields 0))
-             (aloe-value->string (vector-ref fields 1)))]
-    [(instance-value? value)
-     (define fields
-       (for/list ([field-value
-                   (in-vector (instance-value-field-values value))])
-         (aloe-value->string field-value)))
-     (format "#<~a~a>"
-             (class-value-name (instance-value-class value))
-             (if (null? fields)
-                 ""
-                 (string-append " " (string-join fields " "))))]
-    [(function-value? value)
-     (format "#<fn/~a>" (length (function-value-parameters value)))]
-    [(list-value? value)
-     (define elements (list-value-elements value))
-     (define count (vector-length elements))
-     (define shown
-       (for/list ([element (in-vector elements)]
-                  [index (in-range 8)])
-         (aloe-value->string element)))
-     (define parts
-       (if (> count 8) (append shown '("...")) shown))
-     (format "#<List~a>"
-             (if (null? parts)
-                 ""
-                 (string-append " " (string-join parts " "))))]
-    [(host-receiver? value)
-     (format "#<~a>" (host-receiver-name value))]
-    [(list-class-object? value) "#<class List>"]
-    [(void? value) "#<void>"]
-    [else "#<object>"]))
 
 (define (instance-has-zero-argument-method? value selector)
   (and
@@ -1849,32 +1252,13 @@
      shown]
     [else (aloe-value->string value)]))
 
-(define (value-vectors-equal? left right)
-  (and (= (vector-length left) (vector-length right))
-       (for/and ([left-value (in-vector left)]
-                 [right-value (in-vector right)])
-         (aloe-values-equal? left-value right-value))))
-
-(define (aloe-values-equal? left right)
-  (cond
-    [(and (exact-integer? left) (exact-integer? right)) (= left right)]
-    [(and (flonum? left) (flonum? right)) (= left right)]
-    [(and (boolean? left) (boolean? right)) (eq? left right)]
-    [(and (string? left) (string? right)) (string=? left right)]
-    [(and (instance-value? left) (instance-value? right))
-     (and (eq? (instance-value-class left) (instance-value-class right))
-          (eq? (instance-value-constructor left)
-               (instance-value-constructor right))
-          (value-vectors-equal? (instance-value-field-values left)
-                                (instance-value-field-values right)))]
-    [(and (list-value? left) (list-value? right))
-     (and (eq? (list-value-class left) (list-value-class right))
-          (value-vectors-equal? (list-value-elements left)
-                                (list-value-elements right)))]
-    [(and (host-receiver? left) (host-receiver? right))
-     (eq? left right)]
-    [(and (void? left) (void? right)) #t]
-    [else (eq? left right)]))
+;; Reflection lives in eval-mirror.rkt, which cannot require this module; its
+;; Mirror and Signature sends are built from these four procedures.
+(define-values (send-to-mirror send-to-signature)
+  (make-reflection-sends make-list-value
+                         runtime-type-of
+                         same-runtime-type?
+                         invoke-signature-row))
 
 ;; Tests read the environment each method and protocol recorded through this
 ;; hook; nothing else does.

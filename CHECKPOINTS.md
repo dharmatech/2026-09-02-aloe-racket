@@ -394,6 +394,12 @@ Global checkpoints 108–113 and 116–117 are Gel-directory work. They live on
 - `lib/string.aloe` defines `starts-with?` with `define-methods String` and is
   installed in default environments.
 
+## 118. [The evaluator under the compile limit](docs/checkpoints/0118-evaluator-compile-limit.md)
+
+- Cold code leaves `aloe/eval.rkt` for `eval-value.rkt`, `eval-load.rkt`, and
+  `eval-mirror.rkt`; the hot path stays together. Every evaluator module
+  compiles whole at `PLT_CS_COMPILE_LIMIT=8000`, and a test enforces it. No
+  Aloe behavior changes.
+
 Editor and LSP work is organized as local projects rather than global
-checkpoints. See [docs/editor/README.md](docs/editor/README.md); there is no
-global checkpoint 118.
+checkpoints. See [docs/editor/README.md](docs/editor/README.md).

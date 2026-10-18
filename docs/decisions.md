@@ -325,3 +325,13 @@ and the `expected, got` mismatch print each class's
 repository-relative path as a second rendering; `type->datum` is
 unchanged. Rejected: paths inside `type->datum`, paths on rows and
 completion items, a decorative module name.
+
+## Evaluator compile limit (2026-10-18)
+
+Decided: every evaluator module, `aloe/eval.rkt` and the `aloe/eval-*.rkt`
+modules split from it, compiles whole under Racket CS's compile limit with
+20 percent to spare; `tests/checkpoint-118.rkt` fails when one takes the
+interpretable path at `PLT_CS_COMPILE_LIMIT=8000`. The hot path stays in
+`eval.rkt`; cold code moves out. Rejected: raising the limit through the
+environment, a launcher, or a build flag; splitting the hot path across
+modules.
