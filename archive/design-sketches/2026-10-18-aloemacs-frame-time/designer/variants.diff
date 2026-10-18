@@ -482,9 +482,9 @@ index d5a6a49..75234db 100644
      (valid-position? (position Position) Bool
        (if ((position line) < 0)
            #f
-### variant G000
+### variant F, this spec's first draft (blank the block, cut-rows)
 diff --git a/examples/aloemacs/editor.aloe b/examples/aloemacs/editor.aloe
-index 0d18ca1..a0719ea 100644
+index 0d18ca1..01d8a8d 100644
 --- a/examples/aloemacs/editor.aloe
 +++ b/examples/aloemacs/editor.aloe
 @@ -70,15 +70,25 @@
@@ -521,16 +521,21 @@ index 0d18ca1..a0719ea 100644
  
      (blank-rows (rows Int) (List String)
        (if (rows <= 0)
-@@ -91,9 +101,25 @@
-       (((self text) focus-at scroll-row) case
+@@ -87,13 +97,27 @@
+ 
+     (frame-rows (columns Int) (rows Int) (scroll-row Int) (scroll-col Int)
+                 (List String)
+-      ;; Focus only a temporary zipper at this view's explicit origin.
+-      (((self text) focus-at scroll-row) case
++      (((self text) lines-from scroll-row rows) case
          (None () (self blank-rows rows))
-         (Some (at-top)
+-        (Some (at-top)
 -          ((at-top next-lines rows) map
 -            (fn (line)
 -              (self safe-cells ((line drop scroll-col) take columns)))))))
++        (Some (lines)
 +          (self safe-rows
-+            ((at-top next-lines rows) map
-+              (fn (line) ((line drop scroll-col) take columns)))))))
++            (lines map (fn (line) ((line drop scroll-col) take columns)))))))
 +
 +    ;; A leaf's clipped rows are checked as one block.
 +    (safe-rows (clipped (List String)) (List String)
@@ -550,7 +555,174 @@ index 0d18ca1..a0719ea 100644
  
      (frame (columns Int) (rows Int) String
        (let ((point (self point)))
-@@ -113,10 +139,9 @@
+@@ -105,18 +129,16 @@
+               (None ()
+                 (self frame-ansi "" cursor-row cursor-column))
+               (Some (focused)
+-                ((focused focus-at top) case
++                ((focused lines-from top rows) case
+                   (None ()
+                     (self frame-ansi "" cursor-row cursor-column))
+-                  (Some (at-top)
++                  (Some (lines)
+                     (self frame-ansi
+                       (if (rows < 1)
+                           ""
+                           (let ((clipped
+-                                 ((at-top next-lines rows) map
+-                                   (fn (line)
+-                                     (self safe-cells
+-                                       ((line drop left) take columns))))))
++                                 (self safe-rows
++                                   (lines map (fn (line) ((line drop left) take columns))))))
+                             ((clipped rest) fold
+                               (clipped first)
+                               (fn (body line)
+diff --git a/examples/aloemacs/file.aloe b/examples/aloemacs/file.aloe
+index a82334a..5a02b65 100644
+--- a/examples/aloemacs/file.aloe
++++ b/examples/aloemacs/file.aloe
+@@ -286,7 +286,12 @@
+           ""))
+ 
+     (fill (remaining Int) String
+-      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self fill (remaining / 2))))
++            (if (((remaining / 2) * 2) = remaining)
++                (half append half)
++                ((half append half) append "-")))))
+ 
+     ;; Display chrome around a visible row that safe cells already produced.
+     ;; It never clips, pads or inspects the row.
+@@ -637,7 +642,12 @@
+           (columns (((self columns) - divider) - cut)))))
+ 
+     (spaces (remaining Int) String
+-      (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self spaces (remaining / 2))))
++            (if (((remaining / 2) * 2) = remaining)
++                (half append half)
++                ((half append half) append " ")))))
+ 
+     (pad-row (row String) String
+       (row append (self spaces ((self columns) - (row len)))))))
+diff --git a/lib/text.aloe b/lib/text.aloe
+index d5a6a49..600a0f5 100644
+--- a/lib/text.aloe
++++ b/lib/text.aloe
+@@ -151,6 +151,36 @@
+                 (below rest)
+                 (focus + 1))))))
+ 
++    ;; count lines from line top, read without moving the focus. None when
++    ;; top is not a line of this text; "" for each line past the end.
++    (lines-from (top Int) (count Int) (Option (List String))
++      (self case
++        (from-string (source) ((self indexed-value) lines-from top count))
++        (indexed (above current below focus)
++          (if (if (top < 0) #t (top > (focus + (below len))))
++              (Option None)
++              (let ((upper (((focus - top) max 0) min count))
++                    (here? (if (top <= focus) (focus < (top + count)) #f)))
++                (let ((lower ((count - upper) - (if here? 1 0))))
++                  (let ((middle
++                          (if here?
++                              ((self entries-after below 0 lower) cons current)
++                              (self entries-after below ((top - focus) - 1) lower))))
++                    (Option Some
++                      ((self entries-after above (((focus - top) - count) max 0) upper)
++                       fold middle
++                       (fn (lines line) (lines cons line)))))))))))
++
++    ;; After skip entries of xs, count entries in xs's order, then "" for
++    ;; each one past its end.
++    (entries-after (xs (List String)) (skip Int) (count Int) (List String)
++      (cond
++        ((count <= 0) (List empty))
++        ((xs empty?) ((self entries-after xs 0 (count - 1)) cons ""))
++        ((skip > 0) (self entries-after (xs rest) (skip - 1) count))
++        ((count = 1) (List of (xs first)))
++        (else ((self entries-after (xs rest) 0 (count - 1)) cons (xs first)))))
++
+     (valid-position? (position Position) Bool
+       (if ((position line) < 0)
+           #f
+### variant G000b, checkpoint 000's product edit alone
+diff --git a/examples/aloemacs/editor.aloe b/examples/aloemacs/editor.aloe
+index 0d18ca1..8a06e1f 100644
+--- a/examples/aloemacs/editor.aloe
++++ b/examples/aloemacs/editor.aloe
+@@ -70,15 +70,25 @@
+        ""
+        (fn (acc s) (acc append s))))
+ 
++    ;; One find per control; each match becomes one space.
+     (safe-cells (clipped-string String) String
+-      (if ((clipped-string len) = 0)
+-          ""
+-          (let ((cell (clipped-string take 1)))
+-            ((if ((safe-cell-controls find cell 0) present?)
+-                 " "
+-                 cell)
+-             append
+-             (self safe-cells (clipped-string drop 1))))))
++      (self blank-controls clipped-string safe-cell-controls))
++
++    (blank-controls (shown String) (controls String) String
++      (if ((controls len) = 0)
++          shown
++          (self blank-controls
++            (self blank-from shown (controls take 1) 0)
++            (controls drop 1))))
++
++    (blank-from (shown String) (control String) (start Int) String
++      ((shown find control start) case
++        (None () shown)
++        (Some (at)
++          (self blank-from
++            (((shown take at) append " ") append (shown drop (at + 1)))
++            control
++            (at + 1)))))
+ 
+     (blank-rows (rows Int) (List String)
+       (if (rows <= 0)
+@@ -91,9 +101,28 @@
+       (((self text) focus-at scroll-row) case
+         (None () (self blank-rows rows))
+         (Some (at-top)
+-          ((at-top next-lines rows) map
+-            (fn (line)
+-              (self safe-cells ((line drop scroll-col) take columns)))))))
++          (self safe-rows
++            ((at-top next-lines rows) map
++              (fn (line) ((line drop scroll-col) take columns)))))))
++
++    ;; A leaf's clipped rows are checked as one block. Each row is then
++    ;; blanked for the controls the block holds, and only those.
++    (safe-rows (clipped (List String)) (List String)
++      (let ((present
++              (self controls-in ("" joined-with (List empty) "" clipped)
++                safe-cell-controls)))
++        (if ((present len) = 0)
++            clipped
++            (clipped map (fn (row) (self blank-controls row present))))))
++
++    ;; The controls that occur in shown, in the order of controls.
++    (controls-in (shown String) (controls String) String
++      (if ((controls len) = 0)
++          ""
++          (let ((rest (self controls-in shown (controls drop 1))))
++            (if ((shown find (controls take 1) 0) present?)
++                ((controls take 1) append rest)
++                rest))))
+ 
+     (frame (columns Int) (rows Int) String
+       (let ((point (self point)))
+@@ -113,10 +142,9 @@
                        (if (rows < 1)
                            ""
                            (let ((clipped

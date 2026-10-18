@@ -1,5 +1,5 @@
 diff --git a/examples/aloemacs/editor.aloe b/examples/aloemacs/editor.aloe
-index 0d18ca1..01d8a8d 100644
+index 0d18ca1..fbf8dc6 100644
 --- a/examples/aloemacs/editor.aloe
 +++ b/examples/aloemacs/editor.aloe
 @@ -70,15 +70,25 @@
@@ -36,7 +36,7 @@ index 0d18ca1..01d8a8d 100644
  
      (blank-rows (rows Int) (List String)
        (if (rows <= 0)
-@@ -87,13 +97,27 @@
+@@ -87,13 +97,30 @@
  
      (frame-rows (columns Int) (rows Int) (scroll-row Int) (scroll-col Int)
                  (List String)
@@ -52,25 +52,28 @@ index 0d18ca1..01d8a8d 100644
 +          (self safe-rows
 +            (lines map (fn (line) ((line drop scroll-col) take columns)))))))
 +
-+    ;; A leaf's clipped rows are checked as one block.
++    ;; A leaf's clipped rows are checked as one block. Each row is then
++    ;; blanked for the controls the block holds, and only those.
 +    (safe-rows (clipped (List String)) (List String)
-+      (let ((block ("" joined-with (List empty) "" clipped)))
-+        (let ((shown (self safe-cells block)))
-+          (if (shown = block)
-+              clipped
-+              (self cut-rows shown clipped)))))
++      (let ((present
++              (self controls-in ("" joined-with (List empty) "" clipped)
++                safe-cell-controls)))
++        (if ((present len) = 0)
++            clipped
++            (clipped map (fn (row) (self blank-controls row present))))))
 +
-+    ;; Cut shown into rows as long as the clipped rows.
-+    (cut-rows (shown String) (clipped (List String)) (List String)
-+      (if (clipped empty?)
-+          (List empty)
-+          (let ((width ((clipped first) len)))
-+            ((self cut-rows (shown drop width) (clipped rest))
-+             cons (shown take width)))))
++    ;; The controls that occur in shown, in the order of controls.
++    (controls-in (shown String) (controls String) String
++      (if ((controls len) = 0)
++          ""
++          (let ((rest (self controls-in shown (controls drop 1))))
++            (if ((shown find (controls take 1) 0) present?)
++                ((controls take 1) append rest)
++                rest))))
  
      (frame (columns Int) (rows Int) String
        (let ((point (self point)))
-@@ -105,18 +129,16 @@
+@@ -105,18 +132,16 @@
                (None ()
                  (self frame-ansi "" cursor-row cursor-column))
                (Some (focused)
@@ -226,7 +229,7 @@ index d376ff3..7e0ad80 100644
 -(bar! "one window, deep" (median-ms 'single))
 diff --git a/tests/aloemacs/frame-time.rkt b/tests/aloemacs/frame-time.rkt
 new file mode 100644
-index 0000000..f8ee215
+index 0000000..d17d3e8
 --- /dev/null
 +++ b/tests/aloemacs/frame-time.rkt
 @@ -0,0 +1,135 @@
@@ -312,7 +315,7 @@ index 0000000..f8ee215
 +
 +;; Prepared once per timed name: the key, then the runner's three calls.
 +(define (sampler name)
-+  (define key! (driver-prepare! st `(define ,name (,name handle-key "down"))))
++  (define key! (driver-prepare! st `(define ,name (,name handle-event "down"))))
 +  (define fit! (driver-prepare! st `(define ,name (,name ensure-visible 220 54))))
 +  (define record! (driver-prepare! st `(define ,name (,name record-pictures 220 54))))
 +  (define paint! (driver-prepare! st `(,name frame 220 54)))

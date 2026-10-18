@@ -1,14 +1,17 @@
 # aloemacs frame time specification
 
 **Status.** Written by the designer from [`charter.md`](charter.md) on
-2026-10-18. Awaiting human review. Not Aloe law. Not a checkpoint.
+2026-10-18 and revised the same day after Grok's review, which is kept
+verbatim in
+[`archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/grok-review.md`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/grok-review.md).
+Awaiting human review. Not Aloe law. Not a checkpoint.
 `SPEC.md` governs sends and types. The checkpoint manager reads this
 file and need not read the charter. Project root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
 A held Down keeps up. Deep in four windows of one buffer and deep in
 one window, on a file as long as the editor's own source, a Down and
-its frame take at most 11.3 ms alone at the worst place measured, under
+its frame take at most 11.9 ms alone at the worst place measured, under
 half the 30 ms repeat interval. The bytes on screen stay the bytes
 `frame` paints today.
 
@@ -16,7 +19,8 @@ Three repairs do it, all in Aloe, none in the kernel:
 
 1. `spaces` and `fill` build their strings by doubling (§4).
 2. `safe-cells` blanks each control it finds instead of walking every
-   character, and a leaf's clipped rows are checked as one block (§5).
+   character. A leaf's clipped rows are checked as one block, and each
+   row is blanked only for the controls the block holds (§5).
 3. `Text` reads the visible lines straight from the zipper's two Lists,
    without moving the focus (§6).
 
@@ -71,7 +75,7 @@ May change:
 
 Does not change: `aloe/`, `SPEC.md`, `lib/` outside `text.aloe`,
 `host/racket/` (the runner stays `ensure-visible`, `record-pictures`,
-the frame write, `handle-key`), `main.aloe`, Gel, `docs/editor/`, any
+the frame write, `handle-event`), `main.aloe`, Gel, `docs/editor/`, any
 `define-class` list, any field, any constructor. No class is added, so
 the tests that pin `file.aloe`'s ordered class list are untouched.
 
@@ -84,9 +88,12 @@ recorded between frames.
 Medians in ms, alone, on the record's machine (i9-10885H, Racket 9.3
 CS), with 118 landed. The fixture is window-pictures' (line *n* is *n*,
 a space, then `x` to 35 characters) at three lengths, 220×54, and the
-test's procedure with eleven samples instead of five: one untimed Down,
-then fit, record, and frame as one interval. "Deep" is the point at line 817. "Last page" is
-the point within the last 120 lines of the file.
+test's procedure with eleven samples instead of five. **The clock covers
+fit, record, and frame. The Down before each sample is outside it.**
+A table below that says "the §3 procedure" is timed this way. "Deep" is
+`page-down` to the first line at or past 800, which is 816, and then
+the samples' Downs. "Last page" is the point within the last 120 lines
+of the file.
 
 | Lines | First screen, four windows | Four windows, 109-column leaf, deep | One window, deep | Four windows, last page | One window, last page |
 |---:|---:|---:|---:|---:|---:|
@@ -168,7 +175,9 @@ The result is the old one. A space is not a control, so a replacement
 never makes a match for a later control. Each position is replaced at
 most once, and the length is kept. A String with no control costs 33
 `find` sends, whatever its length. Each control in it adds one `find`,
-`take`, `drop`, and two `append` sends.
+`take`, `drop`, and two `append` sends, and one copy of the whole
+String. *k* controls in a String of length *n* copy about *k* × *n*
+characters. That is why §5.2 blanks a row, never a whole leaf.
 
 Every caller keeps sending `safe-cells`: the mode row in `built-rows`
 and in `single-frame`, `echo-row`, `completion-frame`, and the search
@@ -180,30 +189,36 @@ key's `((self editor) safe-cells key)`. A one-character key now costs
 `AloemacsEditor` gains:
 
 ```aloe
-;; A leaf's clipped rows are checked as one block.
+;; A leaf's clipped rows are checked as one block. Each row is then
+;; blanked for the controls the block holds, and only those.
 (safe-rows (clipped (List String)) (List String)
-  (let ((block ("" joined-with (List empty) "" clipped)))
-    (let ((shown (self safe-cells block)))
-      (if (shown = block)
-          clipped
-          (self cut-rows shown clipped)))))
+  (let ((present
+          (self controls-in ("" joined-with (List empty) "" clipped)
+            safe-cell-controls)))
+    (if ((present len) = 0)
+        clipped
+        (clipped map (fn (row) (self blank-controls row present))))))
 
-;; Cut shown into rows as long as the clipped rows.
-(cut-rows (shown String) (clipped (List String)) (List String)
-  (if (clipped empty?)
-      (List empty)
-      (let ((width ((clipped first) len)))
-        ((self cut-rows (shown drop width) (clipped rest))
-         cons (shown take width)))))
+;; The controls that occur in shown, in the order of controls.
+(controls-in (shown String) (controls String) String
+  (if ((controls len) = 0)
+      ""
+      (let ((rest (self controls-in shown (controls drop 1))))
+        (if ((shown find (controls take 1) 0) present?)
+            ((controls take 1) append rest)
+            rest))))
 ```
 
 `("" joined-with (List empty) "" clipped)` is the rows with nothing
 between them: an empty separator, no `above`, and an empty `current`
-before the rows. Because `safe-cells` keeps length, each row occupies
-the same characters of the block before and after. For every
+before the rows. `controls-in` sends one `find` per control to that
+block and keeps the ones it finds. A block with none returns the
+clipped rows themselves. Otherwise each row goes through
+`blank-controls` with only the present controls, so a row costs one
+`find` per present control and each copy is one row long. A control
+absent from the block is absent from every row, so for every
 `(List String)`, `(editor safe-rows rows)` equals
-`(rows map (fn (row) (editor safe-cells row)))`. A block with no
-control returns the clipped rows themselves.
+`(rows map (fn (row) (editor safe-cells row)))`.
 
 ### 5.3 Where it is sent
 
@@ -218,19 +233,40 @@ method changes in 000.
 The record's prototype checked the joined block for the 33 controls and,
 when one was there, walked every row a character at a time. Real files
 have tabs. Without controls and with a tab on every seventh line, alone,
-ms:
+the §3 procedure, ms, four windows deep / one window deep:
 
 | Lines | Fixture | Today | Record's block check (with §4) | §4 and §5 |
 |---:|---|---:|---:|---:|
-| 971 | no controls | 23.2 / 14.3 | 10.5 / 6.6 | 10.6 / 6.1 |
-| 971 | tab every 7th line | 23.4 / 14.5 | 18.6 / 14.7 | 10.9 / 6.3 |
-| 2,400 | no controls | 26.9 / 18.4 | 14.5 / 10.6 | 14.4 / 10.0 |
-| 2,400 | tab every 7th line | 26.9 / 18.2 | 23.4 / 19.2 | 14.8 / 10.2 |
+| 971 | no controls | 23.2 / 14.3 | 10.5 / 6.6 | 10.4 / 5.9 |
+| 971 | tab every 7th line | 23.4 / 14.5 | 18.6 / 14.7 | 11.2 / 6.8 |
+| 2,400 | no controls | 26.9 / 18.4 | 14.5 / 10.6 | 14.6 / 9.9 |
+| 2,400 | tab every 7th line | 26.9 / 18.2 | 23.4 / 19.2 | 15.3 / 11.0 |
 
-Each cell is four windows deep / one window deep, the §3 procedure. The
-last column is checkpoint 000's product edit alone. With a tab on
-screen the record's check saves nothing in one window; §5 costs the
-same with tabs as without.
+The last column is checkpoint 000's product edit alone. With a tab on
+screen the record's check saves nothing in one window. §5 pays about
+1 ms for the tabs.
+
+Density matters as well as presence. `safe-rows` alone on one leaf,
+medians of 5, ms. "Today" is `safe-cells` sent to each row. "Blank the
+block" is this spec's first draft, `safe-cells` sent to the whole
+joined block and the block cut back into rows; Grok's review of that
+draft asked how it scales:
+
+| Rows × columns | Controls | Today | Blank the block | §5.2 |
+|---|---|---:|---:|---:|
+| 52 × 109 | none | 25.7 | 1.6 | 1.6 |
+| 52 × 109 | one tab per row | 25.7 | 2.9 | 2.6 |
+| 52 × 109 | a tab every 7th character | 25.2 | 14.6 | 5.1 |
+| 52 × 109 | every character a tab | 24.8 | 85.2 | 21.7 |
+| 52 × 109 | every character a control, all 33 | 24.5 | 85.0 | 28.7 |
+| 53 × 220 | one tab per row | 53.2 | 5.4 | 4.2 |
+| 53 × 220 | every character a tab | 52.2 | 310 | 46.1 |
+| 53 × 220 | every character a control, all 33 | 53.4 | 311 | 54.3 |
+
+Blanking the block copies the whole block once per control, so a dense
+leaf is quadratic in its size. §5.2 copies one row. On ordinary text it
+is ten to fifteen times faster than today; at the densest mix it is
+about a sixth slower than today, and never quadratic in the leaf.
 
 ## 6. Read the visible lines without moving the focus (charter §5.1 item 4)
 
@@ -270,7 +306,9 @@ same with tabs as without.
     (else ((self entries-after (xs rest) 0 (count - 1)) cons (xs first)))))
 ```
 
-The contract is exact. For every `Text` *t*, `Int` *top*, and `Int`
+The contract is exact on every well-formed `Text`: a `from-string`
+text, or an `indexed` one whose `focus` is `(above len)`. Every `Text`
+message builds only those. For every such *t*, `Int` *top*, and `Int`
 *count*:
 
 ```aloe
@@ -285,17 +323,21 @@ The contract is exact. For every `Text` *t*, `Int` *top*, and `Int`
 `cons` puts them in file order in front of `middle`. `here?` says
 whether the focused line is in the window. `lower` lines come from
 `below`, with `""` once it runs out. The last line of the text is
-`focus + (below len)`.
+`focus + (below len)`. A hand-built `Text indexed` whose `focus` is not
+`(above len)` is outside the contract: `focus-at` walks it and
+`lines-from` does arithmetic on it, and they can disagree.
 
 `lines-from` never sends `focus-up`, `focus-down`, or `focus-at`, and
 never copies the List on the other side of the focus. Reading *k* lines
 above the focus costs *k* `rest` sends to `above`, each a copy of
 `above`; the same holds for `below`. A Down that scrolls puts the point
 on the bottom row, so its whole window is `above` and the List below
-the point is not touched: its cost follows the depth of the point, not
-the length of the file. An Up that scrolls puts the point on the top
-row and reads only `below`, so its cost follows the distance from the
-point to the end.
+the point is not touched: the read's cost follows the depth of the
+point, not the length of the file. An Up that scrolls puts the point on
+the top row and reads only `below`, so its cost follows the distance
+from the point to the end. The key itself is apart from the read:
+`move-down` sends `focus-down` once, which copies both Lists, the
+whole file once per key.
 
 ### 6.2 Where it is read
 
@@ -324,16 +366,17 @@ stay. On a text already focused at the point, as a Down leaves it,
 
 ### 6.3 Measured reason
 
-§4 and §5 in place, alone, ms, four windows deep / one window deep:
+§4 and §5 in place, alone, the §3 procedure, no controls, ms, four
+windows deep / one window deep:
 
 | Lines | Without §6 | With §6, deep | With §6, last page | With §6, held Up deep |
 |---:|---:|---:|---:|---:|
-| 971 | 10.6 / 6.1 | 8.5 / 3.7 | 8.3 / 3.7 | 7.3 / 2.7 |
-| 2,400 | 14.4 / 10.0 | 8.1 / 3.6 | 10.5 / 5.9 | 9.3 / 4.7 |
-| 5,000 | 22.2 / 17.8 | 8.2 / 3.8 | 14.4 / 9.8 | 13.3 / 8.8 |
+| 971 | 10.4 / 5.9 | 8.3 / 3.7 | 8.3 / 3.8 | 7.2 / 2.7 |
+| 2,400 | 14.6 / 9.9 | 8.3 / 3.7 | 10.5 / 6.0 | 9.4 / 4.8 |
+| 5,000 | 22.5 / 18.1 | 8.2 / 3.6 | 14.4 / 10.0 | 13.4 / 9.0 |
 
-"Held Up deep" is an Up with the point on the top row of the view at
-line 817, so the window is all `below`. At the same depth a Down no
+"Held Up deep" times an Up, not a Down, with the point on the top row
+of the view near line 800, so the window is all `below`. At the same depth a Down no
 longer grows with the file. It grows with the depth of the point, about
 1.5 ms per thousand lines in four windows and in one. Held Up grows the
 same way with the distance from the point to the end.
@@ -343,8 +386,9 @@ same way with the distance from the point to the end.
 ### 7.1 Reusing the selected leaf's rows across a scroll (charter item 3)
 
 Not chosen. The floor it approaches is the four-window first screen,
-where every picture is reused: 3.3 ms. It could take about 6 ms off the
-deep four-window case and about 7 off the last page, and nothing off one
+where every picture is reused: 3.3 ms. In §8.3's sample it could take
+about 6 ms off the deep four-window case and about 8.5 off the last
+page, and nothing off one
 window, which the charter keeps without recorded rows. It would add a
 second way for a picture to match, rows shifted by a scroll, with its
 own byte checks. The bar's margin holds without it.
@@ -385,22 +429,23 @@ Out by charter §4.3. Not measured again.
 
 ### 7.5 What a sample spends after the series
 
-Four windows, 2,400 lines, tab every seventh line, the 109×52 leaf
-rebuilt on each Down, medians of 21, ms:
+Four windows, 2,400 lines, §8.1's tabbed fixture, the 109×52 leaf
+rebuilt on each Down, medians of 21, ms. The sample row's clock covers
+the key, fit, record, and frame; each other row times that piece alone:
 
 | Piece | Deep (line 817) | Last page (line 2,347) |
 |---|---:|---:|
-| **Sample: Down, fit, record, frame** | **9.1** | **10.9** |
-| `record-pictures` (the selected leaf) | 6.2 | 8.3 |
-| — `lines-from` 52 rows | 1.6 | 3.8 |
+| **Sample: key, fit, record, frame** | **9.1** | **11.7** |
+| `record-pictures` (the selected leaf) | 6.3 | 8.8 |
+| — `lines-from` 52 rows | 1.5 | 4.1 |
 | — clipping | 0.5 | 0.5 |
-| — `safe-rows` (tabs present, cut) | 1.0 | 1.0 |
-| — `pad-row` of 52 rows | 1.7 | 1.7 |
+| — `safe-rows` (a tab present, blanked per row) | 1.4 | 1.4 |
+| — `pad-row` of 52 rows | 1.6 | 1.7 |
 | — mode row and bar | 0.2 | 0.2 |
-| `frame`, four pictures reused and joined | 2.2 | 1.9 |
+| `frame`, four pictures reused and joined | 2.1 | 2.3 |
 
-One window: sample 4.4 ms deep and 6.6 at the last page; the mode row
-0.24, the echo row 0.16.
+One window: sample 4.7 ms deep and 7.2 at the last page; the mode row
+0.23, the echo row 0.15.
 
 ## 8. The bar (charter §5.2)
 
@@ -415,7 +460,7 @@ Line *n*, counting from 0, is the decimal text of *n*, one space, then
 `x` up to 35 characters. When *n* mod 7 is 3, the character at index 10
 is a tab (U+0009) in place of that `x`. Every 52-row window shows seven
 or eight tabbed rows, so every timed leaf and every one-window frame
-takes the cut path of `safe-rows`.
+takes the per-row path of `safe-rows`.
 
 - **Short:** 971 lines, window-pictures' length.
 - **Long (001):** 2,400 lines. `examples/aloemacs/file.aloe` was 2,370
@@ -428,20 +473,31 @@ as `/cwd/short.txt` and `/cwd/long.txt`, then load `main.aloe`,
 
 ### 8.2 Sessions
 
-Geometry is 220 columns by 54 rows. Visit the fixture and send
-`ensure-visible 220 54`. That is the one-window session. Three
-`split-right` sends make four windows; if one is refused, stop and
-report it. The first-screen session is the selected leaf where the
-splits leave it. For the widest leaf, send `other-window` until
-`((s fit-rect 220 54) columns)` is 109, and do that before going deep.
+Geometry is 220 columns by 54 rows. Every timed case starts from its
+own session value under its own name. A session is a value, so building
+one from another copies it; paging or sampling one never moves another.
+For each fixture, in this order:
 
-- **Deep:** `page-down` until the point line is at least 800, then
-  `ensure-visible 220 54`. In four windows, check that the selected
-  `scroll-row` is greater than 700 and the other three are 0.
-- **Last page (001):** from deep, `page-down` until the point line is
-  at least 2,300, then `ensure-visible 220 54`. Check that the point
-  line is at most 2,388, so eleven Downs stay inside the last line,
-  2,399.
+1. **One window:** visit the fixture, then `ensure-visible 220 54`.
+2. **First screen:** from one window, three `split-right` sends. If one
+   is refused, stop and report it. The selected leaf stays where the
+   splits leave it.
+3. **Widest leaf:** from the first screen, `other-window` until
+   `((s fit-rect 220 54) columns)` is 109. If four sends do not reach a
+   109-column leaf, stop and report it.
+4. **Four windows deep:** from the widest leaf, `page-down` until the
+   point line is at least 800, then `ensure-visible 220 54`. Check that
+   the selected `scroll-row` is greater than 700 and the other three
+   are 0.
+5. **One window deep:** from one window, the same paging and fit.
+6. **Last page (001, long fixture only):** from each deep session, a new
+   session paged until the point line is at least 2,300, then
+   `ensure-visible 220 54`. Check that the point line is at most 2,388,
+   so eleven Downs stay inside the last line, 2,399. The deep sessions
+   stay at their depth.
+
+The timed name for a case is bound to a copy of its session, so the
+samples move that name and nothing else.
 
 ### 8.3 Sample and statistic
 
@@ -449,7 +505,7 @@ For each timed session, prepare with `driver-prepare!` before any
 sample, under its own name *t*:
 
 ```text
-(define t (t handle-key "down"))
+(define t (t handle-event "down"))
 (define t (t ensure-visible 220 54))
 (define t (t record-pictures 220 54))
 (t frame 220 54)
@@ -457,10 +513,13 @@ sample, under its own name *t*:
 
 Typechecking stays outside the interval. Run the fit and the record once
 untimed. One sample is those four calls in that order, timed as one
-interval with `current-inexact-monotonic-milliseconds`. The key is
-inside the interval: it is the runner's `handle-key`, and a held key
-pays for it on every repeat. `"down"` reaches `move-down` through the
-keymap. The terminal write is the only part of the loop left out.
+interval with `current-inexact-monotonic-milliseconds`. **The clock
+covers the key, fit, record, and frame.** This is the normative sample;
+§3's procedure is for comparison with the record only. The key is the
+runner's own send, `handle-event`: it tests the mouse prefix, disarms,
+and reaches `move-down` through `handle-key` and the keymap. A held key
+pays for it on every repeat. The runner's two terminal-size reads and
+its terminal write are the parts of a turn left out.
 
 Eleven samples per case. The median is the sixth after sorting
 ascending. Send `(collect-garbage)` once before each group of samples.
@@ -482,8 +541,10 @@ round for eleven rounds, so load during the suite falls on both alike.
 - Every median is strictly under **30** ms. The failure message names
   the case and the median.
 - **Growth (001).** For each deep pair, the long median minus the short
-  median is strictly under **1.5** ms. At the same depth a Down reads
-  only `above`, so the file's length is not in it.
+  median is strictly under **1.5** ms. At the same depth the read takes
+  nothing from the file below the point. The key still copies the whole
+  file once (§6.1), a few hundredths of a millisecond more at 2,400
+  lines than at 971.
 - `printf` every median and both growths, passing or not.
 
 The deep cases may grow with the depth of the point, at about the rate
@@ -492,30 +553,47 @@ bar. They may not grow with the length of the file. A read that again
 walks the zipper per row would add about 1.9 ms between the fixtures
 for one step per row and 4 ms for today's two.
 
+What the suite holds and what review holds:
+
+- The 30 ms bars hold the key-repeat interval, the charter's bar. Today's
+  editor is already under 30 ms alone on every case 000 times (about 23
+  ms deep at 971 lines), so 000's timing checks pass without its
+  product change. 000's byte checks do not: `safe-rows` does not exist
+  today.
+- The growth check, from 001, is what the suite holds against a read
+  that walks the zipper per row. The last page has no short twin, and
+  today's walk is under 30 ms there too (27.5 ms), so the deep pair
+  carries that lock.
+- The design margin is a review rule, not a test. After the series a
+  later change could slide a Down from 9 ms toward 25 and the suite
+  would stay green; the printed medians would show it.
+
 ### 8.5 Margin and how the human checks it
 
 Designed to: every Down median at most **15 ms alone** on the record's
 machine, half the bar, so a run under `-j 4` that doubles a frame still
 passes. The record saw the old bar slow by up to 1.5× under `-j 4`. The
-worst Down median measured alone is 11.3 ms after 001, four windows at
-the last page of 2,400 lines, and 11.5 ms after 000 alone, four windows
-deep at 971 lines. The growth bound is about eight times the largest
-difference measured under load.
+worst Down median measured alone is 11.9 ms after 001, four windows at
+the last page of 2,400 lines, and 11.4 ms after 000 alone, four windows
+deep at 971 lines. The growth bound is about ten times the largest
+difference measured, alone or under load.
 
-A scratch copy with both checkpoints' product edits and this test
-measured, alone: first screen 3.3, deep four windows 8.9 and 9.0, deep
-one window 4.5 and 4.5, last page 11.3 and 6.8, growth 0.07 ms. In five
-consecutive `TMPDIR=/tmp raco test -j 4 -y tests` runs of that copy,
-each green but for the copy's collection-path failure (§13): first
-screen 3.3–3.4, deep four windows 8.9–9.3, deep one
-window 4.4–4.9, last page four windows 11.8–13.4, last page one window
-7.0–8.1, growths −0.06 to 0.19 ms.
+A scratch copy with both checkpoints' product edits and the draft tests
+measured, alone, in two runs of `frame-time.rkt`: first screen 3.3,
+deep four windows 9.2–9.3, deep one window 4.8–4.9, last page 11.9 and
+7.1, growths 0.01 to 0.15 ms. In five consecutive
+`TMPDIR=/tmp raco test -j 4 -y tests` runs of that copy, 3,806 tests
+each, green but for the copy's collection-path failure (§13): first
+screen 3.3–3.5, deep four windows 9.4–10.3, deep one window 5.0–5.6,
+last page four windows 12.1–13.6, last page one window 7.4–8.3,
+growths −0.06 to 0.13 ms.
 
 Each checkpoint reports its medians alone and from its whole-suite run.
-A Down median alone above 15 ms is a stop: report it, do not raise the
-bar. After 001, the human runs `TMPDIR=/tmp raco test -j 4 -y tests`
-five times in a row; every run is green with no rerun, and the five
-runs' printed medians are recorded with the review.
+A Down median alone above 15 ms fails the checkpoint, however green the
+suite: report it and stop, and do not raise the bar. After 001, the
+human runs `TMPDIR=/tmp raco test -j 4 -y tests` five times in a row;
+every run is green with no rerun, and the five runs' printed medians are
+recorded with the review.
 
 ## 9. Byte checks
 
@@ -543,8 +621,9 @@ Those are the rows. The editor frame is
    rows; clean rows of lengths 0, 1, 35, and 109 (the result is the
    same rows); a control as the first character of the first row; a
    control as the last character of the last row; a row of only
-   controls; an empty row between two dirty rows. Each result equals
-   the reference applied per row, and equals
+   controls; an empty row between two dirty rows; two rows that hold
+   different controls; a 109-character row of every control in turn.
+   Each result equals the reference applied per row, and equals
    `(rows map (fn (row) (editor safe-cells row)))`.
 3. **Padding.** For every count from −2 through 300,
    `((AloemacsWindowRect new 0 0 109 53) spaces n)` is that many spaces
@@ -590,20 +669,22 @@ Two, because each pays off alone and each fits one implementer.
 §9.1.
 
 - Product: `editor.aloe` (`safe-cells` body; `blank-controls`,
-  `blank-from`, `safe-rows`, `cut-rows`; `frame-rows` and `frame` send
-  `safe-rows` to their clipped rows and keep `focus-at` and
+  `blank-from`, `safe-rows`, `controls-in`; `frame-rows` and `frame`
+  send `safe-rows` to their clipped rows and keep `focus-at` and
   `next-lines`), `file.aloe` (`spaces` and `fill` bodies).
 - Tests: `frame-time-cells.rkt` and `frame-time.rkt`, both new. In
   `window-pictures.rkt`, delete the timing section, from the comment
   `;; Timing bar.` to the end, and the header's clause about the repeat
   interval. Its byte checks stay as they are.
 - Evidence: the three medians alone and from one whole-suite run. In
-  the scratch copy, 000's product edit alone, sampled as §8.3 on the
-  tabbed fixture, gave 11.5 / 6.4 ms deep at 971 lines and 14.8 / 10.3
-  at 2,400. Under `-j 4`, window-pictures' old bar read 3.0, 10.8, and
-  6.2.
-- Pays off alone: the deep medians at 971 lines drop from 23 / 14 ms to
-  11 / 6.5, with or without tabs on screen.
+  the scratch copy, 000's product edit alone, with the clock of §8.3
+  and a tab on every seventh line, gave 11.4 / 7.0 ms deep at 971
+  lines.
+- Acceptance: every median alone under 15 ms. One above 15 fails the
+  checkpoint, however green the suite (§8.4, §8.5).
+- Pays off alone: with the §3 procedure at 971 lines, the deep medians
+  drop from 23.2 / 14.3 ms to 10.4 / 5.9 without controls, and from
+  23.4 / 14.5 to 11.2 / 6.8 with tabs.
 
 **001 — Read the visible lines.** §6, the rest of §8, §9.2, the hand
 check (§14), the five-run check (§8.5).
@@ -612,8 +693,11 @@ check (§14), the five-run check (§8.5).
   `editor.aloe` (`frame-rows` and `frame` read through `lines-from`).
 - Tests: `frame-time-lines.rkt`, new; `frame-time.rkt` gains the long
   fixture, the pairs, the last page, and the growth checks.
+- Acceptance: as 000, every median alone under 15 ms, and the growth
+  checks green.
 - Pays off alone: the deep cases stop growing with the file. At 2,400
-  lines, sampled as §8.3, they go from 14.8 / 10.3 ms to 9.0 / 4.5.
+  lines with the clock of §8.3 and tabs, they go from 15.7 / 11.2 ms
+  after 000 to 9.2 / 4.9.
 
 One checkpoint would carry both product changes across three files,
 three new test files, and the bar's whole design. §6 also needs the
@@ -677,10 +761,12 @@ whole suite was run with `PLTCOLLECTS` pointed at the copy.
 - **000 and 001's product edits:** the same: 3,094 tests, the same one
   failure, which passes alone.
 
-No existing test file fails, so there is no migration. `window-pictures.rkt`
-changes because its bar moves, not because it fails. No constructor,
-field, or class list changes. The prototype's whole `tests/aloemacs/`
-run, with the draft `frame-time.rkt`, was 673 tests passed.
+Both runs used the revised §5.2. No existing test file fails, so there
+is no migration. `window-pictures.rkt` changes because its bar moves,
+not because it fails. No constructor, field, or class list changes.
+With the draft `frame-time.rkt` and `frame-time-cells.rkt` added, the
+prototype's `tests/aloemacs/` passed 1,382 tests and the whole suite
+3,806.
 
 The probes and the prototype diff are in
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/).
