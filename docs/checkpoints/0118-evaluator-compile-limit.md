@@ -320,7 +320,7 @@ Everything not listed above stays, in its current order. The file begins:
 ```
 
 The require list drops `racket/list`, `racket/string`, and `library.rkt`,
-which only moved code used. The `provide` form (lines 21–29) follows,
+which only moved code used. The `provide` form (lines 22–30) follows,
 unchanged. `aloe-value->string`, `instance-value?`, and
 `instance-value-constructor` are now imports from `aloe/eval-value.rkt`, and
 `aloe/eval.rkt` re-exports them by the same names.
