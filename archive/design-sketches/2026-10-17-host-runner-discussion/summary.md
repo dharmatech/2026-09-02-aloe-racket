@@ -636,8 +636,10 @@ rest stay as the charter's checklist.
 - Whether `driver-prepare!` stays as test-facing API or retires with the
   runner (other tests use it today).
 - Which closed documents get dated notes versus edits, and in which
-  checkpoint; the spine checkpoint numbers (117 was the last, 118
-  declared nonexistent); the aloemacs folder name and spoken identity.
+  checkpoint; the spine checkpoint numbers (the index lists through
+  117, with 116 and 117 on another branch and no 118; the manager
+  takes the next free number); the aloemacs folder name and spoken
+  identity.
 - The scratch-file convention: `term-run.rkt` and `fs-repl.rkt` stay
   until one exists (review). What it is, a manifest row for a scratch
   file or something else, is the charter's to decide.
@@ -653,9 +655,11 @@ product tree. After the review, the exits are four, in this order:
   `tests/checkpoint-N.rkt`, and a `CHECKPOINTS.md` entry at the next
   free global number; the index says 116 and 117 are Gel-directory
   work on another branch and there is no 118. Per `docs/workflow.md`,
-  the discussion hands it over as a brief for a checkpoint manager, or
-  writes the one checkpoint itself. The repo's "standalone checkpoint"
-  is the local `docs/design/implementation/...` shape and is not this.
+  the discussion hands it over as a brief, and a checkpoint manager
+  writes the one global checkpoint; the discussion does not write
+  `docs/checkpoints/NNNN-slug.md` itself. The repo's "standalone
+  checkpoint" is the local `docs/design/implementation/...` shape and
+  is not this.
 - A second global checkpoint, same shape, for the tail-call sentence
   in SPEC and the language-suite test, locks 2 and 3 of the review.
 - An exploration charter for the manifest runner, `README.md` and
