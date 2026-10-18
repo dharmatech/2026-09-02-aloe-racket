@@ -197,11 +197,13 @@ Locked display change. A standalone checkpoint, not a new layer.
 
 ## Performance
 
-Locked frame-cost repair. A standalone checkpoint, not a new layer.
+Frame-cost work. Window pictures was a locked standalone checkpoint.
+Frame time is open and has a charter.
 
 | Identity | Path | This conversation |
 |---|---|---|
 | window-pictures | [`window-pictures/`](window-pictures/) | **Implemented.** aloemacs-window-pictures 000 |
+| frame-time | [`frame-time/`](frame-time/) | **Chartered.** Awaiting a designer. The evaluator regression it measured goes to the spine through [`docs/evaluator-compile-limit-brief.md`](../../../evaluator-compile-limit-brief.md) |
 
 ## Not in this map
 
@@ -244,6 +246,7 @@ Easy to smuggle in. They are not.
 | Mode buttons | No-TTY: a mode line at least 7 columns wide ends with ` ↕ ↔ ×`, and the name stops before that group. A left press on ↕, ↔, or × matches selecting that window and then `C-x 2`, `C-x 3`, or `C-x 0`. A press on the name, and a release on a button, leave the session as it was |
 | Split drag | No-TTY: `C-x 3`, press the bar, move, release: both rectangles read the new cut and the weights read the cell counts, and a later `ensure-visible` at another width scales them. The same tree built with weights `1 1` has today's rectangles. A press on a handle beside a locked window, and a move with nothing armed, leave the session as it was |
 | Completion | No-TTY: `C-x C-f` opens in the current directory. Tab finishes a unique name, adds `/` on a directory, and lists the fork above the prompt when it cannot extend. Return still opens the typed path |
+| Frame time | No-TTY: a held Down deep in four windows and in one window, and one typed character deep in four windows of one buffer, each stay under the key-repeat interval in the whole suite under `-j 4`, on a fixture as long as `file.aloe`. Recorded rows still paint the bytes a fresh build paints |
 
 If a proposed slice has no consumer besides "the editor will need
 this," it is too early.

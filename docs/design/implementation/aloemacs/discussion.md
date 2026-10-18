@@ -40,7 +40,12 @@ human review of that series remains. The standalone checkpoint aloemacs-idle-ech
 is implemented. Do not write a charter for it. Do not issue 001. The standalone
 checkpoint aloemacs-window-pictures 000 at
 [`window-pictures/`](window-pictures/) is implemented. Do not issue
-001. Path completion is back with the designer at
+001. Frame time is chartered at
+[`frame-time/charter.md`](frame-time/charter.md). Do not write its
+`spec.md` here. The evaluator regression it measured goes to the
+language spine through
+[`docs/evaluator-compile-limit-brief.md`](../../../evaluator-compile-limit-brief.md),
+not through aloemacs. Path completion is back with the designer at
 [`completion/charter.md`](completion/charter.md). Do not revise
 its `spec.md` here. Completion paging is chartered at
 [`completion-page/charter.md`](completion-page/charter.md). Do not
@@ -95,6 +100,7 @@ layer is the topic; do not survey the whole tree on every turn.
 | Mode line | **Implemented.** aloemacs-mode-line 000–001 at [`mode-line/`](mode-line/). Final human review remains |
 | Idle echo | **Implemented.** Standalone aloemacs-idle-echo 000 at [`idle-echo/`](idle-echo/). Do not issue 001 |
 | Window pictures | **Implemented.** Standalone aloemacs-window-pictures 000 at [`window-pictures/`](window-pictures/). Do not issue 001 |
+| Frame time | **Chartered.** [`frame-time/charter.md`](frame-time/charter.md), awaiting a designer. Evidence in `archive/design-sketches/2026-10-18-aloemacs-frame-time/`. Do not write its `spec.md` here |
 | Window point | **Implemented and accepted.** aloemacs-window-point 000 at [`window-point/`](window-point/). Do not issue 001 |
 | Mouse | **Implemented and accepted.** aloemacs-mouse 000 at [`mouse/`](mouse/), the whole series. Do not issue 001. Do not revise `spec.md` here |
 | Alternate screen | **Implemented.** Standalone aloemacs-alternate-screen 000 at [`alternate-screen/`](alternate-screen/). Do not issue 001 |

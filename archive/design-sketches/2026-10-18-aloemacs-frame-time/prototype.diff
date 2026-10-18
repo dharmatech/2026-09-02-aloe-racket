@@ -1,0 +1,130 @@
+--- a/examples/aloemacs/file.aloe
++++ b/examples/aloemacs/file.aloe
+@@ -286,7 +286,12 @@
+           ""))
+ 
+     (fill (remaining Int) String
+-      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self fill (remaining / 2))))
++            (if ((remaining - ((remaining / 2) * 2)) = 0)
++                (half append half)
++                ((half append half) append "-")))))
+ 
+     ;; Display chrome around a visible row that safe cells already produced.
+     ;; It never clips, pads or inspects the row.
+@@ -637,7 +642,12 @@
+           (columns (((self columns) - divider) - cut)))))
+ 
+     (spaces (remaining Int) String
+-      (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
++      (if (remaining <= 0)
++          ""
++          (let ((half (self spaces (remaining / 2))))
++            (if ((remaining - ((remaining / 2) * 2)) = 0)
++                (half append half)
++                ((half append half) append " ")))))
+ 
+     (pad-row (row String) String
+       (row append (self spaces ((self columns) - (row len)))))))
+--- a/examples/aloemacs/editor.aloe
++++ b/examples/aloemacs/editor.aloe
+@@ -91,9 +91,18 @@
+       (((self text) focus-at scroll-row) case
+         (None () (self blank-rows rows))
+         (Some (at-top)
+-          ((at-top next-lines rows) map
+-            (fn (line)
+-              (self safe-cells ((line drop scroll-col) take columns)))))))
++          (let ((clipped ((at-top next-lines rows) map
++                           (fn (line) ((line drop scroll-col) take columns)))))
++            (if (self controls-absent? ("" joined-with (List empty) "" clipped) 0)
++                clipped
++                (clipped map (fn (line) (self safe-cells line))))))))
++
++    (controls-absent? (block String) (index Int) Bool
++      (if (index >= (safe-cell-controls len))
++          #t
++          (if ((block find ((safe-cell-controls drop index) take 1) 0) present?)
++              #f
++              (self controls-absent? block (index + 1)))))
+ 
+     (frame (columns Int) (rows Int) String
+       (let ((point (self point)))
+@@ -113,10 +122,11 @@
+                       (if (rows < 1)
+                           ""
+                           (let ((clipped
+-                                 ((at-top next-lines rows) map
+-                                   (fn (line)
+-                                     (self safe-cells
+-                                       ((line drop left) take columns))))))
++                                 (let ((raw ((at-top next-lines rows) map
++                                              (fn (line) ((line drop left) take columns)))))
++                                   (if (self controls-absent? ("" joined-with (List empty) "" raw) 0)
++                                       raw
++                                       (raw map (fn (line) (self safe-cells line)))))))
+                             ((clipped rest) fold
+                               (clipped first)
+                               (fn (body line)
+--- a/aloe/eval.rkt
++++ b/aloe/eval.rkt
+@@ -1,6 +1,7 @@
+ #lang racket/base
+ 
+-(require racket/list
++(require (only-in racket/vector vector-copy)
++         racket/list
+          racket/match
+          racket/string
+          "env.rkt"
+@@ -893,6 +894,12 @@
+      (make-list-value receiver '())]
+     [else (unknown-message selector)]))
+ 
++;; Prototype: a type every element shares, not a protocol name.
++(define (concrete-element-type? type)
++  (or (memq type '(Int Float Bool String Symbol Fn))
++      (runtime-class-type? type)
++      (runtime-list-type? type)))
++
+ (define (make-list-value class elements [empty-element-type #f])
+   (define element-types (map runtime-type-of elements))
+   (define element-type
+@@ -1434,16 +1441,28 @@
+        (arity-error "List rest" 0 (length arguments)))
+      (when (zero? (vector-length elements))
+        (error 'eval-aloe "rest on empty List"))
+-     (make-list-value
+-      (list-value-class list-object)
+-      (cdr (vector->list elements))
+-      (list-value-element-type list-object))]
++     (let ([type (list-value-element-type list-object)])
++       (if (concrete-element-type? type)
++           (list-value (list-value-class list-object) type
++                       (vector->immutable-vector (vector-copy elements 1)))
++           (make-list-value
++            (list-value-class list-object)
++            (cdr (vector->list elements))
++            type)))]
+     [(cons)
+      (unless (= (length arguments) 1)
+        (arity-error "List cons" 1 (length arguments)))
+-     (make-list-value
+-      (list-value-class list-object)
+-      (cons (car arguments) (vector->list elements)))]
++     (let ([type (list-value-element-type list-object)]
++           [new (car arguments)])
++       (if (and (concrete-element-type? type)
++                (same-runtime-type? (runtime-type-of new) type))
++           (let ([v (make-vector (add1 (vector-length elements)) new)])
++             (vector-copy! v 1 elements)
++             (list-value (list-value-class list-object) type
++                         (vector->immutable-vector v)))
++           (make-list-value
++            (list-value-class list-object)
++            (cons new (vector->list elements)))))]
+     [(len)
+      (unless (null? arguments)
+        (arity-error "List len" 0 (length arguments)))
