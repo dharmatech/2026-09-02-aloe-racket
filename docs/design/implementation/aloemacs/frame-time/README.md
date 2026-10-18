@@ -27,7 +27,9 @@ The measurement behind the charter is
 Part of today's cost is an evaluator regression, which goes to the
 language spine through
 [`docs/evaluator-compile-limit-brief.md`](../../../../evaluator-compile-limit-brief.md),
-not through this series.
+not through this series. The spec may be written now. No
+checkpoint of this series goes to an implementer until that spine
+checkpoint has landed.
 
 Hand the charter to a designer:
 

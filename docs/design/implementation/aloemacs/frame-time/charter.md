@@ -74,16 +74,25 @@ lines of 35 characters, alone:
    evaluator fixed, 5 ms without. At 2,400 lines the wide case is
    34.2 ms alone today.
 4. **A typed character rebuilds every leaf of its buffer**, and each
-   unselected leaf walks from the cursor back to its own scroll row.
-   That is the 198 ms, and 438 ms at 5,000 lines with the evaluator
-   fixed. No test measures it.
-5. **Prototypes, not proposals.** Doubling `spaces` and `fill`, and
-   checking a whole leaf's clipped rows for controls once before the
-   per-row walk, are editor-only. With cheaper List steps added, and the
-   evaluator fixed, the deep Down cases measured 7.9 and 4.2 ms at 971
-   lines and 9.6 and 5.7 ms at 5,000. Under `-j 4` they measured 8.6
-   to 10.4 and 4.5 to 6.5 ms. Every frame golden still passed. A typed
-   character in four windows was still 46 ms.
+   unselected leaf walks from the cursor back to its own scroll row,
+   copying the whole line list at every step. That is the 198 ms. With
+   the evaluator fixed it is 141 ms at 971 lines, 244 ms at 2,400, and
+   438 ms at 5,000. No test measures it.
+5. **Prototypes, not proposals.** Two changes are editor-only: doubling
+   `spaces` and `fill`, and checking a whole leaf's clipped rows for
+   controls once before the per-row walk. With the evaluator fixed,
+   those two alone gave these medians, alone, in ms:
+
+   | Lines | Down, four windows | Down, one window | Typed character, four windows |
+   |---:|---:|---:|---:|
+   | 971 | 10.9 | 6.6 | 105 |
+   | 2,400 | 14.7 | 10.6 | 214 |
+   | 5,000 | 22.6 | 18.4 | 404 |
+
+   They do not touch what dominates typing, the walk in item 4. Adding
+   cheaper List steps, which §4.3 keeps out, gave 7.9 and 4.2 ms on Down
+   at 971 lines, and 46, 58, and 88 ms on typing at the three lengths.
+   Every frame golden still passed.
 
 ## 3. Bar (acceptance)
 
@@ -101,7 +110,8 @@ The specification is wrong unless all of these are true:
    30 ms bar is not raised.
 3. **Held typing keeps up.** One typed character, deep, in four
    windows of one buffer, stays under the same bar. One window stays
-   under it too.
+   under it too. Key repeat does not move, so neither does the bar.
+   §5.1 says where this has to come from.
 4. **File length.** At least one fixture is as long as
    `examples/aloemacs/file.aloe`. The spec states how the deep cases
    may grow between that fixture and a short one, and holds them to it.
@@ -131,20 +141,27 @@ write global 116 or 118.
 The compile-limit repair is a language-spine checkpoint, handed to a
 checkpoint manager by
 [`docs/evaluator-compile-limit-brief.md`](../../../../evaluator-compile-limit-brief.md).
-This series does not edit `aloe/`. Its timing bars are judged on a
-tree where `aloe/eval.rkt` compiles whole. The spec states that as a
-precondition of every checkpoint that sets or tightens a timing bar.
-The spec may be written before that checkpoint lands.
+This series does not edit `aloe/`.
+
+The spec may be written before that checkpoint lands. No checkpoint of
+this series goes to an implementer until it has landed and
+`aloe/eval.rkt` compiles whole, because no timing bar can honestly be
+met on today's evaluator. Every checkpoint's timing evidence is taken
+on that tree. The spec states this as a precondition of every
+checkpoint.
 
 ### 4.3 List step cost goes back, not in
 
 The record shows `List` `cons` and `rest` copy and retype every
 element, and that this is the floor that makes zipper steps grow with
-the file. The aloemacs Index charter's rule still holds: if the bar
-cannot be met without changing that cost, stop and send it back to the
-high-level discussion with the measurement. Do not put an evaluator,
-List, or kernel change in this spec. The record suggests the
-editor-side options in §5.1 are not exhausted.
+the file. Making them cheaper changes what those sends do inside
+`aloe/eval.rkt`. That is a spine question, and no document has opened
+it. The aloemacs Index charter §4.3 ruled out a kernel `Vector` inside
+an editor layer and asked for that kind of measurement to come back to
+a discussion. The same holds here. Do not put an evaluator, List, or
+kernel change in this spec. If the bar cannot be met without changing
+that cost, stop and send the spec back to the high-level discussion
+with the measurement.
 
 ### 4.4 Where code may live
 
@@ -190,8 +207,8 @@ outside the interval (`driver-prepare!`), as today.
 
 ### 5.1 Which repairs, in which order
 
-The record measured these, or their parts. Pick, combine, or replace
-them, and give each a measured reason:
+The record measured some of these. Pick, combine, or replace them, and
+give each a measured reason:
 
 1. Doubled `spaces` and `fill`: log *n* sends instead of *n*.
 2. Skipping the per-character `safe-cells` walk for clean rows with the
@@ -208,6 +225,23 @@ them, and give each a measured reason:
    why history length alone is not that key.
 6. Fewer zipper steps per frame: collect the visible rows in one walk
    from the point instead of walking up and then down.
+
+**Held Down** is items 1, 2, 3, 4, and 6. Items 1 and 2 alone, with
+the evaluator fixed, put the wide case at 14.7 ms at 2,400 lines
+(§2, item 5). Without them it is 27.2 ms, which leaves no room for the
+`-j 4` spread. They are what make §3.5 reachable. Items 3 and 6 cut the
+zipper steps that grow with the file.
+
+**Held typing** is item 5. Nothing else measured touches the cost that
+dominates §3.3: after an edit, each unselected leaf walks from the
+cursor back to its own scroll row. Item 5 was not prototyped. The spec
+states the invalidation key, what an edit records so the key can be
+checked, and why the key cannot match rows an edit changed (§3.1). The
+gap to close is the long-fixture row of §2, item 5, 214 ms at 2,400 lines
+with items 1 and 2 in place. It is not the 46 ms of the short fixture,
+which also had the List change. If a correct key cannot be stated, send
+the spec back here. Do not raise the bar, and do not move the cost into
+List (§4.3).
 
 ### 5.2 The bar's cases and numbers
 

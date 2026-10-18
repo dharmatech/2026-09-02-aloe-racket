@@ -55,8 +55,9 @@ section 1:
   move nothing.
 
 The evaluator runs every Aloe program. This is not editor work. The
-editor's own frame-time series cites this checkpoint as a precondition
-for its timing bars and does not edit `aloe/`.
+editor's frame-time series does not edit `aloe/`. Its spec may be
+written before this checkpoint lands, but none of its checkpoints goes
+to an implementer until this one has landed.
 
 ## 3. Required behavior
 
@@ -82,7 +83,15 @@ Locks:
   `same-runtime-type?`, method selection and application, and function
   calls. Cold code is what an ordinary send does not reach: Mirror and
   signature support, value printing, and the load cache with its file
-  exports. The manager chooses the cut and names it.
+  exports. By top-level definitions those are about 440, 70, and 120
+  lines, a third of the file. Lines are not terms, so only the guard
+  below says whether a cut is enough. The manager chooses the cut and
+  names it.
+- **Send it back rather than split the hot path.** If the cold code
+  cannot bring the module that holds the hot path under 8,000 terms,
+  stop and send this brief back to the discussion that wrote it. Do not
+  separate `eval-expr` from `make-list-value`, or any other part of the
+  hot path, to make the number.
 - **No cycle.** Racket modules cannot require each other in a cycle.
   If a moved piece calls back into dispatch, as Mirror invocation does,
   the checkpoint names the one indirection it uses, or picks a
@@ -109,9 +118,23 @@ The guard:
   [`interp-check.sh`](../archive/design-sketches/2026-10-18-aloemacs-frame-time/interp-check.sh)
   shows the whole-directory form.
 
-Reported verification, not a test: `tests/aloemacs/window-pictures.rkt`
-run alone before and after, three times each. After should match the
-raised-limit numbers above within noise.
+The speed check:
+
+- The guard proves the compile mode. It does not prove the hot path
+  stayed in one module: a cut that separates it passes the guard and
+  stays slow. The speed check is what shows the inlining came back, so
+  the checkpoint's verification and acceptance sections require it. A
+  note in a summary is not enough.
+- Three trees, each running `tests/aloemacs/window-pictures.rkt` alone,
+  interleaved round-robin, at least three rounds, nothing else running:
+  the parent commit as built (*before*); the parent commit with only
+  `aloe/eval.rkt` recompiled at `PLT_CS_COMPILE_LIMIT=1000000`, the
+  whole-compile *reference*; and the checkpoint at the default limit
+  (*after*). The implementer records all three medians of every run.
+- Acceptance: each of *after*'s three medians is within a tolerance of
+  the *reference* that the checkpoint states, and below *before*. At
+  `21d1a36` on the record's machine, *before* was 3.2, 27.6, and 17.6 ms,
+  and *reference* was 2.6, 22.8, and 14.1 ms.
 
 ## 4. Pins to carry
 
@@ -151,9 +174,12 @@ Not `SPEC.md`, `aloe/type.rkt`, `lib/`, `examples/`, or `host/racket/`.
   timed paths in the record keep it outside every interval. It is a
   separate item. The guard does not cover it, and this checkpoint
   does not split it.
-- Making `List` `cons` and `rest` cheaper. The record measured that,
-  and it is a separate question with its own history (the aloemacs
-  Index charter §4.3).
+- Making `List` `cons` and `rest` cheaper. The record measured it. It
+  changes what those sends do inside `aloe/eval.rkt`, and no document
+  has opened it. The aloemacs Index charter §4.3 ruled out a kernel
+  `Vector` inside an editor layer and asked for that kind of
+  measurement to come back to a discussion. It did not rule on cheaper
+  `cons` and `rest`.
 - Raising the limit through the environment, a launcher, or a build
   flag. Bytecode built by an ordinary `raco make` or `raco test -y`
   must be fast.

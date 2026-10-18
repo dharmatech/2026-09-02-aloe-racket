@@ -210,16 +210,28 @@ three. They are probes, not proposals.
   element. A List whose element type is a protocol, or a `cons` of
   another type, takes today's path.
 
-Medians in ms, three alone runs, all with `eval.rkt` compiled whole.
+The editor-only rows apply the two `.aloe` parts of the diff together,
+in both frame paths, with `eval.rkt` unchanged. They were measured after
+the review below.
+
+Medians in ms, all with `eval.rkt` compiled whole. The two deep columns
+are the timing test's own medians, three alone runs. The typed-character
+column is `frame-pieces.rkt`, with the key inside the interval.
 
 | Variant | Lines | Wide deep | One deep | Typed character, four windows |
 |---|---:|---:|---:|---:|
 | Limit raised only | 971 | 22.9 | 14.2 | 141 |
 | + doubled padding | 971 | 18.0 | 13.9 | |
 | + block check, `frame-rows` only | 971 | 15.6 | — | |
+| + padding and block check (editor only) | 971 | 10.9 | 6.6 | 105 |
 | + List steps | 971 | 21.8 | 12.8 | 81 |
 | All three | 971 | 7.9 | 4.2 | 46 |
+| Limit raised only | 2,400 | 27.2 | 18.2 | 244 |
+| + padding and block check (editor only) | 2,400 | 14.7 | 10.6 | 214 |
+| + List steps | 2,400 | 22.8 | 13.4 | |
+| All three | 2,400 | 8.4 | 4.7 | 58 |
 | Limit raised only | 5,000 | 35.1 | 26.6 | 438 |
+| + padding and block check (editor only) | 5,000 | 22.6 | 18.4 | 404 |
 | + List steps | 5,000 | 22.7 | 14.3 | 128 |
 | All three | 5,000 | 9.6 | 5.7 | 88 |
 
@@ -239,8 +251,11 @@ both. Under that `-j 4` run the timing medians were 2.7 to 2.8 ms
 (first screen), 8.6 to 10.4 ms (wide deep), and 4.5 to 6.5 ms (one
 deep), across the three fixture sizes.
 
-A typed character in four windows stays at 46 ms even with all three.
-What remains is the walk from the cursor to each unselected origin.
+The editor-only changes barely move a typed character in four windows:
+244 to 214 ms at 2,400 lines. They shorten each leaf's build, not the
+walk from the cursor to each unselected origin, which copies the whole
+line list at every step. Even with List steps as well, it stays at 46,
+58, and 88 ms.
 
 ## What the numbers say
 
@@ -253,11 +268,40 @@ language spine and is mechanical.
 Under the regression, a deep frame is two-thirds per-character Aloe
 loops in `safe-cells`, `spaces`, and `fill`. A fifth is zipper steps,
 which copy the whole file on every step and so grow with file length.
-Editor-only changes to the loops, together with cheaper List steps,
-brought both deep Down cases to under a third of the bar at 5,000 lines
-alone, and to about a third under `-j 4`. They did not bring a typed
-character in four windows under the bar. Today that case is 198 ms,
-and nothing in the suite measures it.
+Editor-only changes to the loops, with the evaluator fixed, brought the
+wide Down case to 14.7 ms at 2,400 lines, about the length of
+`file.aloe`. With cheaper List steps as well, both deep Down cases were
+under a third of the bar at 5,000 lines alone, and about a third under
+`-j 4`. Neither brought a typed character in four windows under the
+bar. Editor-only, it is 214 ms at 2,400 lines, and 58 ms even with the
+List change. Today it is 198 ms at 971 lines, and nothing in the suite
+measures it.
+
+## Review, 2026-10-18
+
+The same day the user brought Grok's review of the brief and the
+charter. It is verbatim in [`grok-review.md`](grok-review.md). Grok
+agreed with the split and checked the record against the tree, without
+re-running the bisect. It asked for these changes, and all were made:
+
+- **Brief.** If the cold code cannot bring the module that holds the
+  hot path under 8,000 terms, send the brief back rather than separate
+  `eval-expr` from `make-list-value`.
+- **Brief.** The guard proves the compile mode, not that the hot path
+  stayed together. The `window-pictures.rkt` medians, against a build
+  of the parent with `eval.rkt` recompiled at a raised limit, are now
+  required in the checkpoint's verification and acceptance.
+- **Brief and charter.** The Index charter ruled out a kernel `Vector`
+  inside an editor layer. It did not rule on cheaper `cons` and `rest`,
+  and the wording now says so.
+- **Charter.** No frame-time checkpoint goes to an implementer before
+  the spine checkpoint lands. The spec may be written first.
+- **Charter.** The best typing numbers in this record had included the
+  List change the charter keeps out. The editor-only rows in section 5
+  were measured after the review to show the gap without it. §5.1 now
+  names item 5, rows that survive an edit outside the lines they show,
+  as the typing plan. It is unprototyped and has to come back if no
+  correct key can be stated.
 
 ## Probes in this folder
 
@@ -271,6 +315,8 @@ this folder by default, or another tree named on the command line.
 | [`bisect.sh`](bisect.sh) | section 1: each commit's own timing test, alone, round-robin | `./bisect.sh <work-dir> 5 062f8c6 … 21d1a36` |
 | [`interp-check.sh`](interp-check.sh) | which `aloe/` module bodies compile in interpretable mode | `./interp-check.sh <work-dir> [limit]` |
 | [`prototype.diff`](prototype.diff) | the three changes in section 5, against `21d1a36` | read it, or `git apply` in a copy |
+
+[`grok-review.md`](grok-review.md) holds Grok's review verbatim.
 
 To reproduce a raised-limit row, recompile `eval.rkt` in a copy:
 `rm aloe/compiled/eval_rkt.*` then
