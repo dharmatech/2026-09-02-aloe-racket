@@ -38,9 +38,20 @@ The fix the tree already points at: let `bin/aloe` read the folder
 manifest `aloe-hosts.rktd` that editor project 9 just added, extended
 with a factory clause the language server ignores, and inject
 production receivers before loading. The manifest's own spec reserved
-that step. Then, as a separate aloemacs series, move the Aloemacs loop
-and startup visit into an Aloe entry file. Both changes are measured
-below. The second needs a small checker fix first.
+that step. The Aloemacs loop and startup visit can follow into an Aloe
+entry file, but only later and as their own aloemacs charter;
+`aloemacs-run.rkt` keeps the loop until then. Both changes are
+measured below.
+
+After Grok's review the same day, the agreed order is: the checker
+cycle guard first, as one global checkpoint on the language spine;
+then the tail-call sentence in SPEC with a language-suite test, a
+second global checkpoint; then the manifest-runner charter, with the
+reader amendment before any manifest grows a fifth element, Gel first,
+and `term-run.rkt` and `fs-repl.rkt` kept until a scratch-file
+convention exists; then the loop charter, with a sampled-peak memory
+bar as its precondition. The section "Review, 2026-10-17" has the
+locks.
 
 Rejected: an FFI or `(require racket-module)`, an in-source host
 declaration, an amendment to SPEC section 14, a Deno-style permission
@@ -636,10 +647,17 @@ rest stay as the charter's checklist.
 This conversation had no assigned role, so it wrote nothing in the
 product tree. After the review, the exits are four, in this order:
 
-- A standalone language-spine checkpoint for the checker cycle guard,
-  with the rule and the three test programs in lock 1 of the review.
-- A standalone language-spine checkpoint for the tail-call sentence in
-  SPEC and the language-suite test, locks 2 and 3 of the review.
+- One global checkpoint on the language spine for the checker cycle
+  guard, no charter, carrying the rule and the three test programs in
+  lock 1 of the review. The spine shape is `docs/checkpoints/NNNN-slug.md`,
+  `tests/checkpoint-N.rkt`, and a `CHECKPOINTS.md` entry at the next
+  free global number; the index says 116 and 117 are Gel-directory
+  work on another branch and there is no 118. Per `docs/workflow.md`,
+  the discussion hands it over as a brief for a checkpoint manager, or
+  writes the one checkpoint itself. The repo's "standalone checkpoint"
+  is the local `docs/design/implementation/...` shape and is not this.
+- A second global checkpoint, same shape, for the tail-call sentence
+  in SPEC and the language-suite test, locks 2 and 3 of the review.
 - An exploration charter for the manifest runner, `README.md` and
   `charter.md`, with the open questions above, written so that the
   reader amendment lands before any manifest grows a fifth element,
