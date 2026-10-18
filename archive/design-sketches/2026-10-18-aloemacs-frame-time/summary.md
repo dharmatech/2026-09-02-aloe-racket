@@ -256,6 +256,9 @@ The editor-only changes barely move a typed character in four windows:
 walk from the cursor to each unselected origin, which copies the whole
 line list at every step. Even with List steps as well, it stays at 46,
 58, and 88 ms.
+A typed character in one window, editor-only, measured 6.7, 11.0, and
+18.1 ms at the three lengths, because one window has no other leaf to
+walk.
 
 ## What the numbers say
 
@@ -279,10 +282,11 @@ measures it.
 
 ## Review, 2026-10-18
 
-The same day the user brought Grok's review of the brief and the
-charter. It is verbatim in [`grok-review.md`](grok-review.md). Grok
-agreed with the split and checked the record against the tree, without
-re-running the bisect. It asked for these changes, and all were made:
+The same day the user brought two replies from Grok, both verbatim in
+[`grok-review.md`](grok-review.md). The first reviewed the brief and the
+charter as committed in `11d42d0`. Grok agreed with the split and
+checked the record against the tree, without re-running the bisect. It
+asked for these changes, and all were made in `432057c`:
 
 - **Brief.** If the cold code cannot bring the module that holds the
   hot path under 8,000 terms, send the brief back rather than separate
@@ -303,6 +307,21 @@ re-running the bisect. It asked for these changes, and all were made:
   as the typing plan. It is unprototyped and has to come back if no
   correct key can be stated.
 
+The second reply accepted `432057c` and asked for one change, made
+afterwards:
+
+- **Brief.** Acceptance gated all three medians on being below the
+  slow build, but the first-screen gap is only about 0.6 ms. It now
+  gates on the two deep medians. Each must land within a stated
+  fraction of its gap (about 4.8 and 3.5 ms) above the raised-limit
+  reference, small enough that a split recovering half the speed fails.
+  The first-screen median is recorded, not gated.
+
+It also read the one-window typing number as the scale for item 5. The
+charter now cites the 11.0 ms one-window typed character at 2,400 lines
+as an estimate of where four-window typing could land, not a
+measurement.
+
 ## Probes in this folder
 
 Scratch programs, not tests. The Racket probe's effects are in a `main`
@@ -316,7 +335,7 @@ this folder by default, or another tree named on the command line.
 | [`interp-check.sh`](interp-check.sh) | which `aloe/` module bodies compile in interpretable mode | `./interp-check.sh <work-dir> [limit]` |
 | [`prototype.diff`](prototype.diff) | the three changes in section 5, against `21d1a36` | read it, or `git apply` in a copy |
 
-[`grok-review.md`](grok-review.md) holds Grok's review verbatim.
+[`grok-review.md`](grok-review.md) holds Grok's two replies verbatim.
 
 To reproduce a raised-limit row, recompile `eval.rkt` in a copy:
 `rm aloe/compiled/eval_rkt.*` then

@@ -131,10 +131,16 @@ The speed check:
   `aloe/eval.rkt` recompiled at `PLT_CS_COMPILE_LIMIT=1000000`, the
   whole-compile *reference*; and the checkpoint at the default limit
   (*after*). The implementer records all three medians of every run.
-- Acceptance: each of *after*'s three medians is within a tolerance of
-  the *reference* that the checkpoint states, and below *before*. At
-  `21d1a36` on the record's machine, *before* was 3.2, 27.6, and 17.6 ms,
-  and *reference* was 2.6, 22.8, and 14.1 ms.
+- Acceptance gates on the two deep medians, widest leaf deep and one
+  window deep. Each of *after*'s two lands with the *reference*: it is
+  no more than a stated fraction of the *before*-to-*reference* gap
+  above the *reference*. The checkpoint states that fraction. It is
+  small enough that a split which recovers only half the speed fails;
+  a quarter of the gap does that. At `21d1a36` on the record's machine,
+  *before* was 27.6 and 17.6 ms and *reference* was 22.8 and 14.1 ms,
+  gaps of about 4.8 and 3.5 ms.
+- The first-screen median is recorded, not gated. Its gap is about
+  0.6 ms (3.2 to 2.6 ms), too small to judge a split by.
 
 ## 4. Pins to carry
 

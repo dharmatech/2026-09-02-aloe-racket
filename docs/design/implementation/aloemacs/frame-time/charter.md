@@ -239,9 +239,13 @@ states the invalidation key, what an edit records so the key can be
 checked, and why the key cannot match rows an edit changed (§3.1). The
 gap to close is the long-fixture row of §2, item 5, 214 ms at 2,400 lines
 with items 1 and 2 in place. It is not the 46 ms of the short fixture,
-which also had the List change. If a correct key cannot be stated, send
-the spec back here. Do not raise the bar, and do not move the cost into
-List (§4.3).
+which also had the List change. For scale, a typed character in one
+window at 2,400 lines measured 11.0 ms with items 1 and 2, because one
+window has no other leaf to walk. If unselected rows survive an edit
+outside their lines, four-window typing should land nearer that than
+214 ms. That is an estimate, not a measurement. If a correct key cannot
+be stated, send the spec back here. Do not raise the bar, and do not
+move the cost into List (§4.3).
 
 ### 5.2 The bar's cases and numbers
 
