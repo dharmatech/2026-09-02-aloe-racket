@@ -235,9 +235,11 @@ may find that painting needs only the read.
   passes both Lists through. The typing cost is the other windows
   walking the zipper, not the edit. An indexed read on the Lists the
   zipper already holds reads a distant line without a walk and without
-  a change to `Text`'s shape. `above` is nearest-first, so line *j*
-  above the focus is entry `focus − 1 − j` of `above`, and line *j*
-  below it is entry `j − focus − 1` of `below`.
+  a change to `Text`'s shape. `above` is nearest-first. For a line
+  number *j* above the focus, the line is entry `focus − 1 − j` of
+  `above`; for a line number *j* below it, entry `j − focus − 1` of
+  `below`. At focus 800, line 0 is entry 799 of `above` and line 801
+  is entry 0 of `below`.
 - **Slicing.** Each extra line of a multi-line insert `cons`es onto
   `above`, and each `cons` copies that whole List, so a large yank
   costs its line count times the file length. A flat line list updated

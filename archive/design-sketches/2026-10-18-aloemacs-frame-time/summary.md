@@ -366,6 +366,14 @@ not a walk. The charter moved:
   `make-list-value`, which is already Racket.
 - The evaluator brief did not change.
 
+Grok's fifth reply accepted `450d835` with two wording notes, and both
+were taken. The charter's index formula now says *line number* j, with
+an example at focus 800. The fourth reply's phrase "a line-count change
+below that window" has the direction reversed. A change in line count
+shifts a window's lines when it falls above them, and Grok confirmed
+that in the fifth reply. The archive keeps the sentence as Grok wrote it.
+The charter's §4.8, "above a window", is the one to follow.
+
 ## Probes in this folder
 
 Scratch programs, not tests. The Racket probe's effects are in a `main`

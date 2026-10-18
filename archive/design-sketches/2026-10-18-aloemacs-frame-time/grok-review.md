@@ -1,13 +1,14 @@
 # Grok's review of the brief and the charter
 
-Four replies from Grok, brought by the user on 2026-10-18. The first
+Five replies from Grok, brought by the user on 2026-10-18. The first
 reviews [`summary.md`](summary.md), the frame-time charter, and the
 evaluator compile-limit brief as committed in `11d42d0`. The second
 reviews the revision committed in `432057c`. The third accepts
 `3f21114`. The fourth answers a separate agent's review, which is
-verbatim in [`agent-review.md`](agent-review.md). What each changed is
-in the "Review, 2026-10-18" section of `summary.md`. Text is verbatim;
-the section titles Grok used are rendered as headings.
+verbatim in [`agent-review.md`](agent-review.md). The fifth accepts
+`450d835` with two wording notes. What each changed is in the
+"Review, 2026-10-18" section of `summary.md`. Text is verbatim; the
+section titles Grok used are rendered as headings.
 
 ---
 
@@ -74,3 +75,17 @@ So the language discussion should open on both operations and be free to find th
 The baseline. Record today's typing cost in the charter as the known walk this series leaves in place. Do not add a suite timing bar for it. A 200 ms test would watch a path the series is not improving, on top of an evaluator that is about to change.
 
 Everything else Claude listed should stand: items 1, 2, 3, and 6; the 30 ms Down bar; file.aloe's length; the whole suite under -j 4; the evaluator gate; items 4 and 5 gone; the "hold a letter" hand check gone; the evaluator brief left untouched; the review archived with a section saying what moved; the language exit named and not written.
+
+## Fifth reply
+
+The revision in 450d835 is fit to hand to a designer. It narrows the series to held Down and leaves typing where we agreed.
+
+The bar is now Down only: four windows deep, one window deep, and the first screen, under 30 ms, on a fixture at least as long as examples/aloemacs/file.aloe, in the whole suite under -j 4, with the same bytes. The held-letter hand check is gone. Items 1 through 4 are doubled padding, the block control check, reusing the rows a one-line scroll still shows, and one walk from the point. The one-window path stays on AloemacsEditor.frame. Edit-aware row reuse is a non-goal. §4.8 records today's typing cost, 214 ms at 2,400 lines with the editor-only changes, and forbids a suite timing bar for it. The evaluator brief is untouched, and no frame-time checkpoint goes to an implementer until aloe/eval.rkt compiles whole. The parent map and discussion.md say the same thing.
+
+The language exit is stated properly. Indexed read and slicing are separate. A one-line edit already shares above and below. Painting a distant window needs a read on those lists, and Text does not have to change shape first. Slicing is what a multi-line insert, and a flat list updated only by cons, still need. Checkpoint 114 and the Index charter are cited as history the discussion has to meet, and that discussion is named and not opened. It does not block this series.
+
+Two wording nits are not worth holding the handoff.
+
+In §4.8, j in the formula is the line number. At focus 800, line 0 is entry 800 − 1 − 0 of above, and line 801 is entry 801 − 800 − 1 of below. The phrase "line j above the focus" can also be read as a distance. The arithmetic is the line number.
+
+The archived fourth reply says a line-count change below a far window still misses. The charter says above that window. The charter has the right direction: inserting or deleting lines above a window shifts the lines it shows, and a change below the lines it shows does not. The archive is keeping the sentence I wrote. A later reader should follow the charter.
