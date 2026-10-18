@@ -382,6 +382,22 @@ The program already declares its need as a type: `(AloemacsSession H)`
 and `(Fs new fs-host)`. The manifest is the grant. Keeping the two apart
 is what makes doubles free.
 
+### Revised order, after review
+
+Grok's review the same day (next section) moved the order to this, which
+Claude accepts:
+
+1. The checker cycle guard, on its own spine checkpoint, first. The bug
+   is under `Fs` and `AloemacsSession` today.
+2. The tail-call sentence in SPEC and a language-suite test, a second
+   small spine checkpoint.
+3. The manifest runner charter, with the reader amendment before any
+   manifest in the tree grows a fifth element, Gel first, the small
+   runners kept until a scratch-file convention exists, and
+   `aloemacs-run.rkt` still owning the loop.
+4. The Aloemacs loop charter after those, with the memory bar as a
+   precondition.
+
 ## Where the reviewers differ
 
 The three judges and the critic converged on the conclusion and the
@@ -417,7 +433,137 @@ project relies on is inside the program, the Newspeak or OCaml-functor
 shape of `(AloemacsSession H)`, and the outer grant can be folder
 configuration bounded by the collection rule.
 
+## Review, 2026-10-17
+
+Later the same day the user brought Grok's review of this record and of
+the sketch, then Grok's answer to Claude's reply. Both are verbatim in
+[`grok-review.md`](grok-review.md). This section records where the
+review moved the position and what the two now agree to lock.
+
+### Agreed without change
+
+Keep the boundary; the awkwardness is the missing entry point; the
+manifest is already the declaration and an Aloe-source declaration
+would be a second source of truth that fights the inject-then-load test
+idiom; no FFI, no `(require ...)`, no Deno-style flag; the checker hang
+is a language bug whether or not any loop moves; the tail-call shape in
+`eval.rkt` is as described. Grok re-ran `recursion-hang.rkt` and the
+stack probe and reproduced both.
+
+### Objections, and what happened to them
+
+- **Only the toy had been shown flat; the editor loop was never measured
+  for retention.** Claude ran the real session, encoding (c), for 20,000
+  keys in tail and non-tail form (`retention.rkt`); Grok re-ran it and
+  withdrew the objection.
+
+  | Form | Heap after GC | Peak while running | Median gap, first and last thousand |
+  |---|---|---|---|
+  | Tail (Claude) | +0.32 MB | +8.5 MB | 0.96 ms, 0.96 ms |
+  | Non-tail (Claude) | +0.27 MB | +44.8 MB, about 2.2 KB per pending key | 0.96 ms, 0.96 ms |
+  | Tail (Grok) | +0.28 MB | +8.42 MB | 0.94 ms, 0.94 ms |
+  | Non-tail (Grok) | +0.36 MB | +44.75 MB, about 2.3 KB per pending key | 0.95 ms, 0.95 ms |
+
+  The non-tail form returns to the same heap and the same per-key time,
+  so a latency bar cannot see it and a heap check after the loop
+  returns cannot either. Only a peak measurement while the loop runs
+  can. The natural spelling still cannot be run until the cycle guard
+  lands; its steady state cannot differ, because the receiver it
+  allocates before the tail send does not accumulate.
+- **Tail calls are an accident of the interpreter, unstated in SPEC.**
+  Agreed. Gel's loop already relies on it. It becomes a gate, below.
+- **"A set or a memo" is not yet a cycle-guard fix.** Agreed; the rule
+  is locked below.
+- **The sketch's `run.aloe` did not typecheck**: `AloemacsSession` is
+  not in scope after loading only `main.aloe`. Confirmed by probe;
+  the sketch now loads `file.aloe` too.
+- **The sketch decided the failed-visit question while calling it
+  open.** The sketch now marks the arm open and names both answers.
+- **The test shim was one host short**: a test that passes a path must
+  inject an `args` double. The sketch now says so.
+- **A factory clause breaks the editor until the reader changes**, since
+  a fifth element makes the whole manifest broken today and a broken
+  manifest counts as absent for every document in the folder. Locked:
+  the reader amendment lands before any manifest in the tree grows a
+  clause, in the same change as the spec amendment, and the server is
+  forbidden by test to call a factory.
+- **`bin/aloe` does not become the only runner.** Agreed; the chat
+  overstated it. Aloemacs keeps a small Racket factory for the
+  alternate-screen and mouse bracket, whose bytes must stay out of the
+  scripted frame stream; a generic reset in the TTY module is the wrong
+  home while Gel and Aloemacs want different modes.
+- **Deleting `term-run.rkt` hurts one-off files**, which would then need
+  a manifest row to run at all. Agreed: keep the small runners until a
+  scratch-file convention exists.
+- **One `--quit` rule breaks one REPL case.** Agreed: a row whose
+  factory holds the TTY runs and exits; a constructor-only row may
+  enter the REPL.
+- **The `args` host is a costume**, argv being data. Grok conceded after
+  Claude's point that binding a `(List String)` by hand is a second
+  injection mechanism and section 14 has one. Only the spelling is
+  open.
+- **Two grant paths remain** (manifest for production, injected doubles
+  for tests) and can drift as they already have with `term`. Agreed
+  tie: the shim reads the entry file's manifest row and injects the
+  test's doubles under exactly those names, failing when the sets
+  differ, reading names only.
+
+### Locks agreed for the two gates
+
+1. **The cycle guard.** While a method is being checked at one
+   instantiation, a send of that method at the same instantiation
+   assumes the annotated return type and the outer body goes on being
+   checked against its annotation; a finished check can be reused at
+   that instantiation; a send of a method currently being checked at a
+   *different* instantiation is a type error naming both
+   instantiations. The error, not a depth bound: Grok ran
+   `(Loop new (List of (self h)))` and it diverges through the same
+   walk, and a bound would walk several growing types and then report
+   an arbitrary limit. Claude's addition: the in-progress set must
+   cover indirect cycles, a method reached through another method, not
+   only direct re-entry. The rule knowingly rejects a finite jump to
+   another instantiation, such as a method on `(Box Int)` that sends
+   the same method once on `(Box String)`; no program in the tree does
+   that, and a more precise rule can come when one does. Explicit
+   constructors are the tempting wrong fix: under a rigid `H`,
+   `handle-event` fails with `unknown message: kind`. Tests: the
+   five-line `Loop` program, and one program that recurses at a second
+   instantiation and is refused.
+2. **The tail-call test.** Not a fixed custodian ceiling: both forms
+   finish within a third of a megabyte of where they started, and a
+   ceiling tight enough to separate them moves with the baseline.
+   Sample the peak while the loop runs; assert the tail peak stays
+   within a small bound and the non-tail peak grows by at least a low
+   per-iteration amount (Claude suggests 256 bytes, well under the
+   1.4 to 2.3 KB observed, since the frame size is an evaluator
+   internal). Keep a custodian limit only as a rail. Claude's
+   cross-check: `vector-set-performance-stats!` slot 11, peak memory
+   before a GC, separated the forms deterministically in the toy run
+   (89.6 MB tail at every N; 217 MB and 1421 MB non-tail at 100,000
+   and 1,000,000). The program under test is a non-generic class with
+   no host, so the test depends on neither tui-term nor the cycle
+   guard.
+3. **The SPEC sentence.** A send is in tail position when it is the
+   body of a method, the body of a `fn` sent `call` (and so the body of
+   a `let`), the taken arm of `if`, or the taken arm of `case`;
+   evaluating a receiver or an argument is not; `cond` follows `if`,
+   and `if` is sugar for the `Bool` send, so the explicit form is
+   covered. Verified against the evaluator on 2026-10-17: `eval-case`
+   (`aloe/eval.rkt` line 288) evaluates the matching clause body and
+   the else body as its last expression, and `cond` desugars in
+   `aloe/parse.rkt` (`desugar-cond-syntax`, line 561).
+
+### Not opened
+
+Neither reviewer treats this exchange as a reason to open either
+charter yet. The user's order of 2026-10-16 still has the
+window-pictures performance item next.
+
 ## Open questions for a charter
+
+Several of these were settled by the review above (the REPL rule, the
+shim, the args host, the small runners, the reader ordering). They stay
+listed as the charter's checklist.
 
 - Factory clause spelling: a fifth element naming an export, or a
   `(receiver MODULE EXPORT)` pair; call-with shape for every host, or
@@ -471,7 +617,9 @@ window-pictures performance item was next. That is the user's call.
 series land: the command, every file that appears, shrinks, or goes, a
 candidate manifest, a candidate `run.aloe`, and where each piece of
 boundary information lives afterwards. Written the same day, at the
-user's request, as a sketch and not a spec.
+user's request, as a sketch and not a spec. Revised after the review.
+
+[`grok-review.md`](grok-review.md) holds Grok's two replies verbatim.
 
 ## Probes in this folder
 
@@ -484,7 +632,8 @@ require the repo by relative path from this folder.
 | `loop-stack.rkt` | memory and time of a tail-recursive Aloe loop, and a non-tail control | `racket loop-stack.rkt tail 1000 10000 100000` |
 | `loop-cost.rkt` | per-key gaps of variants A, B, C above, and byte identity of their frames | `racket loop-cost.rkt` |
 | `recursion-hang.rkt` | the checker hang on a recursive method of a generic class; **does not terminate** | `timeout 10 racket recursion-hang.rkt` |
+| `retention.rkt` | the scope check for `run.aloe`, then the editor loop over 20,000 keys in tail and non-tail form, with sampled peak memory | `racket retention.rkt` (about 45 s) |
 
-`loop-stack.rkt` and `loop-cost.rkt` need the tui-term package, because
+`loop-stack.rkt`, `loop-cost.rkt`, and `retention.rkt` need the tui-term package, because
 they build the Term double with `make-term-receiver` from
 `host/racket/term.rkt`.

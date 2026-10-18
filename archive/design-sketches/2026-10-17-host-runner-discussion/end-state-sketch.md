@@ -13,6 +13,13 @@ is a candidate: the fifth manifest element, the names `run.aloe`,
 `args`, `call-with-aloemacs-term`, and the module split. A designer
 settles them. Where a choice is open, this file says so.
 
+Revised 2026-10-17 after Grok's review ([`grok-review.md`](grok-review.md);
+`summary.md`, "Review, 2026-10-17"): the second `load` in `run.aloe`, the
+failed-visit arm marked open, the `args` double in the test shim, the
+small runners kept, and the REPL rule. The revised order keeps
+`aloemacs-run.rkt` owning the loop until two spine gates land, so the
+Aloemacs end state here is the later of the two steps.
+
 ## The command
 
 Today:
@@ -50,7 +57,7 @@ the file-less REPL stay capability-free.
 | `examples/aloemacs/aloe-hosts.rktd`: one row, read by the editor only | 4 | `examples/aloemacs/aloe-hosts.rktd`: two rows, read by editor and runner | about 12 |
 | | | `examples/aloemacs/run.aloe`: visit, loop, entry, in Aloe; new | about 35 |
 | `host/racket/gel-run.rkt` | 42 | deleted; `gel/run.aloe` new | about 8 |
-| `host/racket/term-run.rkt`, `host/racket/fs-repl.rkt` | 34, 28 | deleted | 0 |
+| `host/racket/term-run.rkt`, `host/racket/fs-repl.rkt` | 34, 28 | kept until a scratch-file convention exists, then deleted (review) | 34, 28 |
 | | | `host/racket/args.rkt`: new, shared by every program | about 25 |
 | | | `aloe/driver.rkt` run-cli grows; `aloe/host-manifest.rkt` admits the factory element | about 50, about 20 |
 
@@ -92,6 +99,7 @@ the natural encodings"), the natural shape is:
 
 ```aloe
 (load "main.aloe")
+(load "file.aloe")
 
 (define-class (AloemacsRun H)
   (fields (session (AloemacsSession H)))
@@ -112,7 +120,7 @@ the natural encodings"), the natural shape is:
     (if (paths empty?)
         aloemacs-editor
         ((aloemacs-editor visit ((aloemacs-editor fs) path (paths first))) case
-          (None () aloemacs-editor)
+          (None () aloemacs-editor)   ;; open: see the note on a failed visit
           (Some (session) session)))))
 
 (define aloemacs-final ((AloemacsRun new aloemacs-start) loop))
@@ -120,6 +128,13 @@ the natural encodings"), the natural shape is:
 
 Notes:
 
+- The second `load` is required. SPEC section 11's copy rule copies out
+  of a loaded file only the names that file itself defines, and
+  `main.aloe` defines only `aloemacs-editor`; `AloemacsSession` is
+  defined in `file.aloe`. Without the line, `run.aloe` fails with
+  `typecheck: unbound symbol: AloemacsSession` (verified 2026-10-17,
+  `retention.rkt`). With it, the same path and bytes as the load inside
+  `main.aloe` copy the definitions without running the file.
 - The per-iteration order is today's exactly: columns, rows,
   `ensure-visible`, `record-pictures`, one flushing `write`,
   `read-event`, quit. The scripted runner tests pin that order and
@@ -134,11 +149,14 @@ Notes:
 - The last form is a `define`, so nothing prints to the restored
   terminal when the loop returns. `driver-load-port!` prints non-void
   results.
-- A failed visit is open. Today Racket exits 1 with "cannot visit
-  path" and zero Term calls, and `tests/aloemacs/file-runner.rkt` pins
-  that. In Aloe the natural product behavior is to open untitled with
-  the message on the echo row; the alternatives are `check`, a host
-  method that raises, or an exit host. The charter chooses.
+- A failed visit is open, and the `None` arm above shows one of the two
+  answers only because the other has no Aloe spelling yet. As drawn, a
+  bad path becomes an untitled session and the loop does call Term.
+  Today Racket exits 1 with "cannot visit path" before any Term call,
+  and `tests/aloemacs/file-runner.rkt` pins the zero Term calls. Both
+  are coherent. The refusing answer needs a channel Aloe lacks: `check`,
+  a host method that raises, or an exit host. The charter chooses; this
+  sketch does not.
 - The loop lives in `run.aloe`, never in `main.aloe`: 35 tests load
   `main.aloe` with only an fs double and expect definitions only, and
   `tests/aloemacs/runner.rkt` pins its exact datums.
@@ -216,8 +234,14 @@ The Aloe source still names `term`, `fs-host`, and `args` as free names
 bound on the base. Nothing Racket-shaped appears in `.aloe` files.
 
 Tests do not change in kind. They keep calling `driver-inject-host!`
-with a scripted term and an fs double, then load `run.aloe` or
-`main.aloe`. The manifest is production wiring only.
+with a scripted term and an fs double, and an `args` double whenever
+the test passes a startup path, since `run.aloe` reads `(args list)`.
+Then they load `run.aloe` or `main.aloe`. The manifest is production
+wiring only. To stop the two grant paths drifting again, the review
+proposes that the test shim read the entry file's manifest row and
+inject the test's doubles under exactly those binding names, failing
+when the sets differ; it reads names only and never calls a factory or
+loads the TTY module.
 
 ## Gel, for comparison
 
@@ -233,7 +257,8 @@ the first consumer.
 
 `bin/aloe file` without `--quit` drops into the REPL after loading.
 Inside a TTY factory's extent that would read tui-term key structs.
-The charter has to say whether a configured run implies `--quit`, runs
-the REPL after the extents close with the hosts gone, or refuses. The
-same answer decides whether `fs-repl.rkt`'s use case, a REPL with a
-disk, survives as a manifest row for a scratch file.
+The review's rule, which both reviewers accept: a row whose factory
+holds the TTY runs the file and exits; a row of plain constructors and
+no terminal extent may enter the REPL. One `--quit` rule for both would
+make one of them feel broken. That keeps `fs-repl.rkt`'s use case, a
+REPL with a disk, alive as a constructor-only row.
