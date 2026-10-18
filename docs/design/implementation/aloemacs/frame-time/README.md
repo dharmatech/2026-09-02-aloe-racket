@@ -16,11 +16,15 @@ This is not aloemacs-window-pictures 001, which stays unissued. Do not
 write global 116 or 118. Do not write `spec.md` in the discussion that
 issued this charter.
 
-A held Down or a held letter key must not outrun the frame. Today the
-deep four-window Down is 27 to 29 ms alone against a 30 ms bar, and it
-fails under `-j 4`. A typed character in four windows of one buffer is
-about 200 ms, and no test measures it. The bytes on screen stay what
-`frame` paints today.
+A held Down must not outrun the frame. Today the deep four-window Down
+is 27 to 29 ms alone against a 30 ms bar, and it fails under `-j 4`.
+The bytes on screen stay what `frame` paints today.
+
+Held typing is not this series. A typed character in four windows of
+one buffer is about 200 ms, because each other window walks the zipper
+back to its own scroll row. The charter records that walk, leaves it in
+place, and names where it goes: a language-spine discussion of indexed
+read and slicing for List, not yet opened.
 
 The measurement behind the charter is
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/summary.md`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/summary.md).

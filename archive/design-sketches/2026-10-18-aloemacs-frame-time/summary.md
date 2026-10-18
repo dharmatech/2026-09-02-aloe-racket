@@ -322,6 +322,50 @@ charter now cites the 11.0 ms one-window typed character at 2,400 lines
 as an estimate of where four-window typing could land, not a
 measurement.
 
+Grok's third reply accepted `3f21114` with no further change.
+
+Then the user brought a review from a separate agent conversation,
+verbatim in [`agent-review.md`](agent-review.md), and Grok's answer to
+it, the fourth reply. The agent had read the Legmacs and `e` sources.
+Both editors read a line by index into a vector of lines. Legmacs uses
+`(nth (:lines state) row "")`, and in `e` `apply-edit` fills one new
+vector and `line-ref` is `vector-ref`. That claim was checked against
+their source. So a missed row there costs one index per visible row,
+not a walk. The charter moved:
+
+- **The series is held Down.** Held typing, §3.3, the former §5.1
+  items 4 (recorded rows for one window) and 5 (rows that survive an
+  edit outside their lines), and the held-letter hand check are gone.
+  Items 1, 2, 3, and 6 stay, now numbered 1 to 4. So do the 30 ms bar,
+  `file.aloe`'s length, the whole suite under `-j 4`, the same bytes,
+  and the evaluator gate.
+- **Why typing left.** Edit-aware row reuse is a cache in front of a
+  miss that still pays the whole walk. A miss costs the distance from
+  the cursor to that window's scroll row, times the file length. A
+  correct key still misses on a change in line count above a window
+  far from the cursor, on a kill or a yank across lines, and on an undo
+  or a visit, which drop every picture. Held undo in four windows would
+  stay near 200 ms. A typing bar would be true where the key hits and
+  false where it misses. A window showing the same lines as the cursor
+  is a short walk, so the agent's list of costly misses was corrected
+  on that point.
+- **Typing is recorded, not tested.** The charter's §4.8 records
+  today's cost as the walk this series leaves in place. It adds no
+  timing bar for it.
+- **A language exit is named, not written.** Indexed read and slicing
+  for List go to a language-spine discussion, with this record as
+  evidence. They are separate operations. An indexed read on the Lists
+  the zipper already holds would let a distant window paint without a
+  walk and without changing `Text`'s shape. A one-line edit already
+  shares `above` and `below` through `replace-pieces`. Slicing is what
+  a multi-line insert and a one-copy flat list need. Claude's first
+  answer to the agent had said an indexed read alone would leave edits
+  quadratic. That assumed a flat line list, and Grok's fourth reply
+  corrected it.
+- **A compiler does not touch the walk.** The copy is in
+  `make-list-value`, which is already Racket.
+- The evaluator brief did not change.
+
 ## Probes in this folder
 
 Scratch programs, not tests. The Racket probe's effects are in a `main`
@@ -335,7 +379,9 @@ this folder by default, or another tree named on the command line.
 | [`interp-check.sh`](interp-check.sh) | which `aloe/` module bodies compile in interpretable mode | `./interp-check.sh <work-dir> [limit]` |
 | [`prototype.diff`](prototype.diff) | the three changes in section 5, against `21d1a36` | read it, or `git apply` in a copy |
 
-[`grok-review.md`](grok-review.md) holds Grok's two replies verbatim.
+[`grok-review.md`](grok-review.md) holds Grok's four replies verbatim.
+[`agent-review.md`](agent-review.md) holds the separate agent's review
+verbatim.
 
 To reproduce a raised-limit row, recompile `eval.rkt` in a copy:
 `rm aloe/compiled/eval_rkt.*` then

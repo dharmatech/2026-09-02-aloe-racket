@@ -1,11 +1,13 @@
 # Grok's review of the brief and the charter
 
-Two replies from Grok, brought by the user on 2026-10-18. The first
+Four replies from Grok, brought by the user on 2026-10-18. The first
 reviews [`summary.md`](summary.md), the frame-time charter, and the
 evaluator compile-limit brief as committed in `11d42d0`. The second
-reviews the revision committed in `432057c`. What each changed is in the
-"Review, 2026-10-18" section of `summary.md`. Text is verbatim; the
-section titles Grok used are rendered as headings.
+reviews the revision committed in `432057c`. The third accepts
+`3f21114`. The fourth answers a separate agent's review, which is
+verbatim in [`agent-review.md`](agent-review.md). What each changed is
+in the "Review, 2026-10-18" section of `summary.md`. Text is verbatim;
+the section titles Grok used are rendered as headings.
 
 ---
 
@@ -46,3 +48,29 @@ The brief now says to send it back if the cold code cannot get the hot module un
 One acceptance clause is tighter than the gap it sits on. The first-screen median only moves from 3.2 ms to 2.6 ms. Requiring every median, including that one, to be strictly below the slow build can fail a good split. The wide and one-deep gaps are about 5 ms and 3.5 ms. Those two have to land with the raised-limit reference. The tolerance the checkpoint writes should be a small part of that gap, so a build that only recovers half the speed fails.
 
 Item 5 is still unprototyped, and it is the whole typing plan. The new numbers make it a plausible bet. One window at 2,400 lines is already 10.6 ms, because there is no second leaf to walk. If unselected rows can be kept when the edit did not touch the lines they show, four-window typing should fall near that cost rather than near 214 ms. The key still has to be stated so a changed line cannot match. The 30 ms bar stays.
+
+## Third reply
+
+Commit 3f21114 does the one change that was left, and the files agree. I would hand off the brief and the charter.
+
+The speed check now gates the two deep medians. Each result may sit above the raised-limit reference by no more than a fraction of that median's own gap, and the fraction has to be small enough that recovering only half the speed fails. A quarter of the gap does that. On the recorded machine the gaps are 4.8 ms and 3.5 ms, so a quarter is about 1.2 ms and 0.9 ms. A build that only gets halfway back, near 25.2 ms and 15.9 ms, fails. The first-screen median is still written down. Its 0.6 ms gap does not decide the checkpoint.
+
+The 10.6 ms figure was one-window Down. The measured one-window typed character at 2,400 lines is 11.0 ms, and the charter uses that. It is the scale for item 5, not a measurement of four-window typing with rows kept. The summary has the same three lengths, 6.7, 11.0, and 18.1 ms. The second reply in grok-review.md is the previous review, once, and the review section does not repeat the first list of changes.
+
+Nothing further needs to change before those two handoffs. Item 5 is still unprototyped. The 30 ms bar stays. No frame-time checkpoint goes to an implementer until the evaluator compiles whole.
+
+## Fourth reply
+
+Tell Claude to revise the charter that way. The split is right, and the three sharpenings of my review are right too. Two adjustments belong in the note before that revision is written.
+
+The miss list. A window showing the same lines as the cursor is a short walk. The expensive miss is a window whose scroll row is far from the cursor. A correct item 5 key would still pay that cost for a line-count change below that window, for a kill or a yank across lines, and for undo or visit, which drop every picture. Held undo in four windows would stay near 200 ms with item 5 finished. That is enough reason for the typing bar to leave this series.
+
+The compiler. The copy is make-list-value, which is already Racket. An Aloe compiler would still pay it once per cons or rest. Fewer of those calls is a List operation.
+
+Indexed read and slicing are both real, and they are not one prerequisite. A one-line edit already shares the zipper's above and below. replace-pieces builds a new current line and passes those two lists through. The held-letter cost is the other windows walking that zipper, not the edit rebuilding it. An nth on the lists the zipper already holds reads line k with no storage change: above is nearest-first, so a line above the focus is an index into above, and a line below is an index into below. Slicing is the other question. Each extra inserted line conses onto above, and each cons copies that whole list, so a yank of many lines is quadratic. A flat line list updated only by cons would be quadratic for a one-line edit too. Checkpoint 114 left List take out because first and rest could derive it, not because this measurement had been seen. The Index charter said to send the measurement back if lookup was the floor. This record is that floor.
+
+So the language discussion should open on both operations and be free to find that painting needs the read, while slicing is what multi-line edits and a one-copy flat list need. It should not be named as though lib/text.aloe has to change shape before a typed character can be fixed. A scratch prototype of four rebuilt windows, once a read exists, is how that discussion learns whether 30 ms still wants row reuse. It does not block the Down charter.
+
+The baseline. Record today's typing cost in the charter as the known walk this series leaves in place. Do not add a suite timing bar for it. A 200 ms test would watch a path the series is not improving, on top of an evaluator that is about to change.
+
+Everything else Claude listed should stand: items 1, 2, 3, and 6; the 30 ms Down bar; file.aloe's length; the whole suite under -j 4; the evaluator gate; items 4 and 5 gone; the "hold a letter" hand check gone; the evaluator brief left untouched; the review archived with a section saying what moved; the language exit named and not written.
