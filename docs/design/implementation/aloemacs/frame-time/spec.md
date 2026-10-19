@@ -1,8 +1,9 @@
 # aloemacs frame time specification
 
 **Status.** Written by the designer from [`charter.md`](charter.md) on
-2026-10-18 and revised the same day after Grok's review, which is kept
-verbatim in
+2026-10-18 and revised the same day after Grok's review. Grok's second
+reply, on 19 October, recommended handing it to a checkpoint manager;
+its three wording notes are taken. Both replies are kept verbatim in
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/grok-review.md`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/grok-review.md).
 Awaiting human review. Not Aloe law. Not a checkpoint.
 `SPEC.md` governs sends and types. The checkpoint manager reads this
@@ -214,8 +215,11 @@ between them: an empty separator, no `above`, and an empty `current`
 before the rows. `controls-in` sends one `find` per control to that
 block and keeps the ones it finds. A block with none returns the
 clipped rows themselves. Otherwise each row goes through
-`blank-controls` with only the present controls, so a row costs one
-`find` per present control and each copy is one row long. A control
+`blank-controls` with only the present controls. A row costs one `find`
+per present control, plus one `find` and one copy of the row for each
+match, so a row of *n* tabs is copied *n* times. That is quadratic in a
+row's length, never in the leaf's, and at screen width the sends per
+match cost more than the copies (§5.4). A control
 absent from the block is absent from every row, so for every
 `(List String)`, `(editor safe-rows rows)` equals
 `(rows map (fn (row) (editor safe-cells row)))`.
@@ -398,8 +402,8 @@ own byte checks. The bar's margin holds without it.
 The charter's own wording of item 4: walk up from the point to the top
 row collecting lines, then down for the rest. Each step still sends
 `focus-up` or `focus-down`, which copies both Lists, so each row still
-costs the file's length. With §4 and the record's block check, alone:
-8.7 / 4.7 ms at 971 lines, 10.5 / 6.6 at 2,400, 14.8 / 10.6 at 5,000.
+costs the file's length. With §4 and the record's block check, alone,
+the §3 procedure: 8.7 / 4.7 ms at 971 lines, 10.5 / 6.6 at 2,400, 14.8 / 10.6 at 5,000.
 §6 on the same base: 8.5 / 4.4, 8.4 / 4.3, 8.4 / 4.4.
 
 ### 7.3 A read through one joined String
@@ -407,7 +411,8 @@ costs the file's length. With §4 and the record's block check, alone:
 Join a List into one String with `"\n"`, `find` the line feeds, `take`,
 and `split-lines`. No line of a `Text` holds a line feed, so this reads
 any run of entries in one native copy plus one `find` per line. With §4
-and the record's block check it is flat: 7.0–8.0 ms in four windows
+and the record's block check, alone, the §3 procedure, it is flat:
+7.0–8.0 ms in four windows
 and 3.0–3.6 in one, deep and at the last page, at every length. Not
 chosen:
 
@@ -419,7 +424,8 @@ chosen:
   say. If List `rest` becomes cheap, §6 becomes cheap with it.
 
 It also moved typing, which §6 does not: a typed character in four
-windows at line 817 was 24 ms at every length, and 39 ms at the last
+windows at line 817, with the key inside the clock as in §11, was 24
+ms at every length, and 39 ms at the last
 page of 2,400 lines. That is evidence for the indexed-read discussion,
 not a proposal here.
 
@@ -547,11 +553,12 @@ round for eleven rounds, so load during the suite falls on both alike.
   lines than at 971.
 - `printf` every median and both growths, passing or not.
 
-The deep cases may grow with the depth of the point, at about the rate
-§6.3 measures, and the last-page cases hold that growth to the 30 ms
-bar. They may not grow with the length of the file. A read that again
-walks the zipper per row would add about 1.9 ms between the fixtures
-for one step per row and 4 ms for today's two.
+The deep pair may not grow with the length of the file, and the growth
+check holds it. Every Down may grow with the depth of the point, about
+1.5 ms per thousand lines (§6.3); the last-page cases hold that growth
+to the 30 ms bar and nothing tighter. A read that again walks the
+zipper per row would add about 1.9 ms between the fixtures for one
+step per row and 4 ms for today's two.
 
 What the suite holds and what review holds:
 
@@ -801,6 +808,6 @@ racket host/racket/aloemacs-run.rkt examples/aloemacs/file.aloe
 - Key coalescing, the runner, the manifest runner, the Aloe-side loop
 - Fewer terminal bytes, scroll regions, cursor-only writes
 - Joining rows with `joined-with` instead of `fold`, or any other change
-  to frame assembly (§7.5: 2.2 ms)
+  to frame assembly (§7.5: 2.1 to 2.3 ms)
 - Syntax colors, `wcwidth`, wrapping
 - Startup, visit, save, and LSP latency

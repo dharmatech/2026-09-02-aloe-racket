@@ -1,9 +1,14 @@
 # Grok's review of the frame-time spec
 
-The user brought this review on 18 October 2026. It reviewed
-`docs/design/implementation/aloemacs/frame-time/spec.md` as committed in
-`9a30ec0`. Verbatim below. The designer's response is the next revision
-of the spec; [`README.md`](README.md) in this folder lists what changed.
+The user brought two replies, verbatim below. The first, on 18 October
+2026, reviewed `docs/design/implementation/aloemacs/frame-time/spec.md`
+as committed in `9a30ec0`; the revision committed in `5f46e15` answered
+it, and [`README.md`](README.md) in this folder lists what changed. The
+second, on 19 October, reviewed `5f46e15`, recommended handing the spec
+to a checkpoint manager, and named three wordings; the spec's next
+revision took all three.
+
+## First reply
 
 ---
 
@@ -54,3 +59,25 @@ lines-from’s None test is arithmetic: top is past the end when top > focus + (
 Held typing stays where the charter put it. The spec is already plain about the consequence: after this series, one typed character in four windows is about 53 ms at line 817, 266 ms at the end of the 2,400-line file, and 1,137 ms at the end of 5,000 lines. The per-row walk is gone. The walk back to the other windows’ scroll rows is not.
 
 I did not write code or change the spec.
+
+## Second reply
+
+---
+
+The revision addresses the earlier review. I would hand this spec to a checkpoint manager.
+
+The new blanking is the right change, and it is correct. controls-in keeps the controls that actually occur, in safe-cell-controls order. blank-controls then runs on each row with only that set. A control missing from the joined block is missing from every row, so safe-rows still matches safe-cells sent to each row. The join still adds no characters: the separator is empty and the empty current piece has length 0. The new byte checks cover the cases that would slip, two rows holding different controls and one long row that cycles through all 33.
+
+The density table is the evidence that this was worth doing. Blanking the whole block was 85 ms on a 52×109 leaf of tabs and 310 ms at 53×220. Per-row blanking is 21.7 ms and 46.1 ms there, next to today's 24.8 ms and 52.2 ms. On the timed fixture the extra cost is about 1 ms. The code in the spec matches the prototype that produced the new medians.
+
+The test procedure is now something an implementer can follow without measuring the wrong session. Each case has its own session value, paging one does not move another, other-window stops after four sends, and the timed name is a further copy. The normative clock is the key, fit, record, and frame. §3 is labeled as the older clock, with the Down outside it, and the payoff lines say which clock they use. The sample sends handle-event. The deep point is 816 after page-down, and the samples' Downs move on from there. lines-from is contracted for a well-formed zipper, where focus is (above len). An alone median above 15 ms fails the checkpoint even when the suite is green.
+
+That 15 ms rule is also what makes the second checkpoint earn its place. With only the 000 edit, the §8.3 sample at 2,400 lines is 15.7 ms in four windows. After lines-from it is 9.2 ms. The growth check still rejects a per-row zipper walk, and the runs you recorded stay under 0.15 ms.
+
+Three wordings are still a little stronger than the mechanism. None of them should change the slice.
+
+• §8.4 says the deep cases and the last page "may not grow with the length of the file." The deep pair is the case that must not. The last page grows with depth, about 1.5 ms per thousand lines in §6.3, and the 30 ms bar is what holds it. The growth bullet and the table already test only the deep pair. A checkpoint should follow that table.
+• §5.2 says a row costs one find per control present in the block. blank-from searches again after every match, so a row of repeated tabs copies that row once per tab. "Never quadratic in the leaf" is the right contrast with copying the whole block per occurrence. A single row of n tabs is still n copies of that row. At screen width the send overhead dominates, which is what the density times show.
+• §7.2 and §7.3 still say "alone" without naming a clock. §15's frame-assembly figure is 2.2 ms. §7.5's labeled sample is 2.1 ms deep and 2.3 ms on the last page.
+
+I did not change the spec.
