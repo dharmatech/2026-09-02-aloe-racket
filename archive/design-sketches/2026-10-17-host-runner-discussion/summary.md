@@ -18,6 +18,21 @@ changed.
 Tree at the time: branch `experiment/2026-10-16-host-queries` at
 `85f92c4`, the last commit of editor project 9.
 
+**Tree moved, 2026-10-19.** Global checkpoint 118, the evaluator under
+the compile limit (`29c5103`), split `aloe/eval.rkt` into `eval.rkt`
+plus `eval-value.rkt`, `eval-load.rkt`, and `eval-mirror.rkt`, and the
+aloemacs-frame-time series (closed 2026-10-19) changed `editor.aloe`,
+`file.aloe`, and `lib/text.aloe`. The line numbers cited below are for
+`85f92c4`. After the split the send path is `eval-expr`'s send clause
+at `eval.rkt` line 140, `lookup-message` 215, `send-to-instance` 588,
+`apply-method` 800, `send-to-function` 879, `send-to-bool` 1043, and
+`eval-case` 168; each still ends in a tail call, the only
+`parameterize` left in `eval.rkt` is on the `load` path, and
+`loop-stack.rkt` reran flat (100,000 iterations, heap delta -0.04 MB).
+`loop-cost.rkt` reran with the Racket and Aloe loops still
+byte-identical. So 118 exists: the next free global number is what
+`CHECKPOINTS.md` says it is on the day a brief is written.
+
 **Which sections are current.** The record was revised the same day
 after Grok's review. The authority for any charter is the section
 "Review, 2026-10-17" below, together with the revised
@@ -637,9 +652,9 @@ rest stay as the charter's checklist.
   runner (other tests use it today).
 - Which closed documents get dated notes versus edits, and in which
   checkpoint; the spine checkpoint numbers (the index lists through
-  117, with 116 and 117 on another branch and no 118; the manager
-  takes the next free number); the aloemacs folder name and spoken
-  identity.
+  118 as of 2026-10-19, with 116 and 117 on another branch; the
+  manager takes the next free number); the aloemacs folder name and
+  spoken identity.
 - The scratch-file convention: `term-run.rkt` and `fs-repl.rkt` stay
   until one exists (review). What it is, a manifest row for a scratch
   file or something else, is the charter's to decide.
@@ -653,8 +668,9 @@ product tree. After the review, the exits are four, in this order:
   guard, no charter, carrying the rule and the three test programs in
   lock 1 of the review. The spine shape is `docs/checkpoints/NNNN-slug.md`,
   `tests/checkpoint-N.rkt`, and a `CHECKPOINTS.md` entry at the next
-  free global number; the index says 116 and 117 are Gel-directory
-  work on another branch and there is no 118. Per `docs/workflow.md`,
+  free global number; as of 2026-10-19 the index lists through 118,
+  with 116 and 117 Gel-directory work on another branch. Per
+  `docs/workflow.md`,
   the discussion hands it over as a brief, and a checkpoint manager
   writes the one global checkpoint; the discussion does not write
   `docs/checkpoints/NNNN-slug.md` itself. The repo's "standalone
