@@ -70,15 +70,25 @@
        ""
        (fn (acc s) (acc append s))))
 
+    ;; One find per control; each match becomes one space.
     (safe-cells (clipped-string String) String
-      (if ((clipped-string len) = 0)
-          ""
-          (let ((cell (clipped-string take 1)))
-            ((if ((safe-cell-controls find cell 0) present?)
-                 " "
-                 cell)
-             append
-             (self safe-cells (clipped-string drop 1))))))
+      (self blank-controls clipped-string safe-cell-controls))
+
+    (blank-controls (shown String) (controls String) String
+      (if ((controls len) = 0)
+          shown
+          (self blank-controls
+            (self blank-from shown (controls take 1) 0)
+            (controls drop 1))))
+
+    (blank-from (shown String) (control String) (start Int) String
+      ((shown find control start) case
+        (None () shown)
+        (Some (at)
+          (self blank-from
+            (((shown take at) append " ") append (shown drop (at + 1)))
+            control
+            (at + 1)))))
 
     (blank-rows (rows Int) (List String)
       (if (rows <= 0)
@@ -87,13 +97,30 @@
 
     (frame-rows (columns Int) (rows Int) (scroll-row Int) (scroll-col Int)
                 (List String)
-      ;; Focus only a temporary zipper at this view's explicit origin.
-      (((self text) focus-at scroll-row) case
+      (((self text) lines-from scroll-row rows) case
         (None () (self blank-rows rows))
-        (Some (at-top)
-          ((at-top next-lines rows) map
-            (fn (line)
-              (self safe-cells ((line drop scroll-col) take columns)))))))
+        (Some (lines)
+          (self safe-rows
+            (lines map (fn (line) ((line drop scroll-col) take columns)))))))
+
+    ;; A leaf's clipped rows are checked as one block. Each row is then
+    ;; blanked for the controls the block holds, and only those.
+    (safe-rows (clipped (List String)) (List String)
+      (let ((present
+              (self controls-in ("" joined-with (List empty) "" clipped)
+                safe-cell-controls)))
+        (if ((present len) = 0)
+            clipped
+            (clipped map (fn (row) (self blank-controls row present))))))
+
+    ;; The controls that occur in shown, in the order of controls.
+    (controls-in (shown String) (controls String) String
+      (if ((controls len) = 0)
+          ""
+          (let ((rest (self controls-in shown (controls drop 1))))
+            (if ((shown find (controls take 1) 0) present?)
+                ((controls take 1) append rest)
+                rest))))
 
     (frame (columns Int) (rows Int) String
       (let ((point (self point)))
@@ -105,18 +132,16 @@
               (None ()
                 (self frame-ansi "" cursor-row cursor-column))
               (Some (focused)
-                ((focused focus-at top) case
+                ((focused lines-from top rows) case
                   (None ()
                     (self frame-ansi "" cursor-row cursor-column))
-                  (Some (at-top)
+                  (Some (lines)
                     (self frame-ansi
                       (if (rows < 1)
                           ""
                           (let ((clipped
-                                 ((at-top next-lines rows) map
-                                   (fn (line)
-                                     (self safe-cells
-                                       ((line drop left) take columns))))))
+                                 (self safe-rows
+                                   (lines map (fn (line) ((line drop left) take columns))))))
                             ((clipped rest) fold
                               (clipped first)
                               (fn (body line)

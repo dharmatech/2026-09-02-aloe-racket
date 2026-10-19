@@ -1,7 +1,7 @@
 #lang racket/base
 
 ;; aloemacs-window-pictures 000: recorded leaf rows paint the bytes a fresh
-;; build paints, and a held Down stays under the keyboard repeat interval.
+;; build paints. The timing bar is tests/aloemacs/frame-time.rkt.
 
 (require racket/list racket/runtime-path racket/string rackunit
          "../../aloe/driver.rkt"
@@ -227,53 +227,3 @@
   (for ([bad '((AloemacsView new 0 0 0 0 (Position new 0 0) #f)
                (AloemacsView new 0 0 0 0 (Position new 0 0) #f 0))])
     (check-exn exn:fail:aloe-type? (lambda () (ev bad)) (format "reject ~s" bad))))
-
-;; Timing bar. Each sample is one untimed Down, then the runner's three
-;; prepared calls: fit, record, and paint.
-(def! 'timed 'top)
-(define fit! (driver-prepare! st '(define timed (timed ensure-visible 220 54))))
-(define record! (driver-prepare! st '(define timed (timed record-pictures 220 54))))
-(define paint! (driver-prepare! st '(timed frame 220 54)))
-(define down! (driver-prepare! st '(define timed (timed move-down))))
-
-(define (median-ms start)
-  (def! 'timed start)
-  (fit!)
-  (record!)
-  (define durations
-    (for/list ([sample (in-range 5)])
-      (down!)
-      (define begun (current-inexact-monotonic-milliseconds))
-      (fit!)
-      (record!)
-      (paint!)
-      (- (current-inexact-monotonic-milliseconds) begun)))
-  (list-ref (sort durations <) 2))
-
-(define (bar! label median)
-  (check-true (< median 30.0) (format "~a: median ~a ms" label median))
-  (when (< median 30.0)
-    (printf "~a: median ~a ms\n" label median)))
-
-;; Four windows, first screen: every picture matches.
-(bar! "four windows, first screen" (median-ms 'top))
-
-;; Four windows, widest leaf deep in the file: one leaf rebuilds per Down.
-(def! 'wide 'top)
-(let loop ([sends 0])
-  (unless (= (selected-columns 'wide) 109)
-    (when (= sends 4) (error 'window-pictures "no 109-column leaf"))
-    (def! 'wide '(wide other-window))
-    (loop (add1 sends))))
-(page-deep! 'wide)
-(check-true (>= (point-line 'wide) 800))
-(check-true (> (selected-scroll 'wide) 700))
-(check-equal? (selected-columns 'wide) 109)
-(check-true (unselected-at-top? 'wide))
-(bar! "four windows, widest leaf deep" (median-ms 'wide))
-
-;; One window deep in the file.
-(def! 'single 'one)
-(page-deep! 'single)
-(check-true (>= (point-line 'single) 800))
-(bar! "one window, deep" (median-ms 'single))

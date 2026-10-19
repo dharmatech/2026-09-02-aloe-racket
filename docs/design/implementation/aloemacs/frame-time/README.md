@@ -1,14 +1,17 @@
 # aloemacs frame time
 
-**Status: Spec written 2026-10-18.** Awaiting human review. Not Aloe
-law. Not Gel. Not a global checkpoint. Product root:
+**Status: aloemacs-frame-time 001 issued 2026-10-19.** The spec was
+written 2026-10-18; 000 was issued and implemented 2026-10-19. 001
+awaits human review, then an implementer. Not Aloe law. Not Gel. Not a
+global checkpoint. Product root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Designer assignment |
 | [`spec.md`](spec.md) | The design. The checkpoint manager reads this, after human review |
-| `checkpoints/` | Later. The manager writes one checkpoint, then stops |
+| [`checkpoints/000-blank-by-find.md`](checkpoints/000-blank-by-find.md) | aloemacs-frame-time 000: doubled padding, `safe-cells` by `find`, `safe-rows`, the bar with the short fixture. Implemented 2026-10-19 |
+| [`checkpoints/001-read-visible-lines.md`](checkpoints/001-read-visible-lines.md) | aloemacs-frame-time 001: `Text.lines-from`, both frame paths reading through it, the long fixture, the last page, and the growth rule. The last checkpoint; the hand check and five-run check close the series |
 
 Parent map: [`../README.md`](../README.md).
 

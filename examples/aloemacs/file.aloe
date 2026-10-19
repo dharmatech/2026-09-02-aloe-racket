@@ -286,7 +286,12 @@
           ""))
 
     (fill (remaining Int) String
-      (if (remaining <= 0) "" ("-" append (self fill (remaining - 1)))))
+      (if (remaining <= 0)
+          ""
+          (let ((half (self fill (remaining / 2))))
+            (if (((remaining / 2) * 2) = remaining)
+                (half append half)
+                ((half append half) append "-")))))
 
     ;; Display chrome around a visible row that safe cells already produced.
     ;; It never clips, pads or inspects the row.
@@ -637,7 +642,12 @@
           (columns (((self columns) - divider) - cut)))))
 
     (spaces (remaining Int) String
-      (if (remaining <= 0) "" (" " append (self spaces (remaining - 1)))))
+      (if (remaining <= 0)
+          ""
+          (let ((half (self spaces (remaining / 2))))
+            (if (((remaining / 2) * 2) = remaining)
+                (half append half)
+                ((half append half) append " ")))))
 
     (pad-row (row String) String
       (row append (self spaces ((self columns) - (row len)))))))

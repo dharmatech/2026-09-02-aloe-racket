@@ -151,6 +151,36 @@
                 (below rest)
                 (focus + 1))))))
 
+    ;; count lines from line top, read without moving the focus. None when
+    ;; top is not a line of this text; "" for each line past the end.
+    (lines-from (top Int) (count Int) (Option (List String))
+      (self case
+        (from-string (source) ((self indexed-value) lines-from top count))
+        (indexed (above current below focus)
+          (if (if (top < 0) #t (top > (focus + (below len))))
+              (Option None)
+              (let ((upper (((focus - top) max 0) min count))
+                    (here? (if (top <= focus) (focus < (top + count)) #f)))
+                (let ((lower ((count - upper) - (if here? 1 0))))
+                  (let ((middle
+                          (if here?
+                              ((self entries-after below 0 lower) cons current)
+                              (self entries-after below ((top - focus) - 1) lower))))
+                    (Option Some
+                      ((self entries-after above (((focus - top) - count) max 0) upper)
+                       fold middle
+                       (fn (lines line) (lines cons line)))))))))))
+
+    ;; After skip entries of xs, count entries in xs's order, then "" for
+    ;; each one past its end.
+    (entries-after (xs (List String)) (skip Int) (count Int) (List String)
+      (cond
+        ((count <= 0) (List empty))
+        ((xs empty?) ((self entries-after xs 0 (count - 1)) cons ""))
+        ((skip > 0) (self entries-after (xs rest) (skip - 1) count))
+        ((count = 1) (List of (xs first)))
+        (else ((self entries-after (xs rest) 0 (count - 1)) cons (xs first)))))
+
     (valid-position? (position Position) Bool
       (if ((position line) < 0)
           #f
