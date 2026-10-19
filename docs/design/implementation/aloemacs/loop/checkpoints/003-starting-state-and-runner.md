@@ -69,7 +69,7 @@ the old editor, its Text, or its Position.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `examples/aloemacs/editor.aloe`, any other example, or any file under
   `lib/`, `aloe/`, `gel/`, or `bin/`
 - `host/racket/term.rkt`, `host/racket/gel-run.rkt`,

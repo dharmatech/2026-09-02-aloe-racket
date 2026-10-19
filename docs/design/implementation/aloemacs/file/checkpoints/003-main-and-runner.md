@@ -85,7 +85,7 @@ values; it is not mutation of a session, editor, Text, Position, Fs, or Path.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `examples/aloemacs/editor.aloe`, `examples/aloemacs/file.aloe`, or another
   example
 - any file under `lib/`, `aloe/`, `gel/`, or `bin/`

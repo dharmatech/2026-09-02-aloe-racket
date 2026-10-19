@@ -402,4 +402,4 @@ Global checkpoints 108–113 and 116–117 are Gel-directory work. They live on
   Aloe behavior changes.
 
 Editor and LSP work is organized as local projects rather than global
-checkpoints. See [docs/editor/README.md](docs/editor/README.md).
+checkpoints. See [docs/design/implementation/editor/README.md](docs/design/implementation/editor/README.md).

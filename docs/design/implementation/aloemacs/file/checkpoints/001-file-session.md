@@ -76,7 +76,7 @@ no `"save"` mapping. Direct test sends may still pass the named String
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `examples/aloemacs/editor.aloe`, `examples/aloemacs/main.aloe`, or another
   example
 - `lib/fs.aloe`, `lib/text.aloe`, `lib/option.aloe`, `lib/disk.aloe`, or

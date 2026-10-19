@@ -170,7 +170,7 @@ measurement.
 - `tests/aloemacs/` and, for constructor and inventory migrations,
   `tests/parenthetical-construction/`
 - Not `aloe/`, `SPEC.md`, `lib/` outside `text.aloe`, `host/racket/`,
-  Gel, or `docs/editor/`
+  Gel, or `docs/design/implementation/editor/`
 
 `host/racket/aloemacs-run.rkt` stays as it is: `ensure-visible`, then
 `record-pictures`, then the frame write, then `handle-key`. The

@@ -190,7 +190,7 @@ editing `editor.aloe` for each new one, Band 2 is unfinished.
 
 | # | Exploration | Why later |
 |---|---|---|
-| 18 | **LSP inside aloemacs** | Needs a process/network capability, overlays, and a minibuffer for UI. VS Code LSP in `docs/editor/` already edits Aloe *from the outside*; that map stays separate until this editor hosts a client |
+| 18 | **LSP inside aloemacs** | Needs a process/network capability, overlays, and a minibuffer for UI. VS Code LSP in `docs/design/implementation/editor/` already edits Aloe *from the outside*; that map stays separate until this editor hosts a client |
 | 19 | **Live eval / running image** | Hallmark of Emacs. Reopens the **static first** lock (no Mirror, no live `eval` in the editor). Park until the core and modes are boring. Then a dedicated charter |
 | 20 | **Host clipboard, PTY, daemon** | Extra capabilities. Kill-ring does not require them. Mouse has left this row for [`mouse/`](mouse/) |
 

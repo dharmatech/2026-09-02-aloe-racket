@@ -518,7 +518,7 @@ checkpoint 118.` becomes:
 
 ```text
 Editor and LSP work is organized as local projects rather than global
-checkpoints. See [docs/editor/README.md](docs/editor/README.md).
+checkpoints. See [docs/design/implementation/editor/README.md](docs/design/implementation/editor/README.md).
 ```
 
 Append this entry to `docs/decisions.md`:

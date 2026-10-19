@@ -147,7 +147,7 @@ edit that test.
 
 - `lib/`, including `lib/text.aloe` (`lines-from` is 001)
 - `aloe/`, `host/racket/`, `SPEC.md`, `CHECKPOINTS.md`, `bin/`
-- `examples/aloemacs/main.aloe`, Gel, `docs/editor/`
+- `examples/aloemacs/main.aloe`, Gel, `docs/design/implementation/editor/`
 - Every `define-class` list, every field, every constructor, and the
   signature of every existing method. No class is added.
 - `safe-cell-controls`, `AloemacsLeafPicture`, its key,

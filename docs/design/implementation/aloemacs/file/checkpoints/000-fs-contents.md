@@ -81,7 +81,7 @@ loading remain explicit and driver-local.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `lib/disk.aloe`, `lib/option.aloe`, `lib/text.aloe`, or another library
 - any file under `aloe/`, `bin/`, `gel/`, or `examples/`
 - `host/racket/term.rkt`, `host/racket/aloemacs-run.rkt`, or another host

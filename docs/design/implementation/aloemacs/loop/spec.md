@@ -509,4 +509,4 @@ The design is implemented when all of the following are true:
 - Host mutation of editor state, Racket implementations of edit/movement or
   ANSI policy, a new Term method, or changes to `write-line`
 - Changes to Gel, `lib/text.aloe`, the language specification, global
-  checkpoints, or work under `docs/editor/`
+  checkpoints, or work under `docs/design/implementation/editor/`

@@ -154,8 +154,8 @@ so.
   `aloe/completion-query.rkt`, `aloe/private/checker-observation.rkt`
   (only if needed; the manager's version did not need it).
 - `host/racket/gel-run.rkt`: one added load.
-- `SPEC.md`, `docs/decisions.md`, `docs/editor/expression-query/spec.md`,
-  `docs/editor/completion/spec.md`: only the text in **Language law**
+- `SPEC.md`, `docs/decisions.md`, `docs/design/implementation/editor/expression-query/spec.md`,
+  `docs/design/implementation/editor/completion/spec.md`: only the text in **Language law**
   and **Editor documents**.
 - The test files in **Migration**, only as it says.
 - `tests/modules/006-file-environments.rkt`: new.
@@ -380,11 +380,11 @@ land it:
 
 ## Editor documents
 
-- `docs/editor/expression-query/spec.md` §1: after the paragraph that
+- `docs/design/implementation/editor/expression-query/spec.md` §1: after the paragraph that
   begins "`#:document-path`, when supplied," add: "The file is checked
   as a file module: its own environment is a child of the default
   environment, and its nested loads copy only what they define."
-- `docs/editor/completion/spec.md` §1: after the paragraph that begins
+- `docs/design/implementation/editor/completion/spec.md` §1: after the paragraph that begins
   "`source-path` is also the buffer's identity." add: "The buffer is
   checked as a file module: its own environment is a child of the
   default environment, and its nested loads copy only what they

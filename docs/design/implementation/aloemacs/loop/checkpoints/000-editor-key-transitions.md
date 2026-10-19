@@ -70,7 +70,7 @@ environment.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `lib/text.aloe`, any other file under `lib/`, or any file under `aloe/` or
   `bin/`
 - `host/racket/term.rkt`, any other host file, package metadata, or `tui-term`

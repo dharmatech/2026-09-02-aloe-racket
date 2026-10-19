@@ -75,7 +75,7 @@ There is still no `examples/aloemacs/main.aloe`,
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
-  under `docs/editor/`
+  under `docs/design/implementation/editor/`
 - `lib/text.aloe`, `lib/string.aloe`, `lib/list.aloe`, any other library, or
   any file under `aloe/` or `bin/`
 - `host/racket/term.rkt`, any other host file, package metadata, or `tui-term`

@@ -76,7 +76,7 @@ May change:
 
 Does not change: `aloe/`, `SPEC.md`, `lib/` outside `text.aloe`,
 `host/racket/` (the runner stays `ensure-visible`, `record-pictures`,
-the frame write, `handle-event`), `main.aloe`, Gel, `docs/editor/`, any
+the frame write, `handle-event`), `main.aloe`, Gel, `docs/design/implementation/editor/`, any
 `define-class` list, any field, any constructor. No class is added, so
 the tests that pin `file.aloe`'s ordered class list are untouched.
 

@@ -3,7 +3,7 @@
 Spoken **aloe macs**. A terminal editor written in Aloe. Local work.
 Not Aloe language law. Not Gel. Not the global checkpoint spine
 (`docs/design/implementation/spine/checkpoints/`, `CHECKPOINTS.md`). Not
-[`docs/editor/`](../../../editor/README.md) (that map is edit-Aloe
+[`docs/design/implementation/editor/`](../editor/README.md) (that map is edit-Aloe
 from the outside).
 
 Identity is `(project, number)` or `(aloemacs-layer, number)`.
@@ -219,7 +219,7 @@ Easy to smuggle in. They are not.
 - `M-x` eval, Gel's `Mirror`, hot reload
 - A Chez Emacs or Legmacs source port
 - Global checkpoint numbers 116, 118, …
-- LSP / VS Code (`docs/editor/`)
+- LSP / VS Code (`docs/design/implementation/editor/`)
 
 ## First consumer of each layer
 

@@ -168,7 +168,7 @@ directory or anything under it. The root `.git` skip stays. The
 before-and-after `check-equal?` stays. Source, fixtures,
 metadata, and every other path stay in the snapshot. No tracked
 path is named `compiled`. Item 10 of
-[`docs/editor/lsp/checkpoints/009-launch.md`](../../../editor/lsp/checkpoints/009-launch.md)
+[`docs/design/implementation/editor/lsp/checkpoints/009-launch.md`](../editor/lsp/checkpoints/009-launch.md)
 asks this test to prove the launch does not rewrite source,
 fixtures, or metadata, or create a checked-in build artifact.
 Gitignored bytecode is not that artifact.
@@ -283,7 +283,7 @@ command green after a shared `.rkt` edit.
 - The Racket [raco test](https://docs.racket-lang.org/raco/test.html)
   manual. `-j` is the parallel-file flag. `--drdr` and `--place`
   are not candidates.
-- [`docs/editor/lsp/checkpoints/009-launch.md`](../../../editor/lsp/checkpoints/009-launch.md)
+- [`docs/design/implementation/editor/lsp/checkpoints/009-launch.md`](../editor/lsp/checkpoints/009-launch.md)
   item 10. The launch snapshot protects source, fixtures,
   metadata, and checked-in build artifacts. Skipping gitignored
   `compiled/` directories keeps that proof.

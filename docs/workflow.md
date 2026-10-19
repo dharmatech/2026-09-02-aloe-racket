@@ -54,7 +54,7 @@ role follows that role.
 When the work is already locked (a vocabulary, a SPEC amendment, a
 small kernel lift), the high-level discussion may write a **brief**
 that goes straight to a checkpoint manager. That is the "Brief"
-case in [`docs/editor/README.md`](editor/README.md).
+case in [`docs/design/implementation/editor/README.md`](design/implementation/editor/README.md).
 
 When the work is locked **and** fits one implementer conversation
 (a local idiom cleanup, a one-send move), the discussion may write
@@ -156,7 +156,7 @@ checkpoint yet. Combine or redesign.
 
 Follow the existing shape
 ([`docs/design/implementation/spine/checkpoints/0103-fs-path-algebra.md`](design/implementation/spine/checkpoints/0103-fs-path-algebra.md),
-[`docs/editor/lsp/checkpoints/000-hover.md`](editor/lsp/checkpoints/000-hover.md)):
+[`docs/design/implementation/editor/lsp/checkpoints/000-hover.md`](design/implementation/editor/lsp/checkpoints/000-hover.md)):
 
 - goal
 - depends on / identity
@@ -209,9 +209,9 @@ charter, spec, and `checkpoints/`. Identity remains
 
 Tests sit under `tests/<project>/`, not `tests/checkpoint-N.rkt`.
 
-Existing local maps stay where they are. Do not move
-[`docs/editor/`](editor/README.md) into `docs/design/implementation/`.
-Do not put new work under `docs/editor/` unless it is actually that
+The editor map is
+[`docs/design/implementation/editor/`](design/implementation/editor/README.md).
+Do not put new work under it unless the work is actually that
 editor-support line.
 
 ## Handoff

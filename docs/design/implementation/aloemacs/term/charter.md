@@ -25,7 +25,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-term 000**, `001`, … under
    `docs/design/implementation/aloemacs/term/checkpoints/` (not
-   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/design/implementation/editor/`).
 4. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.

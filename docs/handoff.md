@@ -17,7 +17,7 @@ implementation context; `SPEC.md` is law. Proposal A on
 
 The global checkpoint spine on `main` reaches checkpoint 107, then records
 String checkpoints 114–115. Editor support is organized separately under
-`docs/editor/` as local projects; it is not Gel and is not global checkpoint
+`docs/design/implementation/editor/` as local projects; it is not Gel and is not global checkpoint
 118.
 
 ## What Aloe is
@@ -64,7 +64,7 @@ only through explicit typed capabilities.
   invocation without adding `perform` to ordinary objects.
 - Source locations, the shared signature catalog, expression and completion
   queries, the LSP adapter, and the VS Code hover/completion client are on
-  `main`. Their project law and history live under `docs/editor/`; this editor
+  `main`. Their project law and history live under `docs/design/implementation/editor/`; this editor
   work is independent of Gel.
 - Gel is an Aloe-written keystroke object environment with an immutable
   `GelStack`, reflected menus, typed one-argument pending sends,
@@ -157,7 +157,7 @@ not crossed, and `(List Item)` is likewise built in Aloe. There is no file-text
 reading or Gel filesystem UI. Option remains loadable rather than bootstrapped,
 default drivers still have no `fs-host`. Gel-directory, presentations, and
 `gel-directory-run` remain experimental and are not part of this state. The
-editor/LSP work and `docs/editor/` are on `main` and are not Gel. The
+editor/LSP work and `docs/design/implementation/editor/` are on `main` and are not Gel. The
 `experiment/2026-09-12-editor` branch remains the stacked snapshot containing
 Gel-directory together with the editor work; it was not merged as a branch.
 

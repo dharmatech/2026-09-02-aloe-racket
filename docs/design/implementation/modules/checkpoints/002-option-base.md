@@ -159,8 +159,8 @@ split the editor query into its own checkpoint, keeping the order.
   base-library rule; `#:document-path` on `query-expression-at`.
 - `aloe/lsp.rkt`: pass `#:document-path` through a snapshot.
 - `SPEC.md`, `docs/decisions.md`: only the text in **Language law**.
-- `docs/editor/lsp/spec.md`, `docs/editor/expression-query/spec.md`,
-  `docs/editor/completion/spec.md`: only the text in **Editor
+- `docs/design/implementation/editor/lsp/spec.md`, `docs/design/implementation/editor/expression-query/spec.md`,
+  `docs/design/implementation/editor/completion/spec.md`: only the text in **Editor
   documents**.
 - `tests/modules/002-option-base.rkt`: new.
 - The existing tests in **Migration**, and only the lines it names.
@@ -353,12 +353,12 @@ base\" (YYYY-MM-DD)." with the same date.
 
 ## Editor documents
 
-- `docs/editor/lsp/spec.md` §5: after the sentence "The adapter does
+- `docs/design/implementation/editor/lsp/spec.md` §5: after the sentence "The adapter does
   not copy, parse, or rewrite `load` forms." add: "When it queries
   through a sibling, it passes the document's own path as
   `#:document-path`, so the query keys and names the buffer by the
   document, not the sibling."
-- `docs/editor/expression-query/spec.md` §1: the signature in the
+- `docs/design/implementation/editor/expression-query/spec.md` §1: the signature in the
   code block becomes
   `(query-expression-at source-path position #:document-path [document-path source-path])`
   with a contract comment line `; document-path : path-string?`. After
@@ -368,7 +368,7 @@ base\" (YYYY-MM-DD)." with the same date.
   and the defining path of classes it defines. It defaults to the
   normalized source path. Loads still resolve relative to the source
   path's directory."
-- `docs/editor/completion/spec.md` §1: after the `source-path`
+- `docs/design/implementation/editor/completion/spec.md` §1: after the `source-path`
   paragraph (the one that begins "`source-path`, when supplied, is
   normalized") add: "`source-path` is also the buffer's identity. When
   it names one of the base libraries, the query installs that library

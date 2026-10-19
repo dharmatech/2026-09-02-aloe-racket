@@ -49,7 +49,7 @@ inference fills in what you do not write.
 - [lib/disk.aloe](lib/disk.aloe) — live `Disk`, `Location`, and `Item` filesystem API
 - [examples/boids.aloe](examples/boids.aloe) — target program
 - [examples/mpl/](examples/mpl/) — 0.2 computer algebra fragment
-- [docs/editor/](docs/editor/) — source-query and LSP local-project documentation
+- [docs/design/implementation/editor/](docs/design/implementation/editor/) — source-query and LSP local-project documentation
 - [editors/vscode/](editors/vscode/) — VS Code hover/completion client
 - [docs/journal/](docs/journal/) — release notes
 

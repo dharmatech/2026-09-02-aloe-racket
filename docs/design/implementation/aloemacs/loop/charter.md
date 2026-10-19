@@ -27,7 +27,7 @@ If you have been told to read this file, this is the whole assignment.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-loop 000**, `001`, … under
    `docs/design/implementation/aloemacs/loop/checkpoints/` (not
-   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/design/implementation/editor/`).
 5. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.

@@ -132,7 +132,7 @@ From `experiment/2026-09-12-editor` (`aef6fa7`):
 - Source-location parser (`read-syntax` path) plus existing `parse-datum`
 - `aloe/signature-catalog.rkt` shared with Mirror (leave that sharing)
 - Expression query, completion query, `aloe/lsp.rkt`
-- `docs/editor/**` and `tests/editor/**` as they exist on the source tip
+- `docs/design/implementation/editor/**` and `tests/editor/**` as they exist on the source tip
 - `editors/vscode/**` as tracked on the source tip (`.gitignore` already
   excludes `node_modules/`)
 - `info.rkt` `net-lib` dependency
@@ -228,7 +228,7 @@ git checkout "$SRC" -- \
   tests/checkpoint-114.rkt \
   tests/checkpoint-115.rkt \
   tests/editor \
-  docs/editor \
+  docs/design/implementation/editor \
   docs/design/implementation/spine/string-len-take-brief.md \
   docs/design/implementation/spine/string-starts-with-library-brief.md \
   docs/design/implementation/spine/checkpoints/0114-string-len-take.md \
@@ -303,7 +303,7 @@ After checkpoint 107, record:
   on `main`. Link the existing `docs/design/implementation/spine/checkpoints/0114-*.md` and
   `0115-*.md` files. Keep those numbers; do not renumber to 108.
 - Editor / LSP is **not** a global checkpoint. Point at
-  `docs/editor/README.md`. Do not write checkpoint 118.
+  `docs/design/implementation/editor/README.md`. Do not write checkpoint 118.
 
 ### 8.3 `docs/decisions.md`
 
@@ -322,7 +322,7 @@ Do **not** add “Gel directory surface (2026-09-09)”.
   String 114–115, plus editor/LSP as local projects.
 - Mention `lib/string.aloe` and that default drivers still have no
   host capabilities.
-- Mention that `docs/editor/` is on `main` and is not Gel.
+- Mention that `docs/design/implementation/editor/` is on `main` and is not Gel.
 - It is still correct that Mirror, Signature, and the earlier Gel
   remain on `main`.
 - Do **not** paste Gel-directory, presentations, or
@@ -334,7 +334,7 @@ Do **not** add “Gel directory surface (2026-09-09)”.
 
 Small updates only:
 
-- Layout: `lib/string.aloe`, `docs/editor/`, `editors/vscode/`.
+- Layout: `lib/string.aloe`, `docs/design/implementation/editor/`, `editors/vscode/`.
 - Still an exploratory prototype. Do not announce a finished release.
 - Do not claim Gel-directory.
 
@@ -460,7 +460,7 @@ Read, in order:
 - editor-tip `SPEC.md` only as the source of the §8.1 String/Boid
   hunks
 - `docs/philosophy.md`
-- `docs/editor/README.md` on the editor tip (local editor law:
+- `docs/design/implementation/editor/README.md` on the editor tip (local editor law:
   not global checkpoints)
 - `AGENTS.md`
 - `docs/design/implementation/spine/0.3-language-merge.md` as the previous landing; do not

@@ -47,8 +47,8 @@ temporary reproduction are not additional rules.
   complete body against the declared return. Recursive instance sends
   currently re-enter that body with no in-progress check. Preserve the
   single body-check path rather than adding a second checker.
-- [editor expression-query spec](../../../../editor/expression-query/spec.md)
-  §5 and [rigid generic-body checkpoint](../../../../editor/expression-query/checkpoints/002-rigid-generic-body.md)
+- [editor expression-query spec](../../editor/expression-query/spec.md)
+  §5 and [rigid generic-body checkpoint](../../editor/expression-query/checkpoints/002-rigid-generic-body.md)
   remain authority for selected deferred bodies, symbolic class/method
   parameters, complete-file failure, and suppression of captures beneath
   ordinary concrete instantiation. The observer implementation lives in

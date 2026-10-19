@@ -88,7 +88,7 @@ rows are intentionally changed. Do not weaken unrelated assertions.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, or any global checkpoint document
-- any file under `aloe/`, `lib/`, `examples/aloemacs/`, `docs/editor/`, or
+- any file under `aloe/`, `lib/`, `examples/aloemacs/`, `docs/design/implementation/editor/`, or
   `docs/design/implementation/spine/checkpoints/`
 - `host/racket/term-run.rkt`, `host/racket/gel-run.rkt`, `tui-term`, package
   metadata, or another host module

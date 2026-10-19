@@ -286,10 +286,10 @@ Then stop.
 - `SPEC.md` (do not edit language)
 - `docs/philosophy.md` — kernel stays small; editor questions are
   why sends are typed
-- `docs/editor/source-locations/checkpoints/000-spans.md` — loc
+- `docs/design/implementation/editor/source-locations/checkpoints/000-spans.md` — loc
   fields and `parse-datum` location-free contract, except this
   assignment **does** collapse the two grammars that 000 introduced
-- `docs/editor/README.md` — editor work is not global checkpoints
+- `docs/design/implementation/editor/README.md` — editor work is not global checkpoints
 - `AGENTS.md`
 
 Not authority: Proposal A, Gel-directory specs, a new parser, a

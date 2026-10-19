@@ -578,8 +578,8 @@ Allowed product files: `aloe/library.rkt`, `aloe/main.rkt`,
 `aloe/driver.rkt`, `aloe/type.rkt`, `aloe/eval.rkt`, `aloe/env.rkt`,
 `aloe/expression-query.rkt`, `aloe/completion-query.rkt`,
 `aloe/lsp.rkt`, `SPEC.md`, `docs/decisions.md`,
-`docs/editor/lsp/spec.md` §5, `docs/editor/expression-query/spec.md`,
-`docs/editor/completion/spec.md`, and the tests named below.
+`docs/design/implementation/editor/lsp/spec.md` §5, `docs/design/implementation/editor/expression-query/spec.md`,
+`docs/design/implementation/editor/completion/spec.md`, and the tests named below.
 
 **Install.** `aloe/library.rkt` reads `lib/option.aloe` through the
 same read-once promise shape as the other three, exposing expressions
@@ -665,17 +665,17 @@ queries are reached through a snapshot accept the keyword:
 `tests/editor/lsp/003-buffer-snapshots.rkt` today; the implementer
 confirms by running the suite.
 
-**Documents.** `docs/editor/lsp/spec.md` §5 gains one sentence after
+**Documents.** `docs/design/implementation/editor/lsp/spec.md` §5 gains one sentence after
 "The adapter does not copy, parse, or rewrite `load` forms.":
 "When it queries through a sibling, it passes the document's own
 path as `#:document-path`, so the query keys and names the buffer by
-the document, not the sibling." `docs/editor/expression-query/spec.md`
+the document, not the sibling." `docs/design/implementation/editor/expression-query/spec.md`
 §1 adds the keyword to the signature and this paragraph after the
 `position` paragraph: "`#:document-path`, when supplied, is the
 path the query treats as the file's identity: its load-cache key
 and the defining path of classes it defines. It defaults to the
 normalized source path. Loads still resolve relative to the source
-path's directory." `docs/editor/completion/spec.md` §1 adds after
+path's directory." `docs/design/implementation/editor/completion/spec.md` §1 adds after
 the `source-path` paragraph: "`source-path` is also the buffer's
 identity. When it names one of the base libraries, the query
 installs that library from `source` instead of the file on disk, and
@@ -849,8 +849,8 @@ files: `aloe/env.rkt`, `aloe/type.rkt`, `aloe/eval.rkt`,
 `aloe/main.rkt`, `aloe/driver.rkt`, `aloe/expression-query.rkt`,
 `aloe/completion-query.rkt`, `aloe/private/checker-observation.rkt`,
 `host/racket/gel-run.rkt`, `SPEC.md`, `docs/decisions.md`,
-`docs/editor/expression-query/spec.md`,
-`docs/editor/completion/spec.md`, the tests in §9.1, and
+`docs/design/implementation/editor/expression-query/spec.md`,
+`docs/design/implementation/editor/completion/spec.md`, the tests in §9.1, and
 `tests/modules/NNN-file-environments.rkt`. After 3d.
 
 #### 6.5.1 Environments
@@ -1016,11 +1016,11 @@ asserts the new rule.
 - MPL conforms; the whole suite is green with the §9.1 loads added.
 
 **Documents.** `SPEC.md` and `docs/decisions.md`: §12, row 3e.
-`docs/editor/expression-query/spec.md` §1, after the
+`docs/design/implementation/editor/expression-query/spec.md` §1, after the
 `#:document-path` paragraph from 3a: "The file is checked as a file
 module: its own environment is a child of the default environment,
 and its nested loads copy only what they define." The same sentence,
-with `source` for the file, goes into `docs/editor/completion/spec.md`
+with `source` for the file, goes into `docs/design/implementation/editor/completion/spec.md`
 §1 and its "Each call creates a fresh checker environment" paragraph
 gains "`lib/int.aloe` and `lib/option.aloe`" after "String libraries".
 
@@ -1103,8 +1103,8 @@ Its own layer, after 3f and before adoption. Allowed product files:
 `aloe/type.rkt`, `aloe/private/checker-observation.rkt`,
 `aloe/expression-query.rkt`, `aloe/lsp.rkt`, `aloe/eval.rkt` only to
 record the path on `class-value` if the implementer wants parity
-(not required), `docs/editor/lsp/spec.md` §7,
-`docs/editor/expression-query/spec.md`, `docs/decisions.md`, the
+(not required), `docs/design/implementation/editor/lsp/spec.md` §7,
+`docs/design/implementation/editor/expression-query/spec.md`, `docs/decisions.md`, the
 tests in §9.3, and `tests/modules/NNN-defining-path.rkt`.
 
 ### 7.1 Recording
@@ -1220,7 +1220,7 @@ them.
 
 ### 7.6 Documents
 
-`docs/editor/lsp/spec.md` §7: the numbered list gains the `from:`
+`docs/design/implementation/editor/lsp/spec.md` §7: the numbered list gains the `from:`
 item between the type line and `messages:`, the JSON example gains
 the line `from: (Point@tests/editor/lsp/fixtures/point.aloe Int)`
 for the normative fixture, and the sentence "The adapter does not
@@ -1231,7 +1231,7 @@ sibling's path." §10 of that spec: the bullet "Changes to
 `query-expression-at`, `srcloc`, type datums, or `signature-spec`"
 becomes "Changes to `srcloc` or `signature-spec`; the `pathed-type`
 field and `#:document-path` keyword are the modules series' additions
-to `query-expression-at`". `docs/editor/expression-query/spec.md`
+to `query-expression-at`". `docs/design/implementation/editor/expression-query/spec.md`
 §1: the struct gains `pathed-type` with one sentence: "`pathed-type`
 is the same datum with each class that has a defining path written
 `Name@path`, the path repository-relative when inside the repository;

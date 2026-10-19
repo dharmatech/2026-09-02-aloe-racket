@@ -51,7 +51,7 @@ Other authority this design keeps:
   §3 and §6: `tests/string-load-save/timing.rkt` is a `module+ main`
   hand check run with `TMPDIR=/tmp racket tests/string-load-save/timing.rkt`.
   Its bars are review-time hand bars, not suite thresholds.
-- [`docs/editor/lsp/checkpoints/009-launch.md`](../../../editor/lsp/checkpoints/009-launch.md)
+- [`docs/design/implementation/editor/lsp/checkpoints/009-launch.md`](../editor/lsp/checkpoints/009-launch.md)
   item 10: the launch test proves the package-link launch does not
   rewrite source, fixtures, or metadata, or create a checked-in
   launcher or build artifact.

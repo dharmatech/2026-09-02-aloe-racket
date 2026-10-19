@@ -177,7 +177,7 @@ report it; do not edit that test.
 - `lib/` outside `text.aloe`; inside it, every method other than the
   two added, including `next-lines`, `excerpt`, `focus-at`,
   `focus-up`, and `focus-down`
-- `examples/aloemacs/file.aloe`, `main.aloe`, Gel, `docs/editor/`
+- `examples/aloemacs/file.aloe`, `main.aloe`, Gel, `docs/design/implementation/editor/`
 - Every `define-class` list, every field, every constructor, and the
   signature of every existing method. No class is added.
 - `safe-cells`, `safe-rows`, `blank-controls`, `blank-from`,

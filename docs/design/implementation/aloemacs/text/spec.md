@@ -39,7 +39,7 @@ operations, screen geometry, Unicode width, and a running editor.
   must name those exact files and their focused kernel tests.
 - Algebra tests live under `tests/aloemacs/` and load Aloe source through the
   checked driver.
-- Nothing from this project belongs in `examples/aloemacs/`, `docs/editor/`,
+- Nothing from this project belongs in `examples/aloemacs/`, `docs/design/implementation/editor/`,
   the global `docs/design/implementation/spine/checkpoints/` directory, or `CHECKPOINTS.md`.
 
 The existing `List` messages and Aloe methods, `String` messages and

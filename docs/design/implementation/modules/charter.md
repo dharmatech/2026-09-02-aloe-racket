@@ -70,8 +70,8 @@ tool, or a reload design is a defect in this document.
 | `gel/loop.aloe`, `examples/aloemacs/file.aloe`, `examples/mpl/identities.aloe` | `loop.aloe` loads `stack.aloe` and names `GelRow` and `gel-rows`, which `menu.aloe` defines. `stack.aloe` loads `menu.aloe`. `file.aloe` loads `editor.aloe` and `lib/fs.aloe` and also names `Text` and `Position`. `identities.aloe` loads `core.aloe` and uses `Sym` |
 | `host/racket/gel-run.rkt` | Loads `gel/main.aloe`, then `examples/point.aloe`, then evaluates an expression that uses a name from each. Checkpoints 65 and 86 do the same |
 | `aloe/expression-query.rkt` | Each query builds a fresh type environment. A nested load is read from disk. A dirty buffer of another file is not overlaid |
-| [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
-| [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
+| [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
+| [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe), [`editor.aloe`](../../../../examples/aloemacs/editor.aloe) | `main.aloe` loads `file.aloe` and uses `Text`, `Position`, `Option`, `Path`, and `Fs`. `editor.aloe` loads `lib/text.aloe` and uses `Option` |
 | [`lib/text.aloe`](../../../../lib/text.aloe), [`lib/fs.aloe`](../../../../lib/fs.aloe), [`lib/disk.aloe`](../../../../lib/disk.aloe) | Each loads `lib/option.aloe`. Those loads stay. After `Option` is installed they are hits of the one base class |
 | [`examples/mpl/core.aloe`](../../../../examples/mpl/core.aloe) | Defines `Math`, loads `sym.aloe`, `sum.aloe`, `num.aloe`, `prod.aloe`, and `pow.aloe`, then adds the protocol methods with `define-methods`. Each class file names `Math` and does not load `core.aloe`. `prod.aloe` and `pow.aloe` each send `Num new`. The leaves do not load one another. A load from a class file back to `core.aloe` is a cycle |
@@ -158,7 +158,7 @@ The specification is wrong unless all of these are true:
    of every class that has one. A class the queried buffer
    defines reports that document's path, not the temporary
    sibling from
-   [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5.
+   [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5.
    Kernel classes, prompt classes, and unkeyed-port classes
    have no path. A compound type carries the path of each
    class in it, including its type arguments. §7 of that
@@ -401,7 +401,7 @@ buffer's bytes, so an edit is what hover sees. Those bytes
 are the cache entry for the document path. They are not a
 changed-bytes error against the file on disk. The
 resolution path may be the temporary sibling from
-[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5.
+[`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5.
 Hover inside `lib/option.aloe` resolves. The same rule
 covers `lib/list.aloe`, `lib/string.aloe`, and
 `lib/int.aloe`. The spec chooses whether the query takes an
@@ -470,7 +470,7 @@ with `../lib/`. The cache key stays the resolved path.
 A class defined by the queried buffer reports that
 document's real path. It does not report the temporary
 sibling
-[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5
+[`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5
 writes for a dirty buffer. A nested load still reports the
 path of the file on disk. The spec chooses whether the query
 takes an identity path beside the resolution path, or the
@@ -542,7 +542,7 @@ does not run at the end of the class's file, before the
 loader's `define-methods`.
 
 Hover inside `sym.aloe` is still JSON null.
-[`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §7
+[`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §7
 turns a failed check into null. The query fails at
 conformance: `Math` is bound through the new file, and
 `core.aloe` does not run, so the protocol methods are
@@ -782,7 +782,7 @@ The checkpoint manager does not read this charter.
   stable identity for its definitions. This series does not
   edit that file.
 - [`docs/workflow.md`](../../../workflow.md) is the process.
-- [`docs/editor/lsp/spec.md`](../../../editor/lsp/spec.md) §5
+- [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5
   is the synchronized-buffer snapshot, and §7 is the hover
   text this series amends. A class path in that text uses the
   document path, not the temporary sibling.

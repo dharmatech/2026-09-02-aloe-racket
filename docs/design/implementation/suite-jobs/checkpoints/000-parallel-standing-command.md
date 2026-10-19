@@ -31,7 +31,7 @@ checkpoint narrows the spec to one slice and does not revise it.
   `AGENTS.md`, `SPEC.md`, and `CHECKPOINTS.md` before writing code.
   `SPEC.md` remains Aloe language law and is not touched.
 - Snapshot contract: item 10 of
-  [`docs/editor/lsp/checkpoints/009-launch.md`](../../../../editor/lsp/checkpoints/009-launch.md).
+  [`docs/design/implementation/editor/lsp/checkpoints/009-launch.md`](../../editor/lsp/checkpoints/009-launch.md).
   The launch must not rewrite source, fixtures, or metadata, or create
   a checked-in launcher or build artifact. Gitignored `compiled/`
   bytecode is none of those.

@@ -1,7 +1,7 @@
 # docs-layout
 
-**Status: Ready to implement.** docs-layout 000 is the whole job for
-this phase.
+**Status: docs-layout 000 implemented and committed at `9cf7ce9`.
+docs-layout 001 is ready to implement.**
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -21,24 +21,22 @@ after the human reviews the one before it.
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-spine.md`](checkpoints/000-spine.md) | **Ready to implement.** Move `docs/checkpoints/` and the fifteen spine briefs, vocabularies, and one-shot charters into `docs/design/implementation/spine/`; rewrite every reference; add the spine map and a relative-link test |
+| [`checkpoints/000-spine.md`](checkpoints/000-spine.md) | **Implemented and committed at `9cf7ce9`.** Moved `docs/checkpoints/` and the fifteen spine briefs, vocabularies, and one-shot charters into `docs/design/implementation/spine/`; rewrote every reference; added the spine map and `tests/docs-layout/links.rkt` |
+| [`checkpoints/001-editor.md`](checkpoints/001-editor.md) | **Ready to implement.** Move `docs/editor/` to `docs/design/implementation/editor/`; rewrite every reference; replace the `docs/workflow.md` paragraph that forbids the move |
 
-Expected later phases, **not issued**:
+Expected later phase, **not issued**:
 
-- 001: move `docs/editor/` to `docs/design/implementation/editor/`
-  and rewrite the sentence in `docs/workflow.md` that keeps it where
-  it is.
 - 002: a map at `docs/design/implementation/README.md` listing every
   series folder with its status, written after 001 so it does not
   record the editor map in its old place, with the spine map's rule
   that a series README is right when the two disagree.
 
-Identity is `(docs-layout, 000)`, spoken **docs-layout 000**. Numbers
-are three digits and are never renumbered. Do not issue 001 from an
-implementer conversation.
+Identity is `(docs-layout, N)`, spoken **docs-layout 000** and
+**docs-layout 001**. Numbers are three digits and are never
+renumbered. Do not issue 002 from an implementer conversation.
 
 Process: [`docs/workflow.md`](../../../workflow.md).
 
 Hand this checkpoint to an implementer:
 
-> Read `docs/workflow.md`. You are the implementer. Your assignment is `docs/design/implementation/docs-layout/checkpoints/000-spine.md`. If you have been told to read that file, it is the whole assignment.
+> Read `docs/workflow.md`. You are the implementer. Your assignment is `docs/design/implementation/docs-layout/checkpoints/001-editor.md`. If you have been told to read that file, it is the whole assignment.

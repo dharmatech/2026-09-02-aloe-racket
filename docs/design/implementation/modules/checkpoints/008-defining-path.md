@@ -139,8 +139,8 @@ ran at 28 ms alone, as before; this layer adds no evaluator work.
 
 - `aloe/type.rkt`, `aloe/private/checker-observation.rkt`,
   `aloe/expression-query.rkt`, `aloe/lsp.rkt`.
-- `docs/editor/lsp/spec.md` (§7 and §10),
-  `docs/editor/expression-query/spec.md` (§1), and
+- `docs/design/implementation/editor/lsp/spec.md` (§7 and §10),
+  `docs/design/implementation/editor/expression-query/spec.md` (§1), and
   `docs/decisions.md`: only the text in **Documents**.
 - The fifteen test files in **Migration**, only as it says.
 - `tests/modules/008-defining-path.rkt`: new.
@@ -162,7 +162,7 @@ ran at 28 ms alone, as before; this layer adds no evaluator work.
   `tests/parenthetical-construction/editor.rkt`, which reads the result
   through accessors.
 - `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`,
-  `docs/editor/completion/spec.md`, this folder's `README.md`,
+  `docs/design/implementation/editor/completion/spec.md`, this folder's `README.md`,
   `charter.md`, `spec.md`, this checkpoint, and every other design
   document.
 
@@ -295,7 +295,7 @@ already renders the document's.
 
 ## Documents
 
-`docs/editor/lsp/spec.md` §7:
+`docs/design/implementation/editor/lsp/spec.md` §7:
 
 - In the JSON example, the `value` string gains
   `from: (Point@tests/editor/lsp/fixtures/point.aloe Int)\n` right
@@ -312,13 +312,13 @@ already renders the document's.
   defining path only on the `from:` line, as the query renders it, and
   never a temporary sibling's path."
 
-`docs/editor/lsp/spec.md` §10: the bullet "Changes to
+`docs/design/implementation/editor/lsp/spec.md` §10: the bullet "Changes to
 `query-expression-at`, `srcloc`, type datums, or `signature-spec`"
 becomes "Changes to `srcloc` or `signature-spec`; the `pathed-type`
 field and `#:document-path` keyword are the modules series' additions
 to `query-expression-at`".
 
-`docs/editor/expression-query/spec.md` §1: the struct line becomes
+`docs/design/implementation/editor/expression-query/spec.md` §1: the struct line becomes
 `(struct expression-query-result (type signatures location pathed-type) #:transparent)`,
 and the field list gains, after `location`, the item: "`pathed-type`:
 the same datum with each class that has a defining path written
