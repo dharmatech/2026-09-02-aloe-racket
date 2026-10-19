@@ -1,7 +1,7 @@
 # suite-time
 
-**Status: Accepted specification; suite-time 000–002 implemented and
-verified in the working tree. The specified series is complete.**
+**Status: Complete.** suite-time 000 through 002 landed at `a860e3a`
+(2026-10-07).
 [`spec.md`](spec.md) is the design authority. Recorded 000 verification
 reports 42 focused tests and 2,653 full-suite tests passing. The report's
 14 focused tests pass; both recorded full report runs cover 205 files,

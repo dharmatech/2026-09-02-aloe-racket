@@ -1,7 +1,7 @@
 # with
 
-**Status: with 000 is implemented in the working tree and
-discussion-reviewed. with 001 is ready to implement.** Standalone
+**Status: Complete. with 000 landed at `0aeeea6` and with 001 at
+`c20a18f`, both 2026-10-08.** Standalone
 checkpoints. **No charter. No spec.md. No checkpoint manager.**
 
 Language change, then its Aloemacs consumer. Not Gel. Local
@@ -13,8 +13,8 @@ after review.
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-field-update.md`](checkpoints/000-field-update.md) | Implemented in the working tree. Discussion-reviewed. Not committed |
-| [`checkpoints/001-aloemacs-updates.md`](checkpoints/001-aloemacs-updates.md) | The implementer's whole assignment |
+| [`checkpoints/000-field-update.md`](checkpoints/000-field-update.md) | Implemented; landed at `0aeeea6` |
+| [`checkpoints/001-aloemacs-updates.md`](checkpoints/001-aloemacs-updates.md) | Implemented; landed at `c20a18f` |
 
 Identity is `with`. Checkpoint 000 is spoken **with 000**. Checkpoint
 001 is spoken **with 001**. Numbers are three digits, start at 000,

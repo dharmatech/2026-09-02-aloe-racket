@@ -1,8 +1,7 @@
 # parenthetical-construction
 
-**Status: Spec accepted; parenthetical-construction 000–002 implemented
-in the working tree and checkpoint-manager reviewed; the series is complete
-pending human review.**
+**Status: Complete.** parenthetical-construction 000 through 002
+landed at `9af2f39` (2026-10-07).
 The checkpoint manager reviewed the spec and the closing implementation
 against [002 — The session definition](checkpoints/002-session-definition.md)
 on 2026-10-07. No blocking issues were found. The actual startup source
@@ -14,7 +13,7 @@ A `(fields ...)` class is built positionally with `new`, or labeled with `new*` 
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
-**Branch:** `experiment/2026-10-06-parenthetical-construction`, cut from `main` at `987cbd0`. This series stays on that branch until a human merges it.
+**Branch:** `experiment/2026-10-06-parenthetical-construction`, cut from `main` at `987cbd0`. It has since been merged to `main`.
 
 Language change. Not an aloemacs layer. Not Gel. Local numbering: do not take the next global checkpoint integer unless a human promotes this series onto `CHECKPOINTS.md` after review.
 

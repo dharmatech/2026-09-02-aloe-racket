@@ -1,7 +1,7 @@
 # suite-jobs
 
-**Status: Accepted specification; suite-jobs 000 implemented and
-verified in the working tree. The specified series is complete.**
+**Status: Complete.** suite-jobs 000 landed at `445f68c`
+(2026-10-07).
 [`spec.md`](spec.md) is the design authority. Recorded 000
 verification reports 6 focused `009-launch.rkt` tests and 2,669
 full-suite tests passing in the real tree with

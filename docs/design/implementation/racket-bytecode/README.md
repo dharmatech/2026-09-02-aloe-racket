@@ -1,6 +1,7 @@
 # racket-bytecode
 
-**Status: Ready to implement.** racket-bytecode 000 is the whole job.
+**Status: Complete.** racket-bytecode 000, the whole job, landed at
+`d701b29` (2026-09-30).
 
 **Project root:** `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
@@ -14,7 +15,7 @@ slice is too big, stop and promote it to a charter.
 
 | File | Role |
 |---|---|
-| [`checkpoints/000-bytecode-and-test-flag.md`](checkpoints/000-bytecode-and-test-flag.md) | **Ready to implement.** Gitignore `compiled/`, and make `raco test -y` the standing test command |
+| [`checkpoints/000-bytecode-and-test-flag.md`](checkpoints/000-bytecode-and-test-flag.md) | **Implemented at `d701b29`.** Gitignore `compiled/`, and make `raco test -y` the standing test command |
 
 Identity is `(racket-bytecode, 000)`, spoken **racket-bytecode 000**.
 Do not issue 001.
