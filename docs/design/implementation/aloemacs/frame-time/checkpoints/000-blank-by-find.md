@@ -1,8 +1,11 @@
 # aloemacs-frame-time 000 — Blank controls by find
 
-**Status: Ready to implement.** Issued 2026-10-19 by the checkpoint
-manager from [`../spec.md`](../spec.md). Human review of this
-checkpoint precedes its implementation.
+**Status: Implemented and reviewed.** Issued 2026-10-19 by the
+checkpoint manager from [`../spec.md`](../spec.md), implemented the
+same day, and committed with 001 in `9dd3c60`. Medians alone after
+this slice, one run of `frame-time.rkt` by itself: first screen 3.14,
+four windows deep 11.67, one window deep 7.19 ms. The closing review
+record is in [`001-read-visible-lines.md`](001-read-visible-lines.md).
 
 If you have been told to read this file, it is the whole assignment.
 Read the spec sections named below, implement this slice, and stop

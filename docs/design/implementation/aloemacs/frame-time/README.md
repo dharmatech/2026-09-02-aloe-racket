@@ -1,17 +1,19 @@
 # aloemacs frame time
 
-**Status: aloemacs-frame-time 001 issued 2026-10-19.** The spec was
-written 2026-10-18; 000 was issued and implemented 2026-10-19. 001
-awaits human review, then an implementer. Not Aloe law. Not Gel. Not a
-global checkpoint. Product root:
+**Status: Closed 2026-10-19.** The spec was written 2026-10-18; 000
+and 001 were issued, implemented, and committed in `9dd3c60` on
+2026-10-19, and the closing review passed: the hand check held and
+five consecutive whole-suite runs were green. The review record is in
+[`checkpoints/001-read-visible-lines.md`](checkpoints/001-read-visible-lines.md).
+Not Aloe law. Not Gel. Not a global checkpoint. Product root:
 `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 
 | File | Role |
 |---|---|
 | [`charter.md`](charter.md) | Designer assignment |
 | [`spec.md`](spec.md) | The design. The checkpoint manager reads this, after human review |
-| [`checkpoints/000-blank-by-find.md`](checkpoints/000-blank-by-find.md) | aloemacs-frame-time 000: doubled padding, `safe-cells` by `find`, `safe-rows`, the bar with the short fixture. Implemented 2026-10-19 |
-| [`checkpoints/001-read-visible-lines.md`](checkpoints/001-read-visible-lines.md) | aloemacs-frame-time 001: `Text.lines-from`, both frame paths reading through it, the long fixture, the last page, and the growth rule. The last checkpoint; the hand check and five-run check close the series |
+| [`checkpoints/000-blank-by-find.md`](checkpoints/000-blank-by-find.md) | aloemacs-frame-time 000: doubled padding, `safe-cells` by `find`, `safe-rows`, the bar with the short fixture. Implemented and reviewed 2026-10-19 |
+| [`checkpoints/001-read-visible-lines.md`](checkpoints/001-read-visible-lines.md) | aloemacs-frame-time 001: `Text.lines-from`, both frame paths reading through it, the long fixture, the last page, and the growth rule. Implemented and reviewed 2026-10-19; the last checkpoint, holding the closing review record |
 
 Parent map: [`../README.md`](../README.md).
 
@@ -45,6 +47,5 @@ not through this series. That spine checkpoint, global 118, landed in
 `29c5103`. The designer's probes are in
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/).
 
-After review, hand the spec to a checkpoint manager:
-
-> Read `docs/workflow.md`. You are the checkpoint manager. Your assignment is `docs/design/implementation/aloemacs/frame-time/spec.md`. Write aloemacs-frame-time 000, then stop.
+The series is closed. Nothing further is issued from this folder.
+Held typing's next step is the language-spine discussion named above.

@@ -21,3 +21,8 @@ issue 001. Do not issue safe-cells 001.
 Hand this checkpoint to an implementer:
 
 > Read `docs/workflow.md`. You are the implementer. Your assignment is `docs/design/implementation/aloemacs/safe-cell-scan/checkpoints/000-find-control-string.md`. If you have been told to read that file, it is the whole assignment.
+
+Since aloemacs-frame-time 000 (2026-10-19), the body this checkpoint
+wrote is replaced by one `find` per control, which does what its
+non-goals left out. The timing bar in `tests/aloemacs/safe-cell-scan.rkt`
+and its 80 ms bar stay. See [`../frame-time/spec.md`](../frame-time/spec.md) §5.1.

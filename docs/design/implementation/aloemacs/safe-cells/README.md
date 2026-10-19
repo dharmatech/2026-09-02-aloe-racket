@@ -15,3 +15,10 @@ Parent map: [`../README.md`](../README.md).
 Identity is `(aloemacs-safe-cells, 000)`, spoken **aloemacs-safe-cells 000**.
 Do not write global 116. Do not add a Tab key, indent stops, or a
 programming mode in this series.
+
+Since aloemacs-frame-time 000 (2026-10-19), `safe-cells` finds each
+control and blanks it instead of walking every character, and both
+frame paths send `safe-rows` to a leaf's clipped rows. The display rule
+above still governs what is painted;
+[`../frame-time/spec.md`](../frame-time/spec.md) §5 describes the
+computation.

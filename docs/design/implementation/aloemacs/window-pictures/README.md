@@ -27,3 +27,9 @@ Reported verification: `tests/aloemacs/window-pictures.rkt`, 23 checks.
 At 220×54 the medians were 2.47 ms for four windows on the first
 screen, 23.62 ms for four windows with the wide leaf past line 800,
 and 14.89 ms for one window at that depth. Each is under the 30 ms bar.
+
+Since aloemacs-frame-time 000 (2026-10-19), the timing bar lives in
+`tests/aloemacs/frame-time.rkt`; the byte checks in
+`tests/aloemacs/window-pictures.rkt` stay. Pictures, their key, and
+`record-pictures` are unchanged. See
+[`../frame-time/spec.md`](../frame-time/spec.md) §8.

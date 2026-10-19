@@ -1,9 +1,30 @@
 # aloemacs-frame-time 001 — Read the visible lines
 
-**Status: Ready to implement.** Issued 2026-10-19 by the checkpoint
-manager from [`../spec.md`](../spec.md), after
-[`000-blank-by-find.md`](000-blank-by-find.md) was implemented the
-same day. Human review of this checkpoint precedes its implementation.
+**Status: Implemented and reviewed; the series is closed.** Issued
+2026-10-19 by the checkpoint manager from [`../spec.md`](../spec.md)
+after [`000-blank-by-find.md`](000-blank-by-find.md), implemented the
+same day, and committed with 000 in `9dd3c60`. The closing review of
+2026-10-19 passed: the hand check of spec §14 held on four windows and
+on one, and five consecutive `TMPDIR=/tmp raco test -j 4 -y tests`
+runs were green at 4,990 tests each with no rerun.
+
+Medians in ms, alone (one run of `frame-time.rkt` by itself) and from
+each of the five whole-suite runs:
+
+| Case | Alone | 1 | 2 | 3 | 4 | 5 |
+|---|---:|---:|---:|---:|---:|---:|
+| four windows, first screen | 3.14 | 3.23 | 3.26 | 3.36 | 3.33 | 3.28 |
+| four windows, widest leaf deep, 971 lines | 9.45 | 9.67 | 9.49 | 9.74 | 9.85 | 9.60 |
+| four windows, widest leaf deep, 2,400 lines | 9.47 | 9.76 | 9.48 | 9.80 | 9.82 | 9.66 |
+| growth, four windows deep | 0.02 | 0.09 | -0.00 | 0.06 | -0.03 | 0.06 |
+| one window deep, 971 lines | 4.90 | 4.96 | 4.99 | 5.05 | 5.09 | 4.99 |
+| one window deep, 2,400 lines | 5.08 | 4.97 | 5.00 | 5.20 | 5.16 | 5.02 |
+| growth, one window deep | 0.18 | 0.01 | 0.01 | 0.15 | 0.07 | 0.03 |
+| four windows, widest leaf, last page of 2,400 lines | 11.65 | 12.31 | 11.97 | 12.45 | 12.55 | 12.21 |
+| one window, last page of 2,400 lines | 7.15 | 7.59 | 7.32 | 7.72 | 7.72 | 7.49 |
+
+Every median is under the 15 ms design margin alone and under the 30 ms
+bar under `-j 4`; every growth is under the 1.5 ms bound.
 
 If you have been told to read this file, it is the whole assignment.
 Read the spec sections named below, implement this slice, and stop

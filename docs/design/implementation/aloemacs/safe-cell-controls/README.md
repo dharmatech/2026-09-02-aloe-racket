@@ -17,3 +17,8 @@ Identity is `(aloemacs-safe-cell-controls, 000)`, spoken
 **aloemacs-safe-cell-controls 000**. Do not write global 116. Do not
 issue 001. Do not issue safe-cells 001. Do not issue safe-cell-scan
 001.
+
+Since aloemacs-frame-time 000 (2026-10-19), `safe-cells` reads
+`safe-cell-controls` a control at a time with `find`. It is still the
+one string of the 33 controls. See
+[`../frame-time/spec.md`](../frame-time/spec.md) §5.1.

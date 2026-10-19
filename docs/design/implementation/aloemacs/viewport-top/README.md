@@ -15,3 +15,8 @@ Parent map: [`../README.md`](../README.md).
 Identity is `(aloemacs-viewport-top, 000)`, spoken
 **aloemacs-viewport-top 000**. Do not write global 116. Do not
 issue 001.
+
+Since aloemacs-frame-time 001 (2026-10-19), `frame` reads the stored
+`scroll-row` through `Text.lines-from`, not `(focused focus-at top)`.
+The frame still paints from the stored origin. See
+[`../frame-time/spec.md`](../frame-time/spec.md) §6.2.

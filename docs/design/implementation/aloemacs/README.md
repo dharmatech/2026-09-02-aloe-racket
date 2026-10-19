@@ -116,7 +116,10 @@ selected window with no mode line still shows the name there.
 Save, search, and prompt messages stay. **Window pictures** is implemented at
 [`window-pictures/`](window-pictures/), aloemacs-window-pictures 000.
 A multi-window frame reuses a leaf's recorded rows when that leaf's
-inputs are unchanged. One window still uses the editor frame. **Completion** has an accepted spec at
+inputs are unchanged. One window still uses the editor frame. **Frame time** is implemented at
+[`frame-time/`](frame-time/), aloemacs-frame-time 000 and 001: padding by
+doubling, controls blanked by `find`, and the visible lines read without
+moving the focus, so a held Down keeps up. **Completion** has an accepted spec at
 [`completion/`](completion/). Tab completes find-file and save-as;
 recursive scans belong to the nongeneric `AloemacsCompletionScan`,
 while Fs queries and results stay on `(AloemacsSession H)`.
@@ -198,12 +201,13 @@ Locked display change. A standalone checkpoint, not a new layer.
 ## Performance
 
 Frame-cost work. Window pictures was a locked standalone checkpoint.
-Frame time is open and has a charter.
+Frame time is implemented and closed; its spec records how a frame is
+computed now.
 
 | Identity | Path | This conversation |
 |---|---|---|
 | window-pictures | [`window-pictures/`](window-pictures/) | **Implemented.** aloemacs-window-pictures 000 |
-| frame-time | [`frame-time/`](frame-time/) | **Spec written.** Held Down. Awaiting human review, then aloemacs-frame-time 000 and 001. The evaluator regression it measured landed on the spine as global 118. Held typing waits on a language discussion of indexed read and slicing for List, named in its charter and not opened |
+| frame-time | [`frame-time/`](frame-time/) | **Implemented and reviewed.** aloemacs-frame-time 000 and 001, closed 2026-10-19. A held Down keeps up: the deep four-window Down is about 9.5 ms and the last page of 2,400 lines about 12 ms under `-j 4`. The evaluator regression it measured landed on the spine as global 118. Held typing waits on a language discussion of indexed read and slicing for List, named in its charter and not opened |
 
 ## Not in this map
 
