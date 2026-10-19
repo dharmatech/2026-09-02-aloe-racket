@@ -19,7 +19,7 @@ The implementer receives this checkpoint and the accepted spec; the
 checkpoint narrows the spec to one slice and does not revise it.
 
 - Identity: `(suite-time, 000)`, spoken **suite-time 000**. Local
-  numbering; do not edit `CHECKPOINTS.md` or `docs/checkpoints/`.
+  numbering; do not edit `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`.
 - Design authority: [`../spec.md`](../spec.md), §§1–3, §4 in full,
   and the first-layer acceptance conditions in §7. §§5–6 describe
   later work and are not this assignment.

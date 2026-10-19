@@ -22,7 +22,7 @@ is below.
 
 Identity is `(editor-definition, 002)`, spoken **editor-definition
 002**. It is a local editor checkpoint. Do not edit `CHECKPOINTS.md` or
-add a file under `docs/checkpoints/`.
+add a file under `docs/design/implementation/spine/checkpoints/`.
 
 The tree at `a727aaa` (branch `experiment/2026-10-14-definition`) has
 every predecessor:
@@ -217,7 +217,7 @@ Do not edit:
   `aloe/private/completion-selection.rkt`
 - any other existing test, and any fixture. This checkpoint adds no
   fixture file. Its extra cases use temporary files
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, or any spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
 - `lib/`, `examples/`, `editors/vscode/`, `gel/`, or `host/`
 - any error text

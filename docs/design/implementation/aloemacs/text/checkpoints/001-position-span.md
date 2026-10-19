@@ -20,7 +20,7 @@ is below.
 
 - Identity is `(aloemacs-text, 001)`, spoken **aloemacs-text 001**. This is a
   local project checkpoint, not a global Aloe checkpoint. Do not edit
-  `CHECKPOINTS.md` or add a document under `docs/checkpoints/`.
+  `CHECKPOINTS.md` or add a document under `docs/design/implementation/spine/checkpoints/`.
 - [`../../../../../../SPEC.md`](../../../../../../SPEC.md) is language law,
   especially send evaluation, `define-class`, typed immutable fields and
   methods, `load`, `let`, `if`, exact numeric types, and `List`. Evaluation is

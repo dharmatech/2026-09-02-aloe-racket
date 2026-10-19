@@ -46,7 +46,7 @@ below.
 Identity is `(editor-signatures-of-type, 002)`, spoken
 **editor-signatures-of-type 002**. This is not global checkpoint 118 and is
 not part of editor source locations. Do not edit `CHECKPOINTS.md` or add a
-file under `docs/checkpoints/`.
+file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Public operation remains unchanged
 
@@ -257,7 +257,7 @@ Do not edit:
 
 - `aloe/eval.rkt`, `aloe/parse.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`,
   `aloe/host.rkt`, or the runtime `Signature` representation
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - `gel/`, `lib/`, `host/`, or another editor project
 - project design documents, prior checkpoint semantics, or a later checkpoint
   except status/index updates made by the checkpoint manager

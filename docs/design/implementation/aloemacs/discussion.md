@@ -44,7 +44,7 @@ checkpoint aloemacs-window-pictures 000 at
 [`frame-time/charter.md`](frame-time/charter.md). Do not write its
 `spec.md` here. The evaluator regression it measured goes to the
 language spine through
-[`docs/evaluator-compile-limit-brief.md`](../../../evaluator-compile-limit-brief.md),
+[`docs/design/implementation/spine/evaluator-compile-limit-brief.md`](../spine/evaluator-compile-limit-brief.md),
 not through aloemacs. Held typing waits on a language-spine discussion
 of indexed read and slicing for List, named in that charter's §4.8
 and not opened. Path completion is back with the designer at

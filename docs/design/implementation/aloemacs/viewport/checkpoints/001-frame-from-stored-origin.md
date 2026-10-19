@@ -60,7 +60,7 @@ does not revise it.
 - All other tests, especially `tests/aloemacs/runner.rkt` and
   `tests/aloemacs/file-runner.rkt`
 - `lib/text.aloe`, other libraries, Term, Fs, Gel, `aloe/eval.rkt`, any kernel
-  or compiler file, `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, the
+  or compiler file, `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, the
   accepted viewport spec, earlier checkpoints, and project maps
 - Any file not listed under **May edit**
 

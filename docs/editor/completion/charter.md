@@ -24,7 +24,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Record the locked decisions in §4. Resolve only §4.6.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **editor-completion 000**, `001`, … under
-   `docs/editor/completion/checkpoints/` (not `docs/checkpoints/0118`,
+   `docs/editor/completion/checkpoints/` (not `docs/design/implementation/spine/checkpoints/0118`,
    not a rewrite of editor-lsp 000–009 as a new hover series).
 5. Stop. The human reviews it. Do not write those checkpoint files.
 

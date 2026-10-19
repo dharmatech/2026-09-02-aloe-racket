@@ -79,7 +79,7 @@ form.
 - `tests/editor/source-locations/000-spans.rkt` and every existing
   test. Its location walker has a catch-all; cover `with` locations
   in `tests/with/grammar.rkt`.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, this folder's README, this
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, this folder's README, this
   checkpoint, and every other design document.
 - Gel, Boids, and unrelated working-tree changes.
 

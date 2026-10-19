@@ -22,7 +22,7 @@ The implementer receives this checkpoint and the accepted spec. The
 checkpoint narrows the spec to one slice and does not revise it.
 
 - Identity: `(suite-jobs, 000)`, spoken **suite-jobs 000**. Local
-  numbering. Do not edit `CHECKPOINTS.md` or `docs/checkpoints/`.
+  numbering. Do not edit `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`.
 - Design authority: [`../spec.md`](../spec.md), all of it. §2 is the
   trial evidence; do not rerun the `-j 8` comparison or any part of
   the trial matrix.

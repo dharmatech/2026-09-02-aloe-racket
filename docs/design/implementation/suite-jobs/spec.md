@@ -33,7 +33,7 @@ one implementable slice; it does not revise the design.
   Source and tests belong in that tree, outside this design folder.
 - Starting point: `main` at `a860e3a`. The human chooses the branch.
   This series uses local numbering. It does not enter
-  `CHECKPOINTS.md` or `docs/checkpoints/`.
+  `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`.
 - After human acceptance, this file is the series design authority.
   [`docs/workflow.md`](../../../workflow.md) governs process and host
   verification, and this series amends its standing test command.

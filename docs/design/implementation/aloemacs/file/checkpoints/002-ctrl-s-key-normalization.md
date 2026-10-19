@@ -23,7 +23,7 @@ is below.
 
 - Identity is `(aloemacs-file, 002)`, spoken **aloemacs-file 002**. This is a
   local project checkpoint, not a global Aloe checkpoint. Do not edit
-  `CHECKPOINTS.md` or add a document under `docs/checkpoints/`.
+  `CHECKPOINTS.md` or add a document under `docs/design/implementation/spine/checkpoints/`.
 - [`../../../../../../SPEC.md`](../../../../../../SPEC.md), especially section
   14's typed host boundary, is language law. Term remains an optional,
   explicitly injected host capability; this checkpoint does not change host

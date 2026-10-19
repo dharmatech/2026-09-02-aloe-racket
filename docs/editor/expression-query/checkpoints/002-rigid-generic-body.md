@@ -50,7 +50,7 @@ below.
 Identity is `(editor-expression-query, 002)`, spoken
 **editor-expression-query 002**. This is a local editor checkpoint, not a
 global checkpoint and not part of either predecessor series. Do not edit
-`CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+`CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Exact deferred family
 
@@ -232,7 +232,7 @@ Do not edit:
   `aloe/library.rkt`, or `aloe/host.rkt`
 - checkpoint 000's tests or normative Point fixture
 - `aloe/signature-catalog.rkt` or signatures-of-type tests
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - the expression-query specification, charter, README, prior checkpoint
   semantics, or a later checkpoint document except for status/index updates
   made by the checkpoint manager

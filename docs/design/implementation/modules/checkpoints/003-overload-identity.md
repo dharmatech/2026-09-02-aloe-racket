@@ -175,7 +175,7 @@ focused test file. One conversation.
   everything under `aloe/private/`, and `host/racket/`.
 - Every existing test. The scratch run found none that changes; if
   one fails, stop and report the file and the assertion.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, `docs/philosophy.md`, this
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`, this
   folder's `README.md`, `charter.md`, `spec.md`, this checkpoint, and
   every other design document.
 

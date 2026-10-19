@@ -140,7 +140,7 @@ fixture, one `SPEC.md` sentence, and one focused test.
   `tests/editor/expression-query/001-contextual-observation.rkt` pin
   conformance messages; they stay green as they are. If any test
   fails, stop and report the file and the assertion.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, this folder's `README.md`,
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, this folder's `README.md`,
   `charter.md`, `spec.md`, this checkpoint, and every other design
   document.
 

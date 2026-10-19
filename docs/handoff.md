@@ -9,9 +9,9 @@ The conversation pipeline for new work is `docs/workflow.md`.
 ## `main` after the editor / LSP landing
 
 Proposal B is implemented through checkpoint 95, ratified into `SPEC.md` by
-[checkpoint 96](checkpoints/0096-ratify-class-constructors.md), and landed on
+[checkpoint 96](design/implementation/spine/checkpoints/0096-ratify-class-constructors.md), and landed on
 `main` with the typed host and filesystem work through checkpoint 107. The
-[Proposal B document](class-constructors.md) remains historical design and
+[Proposal B document](design/implementation/spine/class-constructors.md) remains historical design and
 implementation context; `SPEC.md` is law. Proposal A on
 `codex/unified-nominal-adts` was rejected and is not authority.
 

@@ -26,7 +26,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-text 000**, `001`, … under
    `docs/design/implementation/aloemacs/text/checkpoints/` (not
-   `docs/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
 4. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.
@@ -159,7 +159,7 @@ If a kernel message is required:
   (parallel to `take` in `SPEC.md` §7.5).
 - Implementation of that message is in this project's checkpoint
   series unless the human promotes it to the language spine after
-  review. Do not invent `docs/checkpoints/0116-…` in the spec.
+  review. Do not invent `docs/design/implementation/spine/checkpoints/0116-…` in the spec.
 - Do not add `Char`, string-ref of a non-`String`, or mutation.
 
 ### 4.8 Newline and files (resolve this)

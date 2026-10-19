@@ -134,7 +134,7 @@ hundred lines. One conversation.
 - Every other test, including `tests/modules/000-run-once.rkt`, the
   MPL tests, the Gel tests, and the `define-class` name lists that
   the pin files also hold.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, this folder's `README.md`,
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, this folder's `README.md`,
   `charter.md`, `spec.md`, this checkpoint, and every other design
   document.
 

@@ -1,7 +1,7 @@
 # Editor support — prerequisite projects
 
 Local work. Not Aloe law. Not Gel. Not the global checkpoint spine
-(`docs/checkpoints/`, `CHECKPOINTS.md`). Do not number these 118,
+(`docs/design/implementation/spine/checkpoints/`, `CHECKPOINTS.md`). Do not number these 118,
 119, … .
 
 The editor question is already in `docs/philosophy.md`: ask what

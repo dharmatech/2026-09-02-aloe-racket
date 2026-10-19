@@ -45,7 +45,7 @@ It does not revise the spec.
 - Identity: **aloemacs-frame-time 000**, filed as
   `checkpoints/000-blank-by-find.md`. A local editor checkpoint: it
   takes no global number, gets no `CHECKPOINTS.md` entry, and adds
-  nothing under `docs/checkpoints/`. It is not
+  nothing under `docs/design/implementation/spine/checkpoints/`. It is not
   aloemacs-window-pictures 001 and not safe-cells 001.
 - Project root: `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Read [docs/workflow.md](../../../../../workflow.md), root

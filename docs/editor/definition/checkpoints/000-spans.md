@@ -25,7 +25,7 @@ is below.
 
 Identity is `(editor-definition, 000)`, spoken **editor-definition
 000**. It is a local editor checkpoint, not a global checkpoint. Do not
-edit `CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+edit `CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 The tree at `3b77e99` (branch `experiment/2026-10-14-definition`) has
 every predecessor:
@@ -268,7 +268,7 @@ May edit:
 
 Do not edit:
 
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - `docs/editor/definition/spec.md`, `docs/editor/lsp/spec.md`,
   `docs/editor/expression-query/spec.md`,
   `docs/editor/source-locations/checkpoints/000-spans.md`, or any other

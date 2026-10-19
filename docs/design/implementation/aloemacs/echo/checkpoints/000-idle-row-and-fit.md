@@ -62,7 +62,7 @@ in `viewport-editor.rkt`, remain unchanged.
 - `examples/aloemacs/editor.aloe`, `host/racket/aloemacs-run.rkt`, every
   other host file, Term and Fs implementations, `lib/text.aloe`,
   `lib/string.aloe`, other libraries, Gel, and `aloe/eval.rkt`
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, the accepted echo spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, the accepted echo spec,
   earlier aloemacs checkpoints, project maps, and `demo.md`
 - All other product and test files
 

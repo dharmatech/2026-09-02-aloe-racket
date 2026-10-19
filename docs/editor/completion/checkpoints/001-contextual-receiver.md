@@ -48,7 +48,7 @@ below.
 Identity is `(editor-completion, 001)`, spoken **editor-completion 001**. This
 is a local editor checkpoint, not global checkpoint 118 and not a reopening of
 the completed expression-query series. Do not edit `CHECKPOINTS.md` or add a
-file under `docs/checkpoints/`.
+file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Private result and checker operation
 
@@ -289,7 +289,7 @@ Do not edit:
 - checkpoint 000's production module or tests;
 - expression-query, signatures-of-type, source-location, LSP, or VS Code
   production modules and tests;
-- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/checkpoints/`, or the
+- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, and checkpoint documents; or
 - `gel/`, `lib/`, `host/`, and application source under `examples/`.
 

@@ -58,7 +58,7 @@ does not revise it.
   other libraries, Gel, `aloe/eval.rkt`, and any kernel or compiler file
 - Every other test, including `viewport-editor.rkt`, `frame.rkt`, and the
   Index timing driver
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, the accepted viewport
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, the accepted viewport
   spec, earlier viewport checkpoints, project maps, and any file not listed
   under **May edit**
 

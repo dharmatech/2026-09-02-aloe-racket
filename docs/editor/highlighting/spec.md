@@ -5,7 +5,7 @@ This is not Aloe language law, an implementation checkpoint, or a global
 checkpoint. A later checkpoint-manager conversation may issue the single
 checkpoint **editor-highlighting 000** under
 `docs/editor/highlighting/checkpoints/`. It must not issue 001 or put this
-work under `docs/checkpoints/` or `docs/editor/vscode/checkpoints/`.
+work under `docs/design/implementation/spine/checkpoints/` or `docs/editor/vscode/checkpoints/`.
 
 **Authority.** `SPEC.md` section 1 owns Aloe atoms and the capitalized-name
 convention; sections 4 and 11 own the closed special-form set.

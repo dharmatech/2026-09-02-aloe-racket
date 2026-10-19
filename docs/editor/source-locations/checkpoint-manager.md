@@ -145,7 +145,7 @@ integer.
 | Fixture if needed | `tests/editor/source-locations/fixtures/` |
 
 Spoken name: **editor-source-locations 000**. Zero-pad to three
-digits. Do **not** write `docs/checkpoints/0118-….md` or
+digits. Do **not** write `docs/design/implementation/spine/checkpoints/0118-….md` or
 `tests/checkpoint-118.rkt`. Do not append to root `CHECKPOINTS.md`.
 Do not put files under `docs/gel/`.
 
@@ -177,7 +177,7 @@ May edit:
 
 Must not edit:
 
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`
 - `gel/`, `lib/`, `host/`, `docs/gel/`
 - type-error format, runtime error format
 - a new public "language service" module

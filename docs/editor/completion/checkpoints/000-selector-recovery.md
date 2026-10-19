@@ -46,7 +46,7 @@ below.
 Identity is `(editor-completion, 000)`, spoken **editor-completion 000**. This
 is a local editor checkpoint, not a global Aloe checkpoint and not an
 extension of the completed expression-query or LSP checkpoint numbering. Do
-not edit `CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+not edit `CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Private result and operation
 
@@ -291,7 +291,7 @@ Do not edit:
   `aloe/lsp.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`, or the evaluator;
 - `aloe/private/expression-selection.rkt`, the signature catalog, or another
   predecessor project's production or test files;
-- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/checkpoints/`, or the
+- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, or checkpoint documents; or
 - `gel/`, `lib/`, `host/`, `examples/`, or another editor project.
 

@@ -69,7 +69,7 @@ continue rejecting wrong types and arities.
 - `host/racket/aloemacs-run.rkt`, every other host file, Term and Fs
   implementations, `lib/text.aloe`, other libraries, Gel, `aloe/eval.rkt`,
   and any kernel or compiler file
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, earlier aloemacs
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, earlier aloemacs
   checkpoints, the accepted viewport spec, and project maps
 - All other files, including `tests/aloemacs/file-runner.rkt` and other
   runner logic or tests

@@ -183,7 +183,7 @@ conversation. If it is not, stop and say so.
   `int-class-object-methods`, and `list-class-type-element-parameter`;
   keep those accessors. None reads the primitive objects'
   `environment` field.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, this folder's `README.md`,
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, this folder's `README.md`,
   `charter.md`, `spec.md`, this checkpoint, and every other design
   document.
 

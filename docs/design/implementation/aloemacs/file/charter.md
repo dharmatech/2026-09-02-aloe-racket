@@ -27,7 +27,7 @@ If you have been told to read this file, this is the whole assignment.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-file 000**, `001`, … under
    `docs/design/implementation/aloemacs/file/checkpoints/` (not
-   `docs/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
 5. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.
@@ -44,8 +44,8 @@ file commands are defects in this document.
 | [`../loop/`](../loop/) | aloemacs-loop 000–003: `AloemacsEditor`, `handle-key`, `frame`, runner |
 | [`../text/`](../text/) | `Text from-string` / `to-string`; CRLF is this layer's problem |
 | Filesystem host | [`host/racket/fs.rkt`](../../../../../host/racket/fs.rkt): path algebra, `kind`, `names`; **no file contents** |
-| Thin Fs | [`lib/fs.aloe`](../../../../../lib/fs.aloe), [`docs/filesystem-vocabulary.md`](../../../../filesystem-vocabulary.md) |
-| OO Disk | [`lib/disk.aloe`](../../../../../lib/disk.aloe), [`docs/filesystem-oo-vocabulary.md`](../../../../filesystem-oo-vocabulary.md) |
+| Thin Fs | [`lib/fs.aloe`](../../../../../lib/fs.aloe), [`docs/design/implementation/spine/filesystem-vocabulary.md`](../../spine/filesystem-vocabulary.md) |
+| OO Disk | [`lib/disk.aloe`](../../../../../lib/disk.aloe), [`docs/design/implementation/spine/filesystem-oo-vocabulary.md`](../../spine/filesystem-oo-vocabulary.md) |
 
 `(file text)` on Disk's live `File` is the **path spelling**
 (`Location.text`), not bytes of the file. Vocabulary already says
@@ -126,7 +126,7 @@ spec can test it on the double.
 - Historical Fs checkpoint tests may be updated **only** for an
   appended host-descriptor row, the way Term 000 updated
   checkpoint-53/84/87
-- Do not invent `docs/checkpoints/0116-…`. The human may
+- Do not invent `docs/design/implementation/spine/checkpoints/0116-…`. The human may
   promote a host contents lift to the language spine after
   review
 
@@ -237,9 +237,9 @@ untitled. Relative `path` uses Fs `resolve` / Disk `at`.
 - [`../term/spec.md`](../term/spec.md) — do not change Term
   except a possible save-key mapping in §4.9
 - `SPEC.md` §14 — host crossing
-- [`docs/filesystem-vocabulary.md`](../../../../filesystem-vocabulary.md)
+- [`docs/design/implementation/spine/filesystem-vocabulary.md`](../../spine/filesystem-vocabulary.md)
   — thin Fs; contents were explicitly future
-- [`docs/filesystem-oo-vocabulary.md`](../../../../filesystem-oo-vocabulary.md)
+- [`docs/design/implementation/spine/filesystem-oo-vocabulary.md`](../../spine/filesystem-oo-vocabulary.md)
   — Disk / Location; `(file text)` is path
 - [`host/racket/fs.rkt`](../../../../../host/racket/fs.rkt),
   [`host/racket/aloemacs-run.rkt`](../../../../../host/racket/aloemacs-run.rkt)

@@ -215,7 +215,7 @@ line 110 pins that `aloe/driver.rkt`, `aloe/main.rkt`, and `bin/aloe`
 never match `host/racket/term.rkt`, `tui/term`, `term-interface`, or
 `make-term-receiver`, not even in a comment. A granting `bin/aloe` must
 load host modules dynamically, by data, as the manifest reader does.
-`docs/checkpoints/0086` line 112, "Do not make either runner part of
+`docs/design/implementation/spine/checkpoints/0086` line 112, "Do not make either runner part of
 ordinary bin/aloe", and `docs/gel.md` line 111, "bin/aloe stays
 term-free", are the sentences a charter must reopen, under the
 condition that a run with no manifest row injects nothing and loads no
@@ -666,14 +666,14 @@ product tree. After the review, the exits are four, in this order:
 
 - One global checkpoint on the language spine for the checker cycle
   guard, no charter, carrying the rule and the three test programs in
-  lock 1 of the review. The spine shape is `docs/checkpoints/NNNN-slug.md`,
+  lock 1 of the review. The spine shape is `docs/design/implementation/spine/checkpoints/NNNN-slug.md`,
   `tests/checkpoint-N.rkt`, and a `CHECKPOINTS.md` entry at the next
   free global number; as of 2026-10-19 the index lists through 118,
   with 116 and 117 Gel-directory work on another branch. Per
   `docs/workflow.md`,
   the discussion hands it over as a brief, and a checkpoint manager
   writes the one global checkpoint; the discussion does not write
-  `docs/checkpoints/NNNN-slug.md` itself. The repo's "standalone
+  `docs/design/implementation/spine/checkpoints/NNNN-slug.md` itself. The repo's "standalone
   checkpoint" is the local `docs/design/implementation/...` shape and
   is not this.
 - A second global checkpoint, same shape, for the tail-call sentence

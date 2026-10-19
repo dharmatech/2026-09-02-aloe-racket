@@ -42,7 +42,7 @@ The measurement behind the charter is
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/summary.md`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/summary.md).
 Part of today's cost is an evaluator regression, which goes to the
 language spine through
-[`docs/evaluator-compile-limit-brief.md`](../../../../evaluator-compile-limit-brief.md),
+[`docs/design/implementation/spine/evaluator-compile-limit-brief.md`](../../spine/evaluator-compile-limit-brief.md),
 not through this series. That spine checkpoint, global 118, landed in
 `29c5103`. The designer's probes are in
 [`archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/`](../../../../../archive/design-sketches/2026-10-18-aloemacs-frame-time/designer/).

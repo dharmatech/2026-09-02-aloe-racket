@@ -41,7 +41,7 @@ below.
 Identity is `(editor-highlighting, 000)`, spoken **editor-highlighting 000**.
 This is not editor-vscode 001, an editor-lsp checkpoint, or a global Aloe
 checkpoint. Do not edit `CHECKPOINTS.md`, add a file under
-`docs/checkpoints/`, or continue the numbering after this slice. There is no
+`docs/design/implementation/spine/checkpoints/`, or continue the numbering after this slice. There is no
 editor-highlighting 001.
 
 Work on the existing `experiment/2026-09-19-syntax-highlighting` branch. Do

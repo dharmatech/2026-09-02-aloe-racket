@@ -49,7 +49,7 @@ below.
 Identity is `(editor-vscode, 000)`, spoken **editor-vscode 000**. This is a
 local editor checkpoint, not a global Aloe checkpoint and not an editor-lsp
 checkpoint. Do not edit `CHECKPOINTS.md`, add a file under
-`docs/checkpoints/`, or continue the editor-lsp numbering.
+`docs/design/implementation/spine/checkpoints/`, or continue the editor-lsp numbering.
 
 ## Exact project layout
 
@@ -313,7 +313,7 @@ Do not edit:
 - `docs/editor/vscode/spec.md`, its charter, README, or this checkpoint;
 - `aloe/lsp.rkt`, any other file under `aloe/`, or any Racket package
   metadata;
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`;
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`;
 - the editor-lsp, expression-query, signatures-of-type, or source-locations
   projects;
 - `tests/editor/lsp/fixtures/point.aloe` or any repository Racket test; or

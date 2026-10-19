@@ -28,7 +28,7 @@ If you have been told to read this file, this is the whole assignment.
    leftover packaging details in §4.7. Do not reopen §4.1–4.6.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **editor-vscode 000** under
-   `docs/editor/vscode/checkpoints/` (not `docs/checkpoints/0118`,
+   `docs/editor/vscode/checkpoints/` (not `docs/design/implementation/spine/checkpoints/0118`,
    not `docs/editor/lsp/checkpoints/`).
 5. Stop. The human reviews it. The spec conversation does not write
    those checkpoint files and does not create `editors/vscode/`.

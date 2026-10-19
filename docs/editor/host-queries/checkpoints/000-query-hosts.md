@@ -36,7 +36,7 @@ is below.
 
 Identity is `(editor-host-queries, 000)`, spoken **editor-host-queries
 000**. It is a local editor checkpoint. Do not edit `CHECKPOINTS.md` or
-add a file under `docs/checkpoints/`. Branch:
+add a file under `docs/design/implementation/spine/checkpoints/`. Branch:
 `experiment/2026-10-16-host-queries`.
 
 The tree at `80b46fd` has every predecessor. Its product code is that of
@@ -362,7 +362,7 @@ Do not edit:
 - `host/racket/` (including `aloemacs-run.rkt` and `gel-run.rkt`),
   `examples/`, `gel/`, `lib/`, or `editors/vscode/`
 - any existing test or fixture other than the one line in §7
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, or any spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
 - the text of any existing error
 

@@ -25,7 +25,7 @@ its `define-methods` and Int library descriptions.
   `checkpoints/`, then stops. Each implementer takes one checkpoint, adds
   tests in the same change, runs its verification, and stops when green.
   Human review separates these stages. Keep this series local; do not add an
-  entry to `CHECKPOINTS.md` or `docs/checkpoints/` unless the human later
+  entry to `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/` unless the human later
   promotes it.
 
 ## Product boundary

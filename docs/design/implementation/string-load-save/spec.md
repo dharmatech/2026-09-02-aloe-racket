@@ -17,7 +17,7 @@ The identity is `string-load-save`. Its first checkpoint is spoken
 Numbers start at 000, use three digits, and are never renumbered. The manager
 writes one checkpoint and stops. Each implementer completes only that
 checkpoint, adds its tests, runs verification, and stops for human review.
-No number is taken from `CHECKPOINTS.md` or `docs/checkpoints/` unless a human
+No number is taken from `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/` unless a human
 later promotes the work.
 
 Implement these layers in order:

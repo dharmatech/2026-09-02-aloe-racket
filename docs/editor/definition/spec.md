@@ -50,7 +50,7 @@ Checkpoints live in `docs/editor/definition/checkpoints/`, three
 digits from `000`, never renumbered. Tests live in
 `tests/editor/definition/`; fixtures in
 `tests/editor/definition/fixtures/`. Not `CHECKPOINTS.md`, not
-`docs/checkpoints/`, not a rewrite of editor-lsp 000–009.
+`docs/design/implementation/spine/checkpoints/`, not a rewrite of editor-lsp 000–009.
 
 Three layers, in this order. The manager may split a layer that does
 not fit one implementer conversation, and may not reorder them or add
@@ -860,7 +860,7 @@ moved it to `file.aloe` for the reason in §9.
 - A VS Code extension change, a second editor, a client-side parser,
   or a TypeScript or JavaScript copy of name resolution
 - A change to how editor-lsp 010 counts positions
-- `CHECKPOINTS.md` and `docs/checkpoints/`
+- `CHECKPOINTS.md` and `docs/design/implementation/spine/checkpoints/`
 - Gel, evaluation, and host capabilities
 
 ## 11. Documents

@@ -273,108 +273,108 @@ success, and reports both source datums and displayed values on failure.
 - Canonical documentation records the accepted host-capability design, and a
   compact test seals its intended public and internal Racket surfaces.
 
-## 89. [Proposal B documents](docs/checkpoints/0089-class-constructors-docs.md) (documentation only)
+## 89. [Proposal B documents](docs/design/implementation/spine/checkpoints/0089-class-constructors-docs.md) (documentation only)
 
-## 90. [Parse constructors and case](docs/checkpoints/0090-parse-constructors-and-case.md)
+## 90. [Parse constructors and case](docs/design/implementation/spine/checkpoints/0090-parse-constructors-and-case.md)
 
 - Explicit `(constructors ...)` class sections and receiver-anchored `case`
   forms parse into dedicated AST nodes; runtime and type semantics remain
   deferred.
 
-## 91. [Constructor id on instances](docs/checkpoints/0091-instance-constructor-id.md)
+## 91. [Constructor id on instances](docs/design/implementation/spine/checkpoints/0091-instance-constructor-id.md)
 
 - Every runtime instance records its constructor identity; existing
   `(fields ...)` classes and reflected construction record `new`.
 
-## 92. [Evaluate case](docs/checkpoints/0092-eval-case.md)
+## 92. [Evaluate case](docs/design/implementation/spine/checkpoints/0092-eval-case.md)
 
 - `case` switches on an instance's stored constructor identity, binds its
   payload in field order, and evaluates only the matching clause or `else`.
 
-## 93. [Constructor sets and case checking](docs/checkpoints/0093-check-constructors-and-case.md)
+## 93. [Constructor sets and case checking](docs/design/implementation/spine/checkpoints/0093-check-constructors-and-case.md)
 
 - The checker records constructor sets, validates exhaustive `case` clauses,
   and infers generic constructor arguments from payloads and expected types.
 
-## 94. [Named construction and Option goldens](docs/checkpoints/0094-option-goldens.md)
+## 94. [Named construction and Option goldens](docs/design/implementation/spine/checkpoints/0094-option-goldens.md)
 
 - Class objects install their constructor sets, named construction records the
   selected constructor and payload, and the Proposal B `Option` goldens run.
 
-## 95. [Tree golden](docs/checkpoints/0095-tree-golden.md)
+## 95. [Tree golden](docs/design/implementation/spine/checkpoints/0095-tree-golden.md)
 
 - Recursive constructor payloads preserve generic arguments, and exhaustive
   `case` methods recurse over `Tree` instances through ordinary sends.
 
-## 96. [Ratify class constructors into SPEC](docs/checkpoints/0096-ratify-class-constructors.md) (documentation only)
+## 96. [Ratify class constructors into SPEC](docs/design/implementation/spine/checkpoints/0096-ratify-class-constructors.md) (documentation only)
 
 - Proposal B's constructor sets, named construction, `case`, and generic
   inference rules are normative in `SPEC.md`; Proposal A remains rejected on
   this branch.
 
-## 97. [Integrate typed host boundary](docs/checkpoints/0097-integrate-typed-host-boundary.md)
+## 97. [Integrate typed host boundary](docs/design/implementation/spine/checkpoints/0097-integrate-typed-host-boundary.md)
 
 - `experiment/host-boundary` merges sealed host checkpoints 83–88 from
   `main` onto constructor checkpoints 89–96. Crossing remains
   `Int`/`Bool`/`String`. No filesystem capability.
 
-## 98. [(List String) host crossing](docs/checkpoints/0098-list-string-crossing.md)
+## 98. [(List String) host crossing](docs/design/implementation/spine/checkpoints/0098-list-string-crossing.md)
 
 - Homogeneous `(List String)` is a host crossing type. Host `names` can
   return a list of strings. Nested lists and other `(List T)` forms are
   not crossing types. No filesystem capability.
 
-## 99. [Generic host-type retention](docs/checkpoints/0099-generic-host-type-retention.md)
+## 99. [Generic host-type retention](docs/design/implementation/spine/checkpoints/0099-generic-host-type-retention.md)
 
 - Confirmed that a generic field retains an injected host-receiver type, so a
   wrapper like `(Fs new fs-host)` typechecks without source-written host names;
   no checker or evaluator change was required.
 
-## 100. [Option library](docs/checkpoints/0100-option-library.md)
+## 100. [Option library](docs/design/implementation/spine/checkpoints/0100-option-library.md)
 
 - `lib/option.aloe` is a loadable Option class (`None` / `Some`,
   `present?`, exhaustive `case`). Tests load it. It is not bootstrapped by
   `make-driver`. No filesystem capability.
 
-## 101. [Filesystem host interface and test double](docs/checkpoints/0101-filesystem-host-double.md)
+## 101. [Filesystem host interface and test double](docs/design/implementation/spine/checkpoints/0101-filesystem-host-double.md)
 
 - Optional `fs-host` capability with one `FsHost` interface and a
   test double. Crossing values only. Default drivers do not get it.
   No production disk I/O. No `Path` / `Entry` / `Fs`.
 
-## 102. [Production filesystem host](docs/checkpoints/0102-filesystem-host-production.md)
+## 102. [Production filesystem host](docs/design/implementation/spine/checkpoints/0102-filesystem-host-production.md)
 
 - Production `make-fs-receiver` shares the `FsHost` interface with
   the test double. Isolated temp-directory goldens. Default drivers
   still have no `fs-host`. No `Path` / `Entry` / `Fs`.
 
-## 103. [Path and Fs path algebra](docs/checkpoints/0103-fs-path-algebra.md)
+## 103. [Path and Fs path algebra](docs/design/implementation/spine/checkpoints/0103-fs-path-algebra.md)
 
 - `lib/fs.aloe` defines `Path` and generic `Fs`. Public `current`,
   `path`, `child`, `parent`, and `name` wrap `fs-host`. Parent at
   root is `None`. No `Entry`, `inspect`, or `entries`.
 
-## 104. [Entry, inspect, and entries](docs/checkpoints/0104-fs-entry-and-listing.md)
+## 104. [Entry, inspect, and entries](docs/design/implementation/spine/checkpoints/0104-fs-entry-and-listing.md)
 
 - `lib/fs.aloe` adds `Entry` and `Fs` `inspect` / `entries`. Mixed
   listings are `(List Entry)` with exhaustive `case`. Absence is
   `None`. No file-text reading. No Gel UI.
 
-## 105. [Disk and Location algebra](docs/checkpoints/0105-disk-and-location.md)
+## 105. [Disk and Location algebra](docs/design/implementation/spine/checkpoints/0105-disk-and-location.md)
 
 - `lib/disk.aloe` defines generic `Disk` and `Location`. Public
   `current` / `at` wrap `fs-host`; `name` / `text` / `parent` /
   `child` are location messages. Parent at root is `None`. No
   `inspect`, `Item`, or live classes. Does not load `lib/fs.aloe`.
 
-## 106. [inspect and live Item](docs/checkpoints/0106-inspect-and-item.md)
+## 106. [inspect and live Item](docs/design/implementation/spine/checkpoints/0106-inspect-and-item.md)
 
 - `lib/disk.aloe` adds `Location.inspect` → `(Option Item)` and nested
   live `File` / `Directory` / `SymbolicLink` / `Other`. Live `parent`
   is `(Option Directory)` and does not follow symlinks. No
   `Directory.entries`.
 
-## 107. [Directory.entries](docs/checkpoints/0107-directory-entries.md)
+## 107. [Directory.entries](docs/design/implementation/spine/checkpoints/0107-directory-entries.md)
 
 - Live `Directory.entries` returns mixed `(List Item)` via host
   `names` then `child` + `inspect`. Vanished names are omitted.
@@ -385,16 +385,16 @@ success, and reports both source datums and displayed values on failure.
 Global checkpoints 108–113 and 116–117 are Gel-directory work. They live on
 `experiment/gel-directory-surface` and later Gel branches, not on `main`.
 
-## 114. [String `len` and `take`](docs/checkpoints/0114-string-len-take.md)
+## 114. [String `len` and `take`](docs/design/implementation/spine/checkpoints/0114-string-len-take.md)
 
 - `String` supplies primitive character-count and clamped-prefix messages.
 
-## 115. [String `starts-with?`](docs/checkpoints/0115-string-starts-with.md)
+## 115. [String `starts-with?`](docs/design/implementation/spine/checkpoints/0115-string-starts-with.md)
 
 - `lib/string.aloe` defines `starts-with?` with `define-methods String` and is
   installed in default environments.
 
-## 118. [The evaluator under the compile limit](docs/checkpoints/0118-evaluator-compile-limit.md)
+## 118. [The evaluator under the compile limit](docs/design/implementation/spine/checkpoints/0118-evaluator-compile-limit.md)
 
 - Cold code leaves `aloe/eval.rkt` for `eval-value.rkt`, `eval-load.rkt`, and
   `eval-mirror.rkt`; the hot path stays together. Every evaluator module

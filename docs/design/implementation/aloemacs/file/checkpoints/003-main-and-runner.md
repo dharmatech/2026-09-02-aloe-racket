@@ -23,7 +23,7 @@ is below.
 
 - Identity is `(aloemacs-file, 003)`, spoken **aloemacs-file 003**. This is a
   local project checkpoint, not a global Aloe checkpoint. Do not edit
-  `CHECKPOINTS.md` or add a document under `docs/checkpoints/`.
+  `CHECKPOINTS.md` or add a document under `docs/design/implementation/spine/checkpoints/`.
 - [`../../../../../../SPEC.md`](../../../../../../SPEC.md), especially send
   evaluation, `define`, immutable generic classes, exhaustive `case`, `if`,
   `load`, sections 5.3 and 9's generic-`None` rule, and section 14's typed

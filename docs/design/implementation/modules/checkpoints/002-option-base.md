@@ -176,7 +176,7 @@ split the editor query into its own checkpoint, keeping the order.
   The census still skips `Option` by name; leave it.
 - Every other existing test, and the parts of the migrated tests the
   table does not name.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, `docs/philosophy.md`, this
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`, this
   folder's `README.md`, `charter.md`, `spec.md`, this checkpoint, and
   every other design document.
 

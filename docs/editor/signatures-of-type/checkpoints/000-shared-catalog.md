@@ -38,7 +38,7 @@ below.
 Identity is `(editor-signatures-of-type, 000)`, spoken
 **editor-signatures-of-type 000**. This is not global checkpoint 118 and is
 independent of the editor-source-locations numbering. Do not edit
-`CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+`CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Public row representation
 
@@ -273,7 +273,7 @@ Implementation may edit only:
 
 Do not edit:
 
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - `aloe/parse.rkt`, `aloe/driver.rkt`, `aloe/main.rkt`, `aloe/host.rkt`, or
   the runtime `Signature` value representation
 - `gel/`, `lib/`, `host/`, or another editor project

@@ -49,7 +49,7 @@ below.
 Identity is `(editor-completion, 002)`, spoken **editor-completion 002**. This
 is a local editor checkpoint, not global checkpoint 118 and not an LSP or VS
 Code checkpoint. Do not edit `CHECKPOINTS.md` or add a file under
-`docs/checkpoints/`.
+`docs/design/implementation/spine/checkpoints/`.
 
 ## Public module, structure, and operation
 
@@ -371,7 +371,7 @@ Do not edit:
 - checkpoint 000 or 001 production modules and tests;
 - expression-query, signatures-of-type, source-location, LSP, or VS Code
   production modules and tests;
-- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/checkpoints/`, or the
+- `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, and checkpoint documents; or
 - `gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.
 

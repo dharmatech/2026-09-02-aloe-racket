@@ -33,7 +33,7 @@ its own folder, not editor-definition 001.
    §4.7 leaves to you, and record that choice. A later
    checkpoint-manager conversation slices **editor-definition 000**,
    `001`, … under `docs/editor/definition/checkpoints/` (not
-   `docs/checkpoints/`, not a rewrite of editor-lsp 000–009).
+   `docs/design/implementation/spine/checkpoints/`, not a rewrite of editor-lsp 000–009).
 5. Set this folder's README status to spec written, awaiting
    review, and set project 8's status cell on the parent map the
    same way.
@@ -391,7 +391,7 @@ this charter wins for class-name definition and nowhere else.
   jump site
 - A VS Code extension change, a second editor, or a client-side
   parser
-- `CHECKPOINTS.md` and `docs/checkpoints/`
+- `CHECKPOINTS.md` and `docs/design/implementation/spine/checkpoints/`
 - Gel, evaluation, and host capabilities
 
 ## 7. Handoff

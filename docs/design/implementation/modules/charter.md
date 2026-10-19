@@ -38,7 +38,7 @@ series does include.
 3. Write `spec.md` in this folder. State the series facts in §6
    in the spec's own words. A later checkpoint-manager
    conversation slices **modules 000**, … under `checkpoints/`
-   (not `docs/checkpoints/` unless a human promotes the series
+   (not `docs/design/implementation/spine/checkpoints/` unless a human promotes the series
    after review).
 4. Stop. The human reviews the spec. Do not write those
    checkpoint files.

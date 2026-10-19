@@ -161,7 +161,7 @@ ran at 28 ms alone, as before; this layer adds no evaluator work.
 - Every test not in **Migration**, including
   `tests/parenthetical-construction/editor.rkt`, which reads the result
   through accessors.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, `docs/philosophy.md`,
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`,
   `docs/editor/completion/spec.md`, this folder's `README.md`,
   `charter.md`, `spec.md`, this checkpoint, and every other design
   document.

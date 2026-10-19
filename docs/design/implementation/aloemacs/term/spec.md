@@ -57,7 +57,7 @@ type, and it does not change `SPEC.md`.
 - `host/racket/term-run.rkt` and `host/racket/gel-run.rkt` require no change:
   both already inject the receiver made by `call-with-tty-term-receiver`.
 - Nothing in this project belongs in `examples/aloemacs/`, `lib/`,
-  `docs/editor/`, `docs/checkpoints/`, `CHECKPOINTS.md`, or an `aloe/` kernel
+  `docs/editor/`, `docs/design/implementation/spine/checkpoints/`, `CHECKPOINTS.md`, or an `aloe/` kernel
   module.
 
 ## 2. Frame write

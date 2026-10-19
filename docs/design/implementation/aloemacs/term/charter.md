@@ -25,7 +25,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-term 000**, `001`, … under
    `docs/design/implementation/aloemacs/term/checkpoints/` (not
-   `docs/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
 4. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.
@@ -116,7 +116,7 @@ key string or a variant return type for `read-key`.
   proves they must; a dedicated `aloemacs-run.rkt` is the Loop
   layer
 - `examples/aloemacs/` is still empty in this layer
-- Do not invent `docs/checkpoints/0116-…`. If a host-interface
+- Do not invent `docs/design/implementation/spine/checkpoints/0116-…`. If a host-interface
   change later belongs on the language spine, the human promotes
   it after review
 

@@ -29,7 +29,7 @@ below.
 
 Identity is `(editor-source-locations, 000)`, spoken **editor-source-locations
 000**. This is a local editor checkpoint, not global checkpoint 118. Do not
-edit `CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+edit `CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Locked representation
 
@@ -157,7 +157,7 @@ Implementation may edit:
 
 Do not edit:
 
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - `gel/`, `lib/`, `host/`, or `docs/gel/`
 - type-error or runtime-error formats
 - the editor project charters or any later source-locations checkpoint

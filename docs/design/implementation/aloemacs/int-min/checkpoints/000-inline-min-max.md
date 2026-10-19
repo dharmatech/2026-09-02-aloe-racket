@@ -20,7 +20,7 @@ with `(… max 0)`. Do not edit `lib/int.aloe`.
 
 The implementer receives **this checkpoint only**. `SPEC.md` governs
 sends. `Int` `min` / `max` are the accepted
-[`../../int-methods/spec.md`](../../int-methods/spec.md) library
+[`docs/design/implementation/int-methods/spec.md`](../../../int-methods/spec.md) library
 methods, installed by default (`int-methods` 000–001).
 
 - Identity is **aloemacs-int-min 000**. Predecessors: int-methods 001

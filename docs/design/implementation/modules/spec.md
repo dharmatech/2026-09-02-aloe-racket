@@ -68,7 +68,7 @@ no export list, no barrel, no prefix, no load path, no reload.
   feature. It may not merge the slices §1 marks as separate, and it
   does not issue the adoption checkpoint until the human asks for it
   (§10). Nothing from this series goes onto `CHECKPOINTS.md` or
-  under `docs/checkpoints/` unless a human promotes it later.
+  under `docs/design/implementation/spine/checkpoints/` unless a human promotes it later.
 
 **Order.** Layers, and within the visibility layer the slices, land
 in this order. Each is green on its own.

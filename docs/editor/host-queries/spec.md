@@ -75,7 +75,7 @@ Checkpoints live in `docs/editor/host-queries/checkpoints/` with three
 digits from `000`, and they are never renumbered. Tests live in
 `tests/editor/host-queries/`, and fixtures in
 `tests/editor/host-queries/fixtures/`. They do not go in
-`CHECKPOINTS.md` or `docs/checkpoints/`, and they do not rewrite an
+`CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`, and they do not rewrite an
 earlier editor series. Branch: `experiment/2026-10-16-host-queries`.
 
 There are two layers, in this order. The manager may not reorder them or
@@ -1136,7 +1136,7 @@ locked decisions:
 - Adding `tui-term` to `info.rkt`'s deps
 - The `tests/aloemacs/window-pictures.rkt` timing bar. It is a separate
   project
-- `CHECKPOINTS.md` and `docs/checkpoints/`
+- `CHECKPOINTS.md` and `docs/design/implementation/spine/checkpoints/`
 
 ## 15. Documents
 

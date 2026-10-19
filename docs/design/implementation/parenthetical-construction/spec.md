@@ -41,7 +41,7 @@ governs the process. The colon experiment on
   one approved checkpoint, adds its tests in the same change, runs its
   verification, and stops when green. Human review separates the stages.
 - Number this series locally. Do not edit `CHECKPOINTS.md` or put checkpoints
-  under `docs/checkpoints/` unless a human later promotes the series.
+  under `docs/design/implementation/spine/checkpoints/` unless a human later promotes the series.
 
 ## 2. Product boundary
 

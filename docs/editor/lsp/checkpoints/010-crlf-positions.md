@@ -80,7 +80,7 @@ file in the repository uses CRLF, which is why nothing has failed.
 Identity is `(editor-lsp, 010)`, spoken **editor-lsp 010**. It belongs to
 the LSP series because the LSP spec owns the position rule it makes
 true; its one product edit is in the parser. Do not edit
-`CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+`CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 The editor-definition series (`docs/editor/definition/spec.md`, awaiting
 review) also edits `aloe/parse.rkt`, to add name spans. The two do not
@@ -163,7 +163,7 @@ Do not edit:
   `aloe/completion-query.rkt`, `aloe/private/`, `aloe/type.rkt`,
   `aloe/eval.rkt`, or any other product module;
 - any existing test or fixture;
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, any other spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, any other spec,
   charter, or checkpoint document, including source-locations 000 and
   editor-lsp 001;
 - `editors/vscode/`, `lib/`, `examples/`, `gel/`, or `host/`.

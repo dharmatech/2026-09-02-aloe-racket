@@ -2,7 +2,7 @@
 
 Spoken **aloe macs**. A terminal editor written in Aloe. Local work.
 Not Aloe language law. Not Gel. Not the global checkpoint spine
-(`docs/checkpoints/`, `CHECKPOINTS.md`). Not
+(`docs/design/implementation/spine/checkpoints/`, `CHECKPOINTS.md`). Not
 [`docs/editor/`](../../../editor/README.md) (that map is edit-Aloe
 from the outside).
 

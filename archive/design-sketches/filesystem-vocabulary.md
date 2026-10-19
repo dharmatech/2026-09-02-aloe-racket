@@ -1,7 +1,7 @@
 # Filesystem vocabulary sketch
 
 **Status:** Historical incoming sketch. Superseded as working design by
-[`docs/filesystem-vocabulary.md`](../../docs/filesystem-vocabulary.md).
+[`docs/design/implementation/spine/filesystem-vocabulary.md`](../../docs/design/implementation/spine/filesystem-vocabulary.md).
 Keep this file as provenance; do not edit it to track later decisions.
 
 **Original status:** Provisional, non-normative design handoff. This is not a

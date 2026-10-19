@@ -24,7 +24,7 @@ slice; it does not revise the design.
 - Project root: `/home/dharmatech/journal/2026-09-02-aloe-racket`.
   Source and tests belong in that tree, outside this design folder.
 - Starting point: `main` at `9af2f39`. The human chooses the branch.
-  This series does not enter `CHECKPOINTS.md` or `docs/checkpoints/`.
+  This series does not enter `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`.
 - After human acceptance, this file is the series design authority.
   [`docs/workflow.md`](../../../workflow.md) governs process and host
   verification. [`SPEC.md`](../../../../SPEC.md) remains Aloe law.

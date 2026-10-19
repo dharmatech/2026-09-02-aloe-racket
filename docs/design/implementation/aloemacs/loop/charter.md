@@ -27,7 +27,7 @@ If you have been told to read this file, this is the whole assignment.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **aloemacs-loop 000**, `001`, … under
    `docs/design/implementation/aloemacs/loop/checkpoints/` (not
-   `docs/checkpoints/0116`, not `docs/editor/`).
+   `docs/design/implementation/spine/checkpoints/0116`, not `docs/editor/`).
 5. Stop. The human reviews it. Do not write those checkpoint files.
 
 The checkpoint manager and implementers will not have this charter.
@@ -114,7 +114,7 @@ requirement. A test may construct a non-empty `Text` directly.
   algebra. Do not add `lib/editor.aloe` unless the spec argues
   the loop types are a general library — default is
   `examples/aloemacs/` only
-- Do not invent `docs/checkpoints/0116-…`
+- Do not invent `docs/design/implementation/spine/checkpoints/0116-…`
 
 ### 4.4 Keys in this layer
 

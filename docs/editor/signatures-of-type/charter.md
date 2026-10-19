@@ -23,7 +23,7 @@ If you have been told to read this file, this is the whole assignment.
    checkpoint-manager conversation will slice into
    **editor-signatures-of-type 000**, `001`, … under
    `docs/editor/signatures-of-type/checkpoints/` (not
-   `docs/checkpoints/0118`, not `docs/editor/source-locations/`).
+   `docs/design/implementation/spine/checkpoints/0118`, not `docs/editor/source-locations/`).
 4. Stop. The human reviews it. The spec conversation does not write
    those checkpoint files.
 

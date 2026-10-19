@@ -22,7 +22,7 @@ is below.
 
 - Identity is `(aloemacs-term, 000)`, spoken **aloemacs-term 000**. This is a
   local project checkpoint, not a global Aloe checkpoint. Do not edit
-  `CHECKPOINTS.md` or add a document under `docs/checkpoints/`.
+  `CHECKPOINTS.md` or add a document under `docs/design/implementation/spine/checkpoints/`.
 - [`../../../../../../SPEC.md`](../../../../../../SPEC.md), especially section
   14, is language law. A host capability is an explicitly injected receiver;
   its one ordered descriptor drives checking, runtime dispatch, and
@@ -89,7 +89,7 @@ rows are intentionally changed. Do not weaken unrelated assertions.
 
 - `SPEC.md`, `CHECKPOINTS.md`, or any global checkpoint document
 - any file under `aloe/`, `lib/`, `examples/aloemacs/`, `docs/editor/`, or
-  `docs/checkpoints/`
+  `docs/design/implementation/spine/checkpoints/`
 - `host/racket/term-run.rkt`, `host/racket/gel-run.rkt`, `tui-term`, package
   metadata, or another host module
 - `tests/checkpoint-98.rkt` or any test not listed under **May edit**

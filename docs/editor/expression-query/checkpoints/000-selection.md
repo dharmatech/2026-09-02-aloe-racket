@@ -41,7 +41,7 @@ below.
 Identity is `(editor-expression-query, 000)`, spoken
 **editor-expression-query 000**. This is a local editor checkpoint, not a
 global checkpoint and not part of either predecessor series. Do not edit
-`CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+`CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Internal selection operation
 
@@ -174,7 +174,7 @@ Do not edit:
 - `aloe/parse.rkt`, `aloe/type.rkt`, `aloe/eval.rkt`, `aloe/driver.rkt`, or
   `aloe/main.rkt`
 - `aloe/signature-catalog.rkt` or either predecessor project
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - the expression-query specification, charter, README, this checkpoint's
   semantics, or a later checkpoint document
 - `gel/`, `lib/`, `host/`, or another editor project

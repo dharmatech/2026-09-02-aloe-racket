@@ -47,7 +47,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. State the series facts in §7
    in the spec's own words. A later checkpoint-manager
    conversation slices **parenthetical-construction 000**, …
-   under `checkpoints/` (not `docs/checkpoints/` unless a human
+   under `checkpoints/` (not `docs/design/implementation/spine/checkpoints/` unless a human
    promotes the series after review).
 4. Stop. The human reviews the spec. Do not write those
    checkpoint files.
@@ -62,7 +62,7 @@ value, a method label, a colon label, or a rewrite of
 |---|---|
 | `SPEC.md` §2, §3.1, §3.2, §4.3, §4.10, §7.2, §8 | A send evaluates the receiver and the arguments. The selector is a source symbol and is not evaluated. A `(fields ...)` class has one constructor, `new`. `let` is `((name expr) ...)` and desugars to `fn` plus `call`. `case` in the second position is syntax, not a send. A source symbol in expression position is an environment lookup. `Symbol` has no reader literal. Labeled `make` is out of scope |
 | `SPEC.md` §5.3 and §9 | Bare `(Option None)` does not determine its type parameter. The `if` witness is the accepted way to write an empty option. Golden `(Point new 1 2)` must keep running |
-| [`docs/checkpoints/0083a-host-implementation-call-shape.md`](../../../checkpoints/0083a-host-implementation-call-shape.md) | The host boundary rejects Racket keyword arguments, required or optional |
+| [`docs/design/implementation/spine/checkpoints/0083a-host-implementation-call-shape.md`](../spine/checkpoints/0083a-host-implementation-call-shape.md) | The host boundary rejects Racket keyword arguments, required or optional |
 | [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe) | `aloemacs-editor` is one positional `AloemacsSession new` with nested positional constructors. This is the call the closing slice rewrites |
 | [`archive/design-sketches/2026-10-06-aloemacs-labels/003-parens-let-aligned-let.aloe`](../../../../archive/design-sketches/2026-10-06-aloemacs-labels/003-parens-let-aligned-let.aloe) | The closing edit follows this sketch's two `let`s and flat session table, with the positional exceptions in §4.5. The prose sentence and the markdown fence in that file are not part of the program |
 | [`docs/decisions.md`](../../../decisions.md) | Square brackets were left for later, without a special meaning. This series does not give them one |
@@ -433,7 +433,7 @@ must still parse and check. Hover and completion inside a
 `new*` value must keep working. This series adds no completion
 query for field names and no new editor feature.
 
-Not in this series: `CHECKPOINTS.md`, `docs/checkpoints/`,
+Not in this series: `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`,
 `examples/aloemacs/file.aloe`, `examples/aloemacs/editor.aloe`,
 Gel, the host keyword check, the identifier sections, the colon
 experiment's files, and any editor change beyond teaching those
@@ -456,7 +456,7 @@ walkers the new node.
 - [`docs/decisions.md`](../../../decisions.md). The `if` entry
   left `[]` without a special meaning. This series does not
   add one.
-- [`docs/checkpoints/0083a-host-implementation-call-shape.md`](../../../checkpoints/0083a-host-implementation-call-shape.md).
+- [`docs/design/implementation/spine/checkpoints/0083a-host-implementation-call-shape.md`](../spine/checkpoints/0083a-host-implementation-call-shape.md).
   Host methods stay positional Racket calls.
 - [`examples/aloemacs/main.aloe`](../../../../examples/aloemacs/main.aloe)
   is the source of the values the closing slice must preserve.

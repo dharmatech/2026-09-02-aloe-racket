@@ -4,7 +4,7 @@
 **design conversation**. Not a checkpoint. Not an implementer
 assignment. Specification will live beside this file as
 [`spec.md`](spec.md). Process:
-[`docs/workflow.md`](../../workflow.md).
+[`docs/workflow.md`](../../../workflow.md).
 
 **Your job.** Turn this charter into a specification that makes
 **`define-methods Int` legal** and installs **`(n min m)`** and
@@ -26,7 +26,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **int-methods 000**, … under
    `docs/design/implementation/int-methods/checkpoints/` (not
-   `docs/checkpoints/0116` unless the human promotes after
+   `docs/design/implementation/spine/checkpoints/0116` unless the human promotes after
    review).
 4. Stop. The human reviews it. Do not write those checkpoint files.
 
@@ -40,8 +40,8 @@ in this document.
 |---|---|
 | `SPEC.md` §4.6 / §7 | `define-methods` targets are `List` and `String` only; `Int` kernel is `+ - * / < > <= >= =` and `(n float)` |
 | Checkpoint 114 | `define-methods String`; **explicitly rejected** `define-methods Int` |
-| Checkpoint 115 / [`lib/string.aloe`](../../../lib/string.aloe) | Derived methods in Aloe, default env via [`aloe/library.rkt`](../../../aloe/library.rkt) |
-| [`lib/list.aloe`](../../../lib/list.aloe) | Same install pattern |
+| Checkpoint 115 / [`lib/string.aloe`](../../../../lib/string.aloe) | Derived methods in Aloe, default env via [`aloe/library.rkt`](../../../../aloe/library.rkt) |
+| [`lib/list.aloe`](../../../../lib/list.aloe) | Same install pattern |
 
 **Consumer (do not implement here):** aloemacs
 `(self clamp-column column text)` is
@@ -160,16 +160,16 @@ than inventing a second bootstrap.
 
 - `SPEC.md` §3.1 (`define-methods` instance methods only),
   §4.6, §7 (Int kernel)
-- [`docs/checkpoints/0114-string-len-take.md`](../../checkpoints/0114-string-len-take.md)
+- [`docs/design/implementation/spine/checkpoints/0114-string-len-take.md`](../spine/checkpoints/0114-string-len-take.md)
   — lift one primitive; do not lift all
-- [`docs/checkpoints/0115-string-starts-with.md`](../../checkpoints/0115-string-starts-with.md)
+- [`docs/design/implementation/spine/checkpoints/0115-string-starts-with.md`](../spine/checkpoints/0115-string-starts-with.md)
   — derived method + default env
-- [`docs/decisions.md`](../../decisions.md) — String library
+- [`docs/decisions.md`](../../../decisions.md) — String library
   boundary
-- [`docs/philosophy.md`](../../philosophy.md) — kernel small;
+- [`docs/philosophy.md`](../../../philosophy.md) — kernel small;
   grow from applications
-- [`aloe/library.rkt`](../../../aloe/library.rkt),
-  [`lib/string.aloe`](../../../lib/string.aloe)
+- [`aloe/library.rkt`](../../../../aloe/library.rkt),
+  [`lib/string.aloe`](../../../../lib/string.aloe)
 
 `SPEC.md` remains language law. This spec **does** amend it
 for `define-methods Int` and the library mention of `min` /

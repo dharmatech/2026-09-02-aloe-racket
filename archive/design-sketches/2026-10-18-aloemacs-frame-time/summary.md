@@ -6,7 +6,7 @@ It is not a charter, not a specification, and not a decision to change
 the editor. No product code was edited. The work it led to is
 [`docs/design/implementation/aloemacs/frame-time/charter.md`](../../../docs/design/implementation/aloemacs/frame-time/charter.md)
 and, on the language spine,
-[`docs/evaluator-compile-limit-brief.md`](../../../docs/evaluator-compile-limit-brief.md).
+[`docs/design/implementation/spine/evaluator-compile-limit-brief.md`](../../../docs/design/implementation/spine/evaluator-compile-limit-brief.md).
 
 ## The question
 

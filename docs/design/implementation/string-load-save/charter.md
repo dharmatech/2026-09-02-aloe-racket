@@ -27,7 +27,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **string-load-save 000**, … under
    `docs/design/implementation/string-load-save/checkpoints/`
-   (not `docs/checkpoints/0116` unless the human promotes after
+   (not `docs/design/implementation/spine/checkpoints/0116` unless the human promotes after
    review).
 4. Stop. The human reviews it. Do not write those checkpoint files.
 
@@ -284,9 +284,9 @@ with `drop`.
   (`define-methods` instance methods only), evaluation is send
 - [`docs/philosophy.md`](../../../../docs/philosophy.md) —
   kernel small; grow from applications; irreducible host facts
-- [`docs/checkpoints/0114-string-len-take.md`](../../../../docs/checkpoints/0114-string-len-take.md)
+- [`docs/design/implementation/spine/checkpoints/0114-string-len-take.md`](../../../../docs/design/implementation/spine/checkpoints/0114-string-len-take.md)
   and
-  [`docs/checkpoints/0115-string-starts-with.md`](../../../../docs/checkpoints/0115-string-starts-with.md)
+  [`docs/design/implementation/spine/checkpoints/0115-string-starts-with.md`](../../../../docs/design/implementation/spine/checkpoints/0115-string-starts-with.md)
   — kernel vs Aloe String
 - [`docs/design/implementation/aloemacs/text/spec.md`](../aloemacs/text/spec.md)
   §2.2 — `split-lines` table; §2.1 — `drop`

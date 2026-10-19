@@ -21,7 +21,7 @@ only this document. Every rule for this slice is below.
 
 Identity is `(editor-definition, 003)`, spoken **editor-definition
 003**. It is a local editor checkpoint. Do not edit `CHECKPOINTS.md` or
-add a file under `docs/checkpoints/`.
+add a file under `docs/design/implementation/spine/checkpoints/`.
 
 The tree at `542fd61` (branch `experiment/2026-10-14-definition`) has
 every predecessor:
@@ -237,7 +237,7 @@ Do not edit:
   is empty
 - any fixture. This checkpoint reuses `tests/editor/definition/fixtures/`
   and adds no `.aloe` file, so the census count does not change
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, or any spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
 - `lib/`, `examples/`, `gel/`, or `host/`
 

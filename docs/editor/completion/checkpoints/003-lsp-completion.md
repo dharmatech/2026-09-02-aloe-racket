@@ -45,7 +45,7 @@ below.
 
 Identity is `(editor-completion, 003)`, spoken **editor-completion 003**. This
 is a local editor checkpoint, not editor-lsp 010 and not global checkpoint
-118. Do not edit `CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+118. Do not edit `CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Preserve the accepted adapter
 
@@ -315,7 +315,7 @@ Do not edit:
 - completion tests 000–002 or LSP tests 001–003;
 - either reviewed spec, any charter, README, or checkpoint document;
 - `info.rkt`, `SPEC.md`, `CHECKPOINTS.md`, or anything under
-  `docs/checkpoints/`;
+  `docs/design/implementation/spine/checkpoints/`;
 - `.vscode/`, the VS Code extension, package manifest, grammar, JavaScript, or
   TypeScript; or
 - `gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.

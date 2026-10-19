@@ -172,7 +172,7 @@ so.
   `host/racket/aloemacs-run.rkt`, `host/racket/term-run.rkt`, and every
   other host module.
 - Every test not in **Migration**.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, `docs/philosophy.md`, this
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`, this
   folder's `README.md`, `charter.md`, `spec.md`, this checkpoint, and
   every other design document.
 

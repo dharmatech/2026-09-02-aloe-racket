@@ -59,7 +59,7 @@ interpreter reads those files at run time.
 
 The implementer receives **this checkpoint only**. It is the design
 and the slice. `SPEC.md` is unchanged and stays the language law.
-[`docs/workflow.md`](../../../workflow.md) is the conversation
+[`docs/workflow.md`](../../../../workflow.md) is the conversation
 pipeline; this slice adds a host-verification section and does not
 change the roles.
 
@@ -97,7 +97,7 @@ Do not re-measure the two-module stale-bytecode case. It is settled.
 
 - `aloe/`, `host/`, `bin/`, `lib/`, `examples/`, `tests/`, `gel/`,
   `editors/`
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, and every
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, and every
   historical checkpoint that already says `raco test` without `-y`
 - This folder's `README.md` and this checkpoint
 - Every file not listed under **May edit**

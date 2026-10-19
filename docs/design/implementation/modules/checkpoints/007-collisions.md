@@ -146,7 +146,7 @@ a copy of the committed tree.
 - Every `.aloe` file under `examples/`, `lib/`, and `gel/`, and every
   existing fixture.
 - Every test except the one case in **Migration**.
-- `CHECKPOINTS.md`, `docs/checkpoints/`, `docs/philosophy.md`, the
+- `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`, the
   editor specs, this folder's `README.md`, `charter.md`, `spec.md`,
   this checkpoint, and every other design document.
 

@@ -27,7 +27,7 @@ element is a literal selector, and there is no implicit Int/Float coercion.
 
 - Identity is `(string-load-save, 000)`, spoken **string-load-save 000**. It is
   local to this project. Do not take global checkpoint 116 or edit
-  `CHECKPOINTS.md` or `docs/checkpoints/`.
+  `CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/`.
 - Project root for code, tests, and commands:
   `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Global checkpoints 114 and 115, aloemacs-text 000, and the implemented

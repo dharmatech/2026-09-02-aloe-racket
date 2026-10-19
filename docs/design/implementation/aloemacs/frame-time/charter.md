@@ -138,7 +138,7 @@ write global 116 or 118.
 
 The compile-limit repair is a language-spine checkpoint, handed to a
 checkpoint manager by
-[`docs/evaluator-compile-limit-brief.md`](../../../../evaluator-compile-limit-brief.md).
+[`docs/design/implementation/spine/evaluator-compile-limit-brief.md`](../../spine/evaluator-compile-limit-brief.md).
 This series does not edit `aloe/`.
 
 The spec may be written before that checkpoint lands. No checkpoint of

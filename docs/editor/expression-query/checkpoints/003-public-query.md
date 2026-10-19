@@ -45,7 +45,7 @@ below.
 Identity is `(editor-expression-query, 003)`, spoken
 **editor-expression-query 003**. This is a local editor checkpoint, not a
 global checkpoint and not part of either predecessor series. Do not edit
-`CHECKPOINTS.md` or add a file under `docs/checkpoints/`.
+`CHECKPOINTS.md` or add a file under `docs/design/implementation/spine/checkpoints/`.
 
 ## Exact public module and surface
 
@@ -294,7 +294,7 @@ Do not edit:
   `aloe/eval.rkt`, `aloe/library.rkt`, `aloe/env.rkt`, or `aloe/host.rkt`
 - checkpoint 000–002 tests or any existing fixture
 - signatures-of-type tests
-- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/checkpoints/`
+- `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - the expression-query specification, charter, README, or checkpoint
   documents except for status/index updates made by the checkpoint manager
 - `gel/`, `lib/`, `host/`, or another editor project

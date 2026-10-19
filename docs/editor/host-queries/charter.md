@@ -29,7 +29,7 @@ If you have been told to read this file, this is the whole assignment.
 4. Resolve the choices §5 leaves to the spec, and record each one.
 5. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **editor-host-queries 000**, `001`, … under
-   `docs/editor/host-queries/checkpoints/`. Not `docs/checkpoints/`.
+   `docs/editor/host-queries/checkpoints/`. Not `docs/design/implementation/spine/checkpoints/`.
    Not a rewrite of an earlier editor series.
 6. Set this folder's README status to spec written, awaiting review.
    Set project 9's status cell on the parent map the same way.
@@ -519,7 +519,7 @@ charter wins for host-configured queries and nowhere else.
 - Adding `tui-term` to `info.rkt`'s deps
 - The `tests/aloemacs/window-pictures.rkt` timing bar. It is next on the
   list, as a separate project.
-- `CHECKPOINTS.md` and `docs/checkpoints/`
+- `CHECKPOINTS.md` and `docs/design/implementation/spine/checkpoints/`
 
 ## 8. Handoff
 

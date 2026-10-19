@@ -43,7 +43,7 @@ below.
 
 Identity is `(editor-lsp, 009)`, spoken **editor-lsp 009**. This is a local
 editor checkpoint, not a global Aloe checkpoint. Do not edit `CHECKPOINTS.md`,
-add a file under `docs/checkpoints/`, or begin another feature.
+add a file under `docs/design/implementation/spine/checkpoints/`, or begin another feature.
 
 ## Preserve accepted behavior
 
@@ -168,7 +168,7 @@ Implementation may edit only:
 Do not edit:
 
 - `info.rkt`, `SPEC.md`, `CHECKPOINTS.md`, or anything under
-  `docs/checkpoints/`;
+  `docs/design/implementation/spine/checkpoints/`;
 - the LSP spec, charter, README, checkpoint documents, tests 000–006 or 008,
   or any fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;

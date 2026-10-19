@@ -70,7 +70,7 @@ It does not revise the spec.
 - Identity: **aloemacs-frame-time 001**, filed as
   `checkpoints/001-read-visible-lines.md`. A local editor checkpoint:
   no global number, no `CHECKPOINTS.md` entry, nothing under
-  `docs/checkpoints/`. Predecessor: aloemacs-frame-time 000.
+  `docs/design/implementation/spine/checkpoints/`. Predecessor: aloemacs-frame-time 000.
 - Project root: `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Read [docs/workflow.md](../../../../../workflow.md), root
   [AGENTS.md](../../../../../../AGENTS.md), and

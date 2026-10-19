@@ -61,7 +61,7 @@ assertions. Do not weaken full-frame ANSI comparisons.
   `host/racket/aloemacs-run.rkt`, every other host file, Term and Fs
   implementations, `lib/text.aloe`, `lib/string.aloe`, other libraries, Gel,
   and `aloe/eval.rkt`
-- `SPEC.md`, `CHECKPOINTS.md`, `docs/checkpoints/`, this accepted spec,
+- `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, this accepted spec,
   aloemacs-echo 000, earlier aloemacs checkpoints, and project maps
 - All other product, test, and design files
 

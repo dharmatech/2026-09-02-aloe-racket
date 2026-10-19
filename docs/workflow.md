@@ -155,7 +155,7 @@ checkpoint yet. Combine or redesign.
 ## Checkpoint contents
 
 Follow the existing shape
-([`docs/checkpoints/0103-fs-path-algebra.md`](checkpoints/0103-fs-path-algebra.md),
+([`docs/design/implementation/spine/checkpoints/0103-fs-path-algebra.md`](design/implementation/spine/checkpoints/0103-fs-path-algebra.md),
 [`docs/editor/lsp/checkpoints/000-hover.md`](editor/lsp/checkpoints/000-hover.md)):
 
 - goal
@@ -170,7 +170,7 @@ Follow the existing shape
 Identity is either a global number (`checkpoint 103`) or
 `(project, number)` spoken **project 000** (for example
 `editor-lsp 000`). Do not mix local project work into
-`CHECKPOINTS.md` or `docs/checkpoints/` unless the work is actually
+`CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/` unless the work is actually
 on the language spine.
 
 ## Where files live
@@ -183,9 +183,10 @@ itself.
 | Artifact | Path |
 |---|---|
 | Checkpoints index | [`CHECKPOINTS.md`](../CHECKPOINTS.md) |
-| Checkpoint | `docs/checkpoints/NNNN-slug.md` |
+| Spine map | [`docs/design/implementation/spine/README.md`](design/implementation/spine/README.md) |
+| Checkpoint | `docs/design/implementation/spine/checkpoints/NNNN-slug.md` |
 | Tests | `tests/checkpoint-N.rkt` |
-| Designer / manager brief | `docs/<topic>-designer.md` or `docs/<topic>-brief.md` |
+| Designer / manager brief | `docs/design/implementation/spine/<topic>-designer.md` or `docs/design/implementation/spine/<topic>-brief.md` |
 
 ### Local project
 
@@ -237,9 +238,9 @@ Stay in one conversation when the work is not a design-and-slice
 problem, for example:
 
 - Fast-forwarding already-landed work onto `main`
-  ([`docs/0.3-language-merge.md`](0.3-language-merge.md))
+  ([`docs/design/implementation/spine/0.3-language-merge.md`](design/implementation/spine/0.3-language-merge.md))
 - A small refactor whose charter already names the slices
-  ([`docs/parser-checker-elegance.md`](parser-checker-elegance.md))
+  ([`docs/design/implementation/spine/parser-checker-elegance.md`](design/implementation/spine/parser-checker-elegance.md))
 - A question, investigation, or map with no code
 
 Those charters should say they are not a designer spec and not a

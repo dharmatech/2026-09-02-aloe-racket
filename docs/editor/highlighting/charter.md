@@ -25,7 +25,7 @@ If you have been told to read this file, this is the whole assignment.
 3. Record the locked decisions in §4. Resolve only §4.8.
 4. Write `spec.md` in this folder. A later checkpoint-manager
    conversation slices **editor-highlighting 000** under
-   `docs/editor/highlighting/checkpoints/` (not `docs/checkpoints/`,
+   `docs/editor/highlighting/checkpoints/` (not `docs/design/implementation/spine/checkpoints/`,
    not `docs/editor/vscode/checkpoints/`, not a new hover series).
    The expected series is **one checkpoint**. Do not plan 001.
 5. Stop. The human reviews it. Do not write those checkpoint files

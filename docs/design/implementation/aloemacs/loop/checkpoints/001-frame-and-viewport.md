@@ -21,7 +21,7 @@ is below.
 
 - Identity is `(aloemacs-loop, 001)`, spoken **aloemacs-loop 001**. This is a
   local project checkpoint, not a global Aloe checkpoint. Do not edit
-  `CHECKPOINTS.md` or add a document under `docs/checkpoints/`.
+  `CHECKPOINTS.md` or add a document under `docs/design/implementation/spine/checkpoints/`.
 - [`../../../../../../SPEC.md`](../../../../../../SPEC.md) is language law,
   especially send evaluation, typed immutable classes, `define-methods`,
   parallel `let`, `if`, exact `Int`, `String` messages, and List folds.

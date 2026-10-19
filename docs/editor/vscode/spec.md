@@ -4,7 +4,7 @@
 is not Aloe language law, an implementation checkpoint, or a global
 checkpoint. A later checkpoint-manager conversation may slice
 **editor-vscode 000** under `docs/editor/vscode/checkpoints/`. It must not use
-`docs/checkpoints/` or `docs/editor/lsp/checkpoints/`.
+`docs/design/implementation/spine/checkpoints/` or `docs/editor/lsp/checkpoints/`.
 
 **Authority.** [`../lsp/spec.md`](../lsp/spec.md) owns the protocol,
 capabilities, document synchronization, UTF-16 positions, Hover contents,
