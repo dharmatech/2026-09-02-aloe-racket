@@ -3,13 +3,13 @@
 The global checkpoint spine: the checkpoints numbered across the
 whole language, and the briefs, designer assignments, locked
 vocabularies, and one-conversation charters that produced them. The
-index is [`CHECKPOINTS.md`](../../../../CHECKPOINTS.md) at the
-project root. [`SPEC.md`](../../../../SPEC.md) is law.
+index is [`CHECKPOINTS.md`](CHECKPOINTS.md), in this folder.
+[`SPEC.md`](../../../../SPEC.md) is law.
 
-Not a local project. Identity here is a global number, spoken
-**checkpoint 118**. The next global number continues in
-[`checkpoints/`](checkpoints/). The next spine brief is written in
-this folder as `<topic>-brief.md` or `<topic>-designer.md`. Process:
+The spine is closed at **checkpoint 118** (2026-10-19). No further
+global number is issued, and nothing new is written here. A change to
+the kernel is a series folder beside this one, with
+`(project, number)` identity. Process:
 [`docs/workflow.md`](../../../workflow.md).
 
 Every file here lived at the top of `docs/` until docs-layout 000

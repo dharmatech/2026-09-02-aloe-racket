@@ -33,7 +33,7 @@ checkpoint narrows the spec to one slice and does not revise it.
 - Read [docs/workflow.md](../../../../../workflow.md), root
   [AGENTS.md](../../../../../../AGENTS.md),
   [SPEC.md](../../../../../../SPEC.md), and
-  [CHECKPOINTS.md](../../../../../../CHECKPOINTS.md) before product edits.
+  [CHECKPOINTS.md](../../../spine/CHECKPOINTS.md) before product edits.
   `SPEC.md` remains Aloe language law. Evaluation is send with a literal
   selector; function objects execute through `call`. Use existing String,
   Int, and List sends and ordinary checked recursion.

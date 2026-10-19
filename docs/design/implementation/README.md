@@ -13,17 +13,18 @@ Each series README is the authority for its series. When this map
 and a series README disagree, the README is right. The statuses
 below were checked against git on 2026-10-19.
 
-Identity is a global number on the spine (**checkpoint 118**) and
-`(project, number)` everywhere else (**editor-lsp 000**,
+Identity is `(project, number)` (**editor-lsp 000**,
 **aloemacs-text 000**, **with 001**). Numbers are never renumbered.
-A local series does not take a global number unless a human promotes
-it onto [`CHECKPOINTS.md`](../../../CHECKPOINTS.md).
+The spine's global numbers (**checkpoint 118**) are historical: the
+spine closed at 118 on 2026-10-19, its index is
+[`spine/CHECKPOINTS.md`](spine/CHECKPOINTS.md), and no series is
+promoted onto it.
 
 ## The global spine
 
 | Folder | What | Status |
 |---|---|---|
-| [`spine/`](spine/README.md) | Globally numbered checkpoints `0072` through `0118`, and the briefs, vocabularies, and one-conversation charters that produced them. The index is `CHECKPOINTS.md` at the project root. | Through 118 (2026-10-18). The next global number continues here. |
+| [`spine/`](spine/README.md) | Globally numbered checkpoints `0072` through `0118`, and the briefs, vocabularies, and one-conversation charters that produced them. The index of all 118 is [`CHECKPOINTS.md`](spine/CHECKPOINTS.md) in that folder. | Closed at 118 (2026-10-19). Nothing new is written here. |
 
 ## Maps with layers of their own
 
@@ -56,6 +57,7 @@ it onto [`CHECKPOINTS.md`](../../../CHECKPOINTS.md).
 |---|---|---|
 | [`docs-layout/`](docs-layout/README.md) | This layout: the spine and the editor map moved under this folder, and this map. | 000 at `9cf7ce9` and 001 at `473863a` (2026-10-19); 002 is this map. |
 | [`source-layout/`](source-layout/README.md) | Source layout: the Gel tree moved to `examples/gel/`, beside the other programs. | Closed 2026-10-19; 000 implemented and hand-checked. |
+| [`spine-close/`](spine-close/README.md) | The global numbering closed at 118 and its index moved into `spine/`. | 000 is this change. |
 
 ## Withdrawn
 

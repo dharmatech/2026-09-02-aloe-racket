@@ -17,8 +17,8 @@ and wait:
 Do not offer to edit the product from this role.
 
 The rules below apply when this conversation has been given one
-approved checkpoint to implement. Read `SPEC.md` and
-`CHECKPOINTS.md` before writing code.
+approved checkpoint to implement. Read `SPEC.md` and the README of
+the checkpoint's series before writing code.
 
 - Implement one checkpoint at a time. Do not skip ahead to Boids.
 - Add tests in the same change. Run them. Stop when green.

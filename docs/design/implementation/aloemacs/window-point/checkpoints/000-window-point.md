@@ -42,7 +42,7 @@ the spec left to the manager. It does not revise the spec.
 - Read [docs/workflow.md](../../../../../workflow.md), root
   [AGENTS.md](../../../../../../AGENTS.md),
   [SPEC.md](../../../../../../SPEC.md), and
-  [CHECKPOINTS.md](../../../../../../CHECKPOINTS.md) before product
+  [CHECKPOINTS.md](../../../spine/CHECKPOINTS.md) before product
   edits. `SPEC.md` remains Aloe language law. Evaluation is send with a
   literal selector. Function objects run only through `call`. No
   mutation, macros, inheritance, or new special forms.

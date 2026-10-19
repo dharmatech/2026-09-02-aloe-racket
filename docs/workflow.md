@@ -167,31 +167,15 @@ Follow the existing shape
 - acceptance
 - explicit non-goals
 
-Identity is either a global number (`checkpoint 103`) or
-`(project, number)` spoken **project 000** (for example
-`editor-lsp 000`). Do not mix local project work into
-`CHECKPOINTS.md` or `docs/design/implementation/spine/checkpoints/` unless the work is actually
-on the language spine.
+Identity is `(project, number)`, spoken **project 000** (for example
+`editor-lsp 000`), or `(project-layer, number)` under a layered map.
+A global number (`checkpoint 103`) is historical: the spine closed at
+118 on 2026-10-19, and no further global number is issued. Nothing
+new is written under `docs/design/implementation/spine/`.
 
 ## Where files live
 
-### Language spine
-
-Used for kernel, host boundary, and libraries that extend Aloe
-itself.
-
-| Artifact | Path |
-|---|---|
-| Checkpoints index | [`CHECKPOINTS.md`](../CHECKPOINTS.md) |
-| Spine map | [`docs/design/implementation/spine/README.md`](design/implementation/spine/README.md) |
-| Checkpoint | `docs/design/implementation/spine/checkpoints/NNNN-slug.md` |
-| Tests | `tests/checkpoint-N.rkt` |
-| Designer / manager brief | `docs/design/implementation/spine/<topic>-designer.md` or `docs/design/implementation/spine/<topic>-brief.md` |
-
-### Local project
-
-Used for application or editor work that must not take the next
-global integer. New projects default here:
+One shape for every series, kernel work included:
 
 ```text
 docs/design/implementation/<project>/
@@ -209,10 +193,22 @@ charter, spec, and `checkpoints/`. Identity remains
 
 Tests sit under `tests/<project>/`, not `tests/checkpoint-N.rkt`.
 
+The map of every series is
+[`docs/design/implementation/README.md`](design/implementation/README.md).
 The editor map is
 [`docs/design/implementation/editor/`](design/implementation/editor/README.md).
 Do not put new work under it unless the work is actually that
 editor-support line.
+
+### The closed spine
+
+Checkpoints 1 through 118 were numbered globally. Their index is
+[`docs/design/implementation/spine/CHECKPOINTS.md`](design/implementation/spine/CHECKPOINTS.md),
+their documents sit under `spine/checkpoints/`, their briefs beside
+them, and their tests at `tests/checkpoint-N.rkt`. That numbering
+closed at 118 on 2026-10-19. A kernel change today is a series folder
+like any other (`modules/`, `with/`, and `parenthetical-construction/`
+are examples), and no series is promoted onto the index.
 
 ## Handoff
 

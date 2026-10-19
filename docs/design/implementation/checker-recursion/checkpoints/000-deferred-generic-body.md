@@ -34,7 +34,7 @@ temporary reproduction are not additional rules.
   `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Read [`docs/workflow.md`](../../../../workflow.md),
   [`SPEC.md`](../../../../../SPEC.md), and
-  [`CHECKPOINTS.md`](../../../../../CHECKPOINTS.md) before coding.
+  [`CHECKPOINTS.md`](../../spine/CHECKPOINTS.md) before coding.
   SPEC §§3.1/3.4/5 govern classes, method-local types, overloads,
   generics, nominal checking, and sends. This checkpoint restores
   existing behavior without changing those rules.

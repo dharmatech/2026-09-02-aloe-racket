@@ -27,7 +27,7 @@ checkpoint narrows the spec to one slice and does not revise it.
   `/home/dharmatech/journal/2026-09-02-aloe-racket`.
 - Read [`docs/workflow.md`](../../../../../workflow.md),
   [`SPEC.md`](../../../../../../SPEC.md), and
-  [`CHECKPOINTS.md`](../../../../../../CHECKPOINTS.md) before writing
+  [`CHECKPOINTS.md`](../../../spine/CHECKPOINTS.md) before writing
   code. `SPEC.md` remains Aloe language law. Evaluation is send; selectors
   are literal; function objects execute only through `call`. No implicit
   Int/Float coercion or new special form is allowed.

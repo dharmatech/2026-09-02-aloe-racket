@@ -38,7 +38,7 @@ checkpoint narrows the spec to one slice and does not revise it.
   from `main` at `987cbd0`. Continue on this branch; a human merges it.
 - Read [`docs/workflow.md`](../../../../workflow.md),
   [`SPEC.md`](../../../../../SPEC.md), and
-  [`CHECKPOINTS.md`](../../../../../CHECKPOINTS.md) before writing code.
+  [`CHECKPOINTS.md`](../../spine/CHECKPOINTS.md) before writing code.
   `SPEC.md` is language law, including the completed `new*` amendments.
 - Accepted [../spec.md](../spec.md) §§1–3 govern the series, boundaries,
   tools, and exhaustive scopes. All of §6 governs this slice; §§7–8 supply
