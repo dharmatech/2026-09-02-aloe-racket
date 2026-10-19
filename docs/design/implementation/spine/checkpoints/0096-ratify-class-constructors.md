@@ -32,7 +32,7 @@ Edit only:
   `new` is the only construction story)
 - `CHECKPOINTS.md` and this file
 
-Do not edit `aloe/`, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `aloe/`, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## SPEC edits
 

@@ -123,7 +123,7 @@ not depend on the temporary file still existing.
   module/dependency.
 - All existing tests. Add proof in the focused file; do not loosen
   generic/overload/host/query expectations to obtain a pass.
-- `lib/`, `examples/`, `host/`, `gel/`, `bin/`, and all completion
+- `lib/`, `examples/`, `host/`, `examples/gel/`, `bin/`, and all completion
   product/tests/design files during this implementation.
 - `SPEC.md`, `CHECKPOINTS.md`, global checkpoints, and this checkpoint's
   documents during implementation.

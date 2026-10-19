@@ -256,7 +256,7 @@ Do not edit:
 - the expression-query specification, charter, README, prior checkpoint, or
   a later checkpoint document except for status/index updates made by the
   checkpoint manager
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 
 If correct observation requires rechecking the selected node, copying an
 inference implementation, exposing mutable checker internals, changing load

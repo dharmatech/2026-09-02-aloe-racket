@@ -71,7 +71,7 @@ the old editor, its Text, or its Position.
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
   under `docs/design/implementation/editor/`
 - `examples/aloemacs/editor.aloe`, any other example, or any file under
-  `lib/`, `aloe/`, `gel/`, or `bin/`
+  `lib/`, `aloe/`, `examples/gel/`, or `bin/`
 - `host/racket/term.rkt`, `host/racket/gel-run.rkt`,
   `host/racket/term-run.rkt`, another host module, package metadata, or
   `tui-term`

@@ -434,7 +434,7 @@ of §5.5. No Racket module under `aloe/` is edited.
 
 ### 5.1 The census
 
-The census is every `.aloe` file under `examples/`, `lib/`, `gel/`,
+The census is every `.aloe` file under `examples/`, `lib/`, `examples/gel/`,
 and the fixtures under `tests/` that the suite loads. `archive/` is
 not edited. A string evaluated in the interactive environment is not
 a census entry.
@@ -462,8 +462,8 @@ After this layer every census file has no free names.
 |---|---|---|
 | `examples/aloemacs/file.aloe` | `Text`, `Position`, `Span` | `(load "../../lib/text.aloe")` |
 | `examples/aloemacs/main.aloe` | `AloemacsEditor`; `Text`, `Position`; `Path`, `Fs` | `(load "editor.aloe")`, `(load "../../lib/text.aloe")`, `(load "../../lib/fs.aloe")` |
-| `gel/loop.aloe` | `GelRow`, `gel-rows` | `(load "menu.aloe")` |
-| `gel/main.aloe` | `GelStack` | `(load "stack.aloe")` |
+| `examples/gel/loop.aloe` | `GelRow`, `gel-rows` | `(load "menu.aloe")` |
+| `examples/gel/main.aloe` | `GelStack` | `(load "stack.aloe")` |
 | `examples/mpl/core.aloe` | `Math` (now in `math.aloe`) | `(load "math.aloe")` in place of the protocol form |
 | `examples/mpl/sym.aloe`, `sum.aloe`, `num.aloe` | `Math` | `(load "math.aloe")` |
 | `examples/mpl/prod.aloe`, `pow.aloe` | `Math`, `Num` | `(load "math.aloe")`, `(load "num.aloe")` |
@@ -472,7 +472,7 @@ After this layer every census file has no free names.
 No other census file has a free name. In particular `editor.aloe`,
 `lib/text.aloe`, `lib/fs.aloe`, and `lib/disk.aloe` use `Option`
 only, which this layer skips; `examples/boids.aloe` already loads
-`point.aloe`; `gel/stack.aloe` already loads `menu.aloe`.
+`point.aloe`; `examples/gel/stack.aloe` already loads `menu.aloe`.
 
 The new leading datums, in this order:
 
@@ -481,8 +481,8 @@ The new leading datums, in this order:
 - `examples/aloemacs/main.aloe`: `(load "file.aloe")`,
   `(load "editor.aloe")`, `(load "../../lib/text.aloe")`,
   `(load "../../lib/fs.aloe")`, then the `define`.
-- `gel/loop.aloe`: `(load "stack.aloe")`, `(load "menu.aloe")`.
-- `gel/main.aloe`: `(load "loop.aloe")`, `(load "stack.aloe")`.
+- `examples/gel/loop.aloe`: `(load "stack.aloe")`, `(load "menu.aloe")`.
+- `examples/gel/main.aloe`: `(load "loop.aloe")`, `(load "stack.aloe")`.
 
 A name used in a loaded file and defined in the file that loads it
 cannot be repaired by a load of that loader: a load back is a cycle.
@@ -917,7 +917,7 @@ second root unions into the same interactive environment.
 then `(demo step)`: `demo` is `boids.aloe`'s own definition and is
 copied. `tests/checkpoint-52.rkt` does the same with
 `identities.aloe` and `x`. `tests/checkpoint-81.rkt` evaluates a
-`load` of `gel/loop.aloe` with no source path and then sends
+`load` of `examples/gel/loop.aloe` with no source path and then sends
 `gel-rows` and uses `gel-empty-stack`: those are `menu.aloe`'s and
 `stack.aloe`'s names, so that test loads those files too (§9.1).
 
@@ -937,7 +937,7 @@ that still replaces.
 With 3c in place, a method written in a file records that file's
 environment, so its body runs, and its signature resolves, where it
 was written, even when the class was defined elsewhere.
-`GelStack`'s `matching-picks`, added in `gel/loop.aloe`, runs where
+`GelStack`'s `matching-picks`, added in `examples/gel/loop.aloe`, runs where
 `GelPicks` and `GelPick` are bound; `GelRow` resolves there because
 `loop.aloe` loads `menu.aloe`. A send of an `AloemacsSession` method
 from a file that has not loaded `AloemacsBuffers` typechecks,
@@ -967,7 +967,7 @@ define loads the file that defines it. §9.1 lists the entry points
 read from the tree on 2026-10-12, grouped; the implementer re-reads
 the tree, runs the suite after the product edit, and treats the
 failing locations as the inventory. `host/racket/gel-run.rkt` loads
-`gel/stack.aloe` for `gel-empty-stack` beside `gel/main.aloe` and
+`examples/gel/stack.aloe` for `gel-empty-stack` beside `examples/gel/main.aloe` and
 `examples/point.aloe`. `host/racket/aloemacs-run.rkt` uses only
 `aloemacs-editor` and needs no new load. The assertion in
 `tests/aloemacs/runner.rkt` that `AloemacsPrompt`, `Text`, `Fs`,
@@ -989,7 +989,7 @@ asserts the new rule.
   driver is one evaluation and one class; the loads of
   `option.aloe` are hits of the installed class.
 - A second root (`driver-load-file!` of `examples/point.aloe` after
-  `gel/main.aloe`) unions into the interactive environment; a second
+  `examples/gel/main.aloe`) unions into the interactive environment; a second
   `driver-load-file!` of the same root copies again and runs nothing.
 - `eval-source` with `#:source-path` copies the root's own
   definitions, and not the nested ones, into the interactive
@@ -1000,7 +1000,7 @@ asserts the new rule.
   §6.5.1, and a later `eval-source` on the raw object sees them.
 - A keyed `driver-load-port!` behaves as `driver-load-file!`; an
   unkeyed one evaluates in the interactive environment.
-- `gel/main.aloe` plus `examples/point.aloe` plus `gel/stack.aloe` in
+- `examples/gel/main.aloe` plus `examples/point.aloe` plus `examples/gel/stack.aloe` in
   one driver: `gel-main`, `Point`, and `gel-empty-stack` resolve and
   the `gel-run` expression runs.
 - `matching-picks` resolves `GelPicks`, `GelPick`, and `GelRow`.
@@ -1311,16 +1311,16 @@ and use `Text`, `Position`, `Span`, or `EditResult` — add
 from `main.aloe`). `next-lines.rkt` and `text-line-length.rkt`
 already load `lib/text.aloe`.
 
-**Gel tests that load `gel/loop.aloe`** and use `gel-rows`, `GelRow`,
-or `GelRows` (`gel/menu.aloe`) and `gel-empty-stack` or `GelStack`
-(`gel/stack.aloe`) — add those loads: `tests/checkpoint-62.rkt`,
+**Gel tests that load `examples/gel/loop.aloe`** and use `gel-rows`, `GelRow`,
+or `GelRows` (`examples/gel/menu.aloe`) and `gel-empty-stack` or `GelStack`
+(`examples/gel/stack.aloe`) — add those loads: `tests/checkpoint-62.rkt`,
 `63`, `66`, `67`, `68`, `69`, `70`, `73`, `74`, `75`, `76`, `77`,
 `78`, `79`, `80`, `81`, `82`.
 
-**Gel tests and the runner that load `gel/main.aloe`** and use
+**Gel tests and the runner that load `examples/gel/main.aloe`** and use
 `gel-empty-stack`, `GelStack` (`stack.aloe`) or `gel-text`, `GelKey`,
 `GelStep` (`loop.aloe`): `tests/checkpoint-65.rkt`, `71`, `72`,
-`86`, `host/racket/gel-run.rkt`. **Loading `gel/stack.aloe`** and
+`86`, `host/racket/gel-run.rkt`. **Loading `examples/gel/stack.aloe`** and
 using `gel-rows`: `tests/checkpoint-59.rkt`, `61`.
 
 **MPL tests** whose setup string loads `examples/mpl/core.aloe` and

@@ -90,7 +90,7 @@ Facts after checkpoint 100 (do not redesign them):
 - `SPEC.md`
 - historical checkpoints 83–100, including
   `tests/checkpoint-100.rkt`
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `lib/fs.aloe`, no `Path` / `Entry` / `Fs`
 - no `make-fs-receiver` production disk constructor yet
 

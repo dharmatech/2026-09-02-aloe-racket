@@ -67,7 +67,7 @@ overload selection, selection results or errors, menus, picks, or transitions.
 - By hand, this evaluates to `1`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   ((gel-rows select (gel-rows of (Mirror of 10)) 1) index)
   ```
 

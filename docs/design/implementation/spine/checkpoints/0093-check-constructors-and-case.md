@@ -34,7 +34,7 @@ May edit: `aloe/type.rkt`, new tests under `tests/`, and `aloe/eval.rkt`
 only if `class-value` must record the constructor set for later slices.
 Do not add named constructor evaluation.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Record the set
 

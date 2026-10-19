@@ -83,7 +83,7 @@ loading remain explicit and driver-local.
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
   under `docs/design/implementation/editor/`
 - `lib/disk.aloe`, `lib/option.aloe`, `lib/text.aloe`, or another library
-- any file under `aloe/`, `bin/`, `gel/`, or `examples/`
+- any file under `aloe/`, `bin/`, `examples/gel/`, or `examples/`
 - `host/racket/term.rkt`, `host/racket/aloemacs-run.rkt`, or another host
   module
 - any test other than the new focused test and the one exact assertion in

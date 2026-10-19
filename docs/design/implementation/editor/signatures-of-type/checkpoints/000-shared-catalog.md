@@ -276,7 +276,7 @@ Do not edit:
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - `aloe/parse.rkt`, `aloe/driver.rkt`, `aloe/main.rkt`, `aloe/host.rkt`, or
   the runtime `Signature` value representation
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 - the signature-of-type design documents or a later checkpoint
 
 If the catalog cannot be made independent of both evaluator and checker

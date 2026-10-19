@@ -310,7 +310,7 @@ Do not edit:
   the Point fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 No checked-in fixture is needed. Tests may construct decoded values through
 independently framed JSON bytes and use existing fixtures read-only. If

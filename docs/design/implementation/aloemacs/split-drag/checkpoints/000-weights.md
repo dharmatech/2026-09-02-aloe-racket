@@ -205,7 +205,7 @@ a migrated file went stale.
   `enter-view`, `ensure-visible`, `fit-rect`, `root-rect`, `frame`,
   `record-pictures`, and the echo tokens.
 - `examples/aloemacs/main.aloe`, `examples/aloemacs/editor.aloe`,
-  everything under `host/racket/`, `lib/`, `aloe/`, `bin/`, `gel/`,
+  everything under `host/racket/`, `lib/`, `aloe/`, `bin/`, `examples/gel/`,
   `archive/`, `SPEC.md`, and `CHECKPOINTS.md`. Add no dependency,
   load, host capability, Term method, mouse mode, kernel message,
   `lib/` method, Text method, class, field, command, key, keymap

@@ -156,7 +156,7 @@ ran at 28 ms alone, as before; this layer adds no evaluator work.
   `aloe/completion-query.rkt`, `aloe/parse.rkt`, `aloe/library.rkt`,
   every other module under `aloe/private/`, and every host module.
 - `SPEC.md`.
-- Every `.aloe` file under `examples/`, `lib/`, and `gel/`, and every
+- Every `.aloe` file under `examples/`, `lib/`, and `examples/gel/`, and every
   existing fixture.
 - Every test not in **Migration**, including
   `tests/parenthetical-construction/editor.rkt`, which reads the result
@@ -541,7 +541,7 @@ The checkpoint is complete when:
 - every test file passes, and the only edits to existing tests are the
   ones in **Migration**;
 - the product files changed are only the four this checkpoint allows;
-  no `.aloe` file under `examples/`, `lib/`, or `gel/` changed;
+  no `.aloe` file under `examples/`, `lib/`, or `examples/gel/` changed;
 - the editor specs and `docs/decisions.md` carry exactly the text
   above;
 - the whitespace check is clean (also for new, untracked files) and the
@@ -556,4 +556,4 @@ Report the results and stop. Do not commit. Do not start layer 5.
 - Any change to loads, the cache, origins, or the collision error.
 - A module name separate from the path, or any decorative name.
 - Splitting `file.aloe` or dropping any prefix (adoption, layer 5).
-- Any `.aloe` change under `examples/`, `lib/`, or `gel/`.
+- Any `.aloe` change under `examples/`, `lib/`, or `examples/gel/`.

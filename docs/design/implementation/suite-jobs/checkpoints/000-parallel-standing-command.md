@@ -82,7 +82,7 @@ Must leave untouched:
   `(check-equal? (repository-snapshot) source-before)`, the
   `info.rkt` byte check, and `call-with-isolated-package-state`;
 - `.gitignore`, `info.rkt`, `SPEC.md`, `CHECKPOINTS.md`;
-- all of `aloe/`, `host/`, `examples/`, `lib/`, `gel/`, and `bin/aloe`;
+- all of `aloe/`, `host/`, `examples/`, `lib/`, `examples/gel/`, and `bin/aloe`;
 - every historical checkpoint, spec, charter, and design README,
   including this folder. Older documents that write `raco test` or
   `raco test -y` stay as written; the standing rule supplies `-j 4`

@@ -95,7 +95,7 @@ Do not re-measure the two-module stale-bytecode case. It is settled.
 
 ### Must leave untouched
 
-- `aloe/`, `host/`, `bin/`, `lib/`, `examples/`, `tests/`, `gel/`,
+- `aloe/`, `host/`, `bin/`, `lib/`, `examples/`, `tests/`, `examples/gel/`,
   `editors/`
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, and every
   historical checkpoint that already says `raco test` without `-y`

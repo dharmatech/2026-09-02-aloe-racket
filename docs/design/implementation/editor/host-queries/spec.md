@@ -42,21 +42,21 @@ Confirmed against the tree at `e641268` (product code as of `6deecab`).
 | Host boundary | `aloe/host.rkt`: `host-interface` is opaque and nominal. `make-host-method` requires an implementation procedure. `make-host-receiver` accepts any state. `aloe/type.rkt`: `(struct host-receiver-type (interface))` is not exported. `type-environment-inject-host!`, in submodule `driver-host-injection`, checks an environment, a symbol, and a receiver, then stores `(host-receiver-type (host-receiver-interface receiver))` with `type-environment-set!`. A binding stored on a base records the origin `base`. Two host types are equal only when their interfaces are `eq?`. |
 | Driver | `driver-inject-host!` refuses a name already bound in the driver, then binds the type on the checker's base and the receiver on the runtime base. Its comment reads "A host lives on the base, so every file loaded afterwards sees it". |
 | Host modules | `host/racket/fs.rkt` exports `fs-interface` (`FsHost`, ten methods). `host/racket/term.rkt` exports `term-interface` (`Term`, six methods) and statically requires `tui/term`, from the optional `tui-term` package. That package is installed on the development machine and is not among `info.rkt`'s deps. The repository is a linked multi-collection package, so the symbol `host/racket/fs` resolves to `host/racket/fs.rkt` from any current directory. All seven `.rkt` files in `host/racket/` load with nothing written to stdout or stderr (checked from `/tmp`). Their effects live in `main` submodules or in procedures a caller invokes. |
-| Runners | `host/racket/aloemacs-run.rkt` injects `term` and `fs-host`, then loads `examples/aloemacs/main.aloe`. `host/racket/gel-run.rkt` injects `term`, then loads `gel/main.aloe`. |
-| Census | `tests/modules/001-census.rkt` adds one test for every `.aloe` file under `examples`, `lib`, `gel`, and `tests`. It allows the free names `term` and `fs-host` as base names. |
+| Runners | `host/racket/aloemacs-run.rkt` injects `term` and `fs-host`, then loads `examples/aloemacs/main.aloe`. `host/racket/gel-run.rkt` injects `term`, then loads `examples/gel/main.aloe`. |
+| Census | `tests/modules/001-census.rkt` adds one test for every `.aloe` file under `examples`, `lib`, and `tests`. It allows the free names `term` and `fs-host` as base names. |
 
 ### 1.1 The problem, as found
 
 - Hover and definition raise `typecheck: unbound symbol: fs-host` at
   every position in `examples/aloemacs/main.aloe`. The name is used once,
-  in `(Fs new fs-host)` on line 74. In `gel/main.aloe` they raise
+  in `(Fs new fs-host)` on line 74. In `examples/gel/main.aloe` they raise
   `typecheck: unbound symbol: term`. The first use is line 19, inside a
   `GelMain` method body.
 - Completion in `main.aloe` on `from-string` in `(Text from-string "")`
   (line 11) offers `from-string` and `indexed`. Its recovery returns once
   the receiver is typed, before the checker reaches `fs-host`. After
   `(fs-host ` it offers nothing.
-- Completion in `gel/main.aloe` behaves the same way. It answers where
+- Completion in `examples/gel/main.aloe` behaves the same way. It answers where
   its receiver is typed before the first use of `term`: `(self loop` in
   the `call` method offers `call` and `loop`. At that first use and
   after it, it offers nothing. On `write-line` in `(term write-line`
@@ -65,7 +65,7 @@ Confirmed against the tree at `e641268` (product code as of `6deecab`).
 - A scratch probe of the tree on 2026-10-16 bound only
   `(host-receiver-type fs-interface)` as `fs-host` on a fresh query base.
   `main.aloe` then checks in about 40 ms. Binding `term` the same way
-  makes `gel/main.aloe` check in about 4 ms. Nothing else in either file
+  makes `examples/gel/main.aloe` check in about 4 ms. Nothing else in either file
   is unbound. The answers in §9 come from that probe.
 
 ## 2. Series and order
@@ -635,7 +635,7 @@ includes the already-bound refusal.
    (host fs-host host/racket/fs fs-interface)))
 ```
 
-`gel/aloe-hosts.rktd`:
+`examples/gel/aloe-hosts.rktd`:
 
 ```racket
 ;; Hosts the Aloe language server binds when it checks a document in this
@@ -688,7 +688,7 @@ ASCII with one LF after every line.
 | `from-string` in `(Text from-string "")` | line 11, col 34, pos 266 | completion: the same items with and without the host (as found: `from-string`, `indexed`) |
 | after `(fs-host ` in a copy of the text with `(Fs new fs-host)` replaced by `(Fs new (fs-host ))` and `#:source-path` set to the real `main.aloe` | pos 2261 | completion: `FsHost`'s selectors in declaration order (§9.3), with replacement span 0 |
 
-`gel/main.aloe` with `term` bound to `term-interface`:
+`examples/gel/main.aloe` with `term` bound to `term-interface`:
 
 | Cursor | As found | Answer |
 |---|---|---|
@@ -939,7 +939,7 @@ need not exist.
   and the test's input port still holds its bytes.
 - **Product manifests** (in whichever checkpoint checks them in):
   `examples/aloemacs/main.aloe` gives `fs-host` and `fs-interface`.
-  `gel/main.aloe` gives `term` and `term-interface`.
+  `examples/gel/main.aloe` gives `term` and `term-interface`.
   `examples/aloemacs/file.aloe` gives `#f`.
 - **Static requires.** For every `.rkt` file under `aloe/`, skipping
   `compiled/`, take its compiled code (`get-module-code` from
@@ -1030,7 +1030,7 @@ Reload Window. Find each place by its text.
    offered. Undo.
 5. Edit the file without saving. Hover `fs-host` in `(Fs new fs-host)`
    again, and see that it still shows `FsHost`'s rows.
-6. Open `gel/main.aloe` and hover `term` in `(term write-line`. See
+6. Open `examples/gel/main.aloe` and hover `term` in `(term write-line`. See
    `Term`'s rows.
 7. Confirm that `examples/aloemacs/file.aloe` behaves as before.
 
@@ -1087,7 +1087,7 @@ locked decisions:
 
 ## 13. Accepted consequences
 
-- Without `tui-term`, the `gel/` row fails to load and `gel/main.aloe`
+- Without `tui-term`, the `examples/gel/` row fails to load and `examples/gel/main.aloe`
   stays a miss. Each request tries the load again. `tui-term` is not
   added to `info.rkt`'s deps.
 - While a document's row fails, positions that answer today also miss.

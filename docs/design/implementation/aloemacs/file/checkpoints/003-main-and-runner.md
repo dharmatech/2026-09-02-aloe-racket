@@ -88,7 +88,7 @@ values; it is not mutation of a session, editor, Text, Position, Fs, or Path.
   under `docs/design/implementation/editor/`
 - `examples/aloemacs/editor.aloe`, `examples/aloemacs/file.aloe`, or another
   example
-- any file under `lib/`, `aloe/`, `gel/`, or `bin/`
+- any file under `lib/`, `aloe/`, `examples/gel/`, or `bin/`
 - `host/racket/fs.rkt`, `host/racket/term.rkt`, `host/racket/gel-run.rkt`,
   `host/racket/term-run.rkt`, another host module, package metadata, or
   `tui-term`

@@ -65,10 +65,10 @@ tool, or a reload design is a defect in this document.
 | `aloe/eval.rkt` `runtime-named-type-matches?` | An annotation symbol is compared to the class's short name, not to class identity. `define-protocol` evaluates to void. A class record's protocol field holds the symbol from the parse. `Mirror invoke` and `Signature accepts?` use that short-name comparison |
 | `aloe/env.rkt`, `aloe/type.rkt` | Both environment structs have a parent. The kernel bindings are `dummy`, `List`, `Int`, `String`, `Symbol`, and `Mirror`. `Bool` and `Float` are not bindings |
 | `aloe/driver.rkt` `make-driver` and `aloe/main.rkt` | Both build a base and install the list, string, and int libraries. [`aloe/library.rkt`](../../../../aloe/library.rkt) reads each of those files once per process through a promise. That promise is parsed expressions, not a load-cache entry. `query-expression-at` reads the path it is given. `make-type-environment` always forces the three promises and typechecks them into the fresh environment. Installing a queried base library from the buffer's bytes is new work in §4.5. Hover, completion, and the direct tests use `aloe/main.rkt`. `driver-inject-host!` binds a host on the driver base and refuses a name already bound there. Runners inject, then load |
-| `aloe/main.rkt` `eval-source`, `typecheck-source` | Both take an optional `#:source-path`. The forms are checked and evaluated in the environment the caller passes. `tests/checkpoint-18.rkt` passes `boids.aloe`'s path and then evaluates `(demo step)` in that same environment. `tests/checkpoint-52.rkt` does the same with `identities.aloe` and then uses `x`. `tests/checkpoint-81.rkt` evaluates a `load` of `gel/loop.aloe` with no source path and then sends `gel-rows` |
+| `aloe/main.rkt` `eval-source`, `typecheck-source` | Both take an optional `#:source-path`. The forms are checked and evaluated in the environment the caller passes. `tests/checkpoint-18.rkt` passes `boids.aloe`'s path and then evaluates `(demo step)` in that same environment. `tests/checkpoint-52.rkt` does the same with `identities.aloe` and then uses `x`. `tests/checkpoint-81.rkt` evaluates a `load` of `examples/gel/loop.aloe` with no source path and then sends `gel-rows` |
 | `aloe/driver.rkt` `driver-load-port!` | A port may have no source path. String loads in the tests use that shape. `host/racket/term-run.rkt` passes a path |
-| `gel/loop.aloe`, `examples/aloemacs/file.aloe`, `examples/mpl/identities.aloe` | `loop.aloe` loads `stack.aloe` and names `GelRow` and `gel-rows`, which `menu.aloe` defines. `stack.aloe` loads `menu.aloe`. `file.aloe` loads `editor.aloe` and `lib/fs.aloe` and also names `Text` and `Position`. `identities.aloe` loads `core.aloe` and uses `Sym` |
-| `host/racket/gel-run.rkt` | Loads `gel/main.aloe`, then `examples/point.aloe`, then evaluates an expression that uses a name from each. Checkpoints 65 and 86 do the same |
+| `examples/gel/loop.aloe`, `examples/aloemacs/file.aloe`, `examples/mpl/identities.aloe` | `loop.aloe` loads `stack.aloe` and names `GelRow` and `gel-rows`, which `menu.aloe` defines. `stack.aloe` loads `menu.aloe`. `file.aloe` loads `editor.aloe` and `lib/fs.aloe` and also names `Text` and `Position`. `identities.aloe` loads `core.aloe` and uses `Sym` |
+| `host/racket/gel-run.rkt` | Loads `examples/gel/main.aloe`, then `examples/point.aloe`, then evaluates an expression that uses a name from each. Checkpoints 65 and 86 do the same |
 | `aloe/expression-query.rkt` | Each query builds a fresh type environment. A nested load is read from disk. A dirty buffer of another file is not overlaid |
 | [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §5 | A dirty buffer is written to a temporary sibling and queried there. That path is an internal detail. Hover never shows it to the client |
 | [`docs/design/implementation/editor/lsp/spec.md`](../editor/lsp/spec.md) §7 | Hover text is an exact plaintext value. This series amends that section |
@@ -78,10 +78,10 @@ tool, or a reload design is a defect in this document.
 | `aloe/driver.rkt` `driver-prepare!` | Typechecks a datum and returns a thunk. `host/racket/aloemacs-run.rkt` runs that thunk later. The first run reads a loaded file again |
 | The October discussion summary | The `Box` reload, the `Option` reload, and the keymap-order shape are the modules 000 reproductions. `Option` fails the same way as `Box` |
 
-`gel/main.aloe` uses `GelStack`, so the census makes it
+`examples/gel/main.aloe` uses `GelStack`, so the census makes it
 load `stack.aloe`. `gel-run`, checkpoint 65, and checkpoint
 86 use `gel-empty-stack`, so each loads `stack.aloe` too.
-`gel/loop.aloe` uses `GelRow` and `gel-rows`, so the census
+`examples/gel/loop.aloe` uses `GelRow` and `gel-rows`, so the census
 makes it load `menu.aloe`. `file.aloe` uses `Text` and
 `Position`, so the census makes it load `lib/text.aloe`.
 `core.aloe` and the MPL class files load the new Math file.
@@ -116,7 +116,7 @@ The specification is wrong unless all of these are true:
    `Option` is the base class from `lib/option.aloe`. A load
    of that file is that same class, not a second one.
    `main.aloe` and `editor.aloe` name the files that define
-   the names they use, as do `file.aloe`, `gel/loop.aloe`,
+   the names they use, as do `file.aloe`, `examples/gel/loop.aloe`,
    `identities.aloe`, and the MPL files in §4.4. A base name
    is already present. `main.aloe`
    does not load `lib/option.aloe` for `Option`. A method
@@ -133,11 +133,11 @@ The specification is wrong unless all of these are true:
    today's short-name comparison. A sole method is safe
    because the checker has already rejected the other class.
 3. `gel-run` loads each file that defines a name its
-   expression uses. `gel-main` comes from `gel/main.aloe`,
+   expression uses. `gel-main` comes from `examples/gel/main.aloe`,
    `Point` from `examples/point.aloe`, and `gel-empty-stack`
    from `stack.aloe`. Checkpoints 65 and 86 load `stack.aloe`
    for the same name. `GelStack`'s `matching-picks`, added
-   in `gel/loop.aloe`, runs where `GelPicks` and `GelPick`
+   in `examples/gel/loop.aloe`, runs where `GelPicks` and `GelPick`
    are bound. `GelRow` and `gel-rows` resolve because that
    file loads `menu.aloe`. A second `define` or
    `define-class` at the prompt, and through `driver-eval!`,
@@ -312,15 +312,15 @@ source path and then evaluates `(demo step)`. `demo` is
 defined in that file. `tests/checkpoint-52.rkt` evaluates
 `identities.aloe` with its source path and then uses `x`.
 `x` is defined in that file. `tests/checkpoint-81.rkt`
-evaluates a `load` of `gel/loop.aloe` with no source path
+evaluates a `load` of `examples/gel/loop.aloe` with no source path
 and then sends `gel-rows` and uses `gel-empty-stack`. The
 visibility layer makes that test load `menu.aloe` for
 `gel-rows` and `stack.aloe` for `gel-empty-stack`.
 
-The explicit-load census makes these loads. `gel/main.aloe`
+The explicit-load census makes these loads. `examples/gel/main.aloe`
 uses `GelStack`, so it loads `stack.aloe`. `gel-empty-stack`
 is defined in `stack.aloe`. `gel-run`, checkpoint 65, and
-checkpoint 86 load that file to use the name. `gel/loop.aloe`
+checkpoint 86 load that file to use the name. `examples/gel/loop.aloe`
 uses `GelRow` and `gel-rows`, which `menu.aloe` defines, so
 `loop.aloe` loads `menu.aloe`. `GelPicks` and `GelPick` are
 defined in `loop.aloe`. `file.aloe` uses `Text` and
@@ -581,7 +581,7 @@ This series does not change those three. §4.12 records
 that comparison as later work.
 
 This lands in the visibility layer. The reproduction is
-`matching-picks` on `GelStack`: `gel/loop.aloe` adds it, and
+`matching-picks` on `GelStack`: `examples/gel/loop.aloe` adds it, and
 the body names `GelPicks` and `GelPick`, which that file
 defines. The same file names `GelRow` and `gel-rows`, which
 `menu.aloe` defines, so the census load in §4.4 is what
@@ -617,12 +617,12 @@ reuse.
    current test that loads one path twice into one driver.
 2. **Explicit loads, while file-to-file load still includes.**
    The census is the `.aloe` files under `examples/`, `lib/`,
-   `gel/`, and the `tests/` fixtures the suite loads. It does
+   `examples/gel/`, and the `tests/` fixtures the suite loads. It does
    not edit `archive/`. A string evaluated in the interactive
    environment is not a census entry. §4.4 names the loads
    this layer adds, including `file.aloe` loading
-   `lib/text.aloe`, `gel/loop.aloe` loading `menu.aloe`,
-   `gel/main.aloe` loading `stack.aloe`, `identities.aloe`
+   `lib/text.aloe`, `examples/gel/loop.aloe` loading `menu.aloe`,
+   `examples/gel/main.aloe` loading `stack.aloe`, `identities.aloe`
    loading `sym.aloe`, `prod.aloe` and `pow.aloe` loading
    `num.aloe`, and `core.aloe` together with the class files
    loading the new Math file. The census skips `Option`, as

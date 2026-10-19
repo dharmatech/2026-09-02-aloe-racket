@@ -280,7 +280,7 @@ Do not edit:
   or assertions, or the Point fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 If synchronized querying requires changing Expression Query's path contract,
 rewriting loads, overlaying another open document, writing the original path,

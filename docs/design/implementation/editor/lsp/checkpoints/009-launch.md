@@ -173,7 +173,7 @@ Do not edit:
   or any fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 Tests may create isolated temporary directories and files and must remove them
 unconditionally. They may read the existing Point fixture and repository root.

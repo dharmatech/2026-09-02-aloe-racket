@@ -47,7 +47,7 @@ Preserve the existing Gel sequence:
 
 1. open the TTY-managed Term receiver;
 2. inject it as `term`;
-3. load `gel/main.aloe`;
+3. load `examples/gel/main.aloe`;
 4. load `examples/point.aloe`; and
 5. evaluate the unchanged `gel-main` entry send with the same two-Point demo
    stack and ordering.

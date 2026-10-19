@@ -104,13 +104,13 @@ success, and reports both source datums and displayed values on failure.
 
 ## 58. Gel menu rows in Aloe
 
-- `gel/menu.aloe` turns any value's reflected signatures into ordered,
+- `examples/gel/menu.aloe` turns any value's reflected signatures into ordered,
   one-based `GelRow` menu data; keyboard input, the stack loop, and send
   building remain deferred.
 
 ## 59. Gel `(List Mirror)` stack + zero-argument invoke
 
-- `gel/stack.aloe` stores one mirror per stack slot, treats `first` as TOS,
+- `examples/gel/stack.aloe` stores one mirror per stack slot, treats `first` as TOS,
   and invokes an arity-zero `GelRow` before pushing its mirrored result;
   subject unwrapping and argument builders remain deferred.
 
@@ -142,7 +142,7 @@ success, and reports both source datums and displayed values on failure.
 
 ## 65. `gel-main` in Aloe
 
-- `gel/main.aloe` prints menus, reads `String` keys, steps, and recurses;
+- `examples/gel/main.aloe` prints menus, reads `String` keys, steps, and recurses;
   `host/racket/gel-run.rkt` only injects `term`, loads Gel, and starts it.
 
 ## 66. Print Gel TOS from Aloe

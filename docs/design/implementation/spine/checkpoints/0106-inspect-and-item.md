@@ -94,7 +94,7 @@ Facts after checkpoint 105 (do not redesign them):
 - `SPEC.md`
 - historical tests 100–104; 105 only as the living-test edit below
 - `docs/design/implementation/spine/checkpoints/0105-disk-and-location.md`
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `Directory.entries`, no `(here entries)`, no `enter`, no
   `size` / `read` / `target`, no `text` method on `Location`, no
   `Missing`, no `directory?` / `exists?` as the required API

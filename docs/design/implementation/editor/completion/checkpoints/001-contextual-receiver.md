@@ -291,7 +291,7 @@ Do not edit:
   production modules and tests;
 - `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, and checkpoint documents; or
-- `gel/`, `lib/`, `host/`, and application source under `examples/`.
+- `examples/gel/`, `lib/`, `host/`, and application source under `examples/`.
 
 If early completion requires detached inference, changes to normal checker
 semantics, a copied signature catalog, eager checking of unrelated generic

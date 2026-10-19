@@ -55,7 +55,7 @@ and 002 answer the query, and 003 serves `textDocument/definition`. The
 series is complete. Project 9 is host-configured queries. A
 manifest beside a program names the hosts its runner injects, and the
 server binds their types. Hover, completion, and definition then answer
-in `examples/aloemacs/main.aloe` and `gel/main.aloe`. Its spec is
+in `examples/aloemacs/main.aloe` and `examples/gel/main.aloe`. Its spec is
 reviewed. Editor-host-queries 000 is the query layer, 001 the manifest
 reader, and 002 the server side. The series is complete, and its VS
 Code hand check passed.

@@ -109,7 +109,7 @@ checkpoints.
 - `docs/philosophy.md`
 - historical checkpoints 83–99, including
   `tests/checkpoint-94.rkt` and `tests/checkpoint-95.rkt`
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `host/racket/fs.rkt`, no `lib/fs.aloe`, no `lib/path.aloe`,
   no `Path` / `Entry` / `Fs` classes
 

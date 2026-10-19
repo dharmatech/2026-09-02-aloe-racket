@@ -12,7 +12,7 @@ project 9. Project root:
 host bindings its runner injects. The language server reads that
 manifest and binds each host's **type**, taken from the real interface
 value, on the query's base. Hover, completion, and go-to-definition then
-answer in `examples/aloemacs/main.aloe` and `gel/main.aloe`. The first
+answer in `examples/aloemacs/main.aloe` and `examples/gel/main.aloe`. The first
 consumer is the Racket queries. The LSP server is the skin that finds
 the manifest. Then **stop**. Do not write checkpoints. Do not implement.
 
@@ -53,7 +53,7 @@ checkpoint.
    This layer adds a manifest reader under `aloe/`. The reader enforces
    the module boundary, loads the module, and handles failures.
    `aloe/lsp.rkt` calls it. The layer checks in manifests for
-   `examples/aloemacs/` and `gel/`, and the VS Code hand check follows
+   `examples/aloemacs/` and `examples/gel/`, and the VS Code hand check follows
    it.
 
 ## 2. Predecessors, as found on 2026-10-16 at `6deecab`
@@ -68,12 +68,12 @@ checkpoint.
 | Host boundary | `aloe/host.rkt`: `make-host-method` requires an implementation procedure. `make-host-interface` returns an opaque, nominal `host-interface`. `aloe/type.rkt`: `type-environment-inject-host!`, in the `driver-host-injection` submodule, takes a receiver and stores `(host-receiver-type (host-receiver-interface receiver))`. |
 | Driver injection | `driver-inject-host!` in `aloe/driver.rkt` binds a host on the checker's and the runtime's **base**. Its comment reads "A host lives on the base, so every file loaded afterwards sees it". It refuses a name that is already bound. |
 | Host modules | `host/racket/fs.rkt` exports `fs-interface` (`FsHost`). `host/racket/term.rkt` exports `term-interface` (`Term`). Both resolve as collection modules, `host/racket/fs` and `host/racket/term`. Every module in `host/racket/` has a definition-only top level. Effects live in `main` submodules. |
-| Runners | `host/racket/aloemacs-run.rkt` injects `term` and `fs-host`, then loads `examples/aloemacs/main.aloe`. `host/racket/gel-run.rkt` injects `term`, then loads `gel/main.aloe`. |
+| Runners | `host/racket/aloemacs-run.rkt` injects `term` and `fs-host`, then loads `examples/aloemacs/main.aloe`. `host/racket/gel-run.rkt` injects `term`, then loads `examples/gel/main.aloe`. |
 
 The problem, as found. Hover and definition check the whole file, so they
 miss at every position in `examples/aloemacs/main.aloe`. The check fails
 with `typecheck: unbound symbol: fs-host`, from `(Fs new fs-host)` in the
-`aloemacs-editor` definition. In `gel/main.aloe` they miss the same way
+`aloemacs-editor` definition. In `examples/gel/main.aloe` they miss the same way
 on `term`, first used in a `GelMain` method body. Completion is not dark
 everywhere. Its recovery keeps the whole buffer, including
 `(Fs new fs-host)`, but it returns as soon as the target's receiver is
@@ -105,7 +105,7 @@ The specification is wrong unless all of these are true:
      in `examples/aloemacs/file.aloe`.
    - Completion after `(fs-host ` lists `FsHost`'s selectors.
 3. With `term` bound to `term-interface`, the same mechanism makes
-   `gel/main.aloe` answer.
+   `examples/gel/main.aloe` answer.
 4. Queries never evaluate. The query path constructs no host receiver,
    invokes no host implementation, makes no runtime environment, and
    never calls `driver-inject-host!`. The interface inside the bound
@@ -222,7 +222,7 @@ The specification is wrong unless all of these are true:
   without changing what an existing row means. This project adds no
   factory column and changes no runner.
 - This project checks in two manifests: one in `examples/aloemacs/`
-  that gives `main.aloe` `fs-host`, and one in `gel/` that gives
+  that gives `main.aloe` `fs-host`, and one in `examples/gel/` that gives
   `main.aloe` `term`.
 
 ### 4.4 The module boundary is the `host/racket` collection
@@ -355,7 +355,7 @@ The specification is wrong unless all of these are true:
 
 ### 4.8 Gel is in scope
 
-- `gel/main.aloe` with `term` bound to `term-interface` is the second
+- `examples/gel/main.aloe` with `term` bound to `term-interface` is the second
   case. The mechanism is the same. It needs a second manifest and a
   second hand check.
 - `host/racket/term.rkt` statically requires `tui/term`. That comes from
@@ -363,7 +363,7 @@ The specification is wrong unless all of these are true:
   is not among `info.rkt`'s deps. The package is installed on the
   development machine, and several suite tests already require
   `host/racket/term`. Without the package the row fails to load, and
-  `gel/main.aloe` stays a miss. This is accepted. Do not add `tui-term`
+  `examples/gel/main.aloe` stays a miss. This is accepted. Do not add `tui-term`
   to the deps.
 
 ### 4.9 Tests and the hand check
@@ -377,7 +377,7 @@ The coverage must include:
 - **Query layer.** The tests require `host/racket/fs` and
   `host/racket/term` themselves. Tests are not under `aloe/`. Cases:
   - the §3 cursors in `examples/aloemacs/main.aloe` and in
-    `gel/main.aloe`
+    `examples/gel/main.aloe`
   - the same queries without hosts, where hover and definition still
     fail as unbound and `(fs-host ` still offers nothing
   - `(Text ` in `main.aloe`, which gives the same completion items with
@@ -417,7 +417,7 @@ The human check comes after the LSP layer, in VS Code:
 4. Type `(fs-host ` and see its selectors offered.
 5. Edit the file without saving. Hover `fs-host` in `(Fs new fs-host)`
    again, and see that it still shows `FsHost`'s rows.
-6. Open `gel/main.aloe` and hover `term`. See `Term`'s rows.
+6. Open `examples/gel/main.aloe` and hover `term`. See `Term`'s rows.
 7. Confirm that `examples/aloemacs/file.aloe` behaves as before.
 
 On the LSP layer, `npm test` in `editors/vscode/` passes, and `git diff`

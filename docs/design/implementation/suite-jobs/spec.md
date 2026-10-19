@@ -183,7 +183,7 @@ and checked-in artifacts. Gitignored bytecode written by other test
 files is none of those, so the skip keeps that proof.
 
 Searches of `tests/` found no other test that observes paths written
-by another test file. `tests/checkpoint-114.rkt` scans `gel/`, which
+by another test file. `tests/checkpoint-114.rkt` scans `examples/gel/`, which
 holds only `.aloe` files and no `compiled/` directory. Other
 directory listings in `tests/editor/lsp/` and
 `tests/editor/completion/` read fixture directories or their own
@@ -214,7 +214,7 @@ The slice may edit only:
 
 It must not edit `bin/suite-time.rkt`, `tests/suite-time/`, any other
 test file, `.gitignore`, `info.rkt`, `SPEC.md`, `CHECKPOINTS.md`,
-`aloe/`, `host/`, `examples/`, `lib/`, `gel/`, `bin/aloe`, or any
+`aloe/`, `host/`, `examples/`, `lib/`, `examples/gel/`, `bin/aloe`, or any
 historical checkpoint, spec, or charter. Older documents that write
 `raco test` or `raco test -y` stay as they are; the standing rule in
 §4.1 supplies `-j 4` and `-y` when they are run.

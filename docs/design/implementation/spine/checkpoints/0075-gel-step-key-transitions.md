@@ -57,7 +57,7 @@ rename `GelStep`; or change any transition semantics.
   returns a new state without changing the old one:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define state
     (GelStep new (gel-empty-stack push 10) #f (List empty) 0 #f))
   (define next (state handle-key "q"))

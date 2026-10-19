@@ -33,7 +33,7 @@ change `SPEC.md` language rules.
 May edit: `aloe/eval.rkt`, new tests under `tests/`, and mechanical
 `class-value` plumbing elsewhere if the struct grows a constructor list.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Construction
 

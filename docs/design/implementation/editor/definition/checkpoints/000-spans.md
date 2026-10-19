@@ -277,7 +277,7 @@ Do not edit:
   `aloe/lsp.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`,
   `aloe/library.rkt`, `aloe/signature-catalog.rkt`, or
   `aloe/private/checker-observation.rkt`
-- `lib/`, `examples/`, `editors/vscode/`, `gel/`, or `host/`
+- `lib/`, `examples/`, `editors/vscode/`, `examples/gel/`, or `host/`
 - any type-error, runtime-error, or parse-error text
 
 Do not create `aloe/definition-query.rkt`,

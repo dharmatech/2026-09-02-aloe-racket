@@ -66,7 +66,7 @@ menu, key, or text classes; or alter reflection and invocation semantics.
 - By hand, invoking the first row here evaluates to `10`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (load "examples/point.aloe")
   (define stack (gel-start call (Point new 10 20)))
   (define row ((gel-rows-from-mirror call (stack tos)) first))

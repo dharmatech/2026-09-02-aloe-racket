@@ -67,7 +67,7 @@ Do not edit:
   `.vscode/launch.json`;
 - `docs/design/implementation/editor/vscode/checkpoints/000-hover-client.md` or any project
   specification, charter, README, or checkpoint document;
-- `aloe/`, `host/`, `gel/`, `lib/`, `examples/`, or repository Racket tests;
+- `aloe/`, `host/`, `examples/gel/`, `lib/`, `examples/`, or repository Racket tests;
 - the editor-lsp, completion, expression-query, signatures-of-type, or
   source-locations projects; or
 - a repository-root package manifest, lockfile, test, build step, or ignore

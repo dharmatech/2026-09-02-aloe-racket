@@ -92,7 +92,7 @@ assertions or rewrite those suites.
   parser, or host-boundary code
 - `lib/list.aloe`, `lib/option.aloe`, or any other existing library
 - `lib/text.aloe` (it does not exist in this slice)
-- `examples/`, `gel/`, `host/`, `bin/`, `docs/design/implementation/editor/`, or editor production
+- `examples/`, `examples/gel/`, `host/`, `bin/`, `docs/design/implementation/editor/`, or editor production
   modules
 - the aloemacs README, charter, or specification
 - any test outside the exact list above

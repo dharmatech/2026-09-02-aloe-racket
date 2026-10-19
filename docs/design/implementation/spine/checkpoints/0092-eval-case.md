@@ -36,7 +36,7 @@ only if a test must go through `eval-source` and the checker would
 otherwise reject `case-expr`; do not implement B §5 exhaustiveness or
 §6 inference there.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Accept
 

@@ -17,7 +17,7 @@ Revised 2026-10-17 after Grok's review ([`grok-review.md`](grok-review.md);
 `summary.md`, "Review, 2026-10-17"): the second `load` in `run.aloe`, the
 failed-visit arm marked open, the `args` double in the test shim,
 `term-run.rkt` and `fs-repl.rkt` kept while `gel-run.rkt` still goes
-with `gel/run.aloe`, and the REPL rule. The revised order keeps
+with `examples/gel/run.aloe`, and the REPL rule. The revised order keeps
 `aloemacs-run.rkt` owning the loop until two spine gates land, so the
 Aloemacs end state here is the later of the two steps.
 
@@ -57,7 +57,7 @@ the file-less REPL stay capability-free.
 | `examples/aloemacs/main.aloe` | 86 | `examples/aloemacs/main.aloe`, unchanged | 86 |
 | `examples/aloemacs/aloe-hosts.rktd`: one row, read by the editor only | 4 | `examples/aloemacs/aloe-hosts.rktd`: two rows, read by editor and runner | about 12 |
 | | | `examples/aloemacs/run.aloe`: visit, loop, entry, in Aloe; new | about 35 |
-| `host/racket/gel-run.rkt` | 42 | deleted; `gel/run.aloe` new | about 8 |
+| `host/racket/gel-run.rkt` | 42 | deleted; `examples/gel/run.aloe` new | about 8 |
 | `host/racket/term-run.rkt`, `host/racket/fs-repl.rkt` | 34, 28 | kept until a scratch-file convention exists, then deleted (review) | 34, 28 |
 | | | `host/racket/args.rkt`: new, shared by every program | about 25 |
 | | | `aloe/driver.rkt` run-cli grows; `aloe/host-manifest.rkt` admits the factory element | about 50, about 20 |
@@ -246,10 +246,10 @@ loads the TTY module.
 
 ## Gel, for comparison
 
-`gel/run.aloe`, about eight lines: load `main.aloe`,
+`examples/gel/run.aloe`, about eight lines: load `main.aloe`,
 `../examples/point.aloe`, and `stack.aloe`, then today's entry send from
 `gel-run.rkt` lines 28-33 as the last form, bound with `define`.
-`gel/aloe-hosts.rktd` gains a `run.aloe` row with a `term` factory
+`examples/gel/aloe-hosts.rktd` gains a `run.aloe` row with a `term` factory
 pointing at the generic `call-with-tty-term-receiver`. `gel-run.rkt` is
 deleted. Gel's loop is already Aloe, which is why the record makes it
 the first consumer.

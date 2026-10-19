@@ -28,7 +28,7 @@ already work. Tree is the same machinery with recursive field types
 May edit: `aloe/type.rkt` / `aloe/eval.rkt` only if recursive field types
 or recursive `case` sends fail, plus new tests under `tests/`.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Accept
 

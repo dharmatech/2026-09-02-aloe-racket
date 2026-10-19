@@ -24,7 +24,7 @@ Create:
 - `docs/design/implementation/spine/class-constructors.md`
 - this checkpoint file
 
-Do not edit `SPEC.md`, `aloe/`, `examples/`, `lib/`, `gel/`, or `tests/`
+Do not edit `SPEC.md`, `aloe/`, `examples/`, `lib/`, `examples/gel/`, or `tests/`
 in this checkpoint.
 
 ## Done when

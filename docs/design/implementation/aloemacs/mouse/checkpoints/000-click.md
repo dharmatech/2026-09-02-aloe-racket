@@ -263,7 +263,7 @@ the slice or write 001.
 
 - `host/racket/gel-run.rkt`, `host/racket/term-run.rkt`,
   `host/racket/fs.rkt`, everything under `aloe/`, `lib/`, `bin/`,
-  `gel/`, `archive/`
+  `examples/gel/`, `archive/`
 - `tests/checkpoint-83.rkt`, `tests/checkpoint-85.rkt`,
   `tests/checkpoint-86.rkt`, and every test not listed above. Session
   tests that send `handle-key` a key string, and the session test

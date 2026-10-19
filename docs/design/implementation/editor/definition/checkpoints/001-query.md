@@ -298,7 +298,7 @@ Do not edit:
   `shapes.aloe`
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
-- `lib/`, `examples/`, `editors/vscode/`, `gel/`, or `host/`
+- `lib/`, `examples/`, `editors/vscode/`, `examples/gel/`, or `host/`
 - any error text
 
 If an existing test fails, or the slice seems to need a file outside

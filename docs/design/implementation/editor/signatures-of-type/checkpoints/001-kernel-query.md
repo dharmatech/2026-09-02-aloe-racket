@@ -260,7 +260,7 @@ Do not edit:
 - `aloe/eval.rkt` or the runtime reflection/value representation
 - `aloe/parse.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`, or `aloe/host.rkt`
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 - checkpoint 000, the project spec, or a later checkpoint document except for
   status/index updates made by the checkpoint manager
 

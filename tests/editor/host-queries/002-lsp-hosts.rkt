@@ -24,7 +24,7 @@
 (define-runtime-path broken-folder "fixtures/broken")
 (define-runtime-path aloemacs-main-path "../../../examples/aloemacs/main.aloe")
 (define-runtime-path aloemacs-file-path "../../../examples/aloemacs/file.aloe")
-(define-runtime-path gel-main-path "../../../gel/main.aloe")
+(define-runtime-path gel-main-path "../../../examples/gel/main.aloe")
 
 (define (normalized path)
   (simplify-path (path->complete-path path) #f))

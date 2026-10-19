@@ -64,7 +64,7 @@ row acceptance, menus, key transitions, selection results, or pick order.
 - By hand, the final two expressions evaluate to `2` and `20`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define picks
     (GelPicks new
       (List of

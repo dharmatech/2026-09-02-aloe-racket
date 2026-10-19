@@ -61,7 +61,7 @@ reflection behavior, or signature ordering.
 - By hand, this evaluates to `#t`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (load "examples/point.aloe")
   (define point (Point new 10 20))
   ((((gel-rows call point) first) label) =

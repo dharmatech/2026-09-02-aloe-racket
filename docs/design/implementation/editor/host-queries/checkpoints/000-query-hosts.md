@@ -82,7 +82,7 @@ The tree at `80b46fd` has every predecessor. Its product code is that of
 - **The problem.** Hover and definition raise
   `typecheck: unbound symbol: fs-host` at every position in
   `examples/aloemacs/main.aloe`, and `typecheck: unbound symbol: term`
-  in `gel/main.aloe`. Completion answers only where its receiver is
+  in `examples/gel/main.aloe`. Completion answers only where its receiver is
   typed before the first host use.
 
 ## Authority
@@ -360,7 +360,7 @@ Do not edit:
   `aloe/eval.rkt`, `aloe/library.rkt`, `aloe/signature-catalog.rkt`,
   `aloe/private/`, or any other module under `aloe/`
 - `host/racket/` (including `aloemacs-run.rkt` and `gel-run.rkt`),
-  `examples/`, `gel/`, `lib/`, or `editors/vscode/`
+  `examples/`, `examples/gel/`, `lib/`, or `editors/vscode/`
 - any existing test or fixture other than the one line in §7
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
@@ -449,7 +449,7 @@ module paths. Require:
 
 Use `define-runtime-path` for the fixture folder and for
 `examples/aloemacs/main.aloe`, `examples/aloemacs/file.aloe`,
-`lib/fs.aloe`, `lib/option.aloe`, and `gel/main.aloe`.
+`lib/fs.aloe`, `lib/option.aloe`, and `examples/gel/main.aloe`.
 
 ### Conventions
 
@@ -471,7 +471,7 @@ For an interface `i`:
 
 **Product files are found by text.** The user edits
 `examples/aloemacs/main.aloe`, `examples/aloemacs/file.aloe`,
-`lib/fs.aloe`, and `gel/main.aloe` by hand. Locate every cursor and
+`lib/fs.aloe`, and `examples/gel/main.aloe` by hand. Locate every cursor and
 target in them from its text: the position of a character is one plus
 its zero-based index in the file's string. Check that a needle occurs
 exactly once, except where it says "first". Compute a target's
@@ -528,7 +528,7 @@ With hosts `(list (cons 'fs-host fs-interface))`:
 Without hosts: hover and definition at the first three cursors are
 unbound `fs-host`, and completion after `(fs-host ` gives `'()`.
 
-### 3. Product cursors in `gel/main.aloe`
+### 3. Product cursors in `examples/gel/main.aloe`
 
 With hosts `(list (cons 'term term-interface))`, at the first
 occurrence of `(term write-line`:
@@ -536,7 +536,7 @@ occurrence of `(term write-line`:
 | Cursor | As found | Answer |
 |---|---|---|
 | `term` | line 19, col 14, pos 367 | hover: type `'Term`, pathed type `'Term`, signatures the rows of `term-interface`, location span 4. Definition: `#f` |
-| `write-line` | pos 372 | completion with `#:source-path` the real `gel/main.aloe`: the items of `term-interface` at that position, span 10. `write-line` matches a row exactly, so every row is offered |
+| `write-line` | pos 372 | completion with `#:source-path` the real `examples/gel/main.aloe`: the items of `term-interface` at that position, span 10. `write-line` matches a row exactly, so every row is offered |
 
 Without hosts: hover and definition on `term` are unbound `term`, and
 completion on `write-line` gives `'()`.

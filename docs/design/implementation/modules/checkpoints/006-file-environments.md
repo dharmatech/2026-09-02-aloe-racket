@@ -167,7 +167,7 @@ so.
 
 ### Must leave untouched
 
-- Every `.aloe` file under `examples/`, `lib/`, and `gel/`.
+- Every `.aloe` file under `examples/`, `lib/`, and `examples/gel/`.
 - `aloe/parse.rkt`, `aloe/lsp.rkt`, `aloe/library.rkt`,
   `host/racket/aloemacs-run.rkt`, `host/racket/term-run.rkt`, and every
   other host module.
@@ -312,7 +312,7 @@ passed (see §4), and its base is the end of that environment's chain.
 
 `host/racket/gel-run.rkt` adds `(driver-load-file! state gel-stack-path)`
 after its load of `examples/point.aloe`, with
-`(define-runtime-path gel-stack-path "../../gel/stack.aloe")`, because
+`(define-runtime-path gel-stack-path "../../examples/gel/stack.aloe")`, because
 its expression uses `gel-empty-stack`. `host/racket/aloemacs-run.rkt`
 uses only `aloemacs-editor` and does not change; its prompt
 redefinition of `aloemacs-editor` still replaces.
@@ -463,9 +463,9 @@ A test that loads a Gel root then uses names from the files it loads:
 
 | Root loaded | Add loads of |
 |---|---|
-| `gel/stack.aloe` | `gel/menu.aloe` |
-| `gel/loop.aloe` | `gel/stack.aloe`, `gel/menu.aloe` |
-| `gel/main.aloe` | `gel/loop.aloe`, `gel/stack.aloe`, `gel/menu.aloe` |
+| `examples/gel/stack.aloe` | `examples/gel/menu.aloe` |
+| `examples/gel/loop.aloe` | `examples/gel/stack.aloe`, `examples/gel/menu.aloe` |
+| `examples/gel/main.aloe` | `examples/gel/loop.aloe`, `examples/gel/stack.aloe`, `examples/gel/menu.aloe` |
 
 A `(format "(load ~s)" (path->string <root>))` string passed to
 `eval-source` or `typecheck-source` becomes one string with the extra
@@ -488,7 +488,7 @@ Files: `tests/checkpoint-59.rkt`, `61`, `62`, `63`, `65`, `66`, `67`,
   and then use `GelStack` and `gel-empty-stack` in the same string
   (`"(load ~s) ((GelStack new (List empty)) push 10)"` and
   `"(load ~s) ((gel-empty-stack push 1) push 2)"`); each gets a load of
-  `gel/stack.aloe` after the first.
+  `examples/gel/stack.aloe` after the first.
 
 ### D. Boids (6 files)
 
@@ -503,7 +503,7 @@ same operation (`(typecheck-source (format "(load ~s)" ...) env)` or
 
 - **`tests/checkpoint-86.rkt`.** After its
   `(check-equal? (driver-load-file! state point-path load-output) '())`
-  add the same check for `gel/stack.aloe`, mirroring §7.
+  add the same check for `examples/gel/stack.aloe`, mirroring §7.
 - **`tests/checkpoint-20.rkt`.** Its last assertion ("Nested relative
   loads are allowed and share bindings with their caller") pins the old
   rule. Replace it with: a load of `tests/fixtures/load-nested-a.aloe`
@@ -609,7 +609,7 @@ directory under `/tmp`, loaded by absolute path.
    `examples/aloemacs/file.aloe`, then `lib/text.aloe` again: `Text` is
    still `eq?`, and `Option` is still `eq?` to the base's.
 4. **A second root unions; a repeat copies again.** In a driver with a
-   `term` injected, `driver-load-file!` of `gel/main.aloe` then of
+   `term` injected, `driver-load-file!` of `examples/gel/main.aloe` then of
    `examples/point.aloe`: `gel-main` and `Point` are both bound. A
    second `driver-load-file!` of `examples/point.aloe` returns `'()` and
    `Point` is still `eq?`.
@@ -629,12 +629,12 @@ directory under `/tmp`, loaded by absolute path.
    same text without a source path binds both.
 7. **Gel end to end.** In a driver with a scripted `term` that answers
    `"q"` (as `tests/checkpoint-86.rkt` builds one), `driver-load-file!`
-   of `gel/main.aloe`, `examples/point.aloe`, and `gel/stack.aloe`, then
+   of `examples/gel/main.aloe`, `examples/point.aloe`, and `examples/gel/stack.aloe`, then
    `driver-eval!` of `host/racket/gel-run.rkt`'s expression
    `(gel-main call ((gel-empty-stack push (Point new 1 2)) push (Point new 10 20)))`,
    raises nothing.
 8. **`matching-picks` runs where it was written.** In a driver that
-   loaded `gel/loop.aloe`, `gel/stack.aloe`, and `gel/menu.aloe`, the
+   loaded `examples/gel/loop.aloe`, `examples/gel/stack.aloe`, and `examples/gel/menu.aloe`, the
    program `tests/checkpoint-80.rkt` typechecks (its `rows-80`,
    `row-80`, `stack-80`, and `(stack-80 matching-picks row-80)`) has type
    `GelPicks` and runs.
@@ -694,7 +694,7 @@ The checkpoint is complete when:
   found it was reported;
 - every test file passes, and the only edits to existing tests are the
   ones in **Migration**;
-- no `.aloe` file under `examples/`, `lib/`, or `gel/` changed;
+- no `.aloe` file under `examples/`, `lib/`, or `examples/gel/` changed;
   `aloe/parse.rkt`, `aloe/lsp.rkt`, and the hosts other than
   `gel-run.rkt` are untouched;
 - `SPEC.md`, `docs/decisions.md`, and the two editor specs carry exactly
@@ -712,6 +712,6 @@ Report the results and stop. Do not commit. Do not start slice 3f.
 - `import`, export lists, private names, prefixes, a load path.
 - Per-importer method tables or scoped selectors. `define-methods`
   still mutates the one class record.
-- Any `.aloe` change under `examples/`, `lib/`, or `gel/`, including
+- Any `.aloe` change under `examples/`, `lib/`, or `examples/gel/`, including
   splitting `file.aloe` or making a session carry its own keymap.
 - Dirty-buffer overlays for nested loads, or other editor features.

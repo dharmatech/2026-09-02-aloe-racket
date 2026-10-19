@@ -107,7 +107,7 @@ with a one-line reason.
 - `aloe/eval.rkt` — `value-signature-specs`, `instance-signature-specs`,
   `class-signature-specs`, kernel tables
 - `aloe/type.rkt` — `class-info-methods`, send inference
-- `gel/menu.aloe` — `GelRows.of` as a consumer of Mirror rows, not
+- `examples/gel/menu.aloe` — `GelRows.of` as a consumer of Mirror rows, not
   as a design to copy into Racket
 - `docs/design/implementation/editor/README.md`
 

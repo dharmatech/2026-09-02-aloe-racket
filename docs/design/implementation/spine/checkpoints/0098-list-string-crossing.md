@@ -72,7 +72,7 @@ Design against the merged files, not from memory:
 - `docs/design/implementation/spine/filesystem-vocabulary.md`
 - `docs/design/implementation/spine/class-constructors.md`
 - `aloe/parse.rkt`
-- `examples/`, `lib/`, `gel/`, MPL
+- `examples/`, `lib/`, `examples/gel/`, MPL
 - no `host/racket/fs.rkt`, no `lib/fs.aloe`, no `lib/option.aloe`
 - no generic `Holder` / `Fs` wrapper work (checkpoint 99)
 

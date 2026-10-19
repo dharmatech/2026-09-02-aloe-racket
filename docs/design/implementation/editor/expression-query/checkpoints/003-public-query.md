@@ -297,7 +297,7 @@ Do not edit:
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - the expression-query specification, charter, README, or checkpoint
   documents except for status/index updates made by the checkpoint manager
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 
 The accepted private APIs and canonical static environment helper are
 sufficient for this adapter. If implementing the public operation requires

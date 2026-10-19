@@ -303,13 +303,13 @@ Do not edit:
 - any existing module under `aloe/`, including `aloe/lsp.rkt`,
   `aloe/host.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`, and the three
   query modules
-- any `.rkt` file in `host/racket/`, `examples/`, `gel/`, `lib/`, or
+- any `.rkt` file in `host/racket/`, `examples/`, `examples/gel/`, `lib/`, or
   `editors/vscode/`
 - any existing test or fixture
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
 
-Do not add `examples/aloemacs/aloe-hosts.rktd`, `gel/aloe-hosts.rktd`,
+Do not add `examples/aloemacs/aloe-hosts.rktd`, `examples/gel/aloe-hosts.rktd`,
 or a `tests/editor/host-queries/fixtures/broken/` folder. Those are
 editor-host-queries 002.
 
@@ -653,7 +653,7 @@ checkpoint.
 - Any change to `aloe/lsp.rkt`, its tests, or `editors/vscode/`; the
   server calling the reader (editor-host-queries 002)
 - The product manifests `examples/aloemacs/aloe-hosts.rktd` and
-  `gel/aloe-hosts.rktd`, and the `broken/` fixture folder (002)
+  `examples/gel/aloe-hosts.rktd`, and the `broken/` fixture folder (002)
 - Runners reading the manifest, a factory element, or any change to
   `aloemacs-run.rkt`, `gel-run.rkt`, or `driver-inject-host!`
 - Constructing a receiver or calling a host implementation

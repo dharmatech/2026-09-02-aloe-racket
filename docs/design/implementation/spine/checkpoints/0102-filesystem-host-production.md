@@ -82,7 +82,7 @@ Facts after checkpoint 101 (do not redesign them):
 - `lib/`
 - `SPEC.md`
 - `tests/checkpoint-101.rkt` and other historical tests
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `lib/fs.aloe`, no `Path` / `Entry` / `Fs`
 
 ## Required behavior

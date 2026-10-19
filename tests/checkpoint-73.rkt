@@ -11,10 +11,10 @@
                   typecheck-source)
          "../aloe/parse.rkt")
 
-(define-runtime-path gel-loop-path "../gel/loop.aloe")
+(define-runtime-path gel-loop-path "../examples/gel/loop.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
-(define-runtime-path gel-stack-path "../gel/stack.aloe")
-(define-runtime-path gel-menu-path "../gel/menu.aloe")
+(define-runtime-path gel-stack-path "../examples/gel/stack.aloe")
+(define-runtime-path gel-menu-path "../examples/gel/menu.aloe")
 
 (define environment (make-top-level-env))
 (void

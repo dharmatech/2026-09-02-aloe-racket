@@ -318,7 +318,7 @@ Do not edit:
   `docs/design/implementation/spine/checkpoints/`;
 - `.vscode/`, the VS Code extension, package manifest, grammar, JavaScript, or
   TypeScript; or
-- `gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.
 
 Tests may create isolated temporary files/directories and must remove them in
 an unconditional cleanup action. They must not modify a checked-in source or

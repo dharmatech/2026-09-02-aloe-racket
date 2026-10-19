@@ -115,7 +115,7 @@ Verified against the tree:
   (the code lines are about 5 / 14 / 40 / 52), but nothing turns on
   them.
 - `./bin/aloe --quit examples/aloemacs/main.aloe` prints
-  `aloe: typecheck: unbound symbol: fs-host` and exits 1. `gel/main.aloe`
+  `aloe: typecheck: unbound symbol: fs-host` and exits 1. `examples/gel/main.aloe`
   fails the same way on `term`. It is a checker error, not a runtime
   one.
 - The doubles claim is nearly right. Of 81 files under `tests/aloemacs/`,
@@ -389,8 +389,8 @@ Keep the boundary. Make `bin/aloe` the only runner, in this order.
    tui-term is an error, never a hostless run. A small `args` host, one
    method returning `(List String)`, carries the program's arguments;
    the crossing type already exists. Gel is the first consumer: a
-   `gel/run.aloe` whose last form is today's entry send, because tests
-   load `gel/main.aloe` expecting definitions only. Delete `term-run.rkt`,
+   `examples/gel/run.aloe` whose last form is today's entry send, because tests
+   load `examples/gel/main.aloe` expecting definitions only. Delete `term-run.rkt`,
    `fs-repl.rkt`, and `gel-run.rkt` in the last checkpoint, after a hand
    check, with every disappearing pin listed. `make-driver` and the bare
    REPL stay capability-free. SPEC section 14 needs at most one
@@ -437,7 +437,7 @@ Claude accepts:
    manifest in the tree grows a fifth element, Gel first,
    `term-run.rkt` and `fs-repl.rkt` kept until a scratch-file
    convention exists (`gel-run.rkt` goes when Gel moves to
-   `gel/run.aloe`), and `aloemacs-run.rkt` still owning the loop.
+   `examples/gel/run.aloe`), and `aloemacs-run.rkt` still owning the loop.
 4. The Aloemacs loop charter after those, with the memory bar as a
    precondition.
 
@@ -544,7 +544,7 @@ stack probe and reproduced both.
 - **Deleting `term-run.rkt` hurts one-off files**, which would then need
   a manifest row to run at all. Agreed: keep `term-run.rkt` and
   `fs-repl.rkt` until a scratch-file convention exists. `gel-run.rkt`
-  still goes when Gel moves to `gel/run.aloe`, as the sketch's table
+  still goes when Gel moves to `examples/gel/run.aloe`, as the sketch's table
   says.
 - **One `--quit` rule breaks one REPL case.** Agreed: a row whose
   factory holds the TTY runs and exits; a constructor-only row may

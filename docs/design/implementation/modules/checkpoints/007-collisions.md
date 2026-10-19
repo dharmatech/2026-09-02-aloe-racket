@@ -143,7 +143,7 @@ a copy of the committed tree.
 - `aloe/main.rkt`, `aloe/driver.rkt`, `aloe/expression-query.rkt`,
   `aloe/completion-query.rkt`, `aloe/lsp.rkt`, `aloe/parse.rkt`,
   `aloe/library.rkt`, `aloe/private/`, and every host module.
-- Every `.aloe` file under `examples/`, `lib/`, and `gel/`, and every
+- Every `.aloe` file under `examples/`, `lib/`, and `examples/gel/`, and every
   existing fixture.
 - Every test except the one case in **Migration**.
 - `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, `docs/philosophy.md`, the
@@ -600,7 +600,7 @@ The checkpoint is complete when:
 - every test file passes, and the only edit to an existing test is the
   one in **Migration**;
 - `aloe/type.rkt` is the only product file changed; no `.aloe` file
-  under `examples/`, `lib/`, or `gel/` changed;
+  under `examples/`, `lib/`, or `examples/gel/` changed;
 - `SPEC.md` and `docs/decisions.md` carry exactly the text above;
 - the whitespace check is clean (also for new, untracked files) and the
   file scope was respected.
@@ -618,4 +618,4 @@ Report the results and stop. Do not commit. Do not start layer 4.
 - Checking loads or definitions in a local scope, or making a `load`
   in a local scope an error.
 - Splitting `file.aloe` or dropping any prefix (adoption, layer 5).
-- Any `.aloe` change under `examples/`, `lib/`, or `gel/`.
+- Any `.aloe` change under `examples/`, `lib/`, or `examples/gel/`.

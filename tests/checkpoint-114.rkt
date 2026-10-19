@@ -318,7 +318,7 @@ ALOE
    (eval-source "(collision-mirror invoke aloe-len-row)" environment)
    "Aloe len"))
 
-(define-runtime-path gel-directory "../gel")
+(define-runtime-path gel-directory "../examples/gel")
 
 (test-case "String method definitions remain outside Gel"
   (for ([path (in-list (find-files file-exists? gel-directory))])

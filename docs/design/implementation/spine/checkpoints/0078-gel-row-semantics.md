@@ -55,7 +55,7 @@ menu formatting, key transitions, signature acceptance, or type presentation.
   and `#t`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define rows (gel-rows call 10))
   (define row
     (rows fold (rows first)

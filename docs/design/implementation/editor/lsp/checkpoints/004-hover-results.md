@@ -268,7 +268,7 @@ Do not edit:
   tests, any other editor-lsp 003 test, or the Point fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 If null failure translation requires changing the public query contract,
 importing parser/checker exception predicates, catching outside the query

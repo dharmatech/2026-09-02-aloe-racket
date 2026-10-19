@@ -34,7 +34,7 @@ or Gel.
 May edit: `aloe/eval.rkt`, new tests under `tests/`, and other `aloe/*.rkt`
 only as mechanical struct plumbing so existing matches still load.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Accept
 

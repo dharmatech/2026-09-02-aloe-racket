@@ -66,8 +66,8 @@ following the rules in **Census test** below) over today's tree, on
 |---|---|
 | `examples/aloemacs/file.aloe` | `Text`, `Position`, `Span` |
 | `examples/aloemacs/main.aloe` | `AloemacsEditor`, `Text`, `Position`, `Path`, `Fs` |
-| `gel/loop.aloe` | `GelRow`, `gel-rows` |
-| `gel/main.aloe` | `GelStack` |
+| `examples/gel/loop.aloe` | `GelRow`, `gel-rows` |
+| `examples/gel/main.aloe` | `GelStack` |
 | `examples/mpl/sym.aloe` | `Math` |
 | `examples/mpl/sum.aloe` | `Math` |
 | `examples/mpl/num.aloe` | `Math` |
@@ -109,7 +109,7 @@ hundred lines. One conversation.
 
 - `examples/aloemacs/file.aloe`, `examples/aloemacs/main.aloe`: the
   added loads only.
-- `gel/loop.aloe`, `gel/main.aloe`: the added loads only.
+- `examples/gel/loop.aloe`, `examples/gel/main.aloe`: the added loads only.
 - `examples/mpl/math.aloe`: new.
 - `examples/mpl/core.aloe`: the `define-protocol Math` form leaves; a
   load of `math.aloe` takes its place.
@@ -128,7 +128,7 @@ hundred lines. One conversation.
 - Every Racket module under `aloe/`, and `host/racket/`.
 - `SPEC.md`.
 - Every other `.aloe` file, including `examples/aloemacs/editor.aloe`,
-  everything under `lib/`, `gel/menu.aloe`, `gel/stack.aloe`,
+  everything under `lib/`, `examples/gel/menu.aloe`, `examples/gel/stack.aloe`,
   `examples/boids.aloe`, `examples/point.aloe`, every other test
   fixture, `editors/`, and `archive/`.
 - Every other test, including `tests/modules/000-run-once.rkt`, the
@@ -154,8 +154,8 @@ leading datums are exactly:
 |---|---|
 | `examples/aloemacs/file.aloe` | `(load "editor.aloe")`, `(load "../../lib/text.aloe")`, `(load "../../lib/fs.aloe")` |
 | `examples/aloemacs/main.aloe` | `(load "file.aloe")`, `(load "editor.aloe")`, `(load "../../lib/text.aloe")`, `(load "../../lib/fs.aloe")`, then `(define aloemacs-editor ...)` |
-| `gel/loop.aloe` | `(load "stack.aloe")`, `(load "menu.aloe")` |
-| `gel/main.aloe` | `(load "loop.aloe")`, `(load "stack.aloe")` |
+| `examples/gel/loop.aloe` | `(load "stack.aloe")`, `(load "menu.aloe")` |
+| `examples/gel/main.aloe` | `(load "loop.aloe")`, `(load "stack.aloe")` |
 | `examples/mpl/core.aloe` | `(load "math.aloe")`, `(load "sym.aloe")`, `(load "sum.aloe")`, `(load "num.aloe")`, `(load "prod.aloe")`, `(load "pow.aloe")` |
 | `examples/mpl/sym.aloe`, `sum.aloe`, `num.aloe` | `(load "math.aloe")` |
 | `examples/mpl/prod.aloe`, `pow.aloe` | `(load "math.aloe")`, `(load "num.aloe")` |
@@ -204,7 +204,7 @@ run. Then make the edits and run it again.
 
 ### The census files
 
-Every `.aloe` file under `examples/`, `lib/`, `gel/`, and `tests/`,
+Every `.aloe` file under `examples/`, `lib/`, `examples/gel/`, and `tests/`,
 found by walking those directories from the project root, except
 `tests/editor/source-locations/fixtures/000-spans.aloe`. Name that
 exclusion in the test with its reason, and assert the excluded file

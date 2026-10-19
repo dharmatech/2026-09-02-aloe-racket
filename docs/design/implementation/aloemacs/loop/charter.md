@@ -43,7 +43,7 @@ load/save, multiple buffers, a VT emulator, and a port of Legmacs
 |---|---|
 | [`../text/`](../text/) | aloemacs-text 000–003: `Text`, `Position`, `Span`, `insert` / `delete` / `newline`, `valid-position?` |
 | [`../term/`](../term/) | aloemacs-term 000: `(term write s)`, `(term columns)`, `(term rows)`, existing `read-key` / `write-line` |
-| Gel loop | [`gel/main.aloe`](../../../../../gel/main.aloe) + [`gel/loop.aloe`](../../../../../gel/loop.aloe): immutable step, runner injects `term` |
+| Gel loop | [`examples/gel/main.aloe`](../../../../../examples/gel/main.aloe) + [`examples/gel/loop.aloe`](../../../../../examples/gel/loop.aloe): immutable step, runner injects `term` |
 
 This layer **composes** Text and Term. It does not reopen their
 specs. Do not add `Char`, a second text representation, or a new
@@ -234,7 +234,7 @@ specified as a short sequence, not a second editor.
   `rows`; `read-key` still ignores mouse and resize
 - `SPEC.md` — send, classes, `Option` / `case`, no mutation
 - `docs/philosophy.md` — grow from applications
-- [`gel/main.aloe`](../../../../../gel/main.aloe) — injected
+- [`examples/gel/main.aloe`](../../../../../examples/gel/main.aloe) — injected
   `term`, immutable step
 - [`host/racket/gel-run.rkt`](../../../../../host/racket/gel-run.rkt)
   — runner shape

@@ -32,7 +32,7 @@ typecheck constructor sets or exhaustiveness. Do not migrate MPL or Gel.
 May edit: `aloe/parse.rkt`, new tests under `tests/`, and other `aloe/*.rkt`
 only as mechanical AST plumbing so existing struct matches still load.
 
-Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `gel/`, or MPL.
+Do not edit `SPEC.md` language rules, `examples/`, `lib/`, `examples/gel/`, or MPL.
 
 ## Accept
 

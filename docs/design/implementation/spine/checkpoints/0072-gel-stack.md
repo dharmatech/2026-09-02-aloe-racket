@@ -11,7 +11,7 @@ Replace Gel's raw `(List Mirror)` stack with an immutable, data-bearing
 
 ## Contract
 
-Add this class to `gel/stack.aloe`:
+Add this class to `examples/gel/stack.aloe`:
 
 ```lisp
 (define-class GelStack
@@ -62,7 +62,7 @@ and do not add new stack operations or Aloe language features.
 - By hand, this evaluates to `10`:
 
   ```lisp
-  (load "gel/stack.aloe")
+  (load "examples/gel/stack.aloe")
   (define stack
     ((GelStack new (List empty)) push 10))
   ((stack tos) subject)

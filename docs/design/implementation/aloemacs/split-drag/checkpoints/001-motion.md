@@ -228,7 +228,7 @@ above is now count-free.
   bytes.
 - `examples/aloemacs/editor.aloe`, `host/racket/gel-run.rkt`,
   `host/racket/term-run.rkt`, `host/racket/fs.rkt`, `lib/`, `aloe/`,
-  `bin/`, `gel/`, `archive/`, `SPEC.md`, `CHECKPOINTS.md`, and
+  `bin/`, `examples/gel/`, `archive/`, `SPEC.md`, `CHECKPOINTS.md`, and
   `tui-term`. In `term.rkt`: `term-interface`, `read-next-key`,
   `term-read-key`, `term-read-event`, `make-term-receiver`,
   `call-with-tty-term-receiver`, and `tkeymsg->aloe-key`. In the

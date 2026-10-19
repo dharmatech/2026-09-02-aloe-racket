@@ -239,7 +239,7 @@ Do not edit:
   and adds no `.aloe` file, so the census count does not change
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
   charter, or checkpoint document, this one included
-- `lib/`, `examples/`, `gel/`, or `host/`
+- `lib/`, `examples/`, `examples/gel/`, or `host/`
 
 ## Required tests
 

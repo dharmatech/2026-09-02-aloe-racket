@@ -148,7 +148,7 @@ evaluator, that is a failed checkpoint, not a compromise. Restore both.
 - `docs/design/implementation/spine/class-constructors.md` (historical Proposal B; `SPEC.md` is law)
 - historical checkpoint documents 83–96 (do not rewrite them to pretend
   they always lived together)
-- `examples/`, `lib/`, `gel/`, MPL sources
+- `examples/`, `lib/`, `examples/gel/`, MPL sources
 - no `host/racket/fs.rkt`, no `lib/fs.aloe`, no `lib/option.aloe`
 
 Do not renumber historical checkpoints. New work starts at **97**.

@@ -5,7 +5,7 @@
          rackunit
          "../aloe/main.rkt")
 
-(define-runtime-path menu-path "../gel/menu.aloe")
+(define-runtime-path menu-path "../examples/gel/menu.aloe")
 (define-runtime-path point-path "../examples/point.aloe")
 
 (define environment (make-top-level-env))

@@ -168,7 +168,7 @@ does not fit one conversation, stop and say so.
 
 ### Must leave untouched
 
-- Every `.aloe` file: `examples/`, `lib/`, `gel/`, `archive/`, and
+- Every `.aloe` file: `examples/`, `lib/`, `examples/gel/`, `archive/`, and
   the existing fixtures under `tests/`.
 - `aloe/parse.rkt`, `aloe/expression-query.rkt`,
   `aloe/completion-query.rkt`, `aloe/lsp.rkt`, everything under

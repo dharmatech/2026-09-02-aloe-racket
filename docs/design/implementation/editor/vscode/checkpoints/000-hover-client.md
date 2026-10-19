@@ -317,7 +317,7 @@ Do not edit:
 - the editor-lsp, expression-query, signatures-of-type, or source-locations
   projects;
 - `tests/editor/lsp/fixtures/point.aloe` or any repository Racket test; or
-- `gel/`, `lib/`, `host/`, `examples/`, or another editor implementation.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or another editor implementation.
 
 If the exact installed-module command cannot launch through the two-property
 executable options, if Hover needs client-side transformation, if the server

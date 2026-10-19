@@ -258,7 +258,7 @@ Do not edit:
   Point fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 If synchronization requires changing Expression Query, adding incremental
 range edits, imposing a version-order policy, or touching the filesystem

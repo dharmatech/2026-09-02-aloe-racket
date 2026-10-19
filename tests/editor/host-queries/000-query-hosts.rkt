@@ -35,7 +35,7 @@
 (define-runtime-path aloemacs-file-path "../../../examples/aloemacs/file.aloe")
 (define-runtime-path fs-library-path "../../../lib/fs.aloe")
 (define-runtime-path option-path "../../../lib/option.aloe")
-(define-runtime-path gel-main-path "../../../gel/main.aloe")
+(define-runtime-path gel-main-path "../../../examples/gel/main.aloe")
 (define-runtime-path type-module-path "../../../aloe/type.rkt")
 (define-runtime-path main-module-path "../../../aloe/main.rkt")
 

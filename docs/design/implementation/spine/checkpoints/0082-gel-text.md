@@ -70,7 +70,7 @@ behavior, stack behavior, key transitions, terminal sequencing, or `GelMain`.
 - By hand, the final two expressions evaluate to `"TOS: 10"` and `#t`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (gel-text tos (gel-empty-stack push 10))
   ((gel-text menu 10) =
    (gel-text menu (Mirror of 10)))

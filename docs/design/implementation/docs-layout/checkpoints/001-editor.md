@@ -67,7 +67,7 @@ targets, and nothing else in it.
   `host-queries`, `lsp`, `signatures-of-type`, `source-locations`,
   `vscode`), each with a `checkpoints/` folder. The string
   `docs/editor/` occurs on about 220 lines of about 90 files. Two of
-  those files are not Markdown: `gel/aloe-hosts.rktd` and
+  those files are not Markdown: `examples/gel/aloe-hosts.rktd` and
   `examples/aloemacs/aloe-hosts.rktd`, each on a `;;` comment line.
   If the inventory differs, stop and report the difference.
 
@@ -277,7 +277,7 @@ one target above.
   `checker-recursion/checkpoints/000-deferred-generic-body.md`, and
   `spine/editor-lsp-merge.md`: the substitution and the edits listed
   for each.
-- `gel/aloe-hosts.rktd` and `examples/aloemacs/aloe-hosts.rktd`: the
+- `examples/gel/aloe-hosts.rktd` and `examples/aloemacs/aloe-hosts.rktd`: the
   comment line only.
 - Every other `.md` file outside `.git/`, `compiled/`, and
   `node_modules/`, including `README.md`, `CHECKPOINTS.md`,

@@ -90,7 +90,7 @@ Facts after checkpoint 106 (do not redesign them):
   below
 - `docs/design/implementation/spine/checkpoints/0105-disk-and-location.md`
 - `docs/design/implementation/spine/checkpoints/0106-inspect-and-item.md`
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `(here entries)`, no `enter`, no `size` / `read` /
   `target`, no `text` method on `Location`, no rewrite of
   thin `Fs.entries`, no `archive/` worksheet in this slice

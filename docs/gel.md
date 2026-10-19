@@ -116,7 +116,7 @@ Injected host receivers participate in the same `Mirror` and `Signature`
 protocol as ordinary values. Their rows come directly from the capability
 descriptor and invoke through the ordinary guarded host boundary.
 
-Gel v0 menu rows now live in `gel/menu.aloe`. `(gel-rows of value)` builds
+Gel v0 menu rows now live in `examples/gel/menu.aloe`. `(gel-rows of value)` builds
 ordered `GelRow` values from the subject's reflected signatures, including a
 one-based index, selector, arity, and signature, while `(gel-rows select rows
 index)` returns a valid indexed row. An exact `Mirror` overload uses an
@@ -125,7 +125,7 @@ value and delegates to it; both routes therefore share the same row
 construction and never reflect a mirror twice. Those rows drive the current
 stack loop and key handling.
 
-The Gel stack in `gel/stack.aloe` is an immutable `GelStack`. Its `items` field
+The Gel stack in `examples/gel/stack.aloe` is an immutable `GelStack`. Its `items` field
 holds the underlying `(List Mirror)`, `tos` reads the first item, and `push`
 constructs a new stack. Ordinary values are wrapped once on push; an existing
 mirror is stored unchanged. `gel-empty-stack` is the shared immutable starting
@@ -137,7 +137,7 @@ the latter is unwrapped with `subject` before invoking the row's exact
 signature. The result is pushed as a mirror. Invocation belongs to `GelStack`;
 there are no separate callable invocation helpers.
 
-The key step in `gel/loop.aloe` is Aloe application code on the immutable
+The key step in `examples/gel/loop.aloe` is Aloe application code on the immutable
 `GelStep` state itself: `(step handle-key key)` returns the next state. `"q"`
 requests quit, and digit strings select reflected rows. Zero-argument rows
 invoke directly. The public transition still accepts terminal `String` text
@@ -167,7 +167,7 @@ directory, launch the thin TTY skin with `racket host/racket/gel-run.rkt`
 (after installing the optional `tui-term` package). Press the displayed digit
 for `x` to push its value, and `q` to leave with the terminal restored.
 
-The interactive recursion now lives in `gel/main.aloe`: it writes a TOS line
+The interactive recursion now lives in `examples/gel/main.aloe`: it writes a TOS line
 from `(gel-text tos stack)`, then `(gel-text menu state)`, reads a `String` key,
 steps or ignores it, and recurses. Immediately after reading, it writes `key `
 followed by the key before handling it, so the transcript records digits,
@@ -260,7 +260,8 @@ still requires a blocked golden. The current menu needs are already served by
   invent a second lookup rule.
 - No implicit `Int` → `Math` lift. No implicit `Int` / `Float` mix.
 - Do not put Gel in `lib/` until a second application wants the same
-  code. Keep it beside the host runner (`host/` and a Gel Aloe tree).
+  code. Its Aloe tree is `examples/gel/`, beside the other programs
+  (source-layout 000, 2026-10-19); its runner stays in `host/`.
 - Do not one-shot files + processes + git + the Point builder.
 
 ---

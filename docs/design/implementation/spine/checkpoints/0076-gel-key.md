@@ -57,7 +57,7 @@ key mappings, state transitions, or any row, pick, menu, or text helpers.
 - By hand, this evaluates to `0`, `0`, and `#t`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define zero-key (GelKey new "0"))
   (zero-key menu-index)
   (zero-key digit-value)

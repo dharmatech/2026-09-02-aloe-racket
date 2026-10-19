@@ -58,7 +58,7 @@ storage.
 - By hand, the final two expressions evaluate to `2` and `2`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define rows (gel-rows call 10))
   (define row
     (rows fold (rows first)

@@ -89,7 +89,7 @@ must typecheck at that send using the retained host-receiver type.
   Prefer not.
 - Historical checkpoints 83–98
 - `docs/design/implementation/spine/filesystem-vocabulary.md`
-- `examples/`, `lib/`, `gel/`, MPL
+- `examples/`, `lib/`, `examples/gel/`, MPL
 - no `host/racket/fs.rkt`, no `lib/fs.aloe`, no `lib/option.aloe`,
   no `Path` / `Entry` / `Fs` classes
 

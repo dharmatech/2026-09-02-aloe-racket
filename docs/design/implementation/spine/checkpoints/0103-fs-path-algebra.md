@@ -79,7 +79,7 @@ Facts after checkpoint 102 (do not redesign them):
 - `bin/aloe`
 - `SPEC.md`
 - historical tests 100–102
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `Entry` class, no `inspect`, no `entries`
 - no `directory?`, `exists?`, `Missing`, or Path host-effect
   methods

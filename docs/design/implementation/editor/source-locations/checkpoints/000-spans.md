@@ -158,7 +158,7 @@ Implementation may edit:
 Do not edit:
 
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
-- `gel/`, `lib/`, `host/`, or `docs/gel/`
+- `examples/gel/`, `lib/`, `host/`, or `docs/gel/`
 - type-error or runtime-error formats
 - the editor project charters or any later source-locations checkpoint
 - a new public language-service, signatures, expression-query, or LSP module

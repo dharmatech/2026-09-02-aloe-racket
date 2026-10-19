@@ -205,7 +205,7 @@ commit time. The series is accepted.
   declarations. The ordered `define-class` list and every field
   inventory are unchanged. `file.aloe` stays ASCII bytes.
 - `examples/aloemacs/main.aloe`, `examples/aloemacs/editor.aloe`,
-  everything under `host/racket/`, `lib/`, `aloe/`, `bin/`, `gel/`,
+  everything under `host/racket/`, `lib/`, `aloe/`, `bin/`, `examples/gel/`,
   `archive/`, `SPEC.md`, `CHECKPOINTS.md`, and `tui-term`. Add no
   Term method, host capability, kernel message, `lib/` method, Text
   method, class, field, command, key, keymap entry, face, or build

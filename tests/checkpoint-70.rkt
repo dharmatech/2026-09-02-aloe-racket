@@ -5,9 +5,9 @@
          "../aloe/eval.rkt"
          "../aloe/main.rkt")
 
-(define-runtime-path loop-path "../gel/loop.aloe")
-(define-runtime-path stack-path "../gel/stack.aloe")
-(define-runtime-path menu-path "../gel/menu.aloe")
+(define-runtime-path loop-path "../examples/gel/loop.aloe")
+(define-runtime-path stack-path "../examples/gel/stack.aloe")
+(define-runtime-path menu-path "../examples/gel/menu.aloe")
 
 (define environment (make-top-level-env))
 (void

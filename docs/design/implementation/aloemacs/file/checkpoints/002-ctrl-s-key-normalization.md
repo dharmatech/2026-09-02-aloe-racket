@@ -98,7 +98,7 @@ Neither this table nor `make-term-receiver` changes.
 
 - `SPEC.md`, `CHECKPOINTS.md`, any global checkpoint document, or any file
   under `docs/design/implementation/editor/`
-- any file under `aloe/`, `lib/`, `examples/`, `gel/`, or `bin/`
+- any file under `aloe/`, `lib/`, `examples/`, `examples/gel/`, or `bin/`
 - `host/racket/fs.rkt`, `host/racket/aloemacs-run.rkt`, another host module,
   package metadata, or `tui-term`
 - any other existing test, including `tests/aloemacs/key-mapping.rkt`,

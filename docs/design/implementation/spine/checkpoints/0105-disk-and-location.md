@@ -98,7 +98,7 @@ Facts after checkpoint 104 (do not redesign them):
 - `bin/aloe`
 - `SPEC.md`
 - historical tests 100–104
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `Item` class, no `inspect`, no live `File` / `Directory` /
   `SymbolicLink` / `Other`, no `entries`
 - no `text` method on `Location`

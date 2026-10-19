@@ -295,7 +295,7 @@ Do not edit:
 - `aloe/expression-query.rkt` or any parser, checker, evaluator, catalog,
   driver, host, or private Expression Query module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 If a real Point hover cannot be produced solely through the public Expression
 Query result, if local file URI conversion requires manual decoding, or if

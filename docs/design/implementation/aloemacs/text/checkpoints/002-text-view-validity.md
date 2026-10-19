@@ -65,7 +65,7 @@ driver-isolation coverage.
 ### Must not edit
 
 - `SPEC.md`, `CHECKPOINTS.md`, or any global checkpoint document
-- any file under `aloe/`, `host/`, `bin/`, `examples/`, `gel/`, or
+- any file under `aloe/`, `host/`, `bin/`, `examples/`, `examples/gel/`, or
   `docs/design/implementation/editor/`
 - `lib/string.aloe`, `lib/list.aloe`, `lib/option.aloe`, or any other library
 - `tests/aloemacs/000-string-prerequisite.rkt` or any test outside the exact

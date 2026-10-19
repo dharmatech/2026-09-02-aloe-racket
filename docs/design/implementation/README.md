@@ -50,11 +50,12 @@ it onto [`CHECKPOINTS.md`](../../../CHECKPOINTS.md).
 | [`suite-jobs/`](suite-jobs/README.md) | Four test files at once: `-j 4` in the standing command. | Complete; 000 landed at `445f68c` (2026-10-07). |
 | [`suite-time/`](suite-time/README.md) | The suite timing report, and session helpers evaluated once. | Complete; 000 through 002 landed at `a860e3a` (2026-10-07). |
 
-## Documentation
+## Layout
 
 | Folder | What | Status |
 |---|---|---|
 | [`docs-layout/`](docs-layout/README.md) | This layout: the spine and the editor map moved under this folder, and this map. | 000 at `9cf7ce9` and 001 at `473863a` (2026-10-19); 002 is this map. |
+| [`source-layout/`](source-layout/README.md) | Source layout: the Gel tree moved to `examples/gel/`, beside the other programs. | Closed 2026-10-19; 000 implemented and hand-checked. |
 
 ## Withdrawn
 

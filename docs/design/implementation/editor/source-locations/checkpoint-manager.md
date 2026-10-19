@@ -178,7 +178,7 @@ May edit:
 Must not edit:
 
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`
-- `gel/`, `lib/`, `host/`, `docs/gel/`
+- `examples/gel/`, `lib/`, `host/`, `docs/gel/`
 - type-error format, runtime error format
 - a new public "language service" module
 

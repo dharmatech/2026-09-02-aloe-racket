@@ -25,7 +25,7 @@
 ;; ---------------------------------------------------------------------------
 ;; The census files
 
-(define census-directories '("examples" "lib" "gel" "tests"))
+(define census-directories '("examples" "lib" "tests"))
 
 ;; tests/editor/source-locations/000-spans.rkt only parses this fixture for
 ;; source locations; nothing loads or checks it, and it uses `Point` and `p`
@@ -292,8 +292,8 @@
      "editor.aloe" "../../lib/text.aloe" "../../lib/fs.aloe")
     ("examples/aloemacs/main.aloe"
      "file.aloe" "editor.aloe" "../../lib/text.aloe" "../../lib/fs.aloe")
-    ("gel/loop.aloe" "stack.aloe" "menu.aloe")
-    ("gel/main.aloe" "loop.aloe" "stack.aloe")
+    ("examples/gel/loop.aloe" "stack.aloe" "menu.aloe")
+    ("examples/gel/main.aloe" "loop.aloe" "stack.aloe")
     ("examples/mpl/core.aloe"
      "math.aloe" "sym.aloe" "sum.aloe" "num.aloe" "prod.aloe" "pow.aloe")
     ("examples/mpl/sym.aloe" "math.aloe")

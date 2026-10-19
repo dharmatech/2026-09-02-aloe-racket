@@ -166,7 +166,7 @@ Do not edit:
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, any other spec,
   charter, or checkpoint document, including source-locations 000 and
   editor-lsp 001;
-- `editors/vscode/`, `lib/`, `examples/`, `gel/`, or `host/`.
+- `editors/vscode/`, `lib/`, `examples/`, `examples/gel/`, or `host/`.
 
 The new test may create temporary files and directories under the
 system temporary directory and must remove them unconditionally. No

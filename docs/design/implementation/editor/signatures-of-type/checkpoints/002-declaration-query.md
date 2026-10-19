@@ -258,7 +258,7 @@ Do not edit:
 - `aloe/eval.rkt`, `aloe/parse.rkt`, `aloe/main.rkt`, `aloe/driver.rkt`,
   `aloe/host.rkt`, or the runtime `Signature` representation
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 - project design documents, prior checkpoint semantics, or a later checkpoint
   except status/index updates made by the checkpoint manager
 

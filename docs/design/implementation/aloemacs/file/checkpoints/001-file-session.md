@@ -85,7 +85,7 @@ no `"save"` mapping. Direct test sends may still pass the named String
   `host/racket/aloemacs-run.rkt`, or another host module
 - any existing test, including aloemacs-file 000 and all Text, Term, and Loop
   tests
-- any file under `aloe/`, `bin/`, or `gel/`, or package metadata
+- any file under `aloe/`, `bin/`, or `examples/gel/`, or package metadata
 - the aloemacs maps, charter, specification, or predecessor checkpoint
   documents
 - any file not listed under **May edit**

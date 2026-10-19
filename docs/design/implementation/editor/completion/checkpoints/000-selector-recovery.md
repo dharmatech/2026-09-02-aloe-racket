@@ -293,7 +293,7 @@ Do not edit:
   predecessor project's production or test files;
 - `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, or checkpoint documents; or
-- `gel/`, `lib/`, `host/`, `examples/`, or another editor project.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or another editor project.
 
 If exact recovery requires a parser change, another reader, a delimiter
 scanner, a new source-location representation, or checker knowledge, stop and

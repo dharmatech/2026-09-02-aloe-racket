@@ -17,7 +17,7 @@ hosts to hover, go-to-definition, and completion. A document with no
 row gets exactly today's call. A row that fails is a miss.
 
 This checkpoint also checks in the two product manifests, beside
-`examples/aloemacs/main.aloe` and `gel/main.aloe`. After it, hover,
+`examples/aloemacs/main.aloe` and `examples/gel/main.aloe`. After it, hover,
 completion, and definition answer in those two files in VS Code. Today
 every hover and definition there misses. The human's VS Code hand check
 closes the series.
@@ -70,7 +70,7 @@ The tree at `042e451` has every predecessor. As found:
   submodule takes hover and completion queries and an optional
   `#:definition-query`.
 - **No product manifest exists.** `examples/aloemacs/` holds
-  `editor.aloe`, `file.aloe`, and `main.aloe`. `gel/` holds `loop.aloe`,
+  `editor.aloe`, `file.aloe`, and `main.aloe`. `examples/gel/` holds `loop.aloe`,
   `main.aloe`, `menu.aloe`, and `stack.aloe`. In each folder only
   `main.aloe` uses a host: `fs-host` in Aloemacs, `term` in Gel.
 
@@ -243,7 +243,7 @@ three were the only failing locations, apart from the scratch-only
    (host fs-host host/racket/fs fs-interface)))
 ```
 
-`gel/aloe-hosts.rktd` (191 bytes):
+`examples/gel/aloe-hosts.rktd` (191 bytes):
 
 ```racket
 ;; Hosts the Aloe language server binds when it checks a document in this
@@ -259,7 +259,7 @@ package: without it the row would fail, and `main.aloe` would go dark
 for a host it never uses. No other document in either folder gets a
 row.
 
-`tests/checkpoint-114.rkt` scans every file under `gel/` for the text
+`tests/checkpoint-114.rkt` scans every file under `examples/gel/` for the text
 `define-methods String`. The Gel manifest does not contain it.
 
 ## Exact file scope
@@ -269,7 +269,7 @@ May edit:
 - `aloe/lsp.rkt`: the require, `invoke-query`,
   `query-through-snapshot`, `query-synchronized-document`, and
   `query-completion`. Nothing else.
-- `examples/aloemacs/aloe-hosts.rktd` and `gel/aloe-hosts.rktd` (new)
+- `examples/aloemacs/aloe-hosts.rktd` and `examples/gel/aloe-hosts.rktd` (new)
 - `tests/editor/host-queries/fixtures/broken/neighbor.aloe` and
   `tests/editor/host-queries/fixtures/broken/aloe-hosts.rktd` (new)
 - `tests/editor/host-queries/002-lsp-hosts.rkt` (new)
@@ -281,7 +281,7 @@ Do not edit:
 
 - any other module under `aloe/`, including `aloe/host-manifest.rkt`
   and the three query modules
-- `host/racket/`, `lib/`, any `.aloe` file in `examples/` or `gel/`, or
+- `host/racket/`, `lib/`, any `.aloe` file in `examples/` or `examples/gel/`, or
   `editors/vscode/`
 - any other existing test or fixture
 - `SPEC.md`, `CHECKPOINTS.md`, `docs/design/implementation/spine/checkpoints/`, or any spec,
@@ -343,7 +343,7 @@ Racket libraries you need, `rackunit`,
 `"../../../host/racket/term.rkt"` by relative path. Use
 `define-runtime-path` for the two fixture folders and for
 `examples/aloemacs/main.aloe`, `examples/aloemacs/file.aloe`, and
-`gel/main.aloe`.
+`examples/gel/main.aloe`.
 
 Follow `tests/editor/definition/003-lsp-definition.rkt` for the
 harness: `frame`, `decode-frames` (which checks each canonical
@@ -382,7 +382,7 @@ numbered item below, six in all. The names are yours.
 
 - `examples/aloemacs/main.aloe` gives
   `(document-hosts (list (cons 'fs-host fs-interface)))`;
-- `gel/main.aloe` gives
+- `examples/gel/main.aloe` gives
   `(document-hosts (list (cons 'term term-interface)))`;
 - `examples/aloemacs/file.aloe` gives `#f`.
 
@@ -558,7 +558,7 @@ is a miss.
 5. Edit the file somewhere harmless without saving, such as a blank
    line at the top. Hover `fs-host` in `(Fs new fs-host)` again, and see
    that it still shows `FsHost`'s rows. Undo.
-6. Open `gel/main.aloe` and hover `term` in the first `(term write-line`.
+6. Open `examples/gel/main.aloe` and hover `term` in the first `(term write-line`.
    See `type: Term` and `Term`'s six rows.
 7. Confirm that `examples/aloemacs/file.aloe` behaves as before: hover
    and go to definition on a class name there still answer.

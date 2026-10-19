@@ -13,9 +13,9 @@
                   make-driver)
          "term.rkt")
 
-(define-runtime-path gel-main-path "../../gel/main.aloe")
+(define-runtime-path gel-main-path "../../examples/gel/main.aloe")
 (define-runtime-path point-path "../../examples/point.aloe")
-(define-runtime-path gel-stack-path "../../gel/stack.aloe")
+(define-runtime-path gel-stack-path "../../examples/gel/stack.aloe")
 
 (define (run-gel)
   (call-with-tty-term-receiver

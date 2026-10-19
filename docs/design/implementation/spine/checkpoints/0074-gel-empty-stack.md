@@ -50,7 +50,7 @@ classes, or alter Gel behavior.
 - By hand, this evaluates to `"two"` and leaves the empty stack length at `0`:
 
   ```lisp
-  (load "gel/loop.aloe")
+  (load "examples/gel/loop.aloe")
   (define stack
     ((gel-empty-stack push 1) push "two"))
   ((stack tos) subject)

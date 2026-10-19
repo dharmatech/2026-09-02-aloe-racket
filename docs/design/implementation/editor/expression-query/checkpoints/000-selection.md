@@ -177,7 +177,7 @@ Do not edit:
 - `SPEC.md`, `CHECKPOINTS.md`, or anything under `docs/design/implementation/spine/checkpoints/`
 - the expression-query specification, charter, README, this checkpoint's
   semantics, or a later checkpoint document
-- `gel/`, `lib/`, `host/`, or another editor project
+- `examples/gel/`, `lib/`, `host/`, or another editor project
 
 If the existing AST accessors are insufficient for this traversal, if
 selection appears to require a parser change or side table, or if object

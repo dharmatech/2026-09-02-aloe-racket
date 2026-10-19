@@ -76,7 +76,7 @@ Facts after checkpoint 103 (do not redesign them):
 - `bin/aloe`
 - `SPEC.md`
 - historical tests 100–102; 103 only as the living-test edit below
-- `examples/`, `gel/`, MPL
+- `examples/`, `examples/gel/`, MPL
 - no `Missing`, `exists?`, `directory?`, nested `File`/`Directory`
   classes, Path host-effect methods, or `show` on `Entry`
 

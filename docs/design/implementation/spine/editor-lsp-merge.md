@@ -20,7 +20,7 @@ Do not fall back to merging the whole editor branch.
 Do not unify the two parsers in `aloe/parse.rkt`. Do not extract
 observers from `aloe/type.rkt`. Do not strip Mirror, Signature, or
 the earlier Gel already on `main`. Do not add Gel-directory,
-Gel-presentations, `gel/directory.aloe`, or `gel-directory-run`.
+Gel-presentations, `examples/gel/directory.aloe`, or `gel-directory-run`.
 Do not update `origin/main`. Do not push.
 
 The human will review the result in the parent high-level conversation.
@@ -161,7 +161,7 @@ in doubt, leave it off):
 | `docs/design/implementation/spine/checkpoints/0108-*.md` … `0113-*.md`, `0116-*.md`, `0117-*.md` | Gel-directory global checkpoints |
 | `tests/checkpoint-108.rkt` … `113.rkt`, `116.rkt`, `117.rkt` | Gel-directory tests |
 | `examples/gel-directory.aloe`, `examples/gel-list.aloe`, `examples/gel-point.aloe` | Gel apps |
-| `gel/directory.aloe`, `gel/presentations.aloe` | New Gel modules |
+| `examples/gel/directory.aloe`, `examples/gel/presentations.aloe` | New Gel modules |
 | `host/racket/gel-directory-run.rkt` | Directory runner |
 | `docs/gel-directory-*.md`, `docs/gel/**` expansions | Directory / presentations docs |
 | `tests/gel/**` | Local Gel series |
@@ -173,7 +173,7 @@ Also out of scope **even if tempting**:
 - Cherry-picking Gel-directory commits and then deleting files
 - Unifying `parse-datum` / `parse-syntax-expression`
 - Moving `typecheck-program/observe*` out of `type.rkt`
-- Removing Mirror / Signature / `gel/loop.aloe` / `gel-run`
+- Removing Mirror / Signature / `examples/gel/loop.aloe` / `gel-run`
 - MPL-ADT, Allo Emacs
 - Updating `origin/main` or pushing
 - Creating global checkpoint 118
@@ -181,8 +181,8 @@ Also out of scope **even if tempting**:
 - Deleting or renaming `experiment/2026-09-12-editor`
 
 After this assignment, `main` will still contain Mirror, Signature,
-and the earlier Gel (`gel/loop.aloe`, `gel/main.aloe`, `gel/menu.aloe`,
-`gel/stack.aloe`, `host/racket/gel-run.rkt`). That is correct. The
+and the earlier Gel (`examples/gel/loop.aloe`, `examples/gel/main.aloe`, `examples/gel/menu.aloe`,
+`examples/gel/stack.aloe`, `host/racket/gel-run.rkt`). That is correct. The
 later removal project handles those.
 
 ---
@@ -251,7 +251,7 @@ Immediately verify the negative:
 ```sh
 test ! -f examples/gel-directory.aloe
 test ! -f host/racket/gel-directory-run.rkt
-test ! -f gel/directory.aloe
+test ! -f examples/gel/directory.aloe
 test ! -f tests/checkpoint-108.rkt
 test ! -f docs/design/implementation/spine/checkpoints/0108-gel-application-start.md
 test -f aloe/lsp.rkt
@@ -357,7 +357,7 @@ and Mirror/Gel removal are not this landing.
 
 - Constructor / filesystem / host kernel behavior
 - `lib/option.aloe`, `lib/fs.aloe`, `lib/disk.aloe`
-- `gel/loop.aloe`, `gel/main.aloe`, `gel/menu.aloe`, `gel/stack.aloe`
+- `examples/gel/loop.aloe`, `examples/gel/main.aloe`, `examples/gel/menu.aloe`, `examples/gel/stack.aloe`
 - `host/racket/gel-run.rkt`
 - `docs/design/implementation/spine/class-constructors.md` except you must not re-open Proposal A
 
@@ -424,7 +424,7 @@ into the parent discussion:
 - `npm test` result, or that Node was skipped and why
 - confirmation that `aloe/lsp.rkt` and `lib/string.aloe` are **present**
 - confirmation that `examples/gel-directory.aloe`,
-  `host/racket/gel-directory-run.rkt`, `gel/directory.aloe`, and
+  `host/racket/gel-directory-run.rkt`, `examples/gel/directory.aloe`, and
   `tests/checkpoint-108.rkt` are **absent**
 - confirmation that `experiment/2026-09-12-editor` was not deleted
   or merged into `main` as a branch

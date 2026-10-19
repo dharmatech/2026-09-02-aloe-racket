@@ -373,7 +373,7 @@ Do not edit:
   production modules and tests;
 - `SPEC.md`, `CHECKPOINTS.md`, anything under `docs/design/implementation/spine/checkpoints/`, or the
   completion specification, charter, README, and checkpoint documents; or
-- `gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, and existing fixtures.
 
 Tests may create temporary files and directories under the platform temporary
 directory for load and nonexistent-root cases and must remove them with an

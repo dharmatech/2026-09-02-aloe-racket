@@ -226,7 +226,7 @@ Do not edit:
 - the LSP spec, charter, README, checkpoint documents, or 000 tests/fixture;
 - `aloe/expression-query.rkt` or any other Aloe production module;
 - another editor project's source, tests, fixtures, or documentation; or
-- `gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
+- `examples/gel/`, `lib/`, `host/`, `examples/`, or `docs/gel/`.
 
 If correct conversion requires changing Racket reader positions, altering
 Expression Query's one-based character contract, using a byte offset, or
